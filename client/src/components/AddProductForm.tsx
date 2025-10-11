@@ -27,6 +27,8 @@ export default function AddProductForm({ initialData, onSubmit, onCancel }: AddP
   const [codigoBarras, setCodigoBarras] = useState(initialData?.codigo_barras || "");
   const [vencimento, setVencimento] = useState(initialData?.vencimento || "");
 
+  const isLowStock = quantidade && estoqueMinimo && parseInt(quantidade) < parseInt(estoqueMinimo);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const product = {
@@ -115,7 +117,7 @@ export default function AddProductForm({ initialData, onSubmit, onCancel }: AddP
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="estoque-minimo">Estoque Mínimo</Label>
+              <Label htmlFor="estoque-minimo">Estoque Mínimo (Alerta de Estoque Baixo)</Label>
               <Input
                 id="estoque-minimo"
                 type="number"
@@ -126,6 +128,9 @@ export default function AddProductForm({ initialData, onSubmit, onCancel }: AddP
                 required
                 data-testid="input-min-stock"
               />
+              <p className="text-xs text-muted-foreground">
+                Quando a quantidade em estoque ficar abaixo deste valor, o produto será marcado como "Estoque Baixo"
+              </p>
             </div>
           </div>
           
@@ -139,6 +144,22 @@ export default function AddProductForm({ initialData, onSubmit, onCancel }: AddP
               data-testid="input-expiry-date"
             />
           </div>
+
+          {isLowStock && (
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-sm text-destructive font-medium flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
+                  <path d="M12 9v4"/>
+                  <path d="M12 17h.01"/>
+                </svg>
+                Prévia: Este produto será marcado como "Estoque Baixo"
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                A quantidade atual ({quantidade}) está abaixo do estoque mínimo ({estoqueMinimo})
+              </p>
+            </div>
+          )}
           
           <div className="flex gap-3 pt-4">
             <Button type="submit" className="flex-1" data-testid="button-save-product">

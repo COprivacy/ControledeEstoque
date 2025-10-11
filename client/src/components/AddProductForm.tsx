@@ -11,6 +11,8 @@ interface AddProductFormProps {
     preco: number;
     quantidade: number;
     estoque_minimo: number;
+    codigo_barras?: string;
+    vencimento?: string;
   }) => void;
   onCancel?: () => void;
 }
@@ -21,6 +23,8 @@ export default function AddProductForm({ onSubmit, onCancel }: AddProductFormPro
   const [preco, setPreco] = useState("");
   const [quantidade, setQuantidade] = useState("");
   const [estoqueMinimo, setEstoqueMinimo] = useState("");
+  const [codigoBarras, setCodigoBarras] = useState("");
+  const [vencimento, setVencimento] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +34,8 @@ export default function AddProductForm({ onSubmit, onCancel }: AddProductFormPro
       preco: parseFloat(preco),
       quantidade: parseInt(quantidade),
       estoque_minimo: parseInt(estoqueMinimo),
+      ...(codigoBarras && { codigo_barras: codigoBarras }),
+      ...(vencimento && { vencimento }),
     };
     onSubmit?.(product);
     console.log("Produto adicionado:", product);
@@ -63,6 +69,17 @@ export default function AddProductForm({ onSubmit, onCancel }: AddProductFormPro
               placeholder="Ex: Alimentos"
               required
               data-testid="input-category"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="codigo-barras">Código de Barras (Opcional)</Label>
+            <Input
+              id="codigo-barras"
+              value={codigoBarras}
+              onChange={(e) => setCodigoBarras(e.target.value)}
+              placeholder="7891234567890"
+              data-testid="input-barcode"
             />
           </div>
           
@@ -109,6 +126,17 @@ export default function AddProductForm({ onSubmit, onCancel }: AddProductFormPro
                 data-testid="input-min-stock"
               />
             </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="vencimento">Data de Vencimento (Opcional)</Label>
+            <Input
+              id="vencimento"
+              type="date"
+              value={vencimento}
+              onChange={(e) => setVencimento(e.target.value)}
+              data-testid="input-expiry-date"
+            />
           </div>
           
           <div className="flex gap-3 pt-4">

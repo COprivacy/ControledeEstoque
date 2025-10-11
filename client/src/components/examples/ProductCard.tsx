@@ -10,6 +10,8 @@ export default function ProductCardExample() {
         preco={25.50}
         quantidade={50}
         estoque_minimo={10}
+        codigo_barras="7891234567890"
+        vencimento="2025-12-01"
         onEdit={(id) => console.log("Editar produto:", id)}
         onDelete={(id) => console.log("Deletar produto:", id)}
       />
@@ -20,6 +22,8 @@ export default function ProductCardExample() {
         preco={8.90}
         quantidade={5}
         estoque_minimo={10}
+        codigo_barras="7891234567891"
+        vencimento="2025-10-18"
         onEdit={(id) => console.log("Editar produto:", id)}
         onDelete={(id) => console.log("Deletar produto:", id)}
       />

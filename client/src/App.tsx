@@ -12,6 +12,7 @@ import AddProduct from "@/pages/AddProduct";
 import Sales from "@/pages/Sales";
 import RegisterSale from "@/pages/RegisterSale";
 import Reports from "@/pages/Reports";
+import PDV from "@/pages/PDV";
 import DashboardLayout from "@/layouts/DashboardLayout";
 
 function Router() {
@@ -51,6 +52,13 @@ function Router() {
         {() => (
           <DashboardLayout>
             <RegisterSale />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/pdv">
+        {() => (
+          <DashboardLayout>
+            <PDV />
           </DashboardLayout>
         )}
       </Route>

@@ -9,9 +9,9 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   
   const [products] = useState([
-    { id: 1, nome: "Arroz 5kg", categoria: "Alimentos", preco: 25.50, quantidade: 50, estoque_minimo: 10 },
-    { id: 2, nome: "Feijão 1kg", categoria: "Alimentos", preco: 8.90, quantidade: 5, estoque_minimo: 10 },
-    { id: 3, nome: "Óleo de Soja 900ml", categoria: "Alimentos", preco: 7.50, quantidade: 30, estoque_minimo: 15 },
+    { id: 1, nome: "Arroz 5kg", categoria: "Alimentos", preco: 25.50, quantidade: 50, estoque_minimo: 10, codigo_barras: "7891234567890", vencimento: "2025-12-01" },
+    { id: 2, nome: "Feijão 1kg", categoria: "Alimentos", preco: 8.90, quantidade: 5, estoque_minimo: 10, codigo_barras: "7891234567891", vencimento: "2025-10-18" },
+    { id: 3, nome: "Óleo de Soja 900ml", categoria: "Alimentos", preco: 7.50, quantidade: 30, estoque_minimo: 15, codigo_barras: "7891234567892", vencimento: "2026-03-15" },
   ]);
 
   const lowStockProducts = products.filter(p => p.quantidade < p.estoque_minimo);

@@ -1,0 +1,52 @@
+You are an expert full-stack developer creating a simple inventory management web app for small businesses, called "Controle de Estoque Simples", designed for Brazilian shop owners (e.g., minimarkets, boutiques). The app should allow users to manage products, track sales, receive low stock alerts, and view basic reports. It must be built in Replit using Node.js, Express.js, SQLite for the database, and HTML/CSS/JavaScript for the frontend, with no AI or external API dependencies to keep costs at zero. Prioritize simplicity, security, and functionality for users with minimal tech skills.
+
+**Requirements**:
+- **Tech Stack**:
+  - Backend: Node.js with Express.js for RESTful API routes. Use SQLite as the database (via sqlite3 package) for local storage in Replit.
+  - Frontend: HTML/CSS/JavaScript. Use a clean, mobile-responsive design with a blue/white theme (#2563EB for buttons, #F0F0F0 for background). No frameworks like React to keep it beginner-friendly.
+  - Database Schema:
+    - **Produtos**: id (integer, primary key), nome (text), categoria (text), preco (real), quantidade (integer), estoque_minimo (integer).
+    - **Vendas**: id (integer, primary key), produto (text), quantidade_vendida (integer), valor_total (real), data (text, ISO format).
+    - **Usuarios**: email (text, primary key), senha (text, hashed with bcrypt), nome (text).
+  - Security: Use bcrypt for password hashing, basic input validation (e.g., check for negative quantities), and error handling for user feedback.
+
+- **Core Features**:
+  1. **User Authentication**: Simple login/register with email/password. Store hashed passwords in Usuarios table. No email verification.
+  2. **Product Management**: 
+     - Add product (nome, categoria, preco, quantidade, estoque_minimo).
+     - List products with low stock alert (highlight if quantidade < estoque_minimo).
+     - Edit/delete products.
+  3. **Sales Tracking**: 
+     - Register a sale (select product, enter quantity, auto-calculate valor_total = quantidade × preco).
+     - Update product quantidade automatically after sale.
+     - Prevent sales if stock is insufficient.
+  4. **Reports**: 
+     - Show total sales by day/week (sum of valor_total).
+     - List sales with filter by date range.
+  5. **Alerts**: Display visual alert (e.g., red background) for products where quantidade < estoque_minimo.
+
+- **API Endpoints** (RESTful):
+  - Auth: POST /auth/register, POST /auth/login.
+  - Produtos: GET /produtos, POST /produtos, PUT /produtos/:id, DELETE /produtos/:id.
+  - Vendas: POST /vendas, GET /vendas?start_date=&end_date=.
+  - Reports: GET /reports/daily, GET /reports/weekly.
+
+- **Frontend Structure**:
+  - Pages: Login, Register, Dashboard (product list + low stock alerts), Add Product, Register Sale, Reports.
+  - Components: Product list (with alerts), Sale form, Report table (filterable).
+  - UI/UX: Simple, clean design. Blue buttons (#2563EB), white background (#F0F0F0). Mobile-responsive (use CSS media queries). Show success/error messages (e.g., “Venda registrada” or “Estoque insuficiente”).
+  - Use vanilla JavaScript for API calls (fetch) and DOM manipulation.
+
+- **Additional Instructions**:
+  - Generate full project structure: package.json with dependencies (express, sqlite3, bcrypt), server.js (Express setup), database.js (SQLite setup), public/index.html, public/style.css, public/script.js.
+  - Seed database with sample data: 2 users (email: loja1@gmail.com, senha: loja123; email: loja2@gmail.com, senha: loja456), 3 products (e.g., “Arroz 5kg, Alimentos, 20, 50, 10”).
+  - Ensure Replit compatibility: App must run with “npm install && node server.js” in Replit’s free tier.
+  - Include basic error handling (e.g., 400 for invalid input, 500 for server errors) and JSON responses.
+  - Add README.md with setup instructions: “1. Create Repl, 2. Run npm install, 3. Run node server.js, 4. Access via Replit URL.”
+  - Edge Cases: Handle duplicate emails on register, negative quantities, insufficient stock.
+  - Output: Provide complete folder structure with all files, ready to run in Replit.
+
+**Deliverables**:
+- Full code for server.js, database.js, public/index.html, public/style.css, public/script.js, package.json, README.md.
+- Ensure the app is functional, beginner-friendly, and monetizable (e.g., via subscriptions or template sales).
+- Generate the code now.

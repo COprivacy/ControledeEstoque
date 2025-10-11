@@ -1,0 +1,49 @@
+You are an expert full-stack developer enhancing a simple inventory management web app for small Brazilian businesses, called "Controle de Estoque Simples". The app now includes expiration dates (vencimento) for products and barcode scanner support for real-time sales (PDV). Build it in Replit using Node.js, Express.js, SQLite (sqlite3), and HTML/CSS/JavaScript (vanilla JS, no frameworks). Keep it zero-cost, beginner-friendly, secure (bcrypt for passwords), and mobile-responsive. No AI or external APIs.
+
+**Updated Requirements**:
+- **Tech Stack**: Same as before (Node.js/Express/SQLite/HTML/CSS/JS). Add barcode detection via keyboard input events in JS (simulate scanner as fast keypresses on a text input).
+- **Updated Database Schema**:
+  - **Produtos**: id (integer, primary key), nome (text), categoria (text), preco (real), quantidade (integer), estoque_minimo (integer), codigo_barras (text, e.g., '7891234567890'), vencimento (text, YYYY-MM-DD format).
+  - **Vendas**: id (integer, primary key), produto (text), quantidade_vendida (integer), valor_total (real), data (text, ISO), itens (text, JSON array for multiple items per sale).
+  - **Usuarios**: email (text, primary key), senha (text, hashed), nome (text).
+- **Security**: Bcrypt for passwords, validate inputs (e.g., positive quantities, valid date for vencimento), handle errors gracefully.
+
+**Enhanced Core Features**:
+1. **User Authentication**: Unchanged (login/register).
+2. **Product Management**:
+   - Add/Edit product: Include fields for codigo_barras and vencimento (date picker in HTML).
+   - List products: Show nome, preco, quantidade, vencimento, codigo_barras. Highlight low stock (quantidade < estoque_minimo) and near-expiration (vencimento < today + 7 days) with colors (e.g., red background for expiring soon).
+   - Delete products.
+3. **Sales Tracking (PDV with Barcode)**:
+   - Real-time cart: Empty input field for barcode scan. On enter/scan (keypress event), fetch product by codigo_barras, add to cart (list with nome, preco, quantidade, subtotal), update total.
+   - Allow manual quantity adjustment per item in cart.
+   - Confirm sale: Validate stock, deduct from quantidade (per item), save sale with itens array (JSON), clear cart. Show summary (total, items sold, stock updated).
+   - Prevent over-selling if insufficient stock.
+4. **Reports**:
+   - Sales reports: Unchanged, plus filter by vencimento (e.g., expiring products report).
+   - Expiration report: List products expiring soon (<30 days).
+5. **Alerts**:
+   - Low stock: Unchanged.
+   - Expiration: Visual alert in product list (e.g., "Vence em X dias" badge, red if <7 days).
+
+**API Endpoints** (RESTful, add new ones):
+- Auth: POST /auth/register, POST /auth/login.
+- Produtos: GET /produtos (with optional ?expiring=soon for filter), POST /produtos, PUT /produtos/:id, DELETE /produtos/:id, GET /produtos/codigo/:codigo (for barcode lookup).
+- Vendas: POST /vendas (body: {itens: [{codigo_barras, quantidade}]}, auto-calculate total), GET /vendas?start_date=&end_date=.
+- Reports: GET /reports/daily, GET /reports/weekly, GET /reports/expiring.
+
+**Frontend Structure** (Enhance with PDV page):
+- Pages: Login, Register, Dashboard (product list with alerts), Add/Edit Product (with date input for vencimento and barcode field), PDV/Sales (barcode input, real-time cart table, confirm button), Reports.
+- New Components: Barcode input (autofocus, onkeypress detect scan and fetch via API), Cart table (add/remove items, totals), Expiration badge (JS to check date diff).
+- UI/UX: Blue/white theme (#2563EB buttons, #F0F0F0 bg). Mobile-responsive. Use <input type="date"> for vencimento. For barcode: <input id="barcode-scan" placeholder="Escaneie o código de barras"> with JS event listener for 'Enter' key. Show messages like "Produto adicionado ao carrinho!" or "Estoque insuficiente!". Add expiration check: If new Date(vencimento) < new Date() + 7 days, red highlight.
+- JS: Use fetch for API calls, localStorage for temp cart, date-fns or native Date for vencimento calculations.
+
+**Additional Instructions**:
+- Generate full project: package.json (express, sqlite3, bcrypt), server.js, database.js (with seed: 2 users, 3 products e.g., {nome: 'Arroz 5kg', codigo_barras: '7891234567890', vencimento: '2025-12-01', ...}), public/index.html (multi-page via JS routing or separate HTML files), public/style.css, public/script.js.
+- Seed data: Include vencimento in products (e.g., one expiring soon: '2025-10-18').
+- Replit-ready: Run with "npm install && node server.js". Handle CORS if needed.
+- Edge Cases: Invalid barcode (show "Produto não encontrado"), expired product on sale (warn but allow), duplicate scans in cart (increment quantity).
+- README.md: Setup instructions, plus "Para scanner: Conecte via USB, digite/escanne no input e pressione Enter."
+- Output: Complete folder structure with all files, runnable in Replit free tier.
+
+Prioritize usability for cashiers (fast PDV flow). Generate the code now.

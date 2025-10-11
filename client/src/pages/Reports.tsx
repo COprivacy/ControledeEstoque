@@ -1,31 +1,66 @@
-import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import ReportsCard from "@/components/ReportsCard";
 import SalesTable from "@/components/SalesTable";
 import ExpiringProductsReport from "@/components/ExpiringProductsReport";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 
 export default function Reports() {
-  const [filteredSales, setFilteredSales] = useState([
-    { id: 1, produto: "Arroz 5kg", quantidade_vendida: 2, valor_total: 51.00, data: "2025-01-10T10:30:00" },
-    { id: 2, produto: "Feijão 1kg", quantidade_vendida: 5, valor_total: 44.50, data: "2025-01-10T14:15:00" },
-    { id: 3, produto: "Óleo de Soja 900ml", quantidade_vendida: 3, valor_total: 22.50, data: "2025-01-09T16:45:00" },
-  ]);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const [expiringProducts] = useState([
-    { id: 2, nome: "Feijão 1kg", categoria: "Alimentos", quantidade: 5, vencimento: "2025-10-18", codigo_barras: "7891234567891" },
-    { id: 6, nome: "Leite 1L", categoria: "Laticínios", quantidade: 12, vencimento: "2025-10-25" },
-  ]);
+  const { data: vendas = [] } = useQuery({
+    queryKey: ["/api/vendas"],
+  });
 
-  const dailyTotal = 95.50;
-  const weeklyTotal = 186.60;
+  const { data: expiringProducts = [] } = useQuery({
+    queryKey: ["/api/reports/expiring"],
+  });
+
+  const clearHistoryMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/vendas", {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Erro ao limpar histórico");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/vendas"] });
+      toast({
+        title: "Histórico limpo!",
+        description: "Todas as vendas foram removidas do histórico",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível limpar o histórico",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleClearHistory = () => {
+    if (confirm("Tem certeza que deseja limpar todo o histórico de vendas? Esta ação não pode ser desfeita.")) {
+      clearHistoryMutation.mutate();
+    }
+  };
+
+  const today = new Date().toISOString().split('T')[0];
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  const dailyTotal = vendas
+    .filter((v: any) => v.data?.startsWith(today))
+    .reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
+
+  const weeklyTotal = vendas
+    .filter((v: any) => v.data >= weekAgo)
+    .reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
 
   const handleFilter = async (startDate: string, endDate: string) => {
-    const params = new URLSearchParams({
-      start_date: startDate,
-      end_date: endDate,
-    });
-    const response = await fetch(`/api/vendas?${params}`);
-    const data = await response.json();
-    setFilteredSales(data);
+    queryClient.invalidateQueries({ queryKey: ["/api/vendas"] });
   };
 
   return (
@@ -43,7 +78,21 @@ export default function Reports() {
 
       <ExpiringProductsReport products={expiringProducts} />
 
-      <SalesTable sales={filteredSales} />
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Histórico de Vendas</h2>
+        {vendas.length > 0 && (
+          <Button 
+            variant="destructive" 
+            size="sm"
+            onClick={handleClearHistory}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Limpar Histórico
+          </Button>
+        )}
+      </div>
+
+      <SalesTable sales={vendas} />
     </div>
   );
 }

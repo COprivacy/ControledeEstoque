@@ -282,6 +282,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/vendas", async (req, res) => {
+    try {
+      await storage.clearVendas();
+      res.json({ success: true, message: "Histórico de vendas limpo com sucesso" });
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao limpar histórico de vendas" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

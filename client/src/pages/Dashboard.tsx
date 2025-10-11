@@ -1,21 +1,64 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import StatsCards from "@/components/StatsCards";
 import ProductCard from "@/components/ProductCard";
 import { Plus, Package } from "lucide-react";
 import { useLocation } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
-  const [products] = useState([
-    { id: 1, nome: "Arroz 5kg", categoria: "Alimentos", preco: 25.50, quantidade: 50, estoque_minimo: 10, codigo_barras: "7891234567890", vencimento: "2025-12-01" },
-    { id: 2, nome: "Feijão 1kg", categoria: "Alimentos", preco: 8.90, quantidade: 5, estoque_minimo: 10, codigo_barras: "7891234567891", vencimento: "2025-10-18" },
-    { id: 3, nome: "Óleo de Soja 900ml", categoria: "Alimentos", preco: 7.50, quantidade: 30, estoque_minimo: 15, codigo_barras: "7891234567892", vencimento: "2026-03-15" },
-  ]);
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: ["/api/produtos"],
+  });
 
-  const lowStockProducts = products.filter(p => p.quantidade < p.estoque_minimo);
-  const todaySales = 118.00;
+  const { data: vendas = [] } = useQuery({
+    queryKey: ["/api/vendas"],
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/produtos/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Erro ao deletar produto");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/produtos"] });
+      toast({
+        title: "Produto excluído!",
+        description: "O produto foi removido do estoque",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o produto",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDelete = (id: number) => {
+    if (confirm("Tem certeza que deseja excluir este produto?")) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  const lowStockProducts = products.filter((p: any) => p.quantidade < p.estoque_minimo);
+  
+  const today = new Date().toISOString().split('T')[0];
+  const todaySales = vendas
+    .filter((v: any) => v.data?.startsWith(today))
+    .reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
+
+  if (isLoading) {
+    return <div>Carregando...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -49,12 +92,12 @@ export default function Dashboard() {
             <span className="text-sm text-muted-foreground">({lowStockProducts.length} produtos)</span>
           </div>
           <div className="space-y-3">
-            {lowStockProducts.map((product) => (
+            {lowStockProducts.map((product: any) => (
               <ProductCard
                 key={product.id}
                 {...product}
-                onEdit={(id) => console.log("Editar produto:", id)}
-                onDelete={(id) => console.log("Deletar produto:", id)}
+                onEdit={(id) => setLocation(`/produtos/editar/${id}`)}
+                onDelete={handleDelete}
               />
             ))}
           </div>
@@ -64,14 +107,20 @@ export default function Dashboard() {
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Todos os Produtos</h2>
         <div className="space-y-3">
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              {...product}
-              onEdit={(id) => setLocation(`/produtos/editar/${id}`)}
-              onDelete={(id) => console.log("Deletar produto:", id)}
-            />
-          ))}
+          {products.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              Nenhum produto cadastrado
+            </p>
+          ) : (
+            products.map((product: any) => (
+              <ProductCard
+                key={product.id}
+                {...product}
+                onEdit={(id) => setLocation(`/produtos/editar/${id}`)}
+                onDelete={handleDelete}
+              />
+            ))
+          )}
         </div>
       </div>
     </div>

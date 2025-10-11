@@ -1,27 +1,46 @@
-import { useState } from "react";
 import { useLocation } from "wouter";
 import SalesForm from "@/components/SalesForm";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function RegisterSale() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const [products] = useState([
-    { id: 1, nome: "Arroz 5kg", preco: 25.50, quantidade: 50 },
-    { id: 2, nome: "Feijão 1kg", preco: 8.90, quantidade: 5 },
-    { id: 3, nome: "Óleo de Soja 900ml", preco: 7.50, quantidade: 30 },
-    { id: 4, nome: "Macarrão 500g", preco: 4.50, quantidade: 25 },
-    { id: 5, nome: "Açúcar 1kg", preco: 5.90, quantidade: 40 },
-  ]);
+  const { data: products = [] } = useQuery({
+    queryKey: ["/api/produtos"],
+  });
+
+  const createSaleMutation = useMutation({
+    mutationFn: async (sale: any) => {
+      const produto = products.find((p: any) => p.id === sale.produtoId);
+      const response = await fetch("/api/vendas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          itens: [{
+            codigo_barras: produto.codigo_barras,
+            quantidade: sale.quantidade,
+          }],
+        }),
+      });
+      if (!response.ok) throw new Error("Erro ao registrar venda");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/vendas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/produtos"] });
+      toast({
+        title: "Venda registrada!",
+        description: `Total: R$ ${data.valor_total.toFixed(2)}`,
+      });
+      setLocation("/vendas");
+    },
+  });
 
   const handleSubmit = (sale: any) => {
-    console.log("Venda registrada:", sale);
-    toast({
-      title: "Venda registrada!",
-      description: `Total: R$ ${sale.valorTotal.toFixed(2)}`,
-    });
-    setLocation("/vendas");
+    createSaleMutation.mutate(sale);
   };
 
   const handleCancel = () => {

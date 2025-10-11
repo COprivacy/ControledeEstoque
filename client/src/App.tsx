@@ -41,6 +41,13 @@ function Router() {
           </DashboardLayout>
         )}
       </Route>
+      <Route path="/produtos/editar/:id">
+        {() => (
+          <DashboardLayout>
+            <AddProduct />
+          </DashboardLayout>
+        )}
+      </Route>
       <Route path="/vendas">
         {() => (
           <DashboardLayout>

@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface AddProductFormProps {
+  initialData?: any;
   onSubmit?: (product: {
     nome: string;
     categoria: string;
@@ -17,14 +18,14 @@ interface AddProductFormProps {
   onCancel?: () => void;
 }
 
-export default function AddProductForm({ onSubmit, onCancel }: AddProductFormProps) {
-  const [nome, setNome] = useState("");
-  const [categoria, setCategoria] = useState("");
-  const [preco, setPreco] = useState("");
-  const [quantidade, setQuantidade] = useState("");
-  const [estoqueMinimo, setEstoqueMinimo] = useState("");
-  const [codigoBarras, setCodigoBarras] = useState("");
-  const [vencimento, setVencimento] = useState("");
+export default function AddProductForm({ initialData, onSubmit, onCancel }: AddProductFormProps) {
+  const [nome, setNome] = useState(initialData?.nome || "");
+  const [categoria, setCategoria] = useState(initialData?.categoria || "");
+  const [preco, setPreco] = useState(initialData?.preco?.toString() || "");
+  const [quantidade, setQuantidade] = useState(initialData?.quantidade?.toString() || "");
+  const [estoqueMinimo, setEstoqueMinimo] = useState(initialData?.estoque_minimo?.toString() || "");
+  const [codigoBarras, setCodigoBarras] = useState(initialData?.codigo_barras || "");
+  const [vencimento, setVencimento] = useState(initialData?.vencimento || "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

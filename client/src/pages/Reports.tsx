@@ -18,8 +18,14 @@ export default function Reports() {
   const dailyTotal = 95.50;
   const weeklyTotal = 186.60;
 
-  const handleFilter = (startDate: string, endDate: string) => {
-    console.log("Filtrar vendas entre:", startDate, "e", endDate);
+  const handleFilter = async (startDate: string, endDate: string) => {
+    const params = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+    });
+    const response = await fetch(`/api/vendas?${params}`);
+    const data = await response.json();
+    setFilteredSales(data);
   };
 
   return (

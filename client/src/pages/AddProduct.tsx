@@ -1,18 +1,66 @@
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import AddProductForm from "@/components/AddProductForm";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function AddProduct() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { id } = useParams();
+  const queryClient = useQueryClient();
+  const isEditing = !!id;
 
-  const handleSubmit = (product: any) => {
-    console.log("Produto adicionado:", product);
-    toast({
-      title: "Produto adicionado!",
-      description: `${product.nome} foi adicionado ao estoque`,
-    });
-    setLocation("/produtos");
+  const { data: product } = useQuery({
+    queryKey: [`/api/produtos/${id}`],
+    enabled: isEditing,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch("/api/produtos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Erro ao criar produto");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/produtos"] });
+      toast({
+        title: "Produto adicionado!",
+        description: `${data.nome} foi adicionado ao estoque`,
+      });
+      setLocation("/produtos");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch(`/api/produtos/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Erro ao atualizar produto");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/produtos"] });
+      toast({
+        title: "Produto atualizado!",
+        description: `${data.nome} foi atualizado`,
+      });
+      setLocation("/produtos");
+    },
+  });
+
+  const handleSubmit = (productData: any) => {
+    if (isEditing) {
+      updateMutation.mutate(productData);
+    } else {
+      createMutation.mutate(productData);
+    }
   };
 
   const handleCancel = () => {
@@ -22,12 +70,20 @@ export default function AddProduct() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Adicionar Produto</h1>
-        <p className="text-sm text-muted-foreground">Cadastre um novo produto no estoque</p>
+        <h1 className="text-2xl font-bold text-foreground">
+          {isEditing ? "Editar Produto" : "Adicionar Produto"}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {isEditing ? "Atualize as informações do produto" : "Cadastre um novo produto no estoque"}
+        </p>
       </div>
       
       <div className="max-w-2xl">
-        <AddProductForm onSubmit={handleSubmit} onCancel={handleCancel} />
+        <AddProductForm 
+          initialData={product}
+          onSubmit={handleSubmit} 
+          onCancel={handleCancel} 
+        />
       </div>
     </div>
   );

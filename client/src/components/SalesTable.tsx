@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatDate } from "@/lib/dateUtils";
 
 interface Sale {
   id: number;
@@ -10,56 +10,44 @@ interface Sale {
 }
 
 interface SalesTableProps {
-  sales?: Sale[];
+  sales: Sale[];
 }
 
-export default function SalesTable({ sales = [] }: SalesTableProps) {
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR');
-  };
+export function SalesTable({ sales }: SalesTableProps) {
+  if (!sales || sales.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        Nenhuma venda encontrada
+      </div>
+    );
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Histórico de Vendas</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Produto</TableHead>
-                <TableHead className="text-right">Quantidade</TableHead>
-                <TableHead className="text-right">Valor Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sales.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    Nenhuma venda registrada
-                  </TableCell>
-                </TableRow>
-              ) : (
-                sales.map((sale) => (
-                  <TableRow key={sale.id} data-testid={`row-sale-${sale.id}`}>
-                    <TableCell data-testid={`text-date-${sale.id}`}>{formatDate(sale.data)}</TableCell>
-                    <TableCell data-testid={`text-product-${sale.id}`}>{sale.produto}</TableCell>
-                    <TableCell className="text-right" data-testid={`text-quantity-${sale.id}`}>
-                      {sale.quantidade_vendida}
-                    </TableCell>
-                    <TableCell className="text-right font-medium" data-testid={`text-value-${sale.id}`}>
-                      R$ {sale.valor_total.toFixed(2)}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Produto</TableHead>
+            <TableHead className="text-center">Quantidade</TableHead>
+            <TableHead className="text-right">Valor Total</TableHead>
+            <TableHead className="text-right">Data</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sales.map((sale) => (
+            <TableRow key={sale.id}>
+              <TableCell className="font-medium">{sale.produto || 'N/A'}</TableCell>
+              <TableCell className="text-center">{sale.quantidade_vendida || 0}</TableCell>
+              <TableCell className="text-right font-medium" data-testid={`text-value-${sale.id}`}>
+                R$ {(sale.valor_total || 0).toFixed(2)}
+              </TableCell>
+              <TableCell className="text-right text-muted-foreground">
+                {sale.data ? formatDate(sale.data) : 'N/A'}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

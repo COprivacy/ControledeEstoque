@@ -13,7 +13,7 @@ interface SalesTableProps {
   sales: Sale[];
 }
 
-export function SalesTable({ sales }: SalesTableProps) {
+export default function SalesTable({ sales }: SalesTableProps) {
   if (!sales || sales.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">

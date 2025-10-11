@@ -1,0 +1,18 @@
+[
+  {
+    "produtoId": 1,
+    "quantidade": 2,
+    "total": 51,
+    "data": "2023-10-26T10:00:00Z",
+    "userId": "48c51ac3-1ea4-4c26-bd6b-5f980a64616d",
+    "id": 1
+  },
+  {
+    "produtoId": 2,
+    "quantidade": 1,
+    "total": 8.9,
+    "data": "2023-10-25T11:30:00Z",
+    "userId": "f83d0ebb-293c-4ec9-98e9-d8da00d57545",
+    "id": 2
+  }
+]

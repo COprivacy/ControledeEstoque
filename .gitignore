@@ -1,5 +1,9 @@
 node_modules
 dist
+dist-ssr
+server/database.db
+server/database.db-shm
+server/database.db-wal
 .DS_Store
 server/public
 vite.config.ts.*

@@ -68,4 +68,13 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
   });
+
+  // Graceful shutdown
+  process.on('SIGINT', () => {
+    log('Shutting down gracefully...');
+    if ('close' in storage && typeof storage.close === 'function') {
+      storage.close();
+    }
+    process.exit(0);
+  });
 })();

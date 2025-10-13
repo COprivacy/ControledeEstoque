@@ -1,0 +1,41 @@
+SQLite format 3@  .   S      XS   _tablevendasvendas CREATE TABLE vendas ( id INTEGER PRIMARY KEY AUTOINCREMENT, produto TEXT NOT NULL, quantidade_vendida INTEGER NOT NULL, valor_total REAL NOT NULL, data TEXT NOT NULL, itens TEXT )P++Ytablesqlite_sequencesqlite_sequenceCREATE TABLE sqlite_sequence(name,seq) F  _tableprodutosprodutosCREATE TABLE produtos ( id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, categoria TEXT NOT NULL, preco REAL NOT NULL, quantidade INTEGER NOT NULL, estoque_minimo INTEGER NOT NULL, codigo_barras TEXT, vencimento TEXT ) ,  7tableusersusersCREATE TABLE users ( id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, senha TEXT NOT NULL, nome TEXT NOT NULL ))=indexsqlite_autoindex_users_2users)=indexsqlite_autoindex_users_1users r rEU+6c4b7b84-d765-4126-8cd5-0080701e11d6loja2@gmail.comloja456Loja 2EU+c1f0514d-a93e-4239-a164-a902bedd3194loja1@gmail.comloja123Loja 1    (U6c4b7b84-d765-4126-8cd5-0080701e11d6'U c1f0514d-a93e-4239-a164-a902bedd3194    +loja2@gmail.com+ loja1@gmail.com :  :F 3 '!Óleo de Soja 900mlAlimentos@78912345678922026-03-15> # '!Feijão 1kgAlimentos@!       78912345678912025-10-18<  '!Arroz 5kgAlimentos@9 2 78912345678902025-12-01   produtos 
+CREATE TABLE vendas (
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+produto TEXT NOT NULL,
+quantidade_vendida INTEGER NOT NULL,
+valor_total REAL NOT NULL,
+data TEXT NOT NULL,
+itens TEXT
+);
+
+CREATE TABLE sqlite_sequence(
+name TEXT,
+seq INTEGER
+);
+
+CREATE TABLE produtos (
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+nome TEXT NOT NULL,
+categoria TEXT NOT NULL,
+preco REAL NOT NULL,
+quantidade INTEGER NOT NULL,
+estoque_minimo INTEGER NOT NULL,
+codigo_barras TEXT,
+vencimento TEXT
+);
+
+CREATE TABLE users (
+id TEXT PRIMARY KEY,
+email TEXT NOT NULL UNIQUE,
+senha TEXT NOT NULL,
+nome TEXT NOT NULL
+);
+
+INSERT INTO users (id, email, senha, nome) VALUES
+('6c4b7b84-d765-4126-8cd5-0080701e11d6', 'loja2@gmail.com', 'loja456', 'Loja 2'),
+('c1f0514d-a93e-4239-a164-a902bedd3194', 'loja1@gmail.com', 'loja123', 'Loja 1');
+
+INSERT INTO produtos (id, nome, categoria, preco, quantidade, estoque_minimo, codigo_barras, vencimento) VALUES
+(1, 'Óleo de Soja 900ml', 'Alimentos', 7.50, 100, 10, '7891234567892', '2026-03-15'),
+(2, 'Feijão 1kg', 'Alimentos', 8.00, 50, 5, '7891234567891', '2025-10-18'),
+(3, 'Arroz 5kg', 'Alimentos', 25.00, 200, 20, '7891234567890', '2025-12-01');

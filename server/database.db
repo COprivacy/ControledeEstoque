@@ -32,8 +32,8 @@ nome TEXT NOT NULL
 );
 
 INSERT INTO users (id, email, senha, nome) VALUES
-('6c4b7b84-d765-4126-8cd5-0080701e11d6', 'loja2@gmail.com', 'loja456', 'Loja 2'),
-('c1f0514d-a93e-4239-a164-a902bedd3194', 'loja1@gmail.com', 'loja123', 'Loja 1');
+('6c4b7b84-d765-4126-8cd5-0080701e11d6', 'contateste1@gmail.com', 'loja456', 'Loja 2'),
+('c1f0514d-a93e-4239-a164-a902bedd3194', 'contatest2@gmail.com', 'loja123', 'Loja 1');
 
 INSERT INTO produtos (id, nome, categoria, preco, quantidade, estoque_minimo, codigo_barras, vencimento) VALUES
 (1, 'Óleo de Soja 900ml', 'Alimentos', 7.50, 100, 10, '7891234567892', '2026-03-15'),

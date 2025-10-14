@@ -1,10 +1,2 @@
-[
-  {
-    "produto": "Arroz 5kg",
-    "quantidade_vendida": 8,
-    "valor_total": 204,
-    "data": "2025-10-11T21:18:30.592Z",
-    "itens": "[{\"nome\":\"Arroz 5kg\",\"quantidade\":8,\"preco_unitario\":25.5,\"subtotal\":204}]",
-    "id": 4
-  }
-]
+
+[]

@@ -196,11 +196,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      const agora = new Date();
       const venda = await storage.createVenda({
         produto: produtosVendidos.map(p => p.nome).join(", "),
         quantidade_vendida: produtosVendidos.reduce((sum, p) => sum + p.quantidade, 0),
         valor_total: valorTotal,
-        data: new Date().toISOString(),
+        data: agora.toISOString(),
         itens: JSON.stringify(produtosVendidos)
       });
       

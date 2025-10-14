@@ -17,6 +17,7 @@ export default function Settings() {
     primaryColor: "#2563EB",
     secondaryColor: "#10B981",
     accentColor: "#F59E0B",
+    backgroundColor: "#FFFFFF",
     storeName: "Controle de Estoque Simples"
   });
 
@@ -43,6 +44,7 @@ export default function Settings() {
     document.documentElement.style.setProperty('--primary', config.primaryColor);
     document.documentElement.style.setProperty('--secondary', config.secondaryColor);
     document.documentElement.style.setProperty('--accent', config.accentColor);
+    document.documentElement.style.setProperty('--background', config.backgroundColor);
     
     toast({
       title: "Configurações salvas!",
@@ -141,7 +143,7 @@ export default function Settings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="primary-color">Cor Primária</Label>
                   <div className="flex gap-2">
@@ -198,19 +200,41 @@ export default function Settings() {
                     />
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="background-color">Cor de Fundo</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="background-color"
+                      type="color"
+                      value={config.backgroundColor}
+                      onChange={(e) => setConfig({ ...config, backgroundColor: e.target.value })}
+                      className="w-20 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      type="text"
+                      value={config.backgroundColor}
+                      onChange={(e) => setConfig({ ...config, backgroundColor: e.target.value })}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="pt-4">
                 <p className="text-sm text-muted-foreground mb-3">Prévia das cores:</p>
-                <div className="flex gap-3">
-                  <div className="flex-1 p-4 rounded" style={{ backgroundColor: config.primaryColor }}>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-4 rounded" style={{ backgroundColor: config.primaryColor }}>
                     <span className="text-white font-medium">Primária</span>
                   </div>
-                  <div className="flex-1 p-4 rounded" style={{ backgroundColor: config.secondaryColor }}>
+                  <div className="p-4 rounded" style={{ backgroundColor: config.secondaryColor }}>
                     <span className="text-white font-medium">Secundária</span>
                   </div>
-                  <div className="flex-1 p-4 rounded" style={{ backgroundColor: config.accentColor }}>
+                  <div className="p-4 rounded" style={{ backgroundColor: config.accentColor }}>
                     <span className="text-white font-medium">Destaque</span>
+                  </div>
+                  <div className="p-4 rounded border-2" style={{ backgroundColor: config.backgroundColor }}>
+                    <span className="font-medium" style={{ color: config.primaryColor }}>Fundo</span>
                   </div>
                 </div>
               </div>

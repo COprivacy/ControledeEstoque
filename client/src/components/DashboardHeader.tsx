@@ -32,6 +32,9 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
       if (customization.accentColor) {
         document.documentElement.style.setProperty('--accent', customization.accentColor);
       }
+      if (customization.backgroundColor) {
+        document.documentElement.style.setProperty('--background', customization.backgroundColor);
+      }
     }
   }, []);
 

@@ -26,10 +26,32 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const [cart, setCart] = useState<CartItem[]>([]);
   const [lastScanTime, setLastScanTime] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    // Limpa o timeout anterior
+    if (scanTimeoutRef.current) {
+      clearTimeout(scanTimeoutRef.current);
+    }
+
+    // Se o código tem pelo menos 8 caracteres (tamanho mínimo de código de barras)
+    if (barcode.length >= 8) {
+      // Aguarda 100ms para garantir que o scanner terminou de digitar
+      scanTimeoutRef.current = setTimeout(() => {
+        handleScan(barcode);
+      }, 100);
+    }
+
+    return () => {
+      if (scanTimeoutRef.current) {
+        clearTimeout(scanTimeoutRef.current);
+      }
+    };
+  }, [barcode]);
 
   const valorTotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
 

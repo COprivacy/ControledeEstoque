@@ -33,6 +33,24 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
 
   const valorTotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
 
+  const playBeep = (success: boolean = true) => {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = success ? 1200 : 400;
+    oscillator.type = 'square';
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.1);
+  };
+
   const handleScan = async (scannedBarcode: string) => {
     if (!scannedBarcode.trim()) return;
 
@@ -48,10 +66,13 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
         : await mockFetchProduct(scannedBarcode);
 
       if (!produto) {
+        playBeep(false); // Som de erro
         onProductNotFound?.(scannedBarcode);
         setBarcode("");
         return;
       }
+
+      playBeep(true); // Som de sucesso
 
       const existingItem = cart.find(item => item.codigo_barras === scannedBarcode);
       

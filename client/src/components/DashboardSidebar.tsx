@@ -1,5 +1,5 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { Home, Package, ShoppingCart, BarChart3, Scan } from "lucide-react";
+import { Home, Package, ShoppingCart, BarChart3, Scan, Settings } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
 const menuItems = [
@@ -8,6 +8,7 @@ const menuItems = [
   { title: "PDV", url: "/pdv", icon: Scan },
   { title: "Vendas", url: "/vendas", icon: ShoppingCart },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
+  { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
 export default function DashboardSidebar() {

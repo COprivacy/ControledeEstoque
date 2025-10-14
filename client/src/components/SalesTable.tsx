@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatDate } from "@/lib/dateUtils";
+import { formatDateTime } from "@/lib/dateUtils";
 
 interface Sale {
   id: number;
@@ -42,7 +42,7 @@ export default function SalesTable({ sales }: SalesTableProps) {
                 R$ {(sale.valor_total || 0).toFixed(2)}
               </TableCell>
               <TableCell className="text-right text-muted-foreground">
-                {sale.data ? formatDate(sale.data) : 'N/A'}
+                {sale.data ? formatDateTime(sale.data) : 'N/A'}
               </TableCell>
             </TableRow>
           ))}

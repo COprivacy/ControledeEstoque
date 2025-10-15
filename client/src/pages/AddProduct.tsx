@@ -2,6 +2,8 @@ import { useLocation, useParams } from "wouter";
 import AddProductForm from "@/components/AddProductForm";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
+import { Crown } from "lucide-react";
 
 export default function AddProduct() {
   const [, setLocation] = useLocation();
@@ -69,13 +71,19 @@ export default function AddProduct() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">
-          {isEditing ? "Editar Produto" : "Adicionar Produto"}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {isEditing ? "Atualize as informações do produto" : "Cadastre um novo produto no estoque"}
-        </p>
+      <div className="flex items-center gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            {isEditing ? "Editar Produto" : "Adicionar Produto"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {isEditing ? "Atualize as informações do produto" : "Cadastre um novo produto no estoque"}
+          </p>
+        </div>
+        <Badge className="bg-yellow-500 text-white">
+          <Crown className="h-3 w-3 mr-1" />
+          Premium
+        </Badge>
       </div>
       
       <div className="max-w-2xl">

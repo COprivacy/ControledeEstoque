@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import ProductCard from "@/components/ProductCard";
-import { Plus } from "lucide-react";
+import { Plus, Crown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -51,9 +52,15 @@ export default function Products() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Produtos</h1>
-          <p className="text-sm text-muted-foreground">Gerencie seu catálogo de produtos</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Produtos</h1>
+            <p className="text-sm text-muted-foreground">Gerencie seu catálogo de produtos</p>
+          </div>
+          <Badge className="bg-yellow-500 text-white">
+            <Crown className="h-3 w-3 mr-1" />
+            Premium
+          </Badge>
         </div>
         <Button onClick={() => setLocation("/produtos/adicionar")} data-testid="button-add-product">
           <Plus className="h-4 w-4 mr-2" />

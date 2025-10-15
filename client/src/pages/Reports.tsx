@@ -4,7 +4,8 @@ import ReportsCard from "@/components/ReportsCard";
 import SalesTable from "@/components/SalesTable";
 import ExpiringProductsReport from "@/components/ExpiringProductsReport";
 import { Button } from "@/components/ui/button";
-import { Trash2, Download } from "lucide-react";
+import { Trash2, Download, Crown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatDateTime } from "@/lib/dateUtils";
@@ -200,9 +201,15 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Relatórios</h1>
-        <p className="text-sm text-muted-foreground">Análise de vendas e desempenho</p>
+      <div className="flex items-center gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Relatórios</h1>
+          <p className="text-sm text-muted-foreground">Análise de vendas e desempenho</p>
+        </div>
+        <Badge className="bg-yellow-500 text-white">
+          <Crown className="h-3 w-3 mr-1" />
+          Premium
+        </Badge>
       </div>
 
       <div className="relative">

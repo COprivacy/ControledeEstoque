@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import StatsCards from "@/components/StatsCards";
 import ProductCard from "@/components/ProductCard";
-import { Plus, Package, Search } from "lucide-react";
+import { Plus, Package, Search, Crown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -77,9 +78,15 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Visão geral do seu estoque</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">Visão geral do seu estoque</p>
+          </div>
+          <Badge className="bg-yellow-500 text-white">
+            <Crown className="h-3 w-3 mr-1" />
+            Premium
+          </Badge>
         </div>
         <div className="flex gap-3 flex-wrap items-center">
           <div className="relative">

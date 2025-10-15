@@ -4,11 +4,137 @@ import ReportsCard from "@/components/ReportsCard";
 import SalesTable from "@/components/SalesTable";
 import ExpiringProductsReport from "@/components/ExpiringProductsReport";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Download } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { formatDateTime } from "@/lib/dateUtils";
 
 export default function Reports() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    
+    // Buscar configurações personalizadas
+    const customization = localStorage.getItem("customization");
+    let storeName = "Controle de Estoque Simples";
+    let storeLogo = "";
+    
+    if (customization) {
+      try {
+        const config = JSON.parse(customization);
+        storeName = config.storeName || storeName;
+        storeLogo = config.logo || "";
+      } catch (e) {
+        console.error("Erro ao carregar configurações:", e);
+      }
+    }
+    
+    // Cabeçalho com logo (se disponível)
+    let yPosition = 20;
+    
+    if (storeLogo) {
+      try {
+        doc.addImage(storeLogo, "PNG", 15, yPosition, 30, 30);
+        yPosition += 35;
+      } catch (e) {
+        console.error("Erro ao adicionar logo:", e);
+      }
+    }
+    
+    // Nome da empresa
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text(storeName, storeLogo ? 50 : 15, storeLogo ? 35 : yPosition);
+    yPosition = storeLogo ? 55 : yPosition + 10;
+    
+    // Título do relatório
+    doc.setFontSize(16);
+    doc.text("Relatório de Vendas", 15, yPosition);
+    yPosition += 10;
+    
+    // Data de geração
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Gerado em: ${formatDateTime(new Date().toISOString())}`, 15, yPosition);
+    yPosition += 15;
+    
+    // Resumo
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Resumo:", 15, yPosition);
+    yPosition += 7;
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Vendas Hoje: R$ ${dailyTotal.toFixed(2)}`, 15, yPosition);
+    yPosition += 6;
+    doc.text(`Vendas da Semana: R$ ${weeklyTotal.toFixed(2)}`, 15, yPosition);
+    yPosition += 6;
+    doc.text(`Total de Vendas: ${vendas.length}`, 15, yPosition);
+    yPosition += 10;
+    
+    // Tabela de vendas
+    const tableData = vendas.map((venda: any) => [
+      venda.produto || 'N/A',
+      venda.quantidade_vendida || 0,
+      `R$ ${(venda.valor_total || 0).toFixed(2)}`,
+      venda.data ? formatDateTime(venda.data) : 'N/A'
+    ]);
+    
+    autoTable(doc, {
+      startY: yPosition,
+      head: [['Produto', 'Quantidade', 'Valor Total', 'Data']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [37, 99, 235],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 3
+      },
+      columnStyles: {
+        0: { cellWidth: 70 },
+        1: { cellWidth: 30, halign: 'center' },
+        2: { cellWidth: 40, halign: 'right' },
+        3: { cellWidth: 45, halign: 'right' }
+      }
+    });
+    
+    // Total geral
+    const finalY = (doc as any).lastAutoTable.finalY || yPosition + 50;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    const totalGeral = vendas.reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
+    doc.text(`Total Geral: R$ ${totalGeral.toFixed(2)}`, 15, finalY + 10);
+    
+    // Rodapé
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        `Página ${i} de ${pageCount}`,
+        doc.internal.pageSize.getWidth() / 2,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: 'center' }
+      );
+    }
+    
+    // Salvar PDF
+    const dataAtual = new Date().toISOString().split('T')[0];
+    doc.save(`relatorio-vendas-${dataAtual}.pdf`);
+    
+    toast({
+      title: "Relatório exportado!",
+      description: "O PDF foi baixado com sucesso",
+    });
+  };
 
   const { data: vendas = [] } = useQuery({
     queryKey: ["/api/vendas"],
@@ -79,11 +205,23 @@ export default function Reports() {
         <p className="text-sm text-muted-foreground">Análise de vendas e desempenho</p>
       </div>
 
-      <ReportsCard
-        dailyTotal={dailyTotal}
-        weeklyTotal={weeklyTotal}
-        onFilter={handleFilter}
-      />
+      <div className="relative">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportPDF}
+          className="absolute -top-2 right-0 z-10"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Exportar PDF
+        </Button>
+        
+        <ReportsCard
+          dailyTotal={dailyTotal}
+          weeklyTotal={weeklyTotal}
+          onFilter={handleFilter}
+        />
+      </div>
 
       <ExpiringProductsReport products={expiringProducts} />
 

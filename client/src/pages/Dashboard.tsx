@@ -1,9 +1,7 @@
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import StatsCards from "@/components/StatsCards";
 import ProductCard from "@/components/ProductCard";
-import { Plus, Package, Crown, TrendingUp, TrendingDown } from "lucide-react";
+import { Crown, TrendingUp, TrendingDown, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
@@ -141,27 +139,15 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Visão geral do seu estoque</p>
-          </div>
-          <Badge className="bg-yellow-500 text-white">
-            <Crown className="h-3 w-3 mr-1" />
-            Premium
-          </Badge>
+      <div className="flex items-center gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Visão geral do seu estoque</p>
         </div>
-        <div className="flex gap-3 flex-wrap items-center">
-          <Button onClick={() => setLocation("/produtos/adicionar")} data-testid="button-add-product">
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Produto
-          </Button>
-          <Button variant="outline" onClick={() => setLocation("/vendas/registrar")} data-testid="button-register-sale">
-            <Package className="h-4 w-4 mr-2" />
-            Registrar Venda
-          </Button>
-        </div>
+        <Badge className="bg-yellow-500 text-white">
+          <Crown className="h-3 w-3 mr-1" />
+          Premium
+        </Badge>
       </div>
 
       <StatsCards

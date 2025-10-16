@@ -24,8 +24,8 @@ export const produtos = pgTable("produtos", {
 export const vendas = pgTable("vendas", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   produto: text("produto").notNull(),
-  quantidade_vendida: integer("quantidade_vendida").notNull(),
-  valor_total: real("valor_total").notNull(),
+  quantidade_vendida: integer("quantidade_vendida").notNull().default(0),
+  valor_total: real("valor_total").notNull().default(0),
   data: text("data").notNull(),
   itens: text("itens"),
 });

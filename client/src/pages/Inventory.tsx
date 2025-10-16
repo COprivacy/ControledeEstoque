@@ -23,18 +23,21 @@ export default function Inventory() {
     : new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
   const endDate = today.toISOString().split('T')[0];
 
-  const { data: vendas = [], isLoading: loadingVendas } = useQuery<Venda[]>({
+  const { data: vendas = [], isLoading: loadingVendas, error: errorVendas } = useQuery<Venda[]>({
     queryKey: ["/api/vendas", { start_date: startDate, end_date: endDate }],
     queryFn: async () => {
       const response = await fetch(`/api/vendas?start_date=${startDate}&end_date=${endDate}`);
       if (!response.ok) throw new Error("Erro ao buscar vendas");
-      return response.json();
+      const data = await response.json();
+      return data;
     },
+    retry: 2,
+    staleTime: 30000,
   });
 
   const totalProdutos = produtos.length;
   const valorTotalEstoque = produtos.reduce((sum, p) => sum + (p.preco * p.quantidade), 0);
-  const totalSaidas = vendas.reduce((sum, v) => sum + v.quantidade_vendida, 0);
+  const totalSaidas = vendas.reduce((sum, v) => sum + (v.quantidade_vendida || 0), 0);
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
@@ -142,6 +145,14 @@ export default function Inventory() {
         <div className="text-lg">Carregando dados do inventário...</div>
       </div>
     );
+  }
+
+  if (errorVendas) {
+    toast({
+      title: "Erro de conectividade",
+      description: "Não foi possível carregar os dados de vendas. Tente novamente.",
+      variant: "destructive",
+    });
   }
 
   return (

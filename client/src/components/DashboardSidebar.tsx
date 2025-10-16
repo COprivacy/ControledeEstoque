@@ -1,12 +1,12 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { Home, Package, ShoppingCart, BarChart3, Scan, Settings } from "lucide-react";
+import { Home, Package, ClipboardList, BarChart3, Scan, Settings } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Produtos", url: "/produtos", icon: Package },
   { title: "PDV", url: "/pdv", icon: Scan },
-  { title: "Vendas", url: "/vendas", icon: ShoppingCart },
+  { title: "Inventário", url: "/inventario", icon: ClipboardList },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];

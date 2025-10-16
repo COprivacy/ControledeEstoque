@@ -9,8 +9,7 @@ import Register from "@/pages/Register";
 import Dashboard from "@/pages/Dashboard";
 import Products from "@/pages/Products";
 import AddProduct from "@/pages/AddProduct";
-import Sales from "@/pages/Sales";
-import RegisterSale from "@/pages/RegisterSale";
+import Inventory from "@/pages/Inventory";
 import Reports from "@/pages/Reports";
 import PDV from "@/pages/PDV";
 import Settings from "@/pages/Settings";
@@ -49,17 +48,10 @@ function Router() {
           </DashboardLayout>
         )}
       </Route>
-      <Route path="/vendas">
+      <Route path="/inventario">
         {() => (
           <DashboardLayout>
-            <Sales />
-          </DashboardLayout>
-        )}
-      </Route>
-      <Route path="/vendas/registrar">
-        {() => (
-          <DashboardLayout>
-            <RegisterSale />
+            <Inventory />
           </DashboardLayout>
         )}
       </Route>

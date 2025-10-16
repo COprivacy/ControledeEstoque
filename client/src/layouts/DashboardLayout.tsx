@@ -31,6 +31,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
           <main className="flex-1 overflow-auto p-6 bg-background">
             {children}
+            <footer className="mt-8 pt-6 border-t border-border">
+              <p className="text-center text-xs text-muted-foreground">
+                Desenvolvido por <span className="font-medium text-foreground">Pavisoft Sistemas</span>
+              </p>
+            </footer>
           </main>
         </div>
       </div>

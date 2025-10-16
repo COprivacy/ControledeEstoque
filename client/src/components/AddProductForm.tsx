@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,19 @@ export default function AddProductForm({ initialData, onSubmit, onCancel }: AddP
   const [estoqueMinimo, setEstoqueMinimo] = useState(initialData?.estoque_minimo?.toString() || "");
   const [codigoBarras, setCodigoBarras] = useState(initialData?.codigo_barras || "");
   const [vencimento, setVencimento] = useState(initialData?.vencimento || "");
+
+  // Atualizar campos quando initialData mudar (carregamento assíncrono)
+  useEffect(() => {
+    if (initialData) {
+      setNome(initialData.nome || "");
+      setCategoria(initialData.categoria || "");
+      setPreco(initialData.preco?.toString() || "");
+      setQuantidade(initialData.quantidade?.toString() || "");
+      setEstoqueMinimo(initialData.estoque_minimo?.toString() || "");
+      setCodigoBarras(initialData.codigo_barras || "");
+      setVencimento(initialData.vencimento || "");
+    }
+  }, [initialData]);
 
   const isLowStock = quantidade && estoqueMinimo && parseInt(quantidade) < parseInt(estoqueMinimo);
 

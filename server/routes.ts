@@ -467,6 +467,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/compras/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { quantidade: novaQuantidade, valor_unitario, observacoes, produto_id } = req.body;
+      
+      const compraExistente = await storage.getCompras();
+      const compra = compraExistente.find(c => c.id === id);
+      
+      if (!compra) {
+        return res.status(404).json({ error: "Compra não encontrada" });
+      }
+
+      if (novaQuantidade !== undefined && novaQuantidade !== compra.quantidade) {
+        const produto = await storage.getProduto(compra.produto_id);
+        if (!produto) {
+          return res.status(404).json({ error: "Produto não encontrado" });
+        }
+
+        const diferencaQuantidade = novaQuantidade - compra.quantidade;
+        await storage.updateProduto(compra.produto_id, {
+          quantidade: produto.quantidade + diferencaQuantidade
+        });
+      }
+
+      const updates: Partial<typeof compra> = {};
+      if (novaQuantidade !== undefined) updates.quantidade = novaQuantidade;
+      if (valor_unitario !== undefined) updates.valor_unitario = valor_unitario;
+      if (observacoes !== undefined) updates.observacoes = observacoes;
+      
+      if (novaQuantidade !== undefined || valor_unitario !== undefined) {
+        const quantidadeFinal = novaQuantidade !== undefined ? novaQuantidade : compra.quantidade;
+        const valorUnitarioFinal = valor_unitario !== undefined ? valor_unitario : compra.valor_unitario;
+        updates.valor_total = quantidadeFinal * valorUnitarioFinal;
+      }
+
+      const compraAtualizada = await storage.updateCompra(id, updates);
+      res.json(compraAtualizada);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao atualizar compra" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

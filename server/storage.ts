@@ -46,6 +46,7 @@ export interface IStorage {
   deleteCliente(id: number): Promise<boolean>;
   getCompras(fornecedorId?: number, startDate?: string, endDate?: string): Promise<Compra[]>;
   createCompra(insertCompra: InsertCompra): Promise<Compra>;
+  updateCompra(id: number, updates: Partial<Compra>): Promise<Compra | undefined>;
 }
 
 export abstract class Storage {
@@ -78,6 +79,7 @@ export abstract class Storage {
 
   abstract getCompras(fornecedorId?: number, startDate?: string, endDate?: string): Promise<Compra[]>;
   abstract createCompra(insertCompra: InsertCompra): Promise<Compra>;
+  abstract updateCompra(id: number, updates: Partial<Compra>): Promise<Compra | undefined>;
 }
 
 export class MemStorage implements Storage { // Changed to implement Storage interface
@@ -480,6 +482,16 @@ export class MemStorage implements Storage { // Changed to implement Storage int
     this.compras.set(id, compra);
     await this.persistData();
     return compra;
+  }
+
+  async updateCompra(id: number, updates: Partial<Compra>): Promise<Compra | undefined> {
+    const compra = this.compras.get(id);
+    if (!compra) return undefined;
+
+    const updatedCompra = { ...compra, ...updates };
+    this.compras.set(id, updatedCompra);
+    await this.persistData();
+    return updatedCompra;
   }
 }
 

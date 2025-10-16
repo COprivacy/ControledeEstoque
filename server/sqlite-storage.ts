@@ -408,4 +408,14 @@ export class SQLiteStorage implements IStorage {
     await this.persistData();
     return compra;
   }
+
+  async updateCompra(id: number, updates: Partial<Compra>): Promise<Compra | undefined> {
+    const compra = this.compras.get(id);
+    if (!compra) return undefined;
+
+    const updatedCompra = { ...compra, ...updates };
+    this.compras.set(id, updatedCompra);
+    await this.persistData();
+    return updatedCompra;
+  }
 }

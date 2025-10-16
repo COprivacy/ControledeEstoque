@@ -39,6 +39,8 @@ Preferred communication style: Simple, everyday language.
 - Sales tracking with cart functionality
 - Dashboard with inventory alerts (low stock, expiring products)
 - Reports for sales analysis and expiration monitoring
+- Supplier management with purchase history and spending tracking
+- Purchase registration system with product linking to suppliers
 
 ### Backend Architecture
 
@@ -64,7 +66,10 @@ Preferred communication style: Simple, everyday language.
 **Data Models:**
 - **Users:** id (UUID), email (unique), senha (password), nome (name)
 - **Products:** id (serial), nome, categoria, preco, quantidade, estoque_minimo, codigo_barras, vencimento
-- **Sales:** id (serial), produto, quantidade_vendida, valor_total, data, itens (JSON for multi-item sales)
+- **Sales:** id (serial), produto, quantidade_vendida, valor_total, data, itens (JSON for multi-item sales), cliente_id
+- **Suppliers (Fornecedores):** id (serial), nome, cnpj, telefone, email, endereco, observacoes, data_cadastro
+- **Purchases (Compras):** id (serial), fornecedor_id, produto_id, quantidade, valor_unitario, valor_total, data, observacoes
+- **Clients (Clientes):** id (serial), nome, cpf_cnpj, telefone, email, endereco, observacoes, data_cadastro
 
 **Storage Strategy:**
 - In-memory storage implementation (`MemStorage`) for development/testing

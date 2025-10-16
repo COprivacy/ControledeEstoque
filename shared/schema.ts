@@ -55,20 +55,3 @@ export type InsertProduto = z.infer<typeof insertProdutoSchema>;
 export type Produto = typeof produtos.$inferSelect;
 export type InsertVenda = z.infer<typeof insertVendaSchema>;
 export type Venda = typeof vendas.$inferSelect;
-import { z } from "zod";
-
-// Schemas existentes...
-
-export const customizationSchema = z.object({
-  id: z.number().optional(),
-  user_id: z.string(),
-  logo_url: z.string().optional(),
-  primary_color: z.string(),
-  secondary_color: z.string(),
-  accent_color: z.string(),
-  store_name: z.string(),
-  is_premium: z.boolean().default(false),
-});
-
-export type Customization = z.infer<typeof customizationSchema>;
-export type InsertCustomization = z.infer<typeof customizationSchema>;

@@ -121,11 +121,11 @@ export default function Settings() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Configurações</h1>
           <p className="text-sm text-muted-foreground">Personalize seu sistema</p>
         </div>
         {isPremium && (
-          <Badge className="bg-yellow-500 text-white">
+          <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
             <Crown className="h-3 w-3 mr-1" />
             Premium
           </Badge>

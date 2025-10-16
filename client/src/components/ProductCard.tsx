@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, AlertTriangle, Calendar, Barcode } from "lucide-react";
 import { getDaysUntilExpiry, getExpiryStatus, formatDate } from "@/lib/dateUtils";
+import { cn } from "@/lib/utils";
 
 interface ProductCardProps {
   id: number;
@@ -34,12 +35,17 @@ export default function ProductCard({
   const daysUntilExpiry = getDaysUntilExpiry(vencimento || null);
 
   return (
-    <Card className={isLowStock ? "border-destructive" : ""} data-testid={`card-product-${id}`}>
+    <Card className={cn(
+      "group hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br backdrop-blur-sm",
+      isLowStock 
+        ? "from-orange-500/10 via-orange-500/5 to-transparent" 
+        : "from-blue-500/5 via-purple-500/5 to-transparent"
+    )} data-testid={`card-product-${id}`}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 space-y-2">
             <div className="flex items-start gap-2 flex-wrap">
-              <h3 className="font-semibold text-foreground" data-testid={`text-product-name-${id}`}>{nome}</h3>
+              <h3 className="font-semibold text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" data-testid={`text-product-name-${id}`}>{nome}</h3>
               {isLowStock && (
                 <Badge variant="destructive" className="flex items-center gap-1" data-testid={`badge-low-stock-${id}`}>
                   <AlertTriangle className="h-3 w-3" />
@@ -101,6 +107,7 @@ export default function ProductCard({
               variant="outline" 
               onClick={() => onEdit?.(id)}
               data-testid={`button-edit-${id}`}
+              className="bg-transparent hover:bg-accent border-accent/50 hover:border-accent text-muted-foreground hover:text-foreground transition-colors duration-300"
             >
               <Pencil className="h-4 w-4" />
             </Button>
@@ -109,6 +116,7 @@ export default function ProductCard({
               variant="outline" 
               onClick={() => onDelete?.(id)}
               data-testid={`button-delete-${id}`}
+              className="bg-transparent hover:bg-accent border-accent/50 hover:border-accent text-muted-foreground hover:text-foreground transition-colors duration-300"
             >
               <Trash2 className="h-4 w-4" />
             </Button>

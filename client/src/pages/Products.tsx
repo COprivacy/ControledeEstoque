@@ -54,15 +54,15 @@ export default function Products() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Produtos</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Produtos</h1>
             <p className="text-sm text-muted-foreground">Gerencie seu catálogo de produtos</p>
           </div>
-          <Badge className="bg-yellow-500 text-white">
+          <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
             <Crown className="h-3 w-3 mr-1" />
             Premium
           </Badge>
         </div>
-        <Button onClick={() => setLocation("/produtos/adicionar")} data-testid="button-add-product">
+        <Button onClick={() => setLocation("/produtos/adicionar")} data-testid="button-add-product" className="bg-gradient-to-r from-blue-600 to-purple-600 border-0 hover:shadow-lg transition-all duration-300">
           <Plus className="h-4 w-4 mr-2" />
           Adicionar Produto
         </Button>

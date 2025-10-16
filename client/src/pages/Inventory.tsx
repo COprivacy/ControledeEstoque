@@ -159,7 +159,7 @@ export default function Inventory() {
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight" data-testid="text-page-title">
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent" data-testid="text-page-title">
             Inventário
           </h1>
           <p className="text-muted-foreground" data-testid="text-page-description">
@@ -197,45 +197,51 @@ export default function Inventory() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card data-testid="card-produtos-estoque">
+        <Card data-testid="card-produtos-estoque" className="border-0 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent backdrop-blur-sm hover:shadow-lg transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Produtos em Estoque
             </CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 rounded-lg bg-blue-500/10">
+              <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-produtos-total">{totalProdutos}</div>
+            <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent" data-testid="text-produtos-total">{totalProdutos}</div>
             <p className="text-xs text-muted-foreground">
               Total de itens cadastrados
             </p>
           </CardContent>
         </Card>
 
-        <Card data-testid="card-valor-total">
+        <Card data-testid="card-valor-total" className="border-0 bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent backdrop-blur-sm hover:shadow-lg transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Valor Total em Estoque
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 rounded-lg bg-green-500/10">
+              <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-valor-total">R$ {valorTotalEstoque.toFixed(2)}</div>
+            <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent" data-testid="text-valor-total">R$ {valorTotalEstoque.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
               Valor total calculado
             </p>
           </CardContent>
         </Card>
 
-        <Card data-testid="card-produtos-baixo-estoque">
+        <Card data-testid="card-produtos-baixo-estoque" className="border-0 bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent backdrop-blur-sm hover:shadow-lg transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Produtos Baixo Estoque
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-orange-600" />
+            <div className="p-2 rounded-lg bg-orange-500/10">
+              <TrendingUp className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-baixo-estoque">
+            <div className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent" data-testid="text-baixo-estoque">
               {produtos.filter(p => p.quantidade <= p.estoque_minimo).length}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -244,15 +250,17 @@ export default function Inventory() {
           </CardContent>
         </Card>
 
-        <Card data-testid="card-saidas">
+        <Card data-testid="card-saidas" className="border-0 bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent backdrop-blur-sm hover:shadow-lg transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Saídas ({viewType === "semanal" ? "7 dias" : "mês"})
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-red-600 rotate-180" />
+            <div className="p-2 rounded-lg bg-red-500/10">
+              <TrendingUp className="h-4 w-4 text-red-600 dark:text-red-400 rotate-180" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-saidas">{totalSaidas}</div>
+            <div className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-400 bg-clip-text text-transparent" data-testid="text-saidas">{totalSaidas}</div>
             <p className="text-xs text-muted-foreground">
               Unidades vendidas
             </p>

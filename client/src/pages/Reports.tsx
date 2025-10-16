@@ -203,10 +203,10 @@ export default function Reports() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Relatórios</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Relatórios</h1>
           <p className="text-sm text-muted-foreground">Análise de vendas e desempenho</p>
         </div>
-        <Badge className="bg-yellow-500 text-white">
+        <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
           <Crown className="h-3 w-3 mr-1" />
           Premium
         </Badge>

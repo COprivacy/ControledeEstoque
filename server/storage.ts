@@ -21,6 +21,33 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+export interface IStorage {
+  getUsers?(): Promise<User[]>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(insertUser: InsertUser): Promise<User>;
+  getProdutos(): Promise<Produto[]>;
+  getProduto(id: number): Promise<Produto | undefined>;
+  getProdutoByCodigoBarras(codigo: string): Promise<Produto | undefined>;
+  createProduto(insertProduto: InsertProduto): Promise<Produto>;
+  updateProduto(id: number, updates: Partial<Produto>): Promise<Produto | undefined>;
+  deleteProduto(id: number): Promise<boolean>;
+  getVendas(startDate?: string, endDate?: string): Promise<Venda[]>;
+  createVenda(insertVenda: InsertVenda): Promise<Venda>;
+  clearVendas(): Promise<void>;
+  getFornecedores(): Promise<Fornecedor[]>;
+  getFornecedor(id: number): Promise<Fornecedor | undefined>;
+  createFornecedor(insertFornecedor: InsertFornecedor): Promise<Fornecedor>;
+  updateFornecedor(id: number, updates: Partial<Fornecedor>): Promise<Fornecedor | undefined>;
+  deleteFornecedor(id: number): Promise<boolean>;
+  getClientes(): Promise<Cliente[]>;
+  getCliente(id: number): Promise<Cliente | undefined>;
+  createCliente(insertCliente: InsertCliente): Promise<Cliente>;
+  updateCliente(id: number, updates: Partial<Cliente>): Promise<Cliente | undefined>;
+  deleteCliente(id: number): Promise<boolean>;
+  getCompras(fornecedorId?: number, startDate?: string, endDate?: string): Promise<Compra[]>;
+  createCompra(insertCompra: InsertCompra): Promise<Compra>;
+}
+
 export abstract class Storage {
   abstract getUsers(): Promise<User[]>;
   abstract getUserByEmail(email: string): Promise<User | undefined>;
@@ -224,16 +251,16 @@ export class MemStorage implements Storage { // Changed to implement Storage int
 
     // Seed initial data for Fornecedores, Clientes, and Compras
     const initialFornecedores: InsertFornecedor[] = [
-      { nome: "Fornecedor A", cnpj: "11.111.111/0001-11", email: "fornecedor.a@email.com", telefone: "(11) 1111-1111" },
-      { nome: "Fornecedor B", cnpj: "22.222.222/0001-22", email: "fornecedor.b@email.com", telefone: "(22) 2222-2222" },
+      { nome: "Fornecedor A", cnpj: "11.111.111/0001-11", email: "fornecedor.a@email.com", telefone: "(11) 1111-1111", endereco: null, observacoes: null, data_cadastro: new Date().toISOString() },
+      { nome: "Fornecedor B", cnpj: "22.222.222/0001-22", email: "fornecedor.b@email.com", telefone: "(22) 2222-2222", endereco: null, observacoes: null, data_cadastro: new Date().toISOString() },
     ];
     for (const fornecedor of initialFornecedores) {
       await this.createFornecedor(fornecedor);
     }
 
     const initialClientes: InsertCliente[] = [
-      { nome: "Cliente X", cpf: "111.111.111-11", email: "cliente.x@email.com", telefone: "(11) 1111-1111" },
-      { nome: "Cliente Y", cpf: "222.222.222-22", email: "cliente.y@email.com", telefone: "(22) 2222-2222" },
+      { nome: "Cliente X", cpf_cnpj: "111.111.111-11", email: "cliente.x@email.com", telefone: "(11) 1111-1111", endereco: null, observacoes: null, data_cadastro: new Date().toISOString() },
+      { nome: "Cliente Y", cpf_cnpj: "222.222.222-22", email: "cliente.y@email.com", telefone: "(22) 2222-2222", endereco: null, observacoes: null, data_cadastro: new Date().toISOString() },
     ];
     for (const cliente of initialClientes) {
       await this.createCliente(cliente);
@@ -241,20 +268,22 @@ export class MemStorage implements Storage { // Changed to implement Storage int
 
     const initialCompras: InsertCompra[] = [
       {
-        fornecedorId: 1,
-        produtoId: 1,
+        fornecedor_id: 1,
+        produto_id: 1,
         quantidade: 10,
-        precoUnitario: 20.00,
-        total: 200.00,
-        data: "2023-10-20T09:00:00Z"
+        valor_unitario: 20.00,
+        valor_total: 200.00,
+        data: "2023-10-20T09:00:00Z",
+        observacoes: null
       },
       {
-        fornecedorId: 2,
-        produtoId: 3,
+        fornecedor_id: 2,
+        produto_id: 3,
         quantidade: 5,
-        precoUnitario: 6.00,
-        total: 30.00,
-        data: "2023-10-21T14:00:00Z"
+        valor_unitario: 6.00,
+        valor_total: 30.00,
+        data: "2023-10-21T14:00:00Z",
+        observacoes: null
       }
     ];
     for (const compra of initialCompras) {

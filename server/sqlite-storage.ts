@@ -72,7 +72,46 @@ export class SQLiteStorage implements IStorage {
         quantidade_vendida INTEGER NOT NULL,
         valor_total REAL NOT NULL,
         data TEXT NOT NULL,
-        itens TEXT
+        itens TEXT,
+        cliente_id INTEGER
+      );
+
+      CREATE TABLE IF NOT EXISTS fornecedores (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        cnpj TEXT,
+        telefone TEXT,
+        email TEXT,
+        endereco TEXT,
+        observacoes TEXT,
+        data_cadastro TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS clientes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        cpf_cnpj TEXT,
+        telefone TEXT,
+        email TEXT,
+        endereco TEXT,
+        observacoes TEXT,
+        data_cadastro TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS compras (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        fornecedor_id INTEGER NOT NULL,
+        produto_id INTEGER NOT NULL,
+        quantidade INTEGER NOT NULL,
+        valor_unitario REAL NOT NULL,
+        valor_total REAL NOT NULL,
+        data TEXT NOT NULL,
+        observacoes TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS storage (
+        key TEXT PRIMARY KEY,
+        data TEXT
       );
     `);
   }

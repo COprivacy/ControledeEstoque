@@ -119,11 +119,6 @@ export default function Products() {
             ))
           )}
         </div>
-        <div className="pt-6 text-center">
-          <p className="text-xs text-muted-foreground">
-            Sistema desenvolvido por <span className="font-medium text-foreground">Pavisoft Sistemas</span>
-          </p>
-        </div>
       </div>
     </div>
   );

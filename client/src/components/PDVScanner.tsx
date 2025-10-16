@@ -1,9 +1,11 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Scan, Trash2, ShoppingCart, Plus, Minus } from "lucide-react";
+import { Scan, Trash2, ShoppingCart, Plus, Minus, DollarSign, Wallet } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 interface CartItem {
   id: number;
@@ -25,6 +27,8 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const [barcode, setBarcode] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [lastScanTime, setLastScanTime] = useState(0);
+  const [valorPago, setValorPago] = useState("");
+  const [showPayment, setShowPayment] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -33,14 +37,11 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   }, []);
 
   useEffect(() => {
-    // Limpa o timeout anterior
     if (scanTimeoutRef.current) {
       clearTimeout(scanTimeoutRef.current);
     }
 
-    // Se o código tem pelo menos 8 caracteres (tamanho mínimo de código de barras)
     if (barcode.length >= 8) {
-      // Aguarda 100ms para garantir que o scanner terminou de digitar
       scanTimeoutRef.current = setTimeout(() => {
         handleScan(barcode);
       }, 100);
@@ -54,6 +55,16 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   }, [barcode]);
 
   const valorTotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
+  const troco = parseFloat(valorPago || "0") - valorTotal;
+
+  const mockFetchProduct = async (codigo: string) => {
+    const mockProducts = [
+      { id: 1, nome: "Arroz 5kg", codigo_barras: "7891234567890", preco: 25.50, quantidade: 50 },
+      { id: 2, nome: "Feijão 1kg", codigo_barras: "7891234567891", preco: 8.90, quantidade: 5 },
+      { id: 3, nome: "Óleo de Soja 900ml", codigo_barras: "7891234567892", preco: 7.50, quantidade: 30 },
+    ];
+    return mockProducts.find(p => p.codigo_barras === codigo);
+  };
 
   const playBeep = (success: boolean = true) => {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -88,60 +99,45 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
         : await mockFetchProduct(scannedBarcode);
 
       if (!produto) {
-        playBeep(false); // Som de erro
+        playBeep(false);
         onProductNotFound?.(scannedBarcode);
         setBarcode("");
         return;
       }
 
-      playBeep(true); // Som de sucesso
+      playBeep(true);
 
       const existingItem = cart.find(item => item.codigo_barras === scannedBarcode);
-      
+
       if (existingItem) {
-        if (existingItem.quantidade >= existingItem.estoque_disponivel) {
-          alert(`Estoque insuficiente para ${produto.nome}!`);
-          setBarcode("");
-          return;
-        }
-        
         setCart(cart.map(item =>
           item.codigo_barras === scannedBarcode
             ? {
                 ...item,
-                quantidade: item.quantidade + 1,
-                subtotal: (item.quantidade + 1) * item.preco
+                quantidade: Math.min(item.quantidade + 1, item.estoque_disponivel),
+                subtotal: Math.min(item.quantidade + 1, item.estoque_disponivel) * item.preco
               }
             : item
         ));
       } else {
-        const newItem: CartItem = {
+        setCart([...cart, {
           id: produto.id,
           nome: produto.nome,
-          codigo_barras: produto.codigo_barras,
+          codigo_barras: scannedBarcode,
           preco: produto.preco,
           quantidade: 1,
           subtotal: produto.preco,
           estoque_disponivel: produto.quantidade
-        };
-        setCart([...cart, newItem]);
+        }]);
       }
 
       setBarcode("");
       inputRef.current?.focus();
     } catch (error) {
-      console.error("Erro ao buscar produto:", error);
+      console.error("Erro ao processar código de barras:", error);
+      playBeep(false);
       setBarcode("");
     }
-  };
-
-  const mockFetchProduct = async (codigo: string) => {
-    const mockProducts = [
-      { id: 1, nome: "Arroz 5kg", codigo_barras: "7891234567890", preco: 25.50, quantidade: 50 },
-      { id: 2, nome: "Feijão 1kg", codigo_barras: "7891234567891", preco: 8.90, quantidade: 5 },
-      { id: 3, nome: "Óleo de Soja 900ml", codigo_barras: "7891234567892", preco: 7.50, quantidade: 30 },
-    ];
-    return mockProducts.find(p => p.codigo_barras === codigo);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -174,6 +170,17 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
       return;
     }
 
+    if (!showPayment) {
+      setShowPayment(true);
+      return;
+    }
+
+    const valorPagoNum = parseFloat(valorPago || "0");
+    if (valorPagoNum < valorTotal) {
+      alert("Valor pago insuficiente!");
+      return;
+    }
+
     const itens = cart.map(item => ({
       codigo_barras: item.codigo_barras,
       quantidade: item.quantidade
@@ -181,155 +188,190 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
 
     onSaleComplete?.({ itens, valorTotal });
     
-    setCart([]);
-    setBarcode("");
-    inputRef.current?.focus();
+    clearCart();
   };
 
   const clearCart = () => {
     setCart([]);
     setBarcode("");
+    setValorPago("");
+    setShowPayment(false);
     inputRef.current?.focus();
   };
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Scan className="h-5 w-5" />
-            Scanner de Código de Barras
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="relative">
-            <Scan className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              ref={inputRef}
-              type="text"
-              value={barcode}
-              onChange={(e) => setBarcode(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Escaneie o código de barras ou digite e pressione Enter"
-              className="pl-10 text-lg"
-              autoFocus
-              data-testid="input-barcode-scanner"
-            />
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            Para scanner USB: Conecte o scanner, posicione o cursor neste campo e escaneie o código.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-          <CardTitle className="flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5" />
-            Carrinho ({cart.length} {cart.length === 1 ? 'item' : 'itens'})
-          </CardTitle>
-          {cart.length > 0 && (
-            <Button variant="outline" size="sm" onClick={clearCart} data-testid="button-clear-cart">
-              <Trash2 className="h-4 w-4 mr-2" />
-              Limpar
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          {cart.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Carrinho vazio. Escaneie um produto para começar.
-            </p>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Produto</TableHead>
-                      <TableHead className="text-right">Preço Unit.</TableHead>
-                      <TableHead className="text-center">Quantidade</TableHead>
-                      <TableHead className="text-right">Subtotal</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {cart.map((item) => (
-                      <TableRow key={item.codigo_barras} data-testid={`cart-item-${item.codigo_barras}`}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{item.nome}</p>
-                            <p className="text-xs text-muted-foreground">{item.codigo_barras}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">R$ {item.preco.toFixed(2)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-center gap-2">
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              className="h-7 w-7"
-                              onClick={() => updateQuantity(item.codigo_barras, -1)}
-                              disabled={item.quantidade <= 1}
-                              data-testid={`button-decrease-${item.codigo_barras}`}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-8 text-center" data-testid={`quantity-${item.codigo_barras}`}>
-                              {item.quantidade}
-                            </span>
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              className="h-7 w-7"
-                              onClick={() => updateQuantity(item.codigo_barras, 1)}
-                              disabled={item.quantidade >= item.estoque_disponivel}
-                              data-testid={`button-increase-${item.codigo_barras}`}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right font-medium" data-testid={`subtotal-${item.codigo_barras}`}>
-                          R$ {item.subtotal.toFixed(2)}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            onClick={() => removeItem(item.codigo_barras)}
-                            data-testid={`button-remove-${item.codigo_barras}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              <div className="mt-6 space-y-4">
-                <div className="flex items-center justify-between p-4 bg-accent rounded-lg">
-                  <span className="text-lg font-semibold">Total:</span>
-                  <span className="text-2xl font-bold" data-testid="text-total">
-                    R$ {valorTotal.toFixed(2)}
-                  </span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Carrinho de Compras */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5" />
+                Carrinho de Compras
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {cart.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                  <p>Escaneie produtos para começar</p>
                 </div>
+              ) : (
+                <div className="space-y-4">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Produto</TableHead>
+                        <TableHead className="text-center">Qtd</TableHead>
+                        <TableHead className="text-right">Preço Unit.</TableHead>
+                        <TableHead className="text-right">Subtotal</TableHead>
+                        <TableHead className="w-[100px]"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {cart.map((item) => (
+                        <TableRow key={item.codigo_barras}>
+                          <TableCell className="font-medium">{item.nome}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => updateQuantity(item.codigo_barras, -1)}
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="w-8 text-center">{item.quantidade}</span>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => updateQuantity(item.codigo_barras, 1)}
+                                disabled={item.quantidade >= item.estoque_disponivel}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">R$ {item.preco.toFixed(2)}</TableCell>
+                          <TableCell className="text-right font-semibold">
+                            R$ {item.subtotal.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeItem(item.codigo_barras)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={handleCompleteSale}
-                  data-testid="button-complete-sale"
-                >
-                  Finalizar Venda
-                </Button>
+        {/* Painel de Pagamento */}
+        <div className="space-y-4">
+          {/* Scanner discreto */}
+          <Card className="border-dashed">
+            <CardContent className="pt-6">
+              <div className="relative">
+                <Scan className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  ref={inputRef}
+                  type="text"
+                  value={barcode}
+                  onChange={(e) => setBarcode(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Código de barras"
+                  className="pl-10"
+                  autoFocus
+                  data-testid="input-barcode-scanner"
+                />
               </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+              <p className="text-xs text-muted-foreground mt-2">
+                Escaneie ou digite o código
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Resumo e Pagamento */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Wallet className="h-5 w-5" />
+                Pagamento
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-lg">
+                  <span className="font-medium">Total:</span>
+                  <span className="font-bold text-2xl">R$ {valorTotal.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {cart.length > 0 && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="valor-pago" className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      Valor Pago
+                    </Label>
+                    <Input
+                      id="valor-pago"
+                      type="number"
+                      step="0.01"
+                      value={valorPago}
+                      onChange={(e) => setValorPago(e.target.value)}
+                      placeholder="0,00"
+                      className="text-lg"
+                    />
+                  </div>
+
+                  {valorPago && parseFloat(valorPago) >= valorTotal && (
+                    <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                          Troco:
+                        </span>
+                        <span className="text-xl font-bold text-green-600 dark:text-green-400">
+                          R$ {troco.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={clearCart}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      onClick={handleCompleteSale}
+                      disabled={cart.length === 0}
+                    >
+                      Finalizar
+                    </Button>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

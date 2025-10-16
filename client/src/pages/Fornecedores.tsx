@@ -18,7 +18,9 @@ import { format } from "date-fns";
 export default function Fornecedores() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCompraDialogOpen, setIsCompraDialogOpen] = useState(false);
+  const [isEditCompraDialogOpen, setIsEditCompraDialogOpen] = useState(false);
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
+  const [editingCompra, setEditingCompra] = useState<Compra | null>(null);
   const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [selectedProdutoId, setSelectedProdutoId] = useState<string>("");
@@ -110,6 +112,32 @@ export default function Fornecedores() {
     },
   });
 
+  const updateCompraMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const response = await fetch(`/api/compras/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Erro ao atualizar compra");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/compras"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/produtos"] });
+      setIsEditCompraDialogOpen(false);
+      setEditingCompra(null);
+      toast({ title: "Compra atualizada com sucesso!" });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Erro ao atualizar compra", 
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -153,6 +181,22 @@ export default function Fornecedores() {
       observacoes: formData.get("observacoes"),
     };
     createCompraMutation.mutate(data);
+  };
+
+  const handleEditCompraSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingCompra) return;
+
+    const formData = new FormData(e.currentTarget);
+    const quantidade = parseInt(formData.get("quantidade") as string);
+    const valor_unitario = parseFloat(formData.get("valor_unitario") as string);
+    const data = {
+      quantidade: quantidade,
+      valor_unitario: valor_unitario,
+      valor_total: quantidade * valor_unitario,
+      observacoes: formData.get("observacoes"),
+    };
+    updateCompraMutation.mutate({ id: editingCompra.id, data });
   };
 
   const getComprasPorFornecedor = (fornecedorId: number) => {
@@ -285,6 +329,70 @@ export default function Fornecedores() {
                 Cancelar
               </Button>
               <Button type="submit" data-testid="button-salvar-compra">Registrar Compra</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditCompraDialogOpen} onOpenChange={setIsEditCompraDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar Compra</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditCompraSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Produto</Label>
+              <Input value={editingCompra ? getProdutoNome(editingCompra.produto_id) : ""} disabled className="bg-muted" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_quantidade">Quantidade *</Label>
+                <Input 
+                  id="edit_quantidade" 
+                  name="quantidade" 
+                  type="number" 
+                  min="1" 
+                  defaultValue={editingCompra?.quantidade || ""} 
+                  required 
+                  data-testid="input-edit-quantidade-compra" 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_valor_unitario">Valor Unitário (R$) *</Label>
+                <Input 
+                  id="edit_valor_unitario" 
+                  name="valor_unitario" 
+                  type="number" 
+                  step="0.01" 
+                  min="0" 
+                  defaultValue={editingCompra?.valor_unitario || ""} 
+                  required 
+                  data-testid="input-edit-valor-unitario" 
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_observacoes">Observações</Label>
+              <Textarea 
+                id="edit_observacoes" 
+                name="observacoes" 
+                defaultValue={editingCompra?.observacoes || ""} 
+                data-testid="input-edit-observacoes-compra" 
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setIsEditCompraDialogOpen(false);
+                  setEditingCompra(null);
+                }} 
+                data-testid="button-cancelar-edit-compra"
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" data-testid="button-salvar-edit-compra">Salvar Alterações</Button>
             </div>
           </form>
         </DialogContent>
@@ -434,6 +542,7 @@ export default function Fornecedores() {
                                           <TableHead className="text-right">Valor Unitário</TableHead>
                                           <TableHead className="text-right">Valor Total</TableHead>
                                           <TableHead>Observações</TableHead>
+                                          <TableHead className="text-center">Ações</TableHead>
                                         </TableRow>
                                       </TableHeader>
                                       <TableBody>
@@ -456,6 +565,19 @@ export default function Fornecedores() {
                                             </TableCell>
                                             <TableCell className="text-sm text-muted-foreground" data-testid={`text-observacoes-${compra.id}`}>
                                               {compra.observacoes || "-"}
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                  setEditingCompra(compra);
+                                                  setIsEditCompraDialogOpen(true);
+                                                }}
+                                                data-testid={`button-edit-compra-${compra.id}`}
+                                              >
+                                                <Pencil className="h-4 w-4" />
+                                              </Button>
                                             </TableCell>
                                           </TableRow>
                                         ))}

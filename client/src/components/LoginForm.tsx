@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Mail, Lock } from "lucide-react";
+import backgroundImage from "@assets/generated_images/Pavisoft_Sistemas_tech_background_61320ac2.png";
 
 interface LoginFormProps {
   onLogin?: (email: string, password: string) => void;
@@ -33,15 +34,27 @@ export default function LoginForm({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4 relative"
+      style={{
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      <div className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"></div>
+      <Card className="w-full max-w-md relative z-10 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-white/20 dark:border-gray-800/50">
         <CardHeader className="space-y-2">
-          <CardTitle className="text-2xl font-bold text-center">
+          <CardTitle className="text-2xl font-bold text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Controle de Estoque Premium
           </CardTitle>
-          <CardDescription className="text-center">
+          <CardDescription className="text-center text-gray-600 dark:text-gray-300">
             Entre com suas credenciais para acessar o sistema
           </CardDescription>
+          <p className="text-xs text-center text-gray-500 dark:text-gray-400 pt-2">
+            Desenvolvido por Pavisoft Sistemas
+          </p>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">

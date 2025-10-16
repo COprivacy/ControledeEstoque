@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -51,6 +51,40 @@ export default function Settings() {
     backgroundColor: "#FFFFFF",
     storeName: "Controle de Estoque Simples"
   });
+
+  // Carregar configurações salvas quando o componente montar
+  useEffect(() => {
+    const saved = localStorage.getItem("customization");
+    if (saved) {
+      try {
+        const savedConfig = JSON.parse(saved);
+        setConfig({
+          logoUrl: savedConfig.logoUrl || "",
+          primaryColor: savedConfig.primaryColor || "#2563EB",
+          secondaryColor: savedConfig.secondaryColor || "#10B981",
+          accentColor: savedConfig.accentColor || "#F59E0B",
+          backgroundColor: savedConfig.backgroundColor || "#FFFFFF",
+          storeName: savedConfig.storeName || "Controle de Estoque Simples"
+        });
+        
+        // Aplicar as cores salvas imediatamente
+        if (savedConfig.primaryColor) {
+          document.documentElement.style.setProperty('--primary', hexToHSL(savedConfig.primaryColor));
+        }
+        if (savedConfig.secondaryColor) {
+          document.documentElement.style.setProperty('--secondary', hexToHSL(savedConfig.secondaryColor));
+        }
+        if (savedConfig.accentColor) {
+          document.documentElement.style.setProperty('--accent', hexToHSL(savedConfig.accentColor));
+        }
+        if (savedConfig.backgroundColor) {
+          document.documentElement.style.setProperty('--background', hexToHSL(savedConfig.backgroundColor));
+        }
+      } catch (error) {
+        console.error("Erro ao carregar configurações:", error);
+      }
+    }
+  }, []);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

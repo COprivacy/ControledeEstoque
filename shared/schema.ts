@@ -97,6 +97,8 @@ export const insertCompraSchema = createInsertSchema(compras).omit({
   quantidade: z.coerce.number().int().positive(),
   valor_unitario: z.coerce.number().positive(),
   valor_total: z.coerce.number().positive(),
+  fornecedor_id: z.coerce.number().int().positive(),
+  produto_id: z.coerce.number().int().positive(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

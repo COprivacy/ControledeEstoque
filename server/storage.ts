@@ -1,4 +1,3 @@
-1. O sistema agora terá controle de fornecedores e clientes com histórico de compras/vendas.
 import {
   type User,
   type InsertUser,
@@ -54,7 +53,7 @@ export abstract class Storage {
   abstract createCompra(insertCompra: InsertCompra): Promise<Compra>;
 }
 
-export class MemStorage implements IStorage {
+export class MemStorage implements Storage { // Changed to implement Storage interface
   private users: Map<string, User>;
   private produtos: Map<number, Produto>;
   private vendas: Map<number, Venda>;
@@ -98,10 +97,13 @@ export class MemStorage implements IStorage {
       const usersData = await fs.readFile(this.usersFile, 'utf-8');
       const usersFromFile = JSON.parse(usersData) as User[];
       usersFromFile.forEach(user => this.users.set(user.id, user));
-      this.nextProdutoId = usersFromFile.length > 0 ? Math.max(...usersFromFile.map(u => u.id.length)) + 1 : 1; // Simple ID increment logic for mock
+      // Adjust nextProdutoId based on the max existing ID for users if seeding
+      // This logic might need refinement depending on how IDs are generated across all types
+      const maxUserId = usersFromFile.reduce((max, u) => Math.max(max, parseInt(u.id) || 0), 0);
+      this.nextProdutoId = Math.max(this.nextProdutoId, maxUserId + 1);
 
     } catch (error) {
-      console.warn("Users file not found or empty, seeding initial users.");
+      console.warn("Users file not found or empty, attempting to seed data.");
       await this.seedData(); // Seed if files are not found
     }
 
@@ -109,9 +111,9 @@ export class MemStorage implements IStorage {
       const produtosData = await fs.readFile(this.produtosFile, 'utf-8');
       const produtosFromFile = JSON.parse(produtosData) as Produto[];
       produtosFromFile.forEach(produto => this.produtos.set(produto.id, produto));
-      this.nextProdutoId = produtosFromFile.length > 0 ? Math.max(...produtosFromFile.map(p => p.id)) + 1 : 1;
+      this.nextProdutoId = produtosFromFile.length > 0 ? Math.max(...produtosFromFile.map(p => p.id)) + 1 : this.nextProdutoId;
     } catch (error) {
-      console.warn("Produtos file not found or empty, seeding initial produtos.");
+      console.warn("Produtos file not found or empty, attempting to seed data.");
       await this.seedData();
     }
 
@@ -121,7 +123,7 @@ export class MemStorage implements IStorage {
       vendasFromFile.forEach(venda => this.vendas.set(venda.id, venda));
       this.nextVendaId = vendasFromFile.length > 0 ? Math.max(...vendasFromFile.map(v => v.id)) + 1 : 1;
     } catch (error) {
-      console.warn("Vendas file not found or empty, seeding initial vendas.");
+      console.warn("Vendas file not found or empty, attempting to seed data.");
       await this.seedData();
     }
 
@@ -132,7 +134,7 @@ export class MemStorage implements IStorage {
       fornecedoresFromFile.forEach(fornecedor => this.fornecedores.set(fornecedor.id, fornecedor));
       this.nextFornecedorId = fornecedoresFromFile.length > 0 ? Math.max(...fornecedoresFromFile.map(f => f.id)) + 1 : 1;
     } catch (error) {
-      console.warn("Fornecedores file not found or empty, seeding initial fornecedores.");
+      console.warn("Fornecedores file not found or empty, attempting to seed data.");
       await this.seedData();
     }
 
@@ -142,7 +144,7 @@ export class MemStorage implements IStorage {
       clientesFromFile.forEach(cliente => this.clientes.set(cliente.id, cliente));
       this.nextClienteId = clientesFromFile.length > 0 ? Math.max(...clientesFromFile.map(c => c.id)) + 1 : 1;
     } catch (error) {
-      console.warn("Clientes file not found or empty, seeding initial clientes.");
+      console.warn("Clientes file not found or empty, attempting to seed data.");
       await this.seedData();
     }
 
@@ -152,7 +154,7 @@ export class MemStorage implements IStorage {
       comprasFromFile.forEach(compra => this.compras.set(compra.id, compra));
       this.nextCompraId = comprasFromFile.length > 0 ? Math.max(...comprasFromFile.map(c => c.id)) + 1 : 1;
     } catch (error) {
-      console.warn("Compras file not found or empty, seeding initial compras.");
+      console.warn("Compras file not found or empty, attempting to seed data.");
       await this.seedData();
     }
   }

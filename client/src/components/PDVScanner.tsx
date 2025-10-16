@@ -28,7 +28,6 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const [cart, setCart] = useState<CartItem[]>([]);
   const [lastScanTime, setLastScanTime] = useState(0);
   const [valorPago, setValorPago] = useState("");
-  const [showPayment, setShowPayment] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -170,11 +169,6 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
       return;
     }
 
-    if (!showPayment) {
-      setShowPayment(true);
-      return;
-    }
-
     const valorPagoNum = parseFloat(valorPago || "0");
     if (valorPagoNum < valorTotal) {
       alert("Valor pago insuficiente!");
@@ -195,7 +189,6 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     setCart([]);
     setBarcode("");
     setValorPago("");
-    setShowPayment(false);
     inputRef.current?.focus();
   };
 
@@ -361,7 +354,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                     <Button
                       className="flex-1"
                       onClick={handleCompleteSale}
-                      disabled={cart.length === 0}
+                      disabled={!valorPago || parseFloat(valorPago) < valorTotal}
                     >
                       Finalizar
                     </Button>

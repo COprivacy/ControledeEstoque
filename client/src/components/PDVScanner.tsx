@@ -1,11 +1,14 @@
 
 import { useState, useRef, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Scan, Trash2, ShoppingCart, Plus, Minus, DollarSign, Wallet } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Scan, Trash2, ShoppingCart, Plus, Minus, DollarSign, Wallet, User } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import type { Cliente } from "@shared/schema";
 
 interface CartItem {
   id: number;
@@ -18,7 +21,7 @@ interface CartItem {
 }
 
 interface PDVScannerProps {
-  onSaleComplete?: (sale: { itens: { codigo_barras: string; quantidade: number }[]; valorTotal: number }) => void;
+  onSaleComplete?: (sale: { itens: { codigo_barras: string; quantidade: number }[]; valorTotal: number; cliente_id?: number }) => void;
   onProductNotFound?: (barcode: string) => void;
   onFetchProduct?: (barcode: string) => Promise<any>;
 }
@@ -28,8 +31,13 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const [cart, setCart] = useState<CartItem[]>([]);
   const [lastScanTime, setLastScanTime] = useState(0);
   const [valorPago, setValorPago] = useState("");
+  const [clienteId, setClienteId] = useState<string>("none");
   const inputRef = useRef<HTMLInputElement>(null);
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { data: clientes = [] } = useQuery<Cliente[]>({
+    queryKey: ["/api/clientes"],
+  });
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -180,7 +188,16 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
       quantidade: item.quantidade
     }));
 
-    onSaleComplete?.({ itens, valorTotal });
+    const saleData: { itens: typeof itens; valorTotal: number; cliente_id?: number } = { 
+      itens, 
+      valorTotal 
+    };
+
+    if (clienteId && clienteId !== "none") {
+      saleData.cliente_id = parseInt(clienteId);
+    }
+
+    onSaleComplete?.(saleData);
     
     clearCart();
   };
@@ -189,6 +206,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     setCart([]);
     setBarcode("");
     setValorPago("");
+    setClienteId("none");
     inputRef.current?.focus();
   };
 
@@ -273,6 +291,35 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
 
         {/* Painel de Pagamento */}
         <div className="space-y-4">
+          {/* Seletor de Cliente */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-2">
+                <Label htmlFor="cliente-select" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Cliente (Opcional)
+                </Label>
+                <Select value={clienteId} onValueChange={setClienteId}>
+                  <SelectTrigger id="cliente-select" data-testid="select-cliente">
+                    <SelectValue placeholder="Selecione um cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum cliente</SelectItem>
+                    {clientes.map((cliente) => (
+                      <SelectItem 
+                        key={cliente.id} 
+                        value={cliente.id.toString()}
+                        data-testid={`select-cliente-${cliente.id}`}
+                      >
+                        {cliente.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Scanner discreto */}
           <Card className="border-dashed">
             <CardContent className="pt-6">

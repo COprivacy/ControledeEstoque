@@ -1,4 +1,3 @@
-
 import Database from 'better-sqlite3';
 import {
   type User,
@@ -6,7 +5,13 @@ import {
   type Produto,
   type InsertProduto,
   type Venda,
-  type InsertVenda
+  type InsertVenda,
+  type Fornecedor,
+  type InsertFornecedor,
+  type Cliente,
+  type InsertCliente,
+  type Compra,
+  type InsertCompra
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import * as path from 'path';
@@ -19,11 +24,25 @@ const __dirname = dirname(__filename);
 
 export class SQLiteStorage implements IStorage {
   private db: Database.Database;
+  private users: Map<string, User> = new Map();
+  private produtos: Map<number, Produto> = new Map();
+  private vendas: Map<number, Venda> = new Map();
+  private fornecedores: Map<number, Fornecedor> = new Map();
+  private clientes: Map<number, Cliente> = new Map();
+  private compras: Map<number, Compra> = new Map();
+
+  private nextUserId = 1;
+  private nextProdutoId = 1;
+  private nextVendaId = 1;
+  private nextFornecedorId = 1;
+  private nextClienteId = 1;
+  private nextCompraId = 1;
 
   constructor(dbPath?: string) {
     const defaultPath = path.join(__dirname, 'database.db');
     this.db = new Database(dbPath || defaultPath);
     this.initializeTables();
+    this.loadData();
     this.seedData();
   }
 
@@ -60,17 +79,18 @@ export class SQLiteStorage implements IStorage {
 
   private seedData() {
     const userCount = this.db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
-    
+
     if (userCount.count === 0) {
       const users: InsertUser[] = [
         { email: "loja1@gmail.com", senha: "loja123", nome: "Loja 1" },
         { email: "loja2@gmail.com", senha: "loja456", nome: "Loja 2" },
       ];
-      
+
       const insertUser = this.db.prepare('INSERT INTO users (id, email, senha, nome) VALUES (?, ?, ?, ?)');
       for (const user of users) {
         const id = randomUUID();
         insertUser.run(id, user.email, user.senha, user.nome);
+        this.users.set(id, { ...user, id });
       }
 
       const produtos: InsertProduto[] = [
@@ -107,7 +127,7 @@ export class SQLiteStorage implements IStorage {
         'INSERT INTO produtos (nome, categoria, preco, quantidade, estoque_minimo, codigo_barras, vencimento) VALUES (?, ?, ?, ?, ?, ?, ?)'
       );
       for (const produto of produtos) {
-        insertProduto.run(
+        const result = insertProduto.run(
           produto.nome,
           produto.categoria,
           produto.preco,
@@ -116,111 +136,237 @@ export class SQLiteStorage implements IStorage {
           produto.codigo_barras || null,
           produto.vencimento || null
         );
+        this.produtos.set(result.lastInsertRowid as number, { ...produto, id: result.lastInsertRowid as number });
       }
+
+      this.persistData();
     }
   }
 
+  private async loadData() {
+    try {
+      const data = JSON.parse(this.db.prepare('SELECT data FROM storage LIMIT 1').get()?.data || '{}');
+
+      this.nextUserId = data.nextUserId || 1;
+      this.nextProdutoId = data.nextProdutoId || 1;
+      this.nextVendaId = data.nextVendaId || 1;
+      this.nextFornecedorId = data.nextFornecedorId || 1;
+      this.nextClienteId = data.nextClienteId || 1;
+      this.nextCompraId = data.nextCompraId || 1;
+
+      if (data.users) {
+        data.users.forEach((u: User) => this.users.set(u.id, u));
+      }
+      if (data.produtos) {
+        data.produtos.forEach((p: Produto) => this.produtos.set(p.id, p));
+      }
+      if (data.vendas) {
+        data.vendas.forEach((v: Venda) => this.vendas.set(v.id, v));
+      }
+      if (data.fornecedores) {
+        data.fornecedores.forEach((f: Fornecedor) => this.fornecedores.set(f.id, f));
+      }
+      if (data.clientes) {
+        data.clientes.forEach((c: Cliente) => this.clientes.set(c.id, c));
+      }
+      if (data.compras) {
+        data.compras.forEach((c: Compra) => this.compras.set(c.id, c));
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+    }
+  }
+
+  private async persistData() {
+    const data = {
+      users: Array.from(this.users.values()),
+      produtos: Array.from(this.produtos.values()),
+      vendas: Array.from(this.vendas.values()),
+      fornecedores: Array.from(this.fornecedores.values()),
+      clientes: Array.from(this.clientes.values()),
+      compras: Array.from(this.compras.values()),
+      nextUserId: this.nextUserId,
+      nextProdutoId: this.nextProdutoId,
+      nextVendaId: this.nextVendaId,
+      nextFornecedorId: this.nextFornecedorId,
+      nextClienteId: this.nextClienteId,
+      nextCompraId: this.nextCompraId,
+    };
+    const jsonData = JSON.stringify(data);
+    this.db.prepare('CREATE TABLE IF NOT EXISTS storage (key TEXT PRIMARY KEY, data TEXT)').run();
+    this.db.prepare('INSERT OR REPLACE INTO storage (key, data) VALUES (?, ?)').run('storage', jsonData);
+  }
+
   async getUser(id: string): Promise<User | undefined> {
-    return this.db.prepare('SELECT * FROM users WHERE id = ?').get(id) as User | undefined;
+    return this.users.get(id);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return this.db.prepare('SELECT * FROM users WHERE email = ?').get(email) as User | undefined;
+    for (const user of this.users.values()) {
+      if (user.email === email) {
+        return user;
+      }
+    }
+    return undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    this.db.prepare('INSERT INTO users (id, email, senha, nome) VALUES (?, ?, ?, ?)')
-      .run(id, insertUser.email, insertUser.senha, insertUser.nome);
-    return { ...insertUser, id };
+    const newUser: User = { ...insertUser, id };
+    this.users.set(id, newUser);
+    await this.persistData();
+    return newUser;
   }
 
   async getProdutos(): Promise<Produto[]> {
-    return this.db.prepare('SELECT * FROM produtos').all() as Produto[];
+    return Array.from(this.produtos.values());
   }
 
   async getProduto(id: number): Promise<Produto | undefined> {
-    return this.db.prepare('SELECT * FROM produtos WHERE id = ?').get(id) as Produto | undefined;
+    return this.produtos.get(id);
   }
 
   async getProdutoByCodigoBarras(codigoBarras: string): Promise<Produto | undefined> {
-    return this.db.prepare('SELECT * FROM produtos WHERE codigo_barras = ?').get(codigoBarras) as Produto | undefined;
+    for (const produto of this.produtos.values()) {
+      if (produto.codigo_barras === codigoBarras) {
+        return produto;
+      }
+    }
+    return undefined;
   }
 
   async createProduto(insertProduto: InsertProduto): Promise<Produto> {
-    const result = this.db.prepare(
-      'INSERT INTO produtos (nome, categoria, preco, quantidade, estoque_minimo, codigo_barras, vencimento) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).run(
-      insertProduto.nome,
-      insertProduto.categoria,
-      insertProduto.preco,
-      insertProduto.quantidade,
-      insertProduto.estoque_minimo,
-      insertProduto.codigo_barras || null,
-      insertProduto.vencimento || null
-    );
-    return { ...insertProduto, id: result.lastInsertRowid as number };
+    const id = this.nextProdutoId++;
+    const newProduto: Produto = { ...insertProduto, id };
+    this.produtos.set(id, newProduto);
+    await this.persistData();
+    return newProduto;
   }
 
   async updateProduto(id: number, updates: Partial<InsertProduto>): Promise<Produto | undefined> {
-    const produto = await this.getProduto(id);
+    const produto = this.produtos.get(id);
     if (!produto) return undefined;
 
     const updatedProduto = { ...produto, ...updates };
-    this.db.prepare(
-      'UPDATE produtos SET nome = ?, categoria = ?, preco = ?, quantidade = ?, estoque_minimo = ?, codigo_barras = ?, vencimento = ? WHERE id = ?'
-    ).run(
-      updatedProduto.nome,
-      updatedProduto.categoria,
-      updatedProduto.preco,
-      updatedProduto.quantidade,
-      updatedProduto.estoque_minimo,
-      updatedProduto.codigo_barras || null,
-      updatedProduto.vencimento || null,
-      id
-    );
+    this.produtos.set(id, updatedProduto);
+    await this.persistData();
     return updatedProduto;
   }
 
   async deleteProduto(id: number): Promise<boolean> {
-    const result = this.db.prepare('DELETE FROM produtos WHERE id = ?').run(id);
-    return result.changes > 0;
+    const deleted = this.produtos.delete(id);
+    if (deleted) await this.persistData();
+    return deleted;
   }
 
   async getVendas(startDate?: string, endDate?: string): Promise<Venda[]> {
-    let query = 'SELECT * FROM vendas WHERE 1=1';
-    const params: any[] = [];
+    let vendas = Array.from(this.vendas.values());
 
     if (startDate) {
-      query += ' AND data >= ?';
-      params.push(startDate);
+      vendas = vendas.filter(v => v.data >= startDate);
     }
     if (endDate) {
-      query += ' AND data <= ?';
-      params.push(endDate);
+      vendas = vendas.filter(v => v.data <= endDate);
     }
-
-    return this.db.prepare(query).all(...params) as Venda[];
+    return vendas;
   }
 
   async createVenda(insertVenda: InsertVenda): Promise<Venda> {
-    const result = this.db.prepare(
-      'INSERT INTO vendas (produto, quantidade_vendida, valor_total, data, itens) VALUES (?, ?, ?, ?, ?)'
-    ).run(
-      insertVenda.produto,
-      insertVenda.quantidade_vendida,
-      insertVenda.valor_total,
-      insertVenda.data,
-      insertVenda.itens || null
-    );
-    return { ...insertVenda, id: result.lastInsertRowid as number };
+    const id = this.nextVendaId++;
+    const newVenda: Venda = { ...insertVenda, id };
+    this.vendas.set(id, newVenda);
+    await this.persistData();
+    return newVenda;
   }
 
   async clearVendas(): Promise<void> {
-    this.db.prepare('DELETE FROM vendas').run();
+    this.vendas.clear();
+    await this.persistData();
   }
 
-  close() {
-    this.db.close();
+  async getFornecedores(): Promise<Fornecedor[]> {
+    return Array.from(this.fornecedores.values());
+  }
+
+  async getFornecedor(id: number): Promise<Fornecedor | undefined> {
+    return this.fornecedores.get(id);
+  }
+
+  async createFornecedor(insertFornecedor: InsertFornecedor): Promise<Fornecedor> {
+    const id = this.nextFornecedorId++;
+    const fornecedor: Fornecedor = { ...insertFornecedor, id };
+    this.fornecedores.set(id, fornecedor);
+    await this.persistData();
+    return fornecedor;
+  }
+
+  async updateFornecedor(id: number, updates: Partial<Fornecedor>): Promise<Fornecedor | undefined> {
+    const fornecedor = this.fornecedores.get(id);
+    if (!fornecedor) return undefined;
+    const updated = { ...fornecedor, ...updates };
+    this.fornecedores.set(id, updated);
+    await this.persistData();
+    return updated;
+  }
+
+  async deleteFornecedor(id: number): Promise<boolean> {
+    const deleted = this.fornecedores.delete(id);
+    if (deleted) await this.persistData();
+    return deleted;
+  }
+
+  async getClientes(): Promise<Cliente[]> {
+    return Array.from(this.clientes.values());
+  }
+
+  async getCliente(id: number): Promise<Cliente | undefined> {
+    return this.clientes.get(id);
+  }
+
+  async createCliente(insertCliente: InsertCliente): Promise<Cliente> {
+    const id = this.nextClienteId++;
+    const cliente: Cliente = { ...insertCliente, id };
+    this.clientes.set(id, cliente);
+    await this.persistData();
+    return cliente;
+  }
+
+  async updateCliente(id: number, updates: Partial<Cliente>): Promise<Cliente | undefined> {
+    const cliente = this.clientes.get(id);
+    if (!cliente) return undefined;
+    const updated = { ...cliente, ...updates };
+    this.clientes.set(id, updated);
+    await this.persistData();
+    return updated;
+  }
+
+  async deleteCliente(id: number): Promise<boolean> {
+    const deleted = this.clientes.delete(id);
+    if (deleted) await this.persistData();
+    return deleted;
+  }
+
+  async getCompras(fornecedorId?: number, startDate?: string, endDate?: string): Promise<Compra[]> {
+    let compras = Array.from(this.compras.values());
+
+    if (fornecedorId !== undefined) {
+      compras = compras.filter(c => c.fornecedor_id === fornecedorId);
+    }
+    if (startDate) {
+      compras = compras.filter(c => c.data >= startDate);
+    }
+    if (endDate) {
+      compras = compras.filter(c => c.data <= endDate);
+    }
+
+    return compras;
+  }
+
+  async createCompra(insertCompra: InsertCompra): Promise<Compra> {
+    const id = this.nextCompraId++;
+    const compra: Compra = { ...insertCompra, id };
+    this.compras.set(id, compra);
+    await this.persistData();
+    return compra;
   }
 }

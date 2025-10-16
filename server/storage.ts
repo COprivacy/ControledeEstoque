@@ -1,10 +1,17 @@
+1. O sistema agora terá controle de fornecedores e clientes com histórico de compras/vendas.
 import {
   type User,
   type InsertUser,
   type Produto,
   type InsertProduto,
   type Venda,
-  type InsertVenda
+  type InsertVenda,
+  type Fornecedor,
+  type InsertFornecedor,
+  type Cliente,
+  type InsertCliente,
+  type Compra,
+  type InsertCompra
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import * as fs from 'fs/promises';
@@ -15,21 +22,36 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+export abstract class Storage {
+  abstract getUsers(): Promise<User[]>;
+  abstract getUserByEmail(email: string): Promise<User | undefined>;
+  abstract createUser(insertUser: InsertUser): Promise<User>;
 
-  getProdutos(): Promise<Produto[]>;
-  getProduto(id: number): Promise<Produto | undefined>;
-  getProdutoByCodigoBarras(codigoBarras: string): Promise<Produto | undefined>;
-  createProduto(produto: InsertProduto): Promise<Produto>;
-  updateProduto(id: number, produto: Partial<InsertProduto>): Promise<Produto | undefined>;
-  deleteProduto(id: number): Promise<boolean>;
+  abstract getProdutos(): Promise<Produto[]>;
+  abstract getProduto(id: number): Promise<Produto | undefined>;
+  abstract getProdutoByCodigoBarras(codigo: string): Promise<Produto | undefined>;
+  abstract createProduto(insertProduto: InsertProduto): Promise<Produto>;
+  abstract updateProduto(id: number, updates: Partial<Produto>): Promise<Produto | undefined>;
+  abstract deleteProduto(id: number): Promise<boolean>;
 
-  getVendas(startDate?: string, endDate?: string): Promise<Venda[]>;
-  createVenda(venda: InsertVenda): Promise<Venda>;
-  clearVendas(): Promise<void>;
+  abstract getVendas(startDate?: string, endDate?: string): Promise<Venda[]>;
+  abstract createVenda(insertVenda: InsertVenda): Promise<Venda>;
+  abstract clearVendas(): Promise<void>;
+
+  abstract getFornecedores(): Promise<Fornecedor[]>;
+  abstract getFornecedor(id: number): Promise<Fornecedor | undefined>;
+  abstract createFornecedor(insertFornecedor: InsertFornecedor): Promise<Fornecedor>;
+  abstract updateFornecedor(id: number, updates: Partial<Fornecedor>): Promise<Fornecedor | undefined>;
+  abstract deleteFornecedor(id: number): Promise<boolean>;
+
+  abstract getClientes(): Promise<Cliente[]>;
+  abstract getCliente(id: number): Promise<Cliente | undefined>;
+  abstract createCliente(insertCliente: InsertCliente): Promise<Cliente>;
+  abstract updateCliente(id: number, updates: Partial<Cliente>): Promise<Cliente | undefined>;
+  abstract deleteCliente(id: number): Promise<boolean>;
+
+  abstract getCompras(fornecedorId?: number, startDate?: string, endDate?: string): Promise<Compra[]>;
+  abstract createCompra(insertCompra: InsertCompra): Promise<Compra>;
 }
 
 export class MemStorage implements IStorage {
@@ -44,12 +66,28 @@ export class MemStorage implements IStorage {
   private produtosFile = path.join(__dirname, 'produtos.json');
   private vendasFile = path.join(__dirname, 'vendas.json');
 
+  // New maps for suppliers, customers, and purchases
+  private fornecedores: Map<number, Fornecedor>;
+  private clientes: Map<number, Cliente>;
+  private compras: Map<number, Compra>;
+  private nextFornecedorId: number;
+  private nextClienteId: number;
+  private nextCompraId: number;
+
   constructor() {
     this.users = new Map();
     this.produtos = new Map();
     this.vendas = new Map();
     this.nextProdutoId = 1;
     this.nextVendaId = 1;
+
+    // Initialize new maps
+    this.fornecedores = new Map();
+    this.clientes = new Map();
+    this.compras = new Map();
+    this.nextFornecedorId = 1;
+    this.nextClienteId = 1;
+    this.nextCompraId = 1;
 
     // Initialize storage by loading data from mock files or seeding if files don't exist
     this.initializeStorage();
@@ -84,6 +122,37 @@ export class MemStorage implements IStorage {
       this.nextVendaId = vendasFromFile.length > 0 ? Math.max(...vendasFromFile.map(v => v.id)) + 1 : 1;
     } catch (error) {
       console.warn("Vendas file not found or empty, seeding initial vendas.");
+      await this.seedData();
+    }
+
+    // Initialize data for Fornecedores, Clientes, and Compras
+    try {
+      const fornecedoresData = await fs.readFile(this.usersFile.replace('users.json', 'fornecedores.json'), 'utf-8');
+      const fornecedoresFromFile = JSON.parse(fornecedoresData) as Fornecedor[];
+      fornecedoresFromFile.forEach(fornecedor => this.fornecedores.set(fornecedor.id, fornecedor));
+      this.nextFornecedorId = fornecedoresFromFile.length > 0 ? Math.max(...fornecedoresFromFile.map(f => f.id)) + 1 : 1;
+    } catch (error) {
+      console.warn("Fornecedores file not found or empty, seeding initial fornecedores.");
+      await this.seedData();
+    }
+
+    try {
+      const clientesData = await fs.readFile(this.usersFile.replace('users.json', 'clientes.json'), 'utf-8');
+      const clientesFromFile = JSON.parse(clientesData) as Cliente[];
+      clientesFromFile.forEach(cliente => this.clientes.set(cliente.id, cliente));
+      this.nextClienteId = clientesFromFile.length > 0 ? Math.max(...clientesFromFile.map(c => c.id)) + 1 : 1;
+    } catch (error) {
+      console.warn("Clientes file not found or empty, seeding initial clientes.");
+      await this.seedData();
+    }
+
+    try {
+      const comprasData = await fs.readFile(this.usersFile.replace('users.json', 'compras.json'), 'utf-8');
+      const comprasFromFile = JSON.parse(comprasData) as Compra[];
+      comprasFromFile.forEach(compra => this.compras.set(compra.id, compra));
+      this.nextCompraId = comprasFromFile.length > 0 ? Math.max(...comprasFromFile.map(c => c.id)) + 1 : 1;
+    } catch (error) {
+      console.warn("Compras file not found or empty, seeding initial compras.");
       await this.seedData();
     }
   }
@@ -150,12 +219,56 @@ export class MemStorage implements IStorage {
     for (const venda of initialVendas) {
       await this.createVenda(venda);
     }
+
+    // Seed initial data for Fornecedores, Clientes, and Compras
+    const initialFornecedores: InsertFornecedor[] = [
+      { nome: "Fornecedor A", cnpj: "11.111.111/0001-11", email: "fornecedor.a@email.com", telefone: "(11) 1111-1111" },
+      { nome: "Fornecedor B", cnpj: "22.222.222/0001-22", email: "fornecedor.b@email.com", telefone: "(22) 2222-2222" },
+    ];
+    for (const fornecedor of initialFornecedores) {
+      await this.createFornecedor(fornecedor);
+    }
+
+    const initialClientes: InsertCliente[] = [
+      { nome: "Cliente X", cpf: "111.111.111-11", email: "cliente.x@email.com", telefone: "(11) 1111-1111" },
+      { nome: "Cliente Y", cpf: "222.222.222-22", email: "cliente.y@email.com", telefone: "(22) 2222-2222" },
+    ];
+    for (const cliente of initialClientes) {
+      await this.createCliente(cliente);
+    }
+
+    const initialCompras: InsertCompra[] = [
+      {
+        fornecedorId: 1,
+        produtoId: 1,
+        quantidade: 10,
+        precoUnitario: 20.00,
+        total: 200.00,
+        data: "2023-10-20T09:00:00Z"
+      },
+      {
+        fornecedorId: 2,
+        produtoId: 3,
+        quantidade: 5,
+        precoUnitario: 6.00,
+        total: 30.00,
+        data: "2023-10-21T14:00:00Z"
+      }
+    ];
+    for (const compra of initialCompras) {
+      await this.createCompra(compra);
+    }
   }
 
   private async persistData() {
     await fs.writeFile(this.usersFile, JSON.stringify(Array.from(this.users.values()), null, 2));
     await fs.writeFile(this.produtosFile, JSON.stringify(Array.from(this.produtos.values()), null, 2));
     await fs.writeFile(this.vendasFile, JSON.stringify(Array.from(this.vendas.values()), null, 2));
+
+    // Persist data for Fornecedores, Clientes, and Compras
+    await fs.writeFile(this.usersFile.replace('users.json', 'fornecedores.json'), JSON.stringify(Array.from(this.fornecedores.values()), null, 2));
+    await fs.writeFile(this.usersFile.replace('users.json', 'clientes.json'), JSON.stringify(Array.from(this.clientes.values()), null, 2));
+    await fs.writeFile(this.usersFile.replace('users.json', 'compras.json'), JSON.stringify(Array.from(this.compras.values()), null, 2));
   }
 
 
@@ -178,8 +291,6 @@ export class MemStorage implements IStorage {
   }
 
   async getProdutos(): Promise<Produto[]> {
-    // In a real app, you'd fetch from a DB. Here we return the in-memory map.
-    // For the dashboard issue, ensure this is not returning mock data.
     return Array.from(this.produtos.values());
   }
 
@@ -243,6 +354,101 @@ export class MemStorage implements IStorage {
   async clearVendas(): Promise<void> {
     this.vendas.clear();
     await this.persistData();
+  }
+
+  // Implementations for Fornecedores
+  async getFornecedores(): Promise<Fornecedor[]> {
+    return Array.from(this.fornecedores.values());
+  }
+
+  async getFornecedor(id: number): Promise<Fornecedor | undefined> {
+    return this.fornecedores.get(id);
+  }
+
+  async createFornecedor(insertFornecedor: InsertFornecedor): Promise<Fornecedor> {
+    const id = this.nextFornecedorId++;
+    const fornecedor: Fornecedor = { ...insertFornecedor, id };
+    this.fornecedores.set(id, fornecedor);
+    await this.persistData();
+    return fornecedor;
+  }
+
+  async updateFornecedor(id: number, updates: Partial<Fornecedor>): Promise<Fornecedor | undefined> {
+    const fornecedor = this.fornecedores.get(id);
+    if (!fornecedor) return undefined;
+
+    const updatedFornecedor = { ...fornecedor, ...updates };
+    this.fornecedores.set(id, updatedFornecedor);
+    await this.persistData();
+    return updatedFornecedor;
+  }
+
+  async deleteFornecedor(id: number): Promise<boolean> {
+    const deleted = this.fornecedores.delete(id);
+    if (deleted) {
+      await this.persistData();
+    }
+    return deleted;
+  }
+
+  // Implementations for Clientes
+  async getClientes(): Promise<Cliente[]> {
+    return Array.from(this.clientes.values());
+  }
+
+  async getCliente(id: number): Promise<Cliente | undefined> {
+    return this.clientes.get(id);
+  }
+
+  async createCliente(insertCliente: InsertCliente): Promise<Cliente> {
+    const id = this.nextClienteId++;
+    const cliente: Cliente = { ...insertCliente, id };
+    this.clientes.set(id, cliente);
+    await this.persistData();
+    return cliente;
+  }
+
+  async updateCliente(id: number, updates: Partial<Cliente>): Promise<Cliente | undefined> {
+    const cliente = this.clientes.get(id);
+    if (!cliente) return undefined;
+
+    const updatedCliente = { ...cliente, ...updates };
+    this.clientes.set(id, updatedCliente);
+    await this.persistData();
+    return updatedCliente;
+  }
+
+  async deleteCliente(id: number): Promise<boolean> {
+    const deleted = this.clientes.delete(id);
+    if (deleted) {
+      await this.persistData();
+    }
+    return deleted;
+  }
+
+  // Implementations for Compras
+  async getCompras(fornecedorId?: number, startDate?: string, endDate?: string): Promise<Compra[]> {
+    let compras = Array.from(this.compras.values());
+
+    if (fornecedorId) {
+      compras = compras.filter(c => c.fornecedorId === fornecedorId);
+    }
+    if (startDate) {
+      compras = compras.filter(c => c.data >= startDate);
+    }
+    if (endDate) {
+      compras = compras.filter(c => c.data <= endDate);
+    }
+
+    return compras;
+  }
+
+  async createCompra(insertCompra: InsertCompra): Promise<Compra> {
+    const id = this.nextCompraId++;
+    const compra: Compra = { ...insertCompra, id };
+    this.compras.set(id, compra);
+    await this.persistData();
+    return compra;
   }
 }
 

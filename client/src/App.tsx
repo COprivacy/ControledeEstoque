@@ -13,6 +13,8 @@ import Inventory from "@/pages/Inventory";
 import Reports from "@/pages/Reports";
 import PDV from "@/pages/PDV";
 import Settings from "@/pages/Settings";
+import Fornecedores from "@/pages/Fornecedores";
+import Clientes from "@/pages/Clientes";
 import DashboardLayout from "@/layouts/DashboardLayout";
 
 function Router() {
@@ -52,6 +54,20 @@ function Router() {
         {() => (
           <DashboardLayout>
             <Inventory />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/fornecedores">
+        {() => (
+          <DashboardLayout>
+            <Fornecedores />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/clientes">
+        {() => (
+          <DashboardLayout>
+            <Clientes />
           </DashboardLayout>
         )}
       </Route>

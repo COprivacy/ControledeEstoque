@@ -292,6 +292,180 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rotas de Fornecedores
+  app.get("/api/fornecedores", async (req, res) => {
+    try {
+      const fornecedores = await storage.getFornecedores();
+      res.json(fornecedores);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao buscar fornecedores" });
+    }
+  });
+
+  app.get("/api/fornecedores/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const fornecedor = await storage.getFornecedor(id);
+      if (!fornecedor) {
+        return res.status(404).json({ error: "Fornecedor não encontrado" });
+      }
+      res.json(fornecedor);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao buscar fornecedor" });
+    }
+  });
+
+  app.post("/api/fornecedores", async (req, res) => {
+    try {
+      const fornecedorData = {
+        ...req.body,
+        data_cadastro: new Date().toISOString(),
+      };
+      const fornecedor = await storage.createFornecedor(fornecedorData);
+      res.json(fornecedor);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao criar fornecedor" });
+    }
+  });
+
+  app.put("/api/fornecedores/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const fornecedor = await storage.updateFornecedor(id, req.body);
+      if (!fornecedor) {
+        return res.status(404).json({ error: "Fornecedor não encontrado" });
+      }
+      res.json(fornecedor);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao atualizar fornecedor" });
+    }
+  });
+
+  app.delete("/api/fornecedores/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteFornecedor(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Fornecedor não encontrado" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao deletar fornecedor" });
+    }
+  });
+
+  // Rotas de Clientes
+  app.get("/api/clientes", async (req, res) => {
+    try {
+      const clientes = await storage.getClientes();
+      res.json(clientes);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao buscar clientes" });
+    }
+  });
+
+  app.get("/api/clientes/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const cliente = await storage.getCliente(id);
+      if (!cliente) {
+        return res.status(404).json({ error: "Cliente não encontrado" });
+      }
+      res.json(cliente);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao buscar cliente" });
+    }
+  });
+
+  app.post("/api/clientes", async (req, res) => {
+    try {
+      const clienteData = {
+        ...req.body,
+        data_cadastro: new Date().toISOString(),
+      };
+      const cliente = await storage.createCliente(clienteData);
+      res.json(cliente);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao criar cliente" });
+    }
+  });
+
+  app.put("/api/clientes/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const cliente = await storage.updateCliente(id, req.body);
+      if (!cliente) {
+        return res.status(404).json({ error: "Cliente não encontrado" });
+      }
+      res.json(cliente);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao atualizar cliente" });
+    }
+  });
+
+  app.delete("/api/clientes/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteCliente(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Cliente não encontrado" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao deletar cliente" });
+    }
+  });
+
+  // Rotas de Compras
+  app.get("/api/compras", async (req, res) => {
+    try {
+      const fornecedorId = req.query.fornecedor_id ? parseInt(req.query.fornecedor_id as string) : undefined;
+      const startDate = req.query.start_date as string;
+      const endDate = req.query.end_date as string;
+      
+      const compras = await storage.getCompras(fornecedorId, startDate, endDate);
+      res.json(compras);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao buscar compras" });
+    }
+  });
+
+  app.post("/api/compras", async (req, res) => {
+    try {
+      const { fornecedor_id, produto_id, quantidade, valor_unitario, observacoes } = req.body;
+      
+      const produto = await storage.getProduto(produto_id);
+      if (!produto) {
+        return res.status(404).json({ error: "Produto não encontrado" });
+      }
+
+      const fornecedor = await storage.getFornecedor(fornecedor_id);
+      if (!fornecedor) {
+        return res.status(404).json({ error: "Fornecedor não encontrado" });
+      }
+
+      const valor_total = valor_unitario * quantidade;
+      
+      await storage.updateProduto(produto_id, {
+        quantidade: produto.quantidade + quantidade
+      });
+
+      const compra = await storage.createCompra({
+        fornecedor_id,
+        produto_id,
+        quantidade,
+        valor_unitario,
+        valor_total,
+        data: new Date().toISOString(),
+        observacoes: observacoes || null,
+      });
+
+      res.json(compra);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao registrar compra" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

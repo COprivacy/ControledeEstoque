@@ -23,7 +23,7 @@ export default function Products() {
       return products;
     }
     return products.filter((product: any) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase())
+      product.nome?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [products, searchTerm]);
 
@@ -104,12 +104,12 @@ export default function Products() {
             <p className="text-center text-muted-foreground py-8">
               Nenhum produto cadastrado
             </p>
-          ) : filteredProducts.length === 0 ? (
+          ) : searchTerm && filteredProducts.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
               Nenhum produto encontrado para "{searchTerm}"
             </p>
           ) : (
-            filteredProducts.map((product: any) => (
+            (searchTerm ? filteredProducts : products).map((product: any) => (
               <ProductCard
                 key={product.id}
                 {...product}

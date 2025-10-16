@@ -326,27 +326,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Todos os Produtos</h2>
-        </div>
-        <div className="space-y-3">
-          {products.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Nenhum produto cadastrado
-            </p>
-          ) : (
-            products.map((product: any) => (
-              <ProductCard
-                key={product.id}
-                {...product}
-                onEdit={(id) => setLocation(`/produtos/editar/${id}`)}
-                onDelete={handleDelete}
-              />
-            ))
-          )}
-        </div>
-      </div>
+      
     </div>
   );
 }

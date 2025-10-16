@@ -52,9 +52,6 @@ export default function LoginForm({
           <CardDescription className="text-center text-gray-600 dark:text-gray-300">
             Entre com suas credenciais para acessar o sistema
           </CardDescription>
-          <p className="text-xs text-center text-gray-500 dark:text-gray-400 pt-2">
-            Desenvolvido por Pavisoft Sistemas
-          </p>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">

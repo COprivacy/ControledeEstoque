@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import StatsCards from "@/components/StatsCards";
 import ProductCard from "@/components/ProductCard";
-import { Plus, Package, Search, Crown, TrendingUp, TrendingDown } from "lucide-react";
+import { Plus, Package, Crown, TrendingUp, TrendingDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
@@ -23,7 +23,6 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState("");
   
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["/api/produtos"],
@@ -129,16 +128,6 @@ export default function Dashboard() {
       .slice(0, 5);
   }, [vendas]);
 
-  const filteredProducts = products.filter((p: any) => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      p.nome?.toLowerCase().includes(searchLower) ||
-      p.codigo_barras?.toLowerCase().includes(searchLower) ||
-      p.categoria?.toLowerCase().includes(searchLower)
-    );
-  });
-
   const chartConfig = {
     vendas: {
       label: "Vendas",
@@ -164,17 +153,6 @@ export default function Dashboard() {
           </Badge>
         </div>
         <div className="flex gap-3 flex-wrap items-center">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Buscar produtos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 w-64"
-              data-testid="input-search-products"
-            />
-          </div>
           <Button onClick={() => setLocation("/produtos/adicionar")} data-testid="button-add-product">
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Produto
@@ -351,23 +329,14 @@ export default function Dashboard() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Todos os Produtos</h2>
-          {searchTerm && (
-            <p className="text-sm text-muted-foreground">
-              {filteredProducts.length} resultado{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
-            </p>
-          )}
         </div>
         <div className="space-y-3">
           {products.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
               Nenhum produto cadastrado
             </p>
-          ) : filteredProducts.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Nenhum produto encontrado para "{searchTerm}"
-            </p>
           ) : (
-            filteredProducts.map((product: any) => (
+            products.map((product: any) => (
               <ProductCard
                 key={product.id}
                 {...product}

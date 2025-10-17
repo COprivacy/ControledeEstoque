@@ -10,6 +10,16 @@ import type { Cliente } from "@shared/schema";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 interface CartItem {
@@ -35,8 +45,10 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const [valorPago, setValorPago] = useState("");
   const [clienteId, setClienteId] = useState<string>("none");
   const [openCombobox, setOpenCombobox] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const valorPagoRef = useRef<HTMLInputElement>(null);
 
   const { data: clientes = [] } = useQuery<Cliente[]>({
     queryKey: ["/api/clientes"],
@@ -210,11 +222,71 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     setBarcode("");
     setValorPago("");
     setClienteId("none");
+    setShowConfirmDialog(false);
     inputRef.current?.focus();
+  };
+
+  const handleValorPagoKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const valorPagoNum = parseFloat(valorPago || "0");
+      
+      if (cart.length === 0) {
+        alert("Carrinho vazio!");
+        return;
+      }
+      
+      if (valorPagoNum < valorTotal) {
+        alert("Valor pago insuficiente!");
+        return;
+      }
+      
+      setShowConfirmDialog(true);
+    }
   };
 
   return (
     <div className="space-y-6">
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Finalização da Venda</AlertDialogTitle>
+            <AlertDialogDescription>
+              <div className="space-y-2 mt-2">
+                <div className="flex justify-between">
+                  <span>Total da Venda:</span>
+                  <span className="font-semibold">R$ {valorTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Valor Pago:</span>
+                  <span className="font-semibold">R$ {parseFloat(valorPago || "0").toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-green-600">
+                  <span>Troco:</span>
+                  <span className="font-bold">R$ {troco.toFixed(2)}</span>
+                </div>
+                {clienteId !== "none" && (
+                  <div className="flex justify-between mt-4 pt-2 border-t">
+                    <span>Cliente:</span>
+                    <span className="font-semibold">
+                      {clientes.find((c) => c.id.toString() === clienteId)?.nome || ""}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => valorPagoRef.current?.focus()}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleCompleteSale}>
+              Confirmar Venda
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Carrinho de Compras */}
         <div className="lg:col-span-2">
@@ -421,14 +493,19 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                       Valor Pago
                     </Label>
                     <Input
+                      ref={valorPagoRef}
                       id="valor-pago"
                       type="number"
                       step="0.01"
                       value={valorPago}
                       onChange={(e) => setValorPago(e.target.value)}
+                      onKeyDown={handleValorPagoKeyDown}
                       placeholder="0,00"
                       className="text-lg"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Pressione Enter para finalizar
+                    </p>
                   </div>
 
                   {valorPago && parseFloat(valorPago) >= valorTotal && (

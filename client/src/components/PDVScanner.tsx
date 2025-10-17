@@ -1,14 +1,16 @@
-
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Scan, Trash2, ShoppingCart, Plus, Minus, DollarSign, Wallet, User } from "lucide-react";
+import { Trash2, Scan, ShoppingCart, Plus, Minus, DollarSign, Wallet, User, Check, ChevronsUpDown, Users } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import type { Cliente } from "@shared/schema";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
 
 interface CartItem {
   id: number;
@@ -32,6 +34,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const [lastScanTime, setLastScanTime] = useState(0);
   const [valorPago, setValorPago] = useState("");
   const [clienteId, setClienteId] = useState<string>("none");
+  const [openCombobox, setOpenCombobox] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -77,16 +80,16 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
-    
+
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
-    
+
     oscillator.frequency.value = success ? 1200 : 400;
     oscillator.type = 'square';
-    
+
     gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-    
+
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.1);
   };
@@ -198,7 +201,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
 
     onSaleComplete?.(saleData);
-    
+
     clearCart();
   };
 
@@ -295,27 +298,78 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-2">
-                <Label htmlFor="cliente-select" className="flex items-center gap-2">
+                <Label htmlFor="cliente" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   Cliente (Opcional)
                 </Label>
-                <Select value={clienteId} onValueChange={setClienteId}>
-                  <SelectTrigger id="cliente-select" data-testid="select-cliente">
-                    <SelectValue placeholder="Selecione um cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum cliente</SelectItem>
-                    {clientes.map((cliente) => (
-                      <SelectItem 
-                        key={cliente.id} 
-                        value={cliente.id.toString()}
-                        data-testid={`select-cliente-${cliente.id}`}
-                      >
-                        {cliente.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openCombobox}
+                      className="w-full h-11 justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        {clienteId === "none"
+                          ? "Sem cliente"
+                          : clientes.find((c) => c.id.toString() === clienteId)?.nome || "Selecione um cliente"}
+                      </div>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar cliente..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="none"
+                            onSelect={() => {
+                              setClienteId("none");
+                              setOpenCombobox(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                clienteId === "none" ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            Sem cliente
+                          </CommandItem>
+                          {clientes.map((cliente) => (
+                            <CommandItem
+                              key={cliente.id}
+                              value={cliente.nome}
+                              onSelect={() => {
+                                setClienteId(cliente.id.toString());
+                                setOpenCombobox(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  clienteId === cliente.id.toString() ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span>{cliente.nome}</span>
+                                {cliente.cpf_cnpj && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {cliente.cpf_cnpj}
+                                  </span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             </CardContent>
           </Card>

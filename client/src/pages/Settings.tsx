@@ -41,10 +41,10 @@ function hexToHSL(hex: string): string {
 
 const DEFAULT_CONFIG = {
   logoUrl: "",
-  primaryColor: "#2563EB",
+  primaryColor: "#3B82F6",
   secondaryColor: "#10B981",
   accentColor: "#F59E0B",
-  backgroundColor: "#FFFFFF",
+  backgroundColor: "#000000",
   storeName: "Controle de Estoque Simples"
 };
 
@@ -54,10 +54,10 @@ export default function Settings() {
   
   const [config, setConfig] = useState({
     logoUrl: "",
-    primaryColor: "#2563EB",
+    primaryColor: "#3B82F6",
     secondaryColor: "#10B981",
     accentColor: "#F59E0B",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#000000",
     storeName: "Controle de Estoque Simples"
   });
 
@@ -69,10 +69,10 @@ export default function Settings() {
         const savedConfig = JSON.parse(saved);
         setConfig({
           logoUrl: savedConfig.logoUrl || "",
-          primaryColor: savedConfig.primaryColor || "#2563EB",
+          primaryColor: savedConfig.primaryColor || "#3B82F6",
           secondaryColor: savedConfig.secondaryColor || "#10B981",
           accentColor: savedConfig.accentColor || "#F59E0B",
-          backgroundColor: savedConfig.backgroundColor || "#FFFFFF",
+          backgroundColor: savedConfig.backgroundColor || "#000000",
           storeName: savedConfig.storeName || "Controle de Estoque Simples"
         });
         

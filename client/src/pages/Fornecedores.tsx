@@ -234,24 +234,32 @@ export default function Fornecedores() {
   if (isLoading) return <div>Carregando...</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent" data-testid="text-title">Fornecedores</h1>
-          <p className="text-muted-foreground">Gerencie seus fornecedores e histórico de compras</p>
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent" data-testid="text-title">
+            Fornecedores
+          </h1>
+          <p className="text-muted-foreground text-lg">Gerencie seus fornecedores e histórico de compras</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingFornecedor(null)} data-testid="button-novo-fornecedor">
+            <Button 
+              onClick={() => setEditingFornecedor(null)} 
+              data-testid="button-novo-fornecedor"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Novo Fornecedor
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl border-t-4 border-t-blue-600">
             <DialogHeader>
-              <DialogTitle>{editingFornecedor ? "Editar Fornecedor" : "Novo Fornecedor"}</DialogTitle>
+              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                {editingFornecedor ? "Editar Fornecedor" : "Novo Fornecedor"}
+              </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome *</Label>
@@ -290,11 +298,13 @@ export default function Fornecedores() {
       </div>
 
       <Dialog open={isCompraDialogOpen} onOpenChange={setIsCompraDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl border-t-4 border-t-green-600">
           <DialogHeader>
-            <DialogTitle>Registrar Compra - {selectedFornecedor?.nome}</DialogTitle>
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+              Registrar Compra - {selectedFornecedor?.nome}
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCompraSubmit} className="space-y-4">
+          <form onSubmit={handleCompraSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="produto_id">Produto *</Label>
               <Select value={selectedProdutoId} onValueChange={setSelectedProdutoId} required>
@@ -335,11 +345,13 @@ export default function Fornecedores() {
       </Dialog>
 
       <Dialog open={isEditCompraDialogOpen} onOpenChange={setIsEditCompraDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl border-t-4 border-t-purple-600">
           <DialogHeader>
-            <DialogTitle>Editar Compra</DialogTitle>
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Editar Compra
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleEditCompraSubmit} className="space-y-4">
+          <form onSubmit={handleEditCompraSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label>Produto</Label>
               <Input value={editingCompra ? getProdutoNome(editingCompra.produto_id) : ""} disabled className="bg-muted" />
@@ -398,21 +410,23 @@ export default function Fornecedores() {
         </DialogContent>
       </Dialog>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Fornecedores</CardTitle>
+      <Card className="shadow-xl border-t-4 border-t-blue-600 overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20">
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Lista de Fornecedores
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 hover:from-gray-100 hover:to-gray-200 dark:hover:from-gray-800 dark:hover:to-gray-700">
                 <TableHead className="w-12"></TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>CNPJ</TableHead>
-                <TableHead>Contato</TableHead>
-                <TableHead className="text-center">Compras</TableHead>
-                <TableHead className="text-right">Total Gasto</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead className="font-bold">Nome</TableHead>
+                <TableHead className="font-bold">CNPJ</TableHead>
+                <TableHead className="font-bold">Contato</TableHead>
+                <TableHead className="text-center font-bold">Compras</TableHead>
+                <TableHead className="text-right font-bold">Total Gasto</TableHead>
+                <TableHead className="text-right font-bold">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -451,25 +465,27 @@ export default function Fornecedores() {
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
-                          <span className="inline-flex items-center gap-1" data-testid={`text-total-compras-${fornecedor.id}`}>
-                            <TrendingUp className="h-4 w-4 text-green-600" />
+                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-full font-semibold text-green-700 dark:text-green-400" data-testid={`text-total-compras-${fornecedor.id}`}>
+                            <TrendingUp className="h-4 w-4" />
                             {comprasFornecedor.length}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right font-semibold text-green-600" data-testid={`text-total-gasto-${fornecedor.id}`}>
-                          R$ {totalGasto.toFixed(2)}
+                        <TableCell className="text-right" data-testid={`text-total-gasto-${fornecedor.id}`}>
+                          <span className="font-bold text-lg bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                            R$ {totalGasto.toFixed(2)}
+                          </span>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-2 justify-end">
                             <Button
                               size="sm"
-                              variant="default"
                               onClick={() => {
                                 setSelectedFornecedor(fornecedor);
                                 setSelectedProdutoId("");
                                 setIsCompraDialogOpen(true);
                               }}
                               data-testid={`button-compra-${fornecedor.id}`}
+                              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md hover:shadow-lg transition-all"
                             >
                               <ShoppingCart className="h-4 w-4 mr-1" />
                               Compra
@@ -482,6 +498,7 @@ export default function Fornecedores() {
                                 setIsDialogOpen(true);
                               }}
                               data-testid={`button-editar-${fornecedor.id}`}
+                              className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 shadow-sm hover:shadow-md transition-all"
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -494,6 +511,7 @@ export default function Fornecedores() {
                                 }
                               }}
                               data-testid={`button-deletar-${fornecedor.id}`}
+                              className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 shadow-md hover:shadow-lg transition-all"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -502,11 +520,11 @@ export default function Fornecedores() {
                       </TableRow>
                       {isExpanded && (
                         <TableRow>
-                          <TableCell colSpan={7} className="bg-muted/50">
-                            <div className="py-4 space-y-4">
+                          <TableCell colSpan={7} className="bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20 border-l-4 border-l-blue-600">
+                            <div className="py-6 space-y-6">
                               <div>
-                                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                                  <Package className="h-4 w-4" />
+                                <h4 className="font-bold text-lg mb-3 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                                  <Package className="h-5 w-5 text-blue-600" />
                                   Produtos Fornecidos ({produtosFornecidos.length})
                                 </h4>
                                 <div className="flex flex-wrap gap-2">
@@ -514,35 +532,35 @@ export default function Fornecedores() {
                                     produtosFornecidos.map((produto) => (
                                       <span
                                         key={produto.id}
-                                        className="px-3 py-1 bg-background border rounded-full text-sm"
+                                        className="px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 border border-blue-300 dark:border-blue-700 rounded-full text-sm font-medium shadow-sm hover:shadow-md transition-shadow"
                                         data-testid={`badge-produto-${produto.id}`}
                                       >
                                         {produto.nome}
                                       </span>
                                     ))
                                   ) : (
-                                    <p className="text-sm text-muted-foreground">Nenhum produto fornecido ainda</p>
+                                    <p className="text-sm text-muted-foreground italic">Nenhum produto fornecido ainda</p>
                                   )}
                                 </div>
                               </div>
                               
                               <div>
-                                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                                  <ShoppingCart className="h-4 w-4" />
+                                <h4 className="font-bold text-lg mb-3 flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                                  <ShoppingCart className="h-5 w-5 text-green-600" />
                                   Histórico de Compras ({comprasFornecedor.length})
                                 </h4>
                                 {comprasFornecedor.length > 0 ? (
-                                  <div className="border rounded-lg overflow-hidden">
+                                  <div className="border-2 border-green-200 dark:border-green-800 rounded-xl overflow-hidden shadow-lg">
                                     <Table>
                                       <TableHeader>
-                                        <TableRow>
-                                          <TableHead>Data</TableHead>
-                                          <TableHead>Produto</TableHead>
-                                          <TableHead className="text-center">Quantidade</TableHead>
-                                          <TableHead className="text-right">Valor Unitário</TableHead>
-                                          <TableHead className="text-right">Valor Total</TableHead>
-                                          <TableHead>Observações</TableHead>
-                                          <TableHead className="text-center">Ações</TableHead>
+                                        <TableRow className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+                                          <TableHead className="font-bold">Data</TableHead>
+                                          <TableHead className="font-bold">Produto</TableHead>
+                                          <TableHead className="text-center font-bold">Quantidade</TableHead>
+                                          <TableHead className="text-right font-bold">Valor Unitário</TableHead>
+                                          <TableHead className="text-right font-bold">Valor Total</TableHead>
+                                          <TableHead className="font-bold">Observações</TableHead>
+                                          <TableHead className="text-center font-bold">Ações</TableHead>
                                         </TableRow>
                                       </TableHeader>
                                       <TableBody>
@@ -560,8 +578,10 @@ export default function Fornecedores() {
                                             <TableCell className="text-right" data-testid={`text-valor-unitario-${compra.id}`}>
                                               R$ {compra.valor_unitario?.toFixed(2)}
                                             </TableCell>
-                                            <TableCell className="text-right font-semibold" data-testid={`text-valor-total-${compra.id}`}>
-                                              R$ {compra.valor_total?.toFixed(2)}
+                                            <TableCell className="text-right" data-testid={`text-valor-total-${compra.id}`}>
+                                              <span className="font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                                                R$ {compra.valor_total?.toFixed(2)}
+                                              </span>
                                             </TableCell>
                                             <TableCell className="text-sm text-muted-foreground" data-testid={`text-observacoes-${compra.id}`}>
                                               {compra.observacoes || "-"}
@@ -575,6 +595,7 @@ export default function Fornecedores() {
                                                   setIsEditCompraDialogOpen(true);
                                                 }}
                                                 data-testid={`button-edit-compra-${compra.id}`}
+                                                className="hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 hover:text-purple-700 transition-all"
                                               >
                                                 <Pencil className="h-4 w-4" />
                                               </Button>

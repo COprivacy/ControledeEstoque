@@ -50,6 +50,7 @@ export const clientes = pgTable("clientes", {
   email: text("email"),
   endereco: text("endereco"),
   observacoes: text("observacoes"),
+  desconto: real("desconto"),
   data_cadastro: text("data_cadastro").notNull(),
 });
 

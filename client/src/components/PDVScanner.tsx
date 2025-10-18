@@ -46,6 +46,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const [clienteId, setClienteId] = useState<string>("none");
   const [openCombobox, setOpenCombobox] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [descontoPercentual, setDescontoPercentual] = useState(0); // Novo estado para o percentual de desconto
   const inputRef = useRef<HTMLInputElement>(null);
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const valorPagoRef = useRef<HTMLInputElement>(null);
@@ -76,7 +77,9 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     };
   }, [barcode]);
 
-  const valorTotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
+  const subtotalSemDesconto = cart.reduce((sum, item) => sum + item.subtotal, 0);
+  const valorDesconto = subtotalSemDesconto * (descontoPercentual / 100);
+  const valorTotal = subtotalSemDesconto - valorDesconto;
   const troco = parseFloat(valorPago || "0") - valorTotal;
 
   const mockFetchProduct = async (codigo: string) => {
@@ -222,6 +225,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     setBarcode("");
     setValorPago("");
     setClienteId("none");
+    setDescontoPercentual(0); // Reseta o desconto ao limpar o carrinho
     setShowConfirmDialog(false);
     inputRef.current?.focus();
   };
@@ -230,20 +234,34 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     if (e.key === 'Enter') {
       e.preventDefault();
       const valorPagoNum = parseFloat(valorPago || "0");
-      
+
       if (cart.length === 0) {
         alert("Carrinho vazio!");
         return;
       }
-      
+
       if (valorPagoNum < valorTotal) {
         alert("Valor pago insuficiente!");
         return;
       }
-      
+
       setShowConfirmDialog(true);
     }
   };
+
+  // Lógica para aplicar desconto ao cliente selecionado
+  useEffect(() => {
+    if (clienteId !== "none") {
+      const clienteSelecionado = clientes.find(c => c.id.toString() === clienteId);
+      if (clienteSelecionado && clienteSelecionado.percentual_desconto) {
+        setDescontoPercentual(clienteSelecionado.percentual_desconto);
+      } else {
+        setDescontoPercentual(0); // Reseta se o cliente não tiver desconto ou não for encontrado
+      }
+    } else {
+      setDescontoPercentual(0); // Reseta se nenhum cliente for selecionado
+    }
+  }, [clienteId, clientes]);
 
   return (
     <div className="space-y-6">
@@ -478,12 +496,32 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-lg">
-                  <span className="font-medium">Total:</span>
-                  <span className="font-bold text-2xl">R$ {valorTotal.toFixed(2)}</span>
-                </div>
-              </div>
+              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                    <DollarSign className="h-5 w-5" />
+                    Total da Venda
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {descontoPercentual > 0 && (
+                    <>
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Subtotal:</span>
+                        <span>R$ {subtotalSemDesconto.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
+                        <span>Desconto ({descontoPercentual}%):</span>
+                        <span>- R$ {valorDesconto.toFixed(2)}</span>
+                      </div>
+                      <div className="border-t pt-2"></div>
+                    </>
+                  )}
+                  <p className="text-4xl font-bold text-green-600 dark:text-green-400">
+                    R$ {valorTotal.toFixed(2)}
+                  </p>
+                </CardContent>
+              </Card>
 
               {cart.length > 0 && (
                 <>

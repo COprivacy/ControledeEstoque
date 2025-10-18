@@ -44,7 +44,7 @@ const DEFAULT_CONFIG = {
   secondaryColor: "#10B981",
   accentColor: "#F59E0B",
   backgroundColor: "#000000",
-  storeName: "Controle de Estoque Simples"
+  storeName: "Controle de Estoque"
 };
 
 export default function Settings() {
@@ -57,7 +57,7 @@ export default function Settings() {
     secondaryColor: "#10B981",
     accentColor: "#F59E0B",
     backgroundColor: "#000000",
-    storeName: "Controle de Estoque Simples"
+    storeName: "Controle de Estoque"
   });
 
   // Carregar configurações salvas quando o componente montar
@@ -72,7 +72,7 @@ export default function Settings() {
           secondaryColor: savedConfig.secondaryColor || "#10B981",
           accentColor: savedConfig.accentColor || "#F59E0B",
           backgroundColor: savedConfig.backgroundColor || "#000000",
-          storeName: savedConfig.storeName || "Controle de Estoque Simples"
+          storeName: savedConfig.storeName || "Controle de Estoque"
         });
 
         // Aplicar as cores salvas imediatamente

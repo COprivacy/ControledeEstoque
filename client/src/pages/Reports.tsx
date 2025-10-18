@@ -200,34 +200,40 @@ export default function Reports() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center gap-3">
-        <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Relatórios</h1>
-          <p className="text-sm text-muted-foreground">Análise de vendas e desempenho</p>
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 bg-clip-text text-transparent animate-in slide-in-from-left duration-700">
+            Relatórios
+          </h1>
+          <p className="text-sm text-muted-foreground animate-in slide-in-from-left duration-700 delay-100">
+            Análise de vendas e desempenho em tempo real
+          </p>
         </div>
-        <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
-          <Crown className="h-3 w-3 mr-1" />
+        <Badge className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 animate-in zoom-in duration-500">
+          <Crown className="h-3 w-3 mr-1 animate-pulse" />
           Premium
         </Badge>
       </div>
 
-      <div className="relative">
+      <div className="relative animate-in slide-in-from-right duration-700">
         <Button
           variant="outline"
           size="sm"
           onClick={handleExportPDF}
-          className="absolute -top-2 right-0 z-10"
+          className="absolute -top-2 right-0 z-10 bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 hover:from-green-600 hover:to-emerald-700 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
         >
           <Download className="h-4 w-4 mr-2" />
           Exportar PDF
         </Button>
         
-        <ReportsCard
-          dailyTotal={dailyTotal}
-          weeklyTotal={weeklyTotal}
-          onFilter={handleFilter}
-        />
+        <div className="backdrop-blur-sm bg-card/80 rounded-lg border-2 border-primary/10 shadow-xl hover:shadow-2xl transition-all duration-500">
+          <ReportsCard
+            dailyTotal={dailyTotal}
+            weeklyTotal={weeklyTotal}
+            onFilter={handleFilter}
+          />
+        </div>
       </div>
 
       <ExpiringProductsReport products={expiringProducts} />

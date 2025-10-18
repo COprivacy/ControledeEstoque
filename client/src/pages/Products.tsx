@@ -62,29 +62,37 @@ export default function Products() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Produtos</h1>
-            <p className="text-sm text-muted-foreground">Gerencie seu catálogo de produtos</p>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent animate-in slide-in-from-left duration-700">
+              Produtos
+            </h1>
+            <p className="text-sm text-muted-foreground animate-in slide-in-from-left duration-700 delay-100">
+              Gerencie seu catálogo com eficiência
+            </p>
           </div>
-          <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
-            <Crown className="h-3 w-3 mr-1" />
+          <Badge className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 animate-in zoom-in duration-500">
+            <Crown className="h-3 w-3 mr-1 animate-pulse" />
             Premium
           </Badge>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="relative animate-in slide-in-from-top duration-700 delay-150">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary animate-pulse" />
             <Input
               type="text"
               placeholder="Buscar produtos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 w-64"
+              className="pl-9 w-64 border-2 border-primary/20 focus:border-primary/50 transition-all duration-300 shadow-md hover:shadow-lg"
               data-testid="input-search-products"
             />
           </div>
-          <Button onClick={() => setLocation("/produtos/adicionar")} data-testid="button-add-product" className="bg-gradient-to-r from-blue-600 to-purple-600 border-0 hover:shadow-lg transition-all duration-300">
+          <Button 
+            onClick={() => setLocation("/produtos/adicionar")} 
+            data-testid="button-add-product" 
+            className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 border-0 hover:scale-105 hover:shadow-2xl transition-all duration-300 shadow-lg animate-in zoom-in duration-700 delay-200"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Produto
           </Button>

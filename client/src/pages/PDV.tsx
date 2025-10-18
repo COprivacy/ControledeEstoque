@@ -60,25 +60,29 @@ export default function PDV() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center gap-3">
-        <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">PDV - Ponto de Venda</h1>
-          <p className="text-sm text-muted-foreground">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent animate-in slide-in-from-left duration-700">
+            PDV - Ponto de Venda
+          </h1>
+          <p className="text-sm text-muted-foreground animate-in slide-in-from-left duration-700 delay-100">
             Escaneie os produtos para adicionar ao carrinho
           </p>
         </div>
-        <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
-          <Crown className="h-3 w-3 mr-1" />
+        <Badge className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 animate-in zoom-in duration-500">
+          <Crown className="h-3 w-3 mr-1 animate-pulse" />
           Premium
         </Badge>
       </div>
 
-      <PDVScanner
-        onSaleComplete={handleSaleComplete}
-        onProductNotFound={handleProductNotFound}
-        onFetchProduct={fetchProduct}
-      />
+      <div className="backdrop-blur-sm bg-card/80 rounded-lg border-2 border-primary/10 shadow-xl hover:shadow-2xl transition-all duration-500 p-6 animate-in slide-in-from-bottom duration-700">
+        <PDVScanner
+          onSaleComplete={handleSaleComplete}
+          onProductNotFound={handleProductNotFound}
+          onFetchProduct={fetchProduct}
+        />
+      </div>
     </div>
   );
 }

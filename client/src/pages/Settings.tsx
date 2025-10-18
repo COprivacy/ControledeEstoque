@@ -145,15 +145,19 @@ export default function Settings() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Configurações</h1>
-          <p className="text-sm text-muted-foreground">Personalize seu sistema</p>
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent animate-in slide-in-from-left duration-700">
+            Configurações
+          </h1>
+          <p className="text-sm text-muted-foreground animate-in slide-in-from-left duration-700 delay-100">
+            Personalize seu sistema com estilo
+          </p>
         </div>
         {isPremium && (
-          <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
-            <Crown className="h-3 w-3 mr-1" />
+          <Badge className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 animate-in zoom-in duration-500">
+            <Crown className="h-3 w-3 mr-1 animate-pulse" />
             Premium
           </Badge>
         )}
@@ -180,10 +184,10 @@ export default function Settings() {
 
       {isPremium && (
         <>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Upload className="h-5 w-5" />
+          <Card className="backdrop-blur-sm bg-card/80 border-2 border-primary/10 shadow-xl hover:shadow-2xl transition-all duration-500 hover:border-primary/30 animate-in slide-in-from-bottom duration-700">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Upload className="h-5 w-5 text-primary animate-pulse" />
                 Logo da Loja
               </CardTitle>
               <CardDescription>
@@ -226,10 +230,10 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Palette className="h-5 w-5" />
+          <Card className="backdrop-blur-sm bg-card/80 border-2 border-accent/10 shadow-xl hover:shadow-2xl transition-all duration-500 hover:border-accent/30 animate-in slide-in-from-bottom duration-700 delay-150">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Palette className="h-5 w-5 text-accent animate-pulse" />
                 Cores do Sistema
               </CardTitle>
               <CardDescription>
@@ -335,12 +339,12 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-3">
-            <Button onClick={handleReset} variant="outline" size="lg">
+          <div className="flex justify-end gap-3 animate-in slide-in-from-bottom duration-700 delay-300">
+            <Button onClick={handleReset} variant="outline" size="lg" className="hover:scale-105 transition-all duration-300 hover:shadow-lg">
               <RotateCcw className="h-4 w-4 mr-2" />
               Restaurar Padrão
             </Button>
-            <Button onClick={handleSave} size="lg">
+            <Button onClick={handleSave} size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
               <Save className="h-4 w-4 mr-2" />
               Salvar Configurações
             </Button>

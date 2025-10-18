@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Crown, Upload, Palette, Save } from "lucide-react";
+import { Crown, Upload, Palette, Save, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 // Função para converter HEX para HSL
@@ -38,6 +38,15 @@ function hexToHSL(hex: string): string {
 
   return `${h} ${s}% ${l}%`;
 }
+
+const DEFAULT_CONFIG = {
+  logoUrl: "",
+  primaryColor: "#2563EB",
+  secondaryColor: "#10B981",
+  accentColor: "#F59E0B",
+  backgroundColor: "#FFFFFF",
+  storeName: "Controle de Estoque Simples"
+};
 
 export default function Settings() {
   const { toast } = useToast();
@@ -114,6 +123,25 @@ export default function Settings() {
     toast({
       title: "Configurações salvas!",
       description: "A personalização foi aplicada com sucesso",
+    });
+  };
+
+  const handleReset = () => {
+    // Restaurar configurações padrão
+    setConfig(DEFAULT_CONFIG);
+    
+    // Aplicar cores padrão
+    document.documentElement.style.setProperty('--primary', hexToHSL(DEFAULT_CONFIG.primaryColor));
+    document.documentElement.style.setProperty('--secondary', hexToHSL(DEFAULT_CONFIG.secondaryColor));
+    document.documentElement.style.setProperty('--accent', hexToHSL(DEFAULT_CONFIG.accentColor));
+    document.documentElement.style.setProperty('--background', hexToHSL(DEFAULT_CONFIG.backgroundColor));
+    
+    // Remover do localStorage
+    localStorage.removeItem("customization");
+    
+    toast({
+      title: "Configurações restauradas!",
+      description: "As configurações padrão foram aplicadas",
     });
   };
 
@@ -306,7 +334,11 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-3">
+            <Button onClick={handleReset} variant="outline" size="lg">
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Restaurar Padrão
+            </Button>
             <Button onClick={handleSave} size="lg">
               <Save className="h-4 w-4 mr-2" />
               Salvar Configurações

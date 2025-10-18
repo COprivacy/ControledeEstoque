@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 function hexToHSL(hex: string): string {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return "0 0% 0%";
-  
+
   let r = parseInt(result[1], 16) / 255;
   let g = parseInt(result[2], 16) / 255;
   let b = parseInt(result[3], 16) / 255;
@@ -24,7 +23,7 @@ function hexToHSL(hex: string): string {
   if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    
+
     switch (max) {
       case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
       case g: h = ((b - r) / d + 2) / 6; break;
@@ -51,7 +50,7 @@ const DEFAULT_CONFIG = {
 export default function Settings() {
   const { toast } = useToast();
   const [isPremium] = useState(true); // Simulando usuário premium - futuramente virá do backend
-  
+
   const [config, setConfig] = useState({
     logoUrl: "",
     primaryColor: "#3B82F6",
@@ -75,7 +74,7 @@ export default function Settings() {
           backgroundColor: savedConfig.backgroundColor || "#000000",
           storeName: savedConfig.storeName || "Controle de Estoque Simples"
         });
-        
+
         // Aplicar as cores salvas imediatamente
         if (savedConfig.primaryColor) {
           document.documentElement.style.setProperty('--primary', hexToHSL(savedConfig.primaryColor));
@@ -113,13 +112,13 @@ export default function Settings() {
   const handleSave = () => {
     // Salvar configurações no localStorage (futuramente no backend)
     localStorage.setItem("customization", JSON.stringify(config));
-    
+
     // Aplicar cores CSS convertidas para HSL
     document.documentElement.style.setProperty('--primary', hexToHSL(config.primaryColor));
     document.documentElement.style.setProperty('--secondary', hexToHSL(config.secondaryColor));
     document.documentElement.style.setProperty('--accent', hexToHSL(config.accentColor));
     document.documentElement.style.setProperty('--background', hexToHSL(config.backgroundColor));
-    
+
     toast({
       title: "Configurações salvas!",
       description: "A personalização foi aplicada com sucesso",
@@ -129,16 +128,16 @@ export default function Settings() {
   const handleReset = () => {
     // Restaurar configurações padrão
     setConfig(DEFAULT_CONFIG);
-    
+
     // Aplicar cores padrão
     document.documentElement.style.setProperty('--primary', hexToHSL(DEFAULT_CONFIG.primaryColor));
     document.documentElement.style.setProperty('--secondary', hexToHSL(DEFAULT_CONFIG.secondaryColor));
     document.documentElement.style.setProperty('--accent', hexToHSL(DEFAULT_CONFIG.accentColor));
     document.documentElement.style.setProperty('--background', hexToHSL(DEFAULT_CONFIG.backgroundColor));
-    
+
     // Remover do localStorage
     localStorage.removeItem("customization");
-    
+
     toast({
       title: "Configurações restauradas!",
       description: "As configurações padrão foram aplicadas",
@@ -211,15 +210,17 @@ export default function Settings() {
                   </div>
                 )}
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="store-name">Nome da Loja</Label>
+                <Label htmlFor="store-name">Nome da Empresa</Label>
                 <Input
                   id="store-name"
                   type="text"
                   value={config.storeName}
                   onChange={(e) => setConfig({ ...config, storeName: e.target.value })}
-                  placeholder="Nome da sua loja"
+                  placeholder="Nome da sua empresa"
+                  required
+                  data-testid="input-min-stock"
                 />
               </div>
             </CardContent>

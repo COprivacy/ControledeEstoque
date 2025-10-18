@@ -50,7 +50,7 @@ export const clientes = pgTable("clientes", {
   email: text("email"),
   endereco: text("endereco"),
   observacoes: text("observacoes"),
-  desconto: real("desconto"),
+  percentual_desconto: real("percentual_desconto"),
   data_cadastro: text("data_cadastro").notNull(),
 });
 
@@ -90,6 +90,8 @@ export const insertFornecedorSchema = createInsertSchema(fornecedores).omit({
 
 export const insertClienteSchema = createInsertSchema(clientes).omit({
   id: true,
+}).extend({
+  data_cadastro: z.string().optional(),
 });
 
 export const insertCompraSchema = createInsertSchema(compras).omit({

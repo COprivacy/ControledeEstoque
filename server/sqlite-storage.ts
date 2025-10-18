@@ -95,8 +95,8 @@ export class SQLiteStorage implements IStorage {
         email TEXT,
         endereco TEXT,
         observacoes TEXT,
-        desconto REAL,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        percentual_desconto REAL,
+        data_cadastro TEXT NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS compras (

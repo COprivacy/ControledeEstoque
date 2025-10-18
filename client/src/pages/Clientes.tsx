@@ -86,7 +86,8 @@ export default function Clientes() {
       email: formData.get("email"),
       endereco: formData.get("endereco"),
       observacoes: formData.get("observacoes"),
-      desconto: formData.get("desconto") ? parseFloat(formData.get("desconto") as string) : null,
+      percentual_desconto: formData.get("percentual_desconto") ? parseFloat(formData.get("percentual_desconto") as string) : null,
+      data_cadastro: new Date().toISOString(),
     };
 
     if (editingCliente) {
@@ -169,15 +170,15 @@ export default function Clientes() {
                 <Textarea id="observacoes" name="observacoes" defaultValue={editingCliente?.observacoes || ""} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="desconto">Desconto Padrão (%)</Label>
+                <Label htmlFor="percentual_desconto">Desconto Padrão (%)</Label>
                 <Input 
-                  id="desconto" 
-                  name="desconto" 
+                  id="percentual_desconto" 
+                  name="percentual_desconto" 
                   type="number" 
                   min="0" 
                   max="100" 
                   step="0.01"
-                  defaultValue={editingCliente?.desconto || ""} 
+                  defaultValue={editingCliente?.percentual_desconto || ""} 
                   placeholder="0.00"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -261,10 +262,10 @@ export default function Clientes() {
                           <div className="text-sm">
                             <div>{cliente.telefone || "-"}</div>
                             <div className="text-muted-foreground">{cliente.email || "-"}</div>
-                            {cliente.desconto && cliente.desconto > 0 && (
+                            {cliente.percentual_desconto && cliente.percentual_desconto > 0 && (
                               <div className="mt-1">
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded text-xs font-medium">
-                                  {cliente.desconto}% desconto
+                                  {cliente.percentual_desconto}% desconto
                                 </span>
                               </div>
                             )}

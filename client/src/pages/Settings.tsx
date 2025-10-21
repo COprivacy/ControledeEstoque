@@ -79,23 +79,26 @@ export default function Settings() {
     if (saved) {
       try {
         const savedConfig = JSON.parse(saved);
-        setConfig({
+        const mergedConfig = {
           ...DEFAULT_CONFIG,
           ...savedConfig
-        });
+        };
+        setConfig(mergedConfig);
 
         // Aplicar as cores salvas imediatamente
-        applyThemeColors(savedConfig);
+        applyThemeColors(mergedConfig);
         
         // Aplicar outras customizações
-        if (savedConfig.fontSize) {
-          applyFontSize(savedConfig.fontSize);
-        }
-        if (savedConfig.borderRadius) {
-          applyBorderRadius(savedConfig.borderRadius);
-        }
+        applyFontSize(mergedConfig.fontSize);
+        applyBorderRadius(mergedConfig.borderRadius);
+        applyInterfaceSettings();
       } catch (error) {
         console.error("Erro ao carregar configurações:", error);
+        toast({
+          title: "Erro ao carregar configurações",
+          description: "As configurações padrão foram aplicadas",
+          variant: "destructive",
+        });
       }
     }
   }, []);
@@ -122,7 +125,9 @@ export default function Settings() {
       large: '18px',
       xlarge: '20px'
     };
-    document.documentElement.style.setProperty('font-size', sizes[size as keyof typeof sizes] || '16px');
+    const fontSize = sizes[size as keyof typeof sizes] || '16px';
+    document.documentElement.style.setProperty('font-size', fontSize);
+    document.body.style.fontSize = fontSize;
   };
 
   const applyBorderRadius = (radius: string) => {
@@ -134,6 +139,22 @@ export default function Settings() {
       xlarge: '1.5rem'
     };
     document.documentElement.style.setProperty('--radius', radii[radius as keyof typeof radii] || '0.5rem');
+  };
+
+  const applyInterfaceSettings = () => {
+    // Aplicar modo compacto
+    if (config.compactMode) {
+      document.body.classList.add('compact-mode');
+    } else {
+      document.body.classList.remove('compact-mode');
+    }
+
+    // Aplicar animações
+    if (!config.enableAnimations) {
+      document.body.classList.add('no-animations');
+    } else {
+      document.body.classList.remove('no-animations');
+    }
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -152,6 +173,29 @@ export default function Settings() {
   };
 
   const handleSave = () => {
+    // Validar email se alertas estiverem habilitados
+    if (config.enableEmailAlerts && !config.emailForAlerts) {
+      toast({
+        title: "Atenção!",
+        description: "Por favor, informe um e-mail para receber alertas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar formato de email
+    if (config.enableEmailAlerts && config.emailForAlerts) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(config.emailForAlerts)) {
+        toast({
+          title: "E-mail inválido!",
+          description: "Por favor, informe um e-mail válido.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     // Salvar configurações no localStorage
     localStorage.setItem("customization", JSON.stringify(config));
 
@@ -159,6 +203,7 @@ export default function Settings() {
     applyThemeColors(config);
     applyFontSize(config.fontSize);
     applyBorderRadius(config.borderRadius);
+    applyInterfaceSettings();
 
     toast({
       title: "Configurações salvas!",
@@ -171,6 +216,7 @@ export default function Settings() {
     applyThemeColors(DEFAULT_CONFIG);
     applyFontSize(DEFAULT_CONFIG.fontSize);
     applyBorderRadius(DEFAULT_CONFIG.borderRadius);
+    applyInterfaceSettings();
     localStorage.removeItem("customization");
 
     toast({

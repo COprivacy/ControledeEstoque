@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import ReportsCard from "@/components/ReportsCard";
@@ -220,6 +221,11 @@ export default function Reports() {
     setEndDate(filterEndDate);
   };
 
+  const handleClearFilter = () => {
+    setStartDate("");
+    setEndDate("");
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center gap-3">
@@ -254,6 +260,7 @@ export default function Reports() {
             weeklyTotal={weeklyTotal}
             monthlyTotal={monthlyTotal}
             onFilter={handleFilter}
+            onClearFilter={handleClearFilter}
           />
         </div>
       </div>

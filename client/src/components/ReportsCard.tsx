@@ -8,13 +8,17 @@ import { Calendar } from "lucide-react";
 interface ReportsCardProps {
   dailyTotal?: number;
   weeklyTotal?: number;
+  monthlyTotal?: number; // Added for monthly sales
   onFilter?: (startDate: string, endDate: string) => void;
+  onClearFilter?: () => void; // Added for clearing filter
 }
 
-export default function ReportsCard({ 
-  dailyTotal = 0, 
+export default function ReportsCard({
+  dailyTotal = 0,
   weeklyTotal = 0,
-  onFilter 
+  monthlyTotal = 0, // Added for monthly sales
+  onFilter,
+  onClearFilter
 }: ReportsCardProps) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -24,6 +28,13 @@ export default function ReportsCard({
       onFilter?.(startDate, endDate);
       console.log("Filtrar vendas:", { startDate, endDate });
     }
+  };
+
+  const handleClearFilter = () => {
+    setStartDate("");
+    setEndDate("");
+    onClearFilter?.();
+    console.log("Filtro limpo");
   };
 
   return (
@@ -39,7 +50,7 @@ export default function ReportsCard({
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">Vendas da Semana</CardTitle>
@@ -47,6 +58,17 @@ export default function ReportsCard({
           <CardContent>
             <p className="text-3xl font-bold text-foreground" data-testid="text-weekly-total">
               R$ {weeklyTotal.toFixed(2)}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Vendas Mensais</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-foreground" data-testid="text-monthly-total">
+              R$ {monthlyTotal.toFixed(2)}
             </p>
           </CardContent>
         </Card>
@@ -73,7 +95,7 @@ export default function ReportsCard({
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="end-date">Data Final</Label>
                 <div className="relative">
@@ -89,14 +111,27 @@ export default function ReportsCard({
                 </div>
               </div>
             </div>
-            
-            <Button 
-              onClick={handleFilter} 
-              disabled={!startDate || !endDate}
-              data-testid="button-filter"
-            >
-              Aplicar Filtro
-            </Button>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={handleFilter}
+                className="flex-1 md:flex-none"
+                disabled={!startDate || !endDate}
+                data-testid="button-filter"
+              >
+                Aplicar Filtro
+              </Button>
+              {(startDate || endDate) && (
+                <Button
+                  onClick={handleClearFilter}
+                  variant="outline"
+                  className="flex-1 md:flex-none"
+                  data-testid="button-clear-filter"
+                >
+                  Limpar Filtro
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

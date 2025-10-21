@@ -13,6 +13,8 @@ import { formatDateTime } from "@/lib/dateUtils";
 export default function Reports() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
@@ -138,7 +140,16 @@ export default function Reports() {
   };
 
   const { data: vendas = [] } = useQuery({
-    queryKey: ["/api/vendas"],
+    queryKey: ["/api/vendas", startDate, endDate],
+    queryFn: async () => {
+      let url = "/api/vendas";
+      if (startDate && endDate) {
+        url += `?start_date=${startDate}&end_date=${endDate}`;
+      }
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Erro ao buscar vendas");
+      return response.json();
+    },
   });
 
   const { data: expiringProducts = [] } = useQuery({
@@ -195,8 +206,18 @@ export default function Reports() {
     })
     .reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
 
-  const handleFilter = async (startDate: string, endDate: string) => {
-    queryClient.invalidateQueries({ queryKey: ["/api/vendas"] });
+  const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const monthlyTotal = vendas
+    .filter((v: any) => {
+      if (!v.data) return false;
+      const vendaDate = new Date(v.data).toISOString().split('T')[0];
+      return vendaDate >= monthAgo && vendaDate <= today;
+    })
+    .reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
+
+  const handleFilter = (filterStartDate: string, filterEndDate: string) => {
+    setStartDate(filterStartDate);
+    setEndDate(filterEndDate);
   };
 
   return (
@@ -231,6 +252,7 @@ export default function Reports() {
           <ReportsCard
             dailyTotal={dailyTotal}
             weeklyTotal={weeklyTotal}
+            monthlyTotal={monthlyTotal}
             onFilter={handleFilter}
           />
         </div>

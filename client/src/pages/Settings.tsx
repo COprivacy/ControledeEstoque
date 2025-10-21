@@ -1,11 +1,16 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Crown, Upload, Palette, Save, RotateCcw } from "lucide-react";
+import { Crown, Upload, Palette, Save, RotateCcw, Monitor, Bell, Globe, Gauge } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Separator } from "@/components/ui/separator";
 
 // Função para converter HEX para HSL
 function hexToHSL(hex: string): string {
@@ -44,21 +49,29 @@ const DEFAULT_CONFIG = {
   secondaryColor: "#10B981",
   accentColor: "#F59E0B",
   backgroundColor: "#000000",
-  storeName: "Controle de Estoque"
+  storeName: "Controle de Estoque",
+  fontSize: "medium",
+  borderRadius: "medium",
+  language: "pt-BR",
+  currency: "BRL",
+  dateFormat: "DD/MM/YYYY",
+  enableAnimations: true,
+  enableSounds: false,
+  compactMode: false,
+  showWelcomeMessage: true,
+  autoSaveInterval: 30,
+  lowStockThreshold: 10,
+  itemsPerPage: 10,
+  enableNotifications: true,
+  enableEmailAlerts: false,
+  emailForAlerts: "",
 };
 
 export default function Settings() {
   const { toast } = useToast();
-  const [isPremium] = useState(true); // Simulando usuário premium - futuramente virá do backend
+  const [isPremium] = useState(true);
 
-  const [config, setConfig] = useState({
-    logoUrl: "",
-    primaryColor: "#3B82F6",
-    secondaryColor: "#10B981",
-    accentColor: "#F59E0B",
-    backgroundColor: "#000000",
-    storeName: "Controle de Estoque"
-  });
+  const [config, setConfig] = useState(DEFAULT_CONFIG);
 
   // Carregar configurações salvas quando o componente montar
   useEffect(() => {
@@ -67,32 +80,61 @@ export default function Settings() {
       try {
         const savedConfig = JSON.parse(saved);
         setConfig({
-          logoUrl: savedConfig.logoUrl || "",
-          primaryColor: savedConfig.primaryColor || "#3B82F6",
-          secondaryColor: savedConfig.secondaryColor || "#10B981",
-          accentColor: savedConfig.accentColor || "#F59E0B",
-          backgroundColor: savedConfig.backgroundColor || "#000000",
-          storeName: savedConfig.storeName || "Controle de Estoque"
+          ...DEFAULT_CONFIG,
+          ...savedConfig
         });
 
         // Aplicar as cores salvas imediatamente
-        if (savedConfig.primaryColor) {
-          document.documentElement.style.setProperty('--primary', hexToHSL(savedConfig.primaryColor));
+        applyThemeColors(savedConfig);
+        
+        // Aplicar outras customizações
+        if (savedConfig.fontSize) {
+          applyFontSize(savedConfig.fontSize);
         }
-        if (savedConfig.secondaryColor) {
-          document.documentElement.style.setProperty('--secondary', hexToHSL(savedConfig.secondaryColor));
-        }
-        if (savedConfig.accentColor) {
-          document.documentElement.style.setProperty('--accent', hexToHSL(savedConfig.accentColor));
-        }
-        if (savedConfig.backgroundColor) {
-          document.documentElement.style.setProperty('--background', hexToHSL(savedConfig.backgroundColor));
+        if (savedConfig.borderRadius) {
+          applyBorderRadius(savedConfig.borderRadius);
         }
       } catch (error) {
         console.error("Erro ao carregar configurações:", error);
       }
     }
   }, []);
+
+  const applyThemeColors = (customization: any) => {
+    if (customization.primaryColor) {
+      document.documentElement.style.setProperty('--primary', hexToHSL(customization.primaryColor));
+    }
+    if (customization.secondaryColor) {
+      document.documentElement.style.setProperty('--secondary', hexToHSL(customization.secondaryColor));
+    }
+    if (customization.accentColor) {
+      document.documentElement.style.setProperty('--accent', hexToHSL(customization.accentColor));
+    }
+    if (customization.backgroundColor) {
+      document.documentElement.style.setProperty('--background', hexToHSL(customization.backgroundColor));
+    }
+  };
+
+  const applyFontSize = (size: string) => {
+    const sizes = {
+      small: '14px',
+      medium: '16px',
+      large: '18px',
+      xlarge: '20px'
+    };
+    document.documentElement.style.setProperty('font-size', sizes[size as keyof typeof sizes] || '16px');
+  };
+
+  const applyBorderRadius = (radius: string) => {
+    const radii = {
+      none: '0rem',
+      small: '0.25rem',
+      medium: '0.5rem',
+      large: '1rem',
+      xlarge: '1.5rem'
+    };
+    document.documentElement.style.setProperty('--radius', radii[radius as keyof typeof radii] || '0.5rem');
+  };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -110,14 +152,13 @@ export default function Settings() {
   };
 
   const handleSave = () => {
-    // Salvar configurações no localStorage (futuramente no backend)
+    // Salvar configurações no localStorage
     localStorage.setItem("customization", JSON.stringify(config));
 
-    // Aplicar cores CSS convertidas para HSL
-    document.documentElement.style.setProperty('--primary', hexToHSL(config.primaryColor));
-    document.documentElement.style.setProperty('--secondary', hexToHSL(config.secondaryColor));
-    document.documentElement.style.setProperty('--accent', hexToHSL(config.accentColor));
-    document.documentElement.style.setProperty('--background', hexToHSL(config.backgroundColor));
+    // Aplicar customizações
+    applyThemeColors(config);
+    applyFontSize(config.fontSize);
+    applyBorderRadius(config.borderRadius);
 
     toast({
       title: "Configurações salvas!",
@@ -126,16 +167,10 @@ export default function Settings() {
   };
 
   const handleReset = () => {
-    // Restaurar configurações padrão
     setConfig(DEFAULT_CONFIG);
-
-    // Aplicar cores padrão
-    document.documentElement.style.setProperty('--primary', hexToHSL(DEFAULT_CONFIG.primaryColor));
-    document.documentElement.style.setProperty('--secondary', hexToHSL(DEFAULT_CONFIG.secondaryColor));
-    document.documentElement.style.setProperty('--accent', hexToHSL(DEFAULT_CONFIG.accentColor));
-    document.documentElement.style.setProperty('--background', hexToHSL(DEFAULT_CONFIG.backgroundColor));
-
-    // Remover do localStorage
+    applyThemeColors(DEFAULT_CONFIG);
+    applyFontSize(DEFAULT_CONFIG.fontSize);
+    applyBorderRadius(DEFAULT_CONFIG.borderRadius);
     localStorage.removeItem("customization");
 
     toast({
@@ -184,17 +219,18 @@ export default function Settings() {
 
       {isPremium && (
         <>
+          {/* Marca e Identidade Visual */}
           <Card className="backdrop-blur-sm bg-card/80 border-2 border-primary/10 shadow-xl hover:shadow-2xl transition-all duration-500 hover:border-primary/30 animate-in slide-in-from-bottom duration-700">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-t-lg">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Upload className="h-5 w-5 text-primary animate-pulse" />
-                Logo da Loja
+                Marca e Identidade Visual
               </CardTitle>
               <CardDescription>
-                Personalize a logo que aparece no sistema
+                Personalize a logo e nome da sua empresa
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               <div className="space-y-2">
                 <Label htmlFor="logo-upload">Upload da Logo</Label>
                 <Input
@@ -223,24 +259,23 @@ export default function Settings() {
                   value={config.storeName}
                   onChange={(e) => setConfig({ ...config, storeName: e.target.value })}
                   placeholder="Nome da sua empresa"
-                  required
-                  data-testid="input-min-stock"
                 />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="backdrop-blur-sm bg-card/80 border-2 border-accent/10 shadow-xl hover:shadow-2xl transition-all duration-500 hover:border-accent/30 animate-in slide-in-from-bottom duration-700 delay-150">
+          {/* Cores do Sistema */}
+          <Card className="backdrop-blur-sm bg-card/80 border-2 border-accent/10 shadow-xl hover:shadow-2xl transition-all duration-500 hover:border-accent/30 animate-in slide-in-from-bottom duration-700 delay-100">
             <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-t-lg">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Palette className="h-5 w-5 text-accent animate-pulse" />
-                Cores do Sistema
+                Paleta de Cores
               </CardTitle>
               <CardDescription>
                 Personalize as cores principais do sistema
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="primary-color">Cor Primária</Label>
@@ -339,7 +374,301 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-3 animate-in slide-in-from-bottom duration-700 delay-300">
+          {/* Interface e Experiência */}
+          <Card className="backdrop-blur-sm bg-card/80 border-2 border-secondary/10 shadow-xl hover:shadow-2xl transition-all duration-500 hover:border-secondary/30 animate-in slide-in-from-bottom duration-700 delay-150">
+            <CardHeader className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Monitor className="h-5 w-5 text-secondary animate-pulse" />
+                Interface e Experiência
+              </CardTitle>
+              <CardDescription>
+                Ajuste a aparência e comportamento da interface
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="font-size">Tamanho da Fonte</Label>
+                  <Select
+                    value={config.fontSize}
+                    onValueChange={(value) => setConfig({ ...config, fontSize: value })}
+                  >
+                    <SelectTrigger id="font-size">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="small">Pequeno</SelectItem>
+                      <SelectItem value="medium">Médio</SelectItem>
+                      <SelectItem value="large">Grande</SelectItem>
+                      <SelectItem value="xlarge">Extra Grande</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="border-radius">Arredondamento</Label>
+                  <Select
+                    value={config.borderRadius}
+                    onValueChange={(value) => setConfig({ ...config, borderRadius: value })}
+                  >
+                    <SelectTrigger id="border-radius">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sem Arredondamento</SelectItem>
+                      <SelectItem value="small">Pequeno</SelectItem>
+                      <SelectItem value="medium">Médio</SelectItem>
+                      <SelectItem value="large">Grande</SelectItem>
+                      <SelectItem value="xlarge">Extra Grande</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Animações</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Ativar animações e transições suaves
+                    </p>
+                  </div>
+                  <Switch
+                    checked={config.enableAnimations}
+                    onCheckedChange={(checked) => setConfig({ ...config, enableAnimations: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Sons do Sistema</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Reproduzir sons para ações importantes
+                    </p>
+                  </div>
+                  <Switch
+                    checked={config.enableSounds}
+                    onCheckedChange={(checked) => setConfig({ ...config, enableSounds: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Modo Compacto</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Reduzir espaçamentos para mais conteúdo
+                    </p>
+                  </div>
+                  <Switch
+                    checked={config.compactMode}
+                    onCheckedChange={(checked) => setConfig({ ...config, compactMode: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Mensagem de Boas-vindas</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Mostrar mensagem ao fazer login
+                    </p>
+                  </div>
+                  <Switch
+                    checked={config.showWelcomeMessage}
+                    onCheckedChange={(checked) => setConfig({ ...config, showWelcomeMessage: checked })}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Regionalização */}
+          <Card className="backdrop-blur-sm bg-card/80 border-2 border-accent/10 shadow-xl hover:shadow-2xl transition-all duration-500 hover:border-accent/30 animate-in slide-in-from-bottom duration-700 delay-200">
+            <CardHeader className="bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-950/20 dark:to-yellow-950/20 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Globe className="h-5 w-5 text-accent animate-pulse" />
+                Regionalização
+              </CardTitle>
+              <CardDescription>
+                Configure idioma, moeda e formatos
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="language">Idioma</Label>
+                  <Select
+                    value={config.language}
+                    onValueChange={(value) => setConfig({ ...config, language: value })}
+                  >
+                    <SelectTrigger id="language">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pt-BR">Português (BR)</SelectItem>
+                      <SelectItem value="en-US">English (US)</SelectItem>
+                      <SelectItem value="es-ES">Español</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Moeda</Label>
+                  <Select
+                    value={config.currency}
+                    onValueChange={(value) => setConfig({ ...config, currency: value })}
+                  >
+                    <SelectTrigger id="currency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BRL">Real (R$)</SelectItem>
+                      <SelectItem value="USD">Dólar ($)</SelectItem>
+                      <SelectItem value="EUR">Euro (€)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="date-format">Formato de Data</Label>
+                  <Select
+                    value={config.dateFormat}
+                    onValueChange={(value) => setConfig({ ...config, dateFormat: value })}
+                  >
+                    <SelectTrigger id="date-format">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                      <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                      <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Comportamento e Desempenho */}
+          <Card className="backdrop-blur-sm bg-card/80 border-2 border-primary/10 shadow-xl hover:shadow-2xl transition-all duration-500 hover:border-primary/30 animate-in slide-in-from-bottom duration-700 delay-250">
+            <CardHeader className="bg-gradient-to-r from-indigo-50 to-cyan-50 dark:from-indigo-950/20 dark:to-cyan-950/20 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Gauge className="h-5 w-5 text-primary animate-pulse" />
+                Comportamento e Desempenho
+              </CardTitle>
+              <CardDescription>
+                Configure salvamento automático e preferências de exibição
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="auto-save">Intervalo de Salvamento Automático (segundos)</Label>
+                  <span className="text-sm text-muted-foreground font-medium">{config.autoSaveInterval}s</span>
+                </div>
+                <Slider
+                  id="auto-save"
+                  min={10}
+                  max={120}
+                  step={10}
+                  value={[config.autoSaveInterval]}
+                  onValueChange={(value) => setConfig({ ...config, autoSaveInterval: value[0] })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="low-stock">Limite de Estoque Baixo</Label>
+                  <span className="text-sm text-muted-foreground font-medium">{config.lowStockThreshold} unidades</span>
+                </div>
+                <Slider
+                  id="low-stock"
+                  min={1}
+                  max={100}
+                  step={1}
+                  value={[config.lowStockThreshold]}
+                  onValueChange={(value) => setConfig({ ...config, lowStockThreshold: value[0] })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="items-per-page">Itens por Página</Label>
+                <Select
+                  value={config.itemsPerPage.toString()}
+                  onValueChange={(value) => setConfig({ ...config, itemsPerPage: parseInt(value) })}
+                >
+                  <SelectTrigger id="items-per-page">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5 itens</SelectItem>
+                    <SelectItem value="10">10 itens</SelectItem>
+                    <SelectItem value="25">25 itens</SelectItem>
+                    <SelectItem value="50">50 itens</SelectItem>
+                    <SelectItem value="100">100 itens</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Notificações e Alertas */}
+          <Card className="backdrop-blur-sm bg-card/80 border-2 border-destructive/10 shadow-xl hover:shadow-2xl transition-all duration-500 hover:border-destructive/30 animate-in slide-in-from-bottom duration-700 delay-300">
+            <CardHeader className="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/20 dark:to-pink-950/20 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Bell className="h-5 w-5 text-destructive animate-pulse" />
+                Notificações e Alertas
+              </CardTitle>
+              <CardDescription>
+                Configure como deseja receber alertas importantes
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Notificações no Sistema</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receber notificações visuais no sistema
+                  </p>
+                </div>
+                <Switch
+                  checked={config.enableNotifications}
+                  onCheckedChange={(checked) => setConfig({ ...config, enableNotifications: checked })}
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Alertas por E-mail</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receber alertas críticos por e-mail
+                  </p>
+                </div>
+                <Switch
+                  checked={config.enableEmailAlerts}
+                  onCheckedChange={(checked) => setConfig({ ...config, enableEmailAlerts: checked })}
+                />
+              </div>
+
+              {config.enableEmailAlerts && (
+                <div className="space-y-2">
+                  <Label htmlFor="email-alerts">E-mail para Alertas</Label>
+                  <Input
+                    id="email-alerts"
+                    type="email"
+                    value={config.emailForAlerts}
+                    onChange={(e) => setConfig({ ...config, emailForAlerts: e.target.value })}
+                    placeholder="seu@email.com"
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end gap-3 animate-in slide-in-from-bottom duration-700 delay-350">
             <Button onClick={handleReset} variant="outline" size="lg" className="hover:scale-105 transition-all duration-300 hover:shadow-lg">
               <RotateCcw className="h-4 w-4 mr-2" />
               Restaurar Padrão

@@ -420,15 +420,18 @@ export default function PDV() {
                     <div className="space-y-2">
                       <Label className="font-semibold">Produtos/Serviços</Label>
                       <div className="border rounded-lg p-3 bg-muted/50">
-                        {lastSale.itens.map((item: any, index: number) => (
-                          <div key={index} className="flex justify-between py-2 border-b last:border-b-0">
-                            <span>{item.nome}</span>
-                            <div className="text-right space-x-4">
-                              <span className="text-muted-foreground">Qtd: {item.quantidade}</span>
-                              <span className="font-medium">R$ {item.subtotal.toFixed(2)}</span>
+                        {lastSale.itens.map((item: any, index: number) => {
+                          const subtotal = item.subtotal || (item.preco_unitario * item.quantidade) || 0;
+                          return (
+                            <div key={index} className="flex justify-between py-2 border-b last:border-b-0">
+                              <span>{item.nome}</span>
+                              <div className="text-right space-x-4">
+                                <span className="text-muted-foreground">Qtd: {item.quantidade}</span>
+                                <span className="font-medium">R$ {subtotal.toFixed(2)}</span>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       <Button
                         size="sm"
@@ -436,7 +439,10 @@ export default function PDV() {
                         className="w-full"
                         onClick={() => {
                           const texto = lastSale.itens
-                            .map((item: any) => `${item.nome} - Qtd: ${item.quantidade} - R$ ${item.subtotal.toFixed(2)}`)
+                            .map((item: any) => {
+                              const subtotal = item.subtotal || (item.preco_unitario * item.quantidade) || 0;
+                              return `${item.nome} - Qtd: ${item.quantidade} - R$ ${subtotal.toFixed(2)}`;
+                            })
                             .join('\n');
                           copyToClipboard(texto, "Lista de Produtos");
                         }}

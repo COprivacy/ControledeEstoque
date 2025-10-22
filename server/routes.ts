@@ -1,27 +1,27 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { 
-  insertUserSchema, 
-  insertProdutoSchema, 
+import {
+  insertUserSchema,
+  insertProdutoSchema,
   insertVendaSchema,
-  insertConfigFiscalSchema 
+  insertConfigFiscalSchema
 } from "@shared/schema";
 import { nfceSchema } from "@shared/nfce-schema";
-import { z } from "zod";
 import { FocusNFeService } from "./focusnfe";
+import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  
+
   app.post("/api/auth/register", async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
       const existingUser = await storage.getUserByEmail(userData.email);
-      
+
       if (existingUser) {
         return res.status(400).json({ error: "Email já cadastrado" });
       }
-      
+
       const user = await storage.createUser(userData);
       res.json({ id: user.id, email: user.email, nome: user.nome });
     } catch (error) {
@@ -36,11 +36,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, senha } = req.body;
       const user = await storage.getUserByEmail(email);
-      
+
       if (!user || user.senha !== senha) {
         return res.status(401).json({ error: "Email ou senha inválidos" });
       }
-      
+
       res.json({ id: user.id, email: user.email, nome: user.nome });
     } catch (error) {
       res.status(500).json({ error: "Erro ao fazer login" });
@@ -51,21 +51,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const produtos = await storage.getProdutos();
       const expiring = req.query.expiring;
-      
+
       if (expiring === 'soon') {
         const today = new Date();
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(today.getDate() + 30);
-        
+
         const expiringProducts = produtos.filter(p => {
           if (!p.vencimento) return false;
           const expiryDate = new Date(p.vencimento);
           return expiryDate <= thirtyDaysFromNow && expiryDate >= today;
         });
-        
+
         return res.json(expiringProducts);
       }
-      
+
       res.json(produtos);
     } catch (error) {
       res.status(500).json({ error: "Erro ao buscar produtos" });
@@ -76,11 +76,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const produto = await storage.getProduto(id);
-      
+
       if (!produto) {
         return res.status(404).json({ error: "Produto não encontrado" });
       }
-      
+
       res.json(produto);
     } catch (error) {
       res.status(500).json({ error: "Erro ao buscar produto" });
@@ -91,11 +91,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const codigo = req.params.codigo;
       const produto = await storage.getProdutoByCodigoBarras(codigo);
-      
+
       if (!produto) {
         return res.status(404).json({ error: "Produto não encontrado" });
       }
-      
+
       res.json(produto);
     } catch (error) {
       res.status(500).json({ error: "Erro ao buscar produto" });
@@ -105,15 +105,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/produtos", async (req, res) => {
     try {
       const produtoData = insertProdutoSchema.parse(req.body);
-      
+
       if (produtoData.preco <= 0) {
         return res.status(400).json({ error: "Preço deve ser positivo" });
       }
-      
+
       if (produtoData.quantidade < 0) {
         return res.status(400).json({ error: "Quantidade não pode ser negativa" });
       }
-      
+
       const produto = await storage.createProduto(produtoData);
       res.json(produto);
     } catch (error) {
@@ -128,21 +128,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
-      
+
       if (updates.preco !== undefined && updates.preco <= 0) {
         return res.status(400).json({ error: "Preço deve ser positivo" });
       }
-      
+
       if (updates.quantidade !== undefined && updates.quantidade < 0) {
         return res.status(400).json({ error: "Quantidade não pode ser negativa" });
       }
-      
+
       const produto = await storage.updateProduto(id, updates);
-      
+
       if (!produto) {
         return res.status(404).json({ error: "Produto não encontrado" });
       }
-      
+
       res.json(produto);
     } catch (error) {
       res.status(500).json({ error: "Erro ao atualizar produto" });
@@ -153,11 +153,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteProduto(id);
-      
+
       if (!deleted) {
         return res.status(404).json({ error: "Produto não encontrado" });
       }
-      
+
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Erro ao deletar produto" });
@@ -167,34 +167,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/vendas", async (req, res) => {
     try {
       const { itens, cliente_id } = req.body;
-      
+
       if (!itens || !Array.isArray(itens) || itens.length === 0) {
         return res.status(400).json({ error: "Itens da venda são obrigatórios" });
       }
-      
+
       let valorTotal = 0;
       const produtosVendidos = [];
-      
+
       for (const item of itens) {
         const produto = await storage.getProdutoByCodigoBarras(item.codigo_barras);
-        
+
         if (!produto) {
           return res.status(404).json({ error: `Produto com código ${item.codigo_barras} não encontrado` });
         }
-        
+
         if (produto.quantidade < item.quantidade) {
-          return res.status(400).json({ 
-            error: `Estoque insuficiente para ${produto.nome}. Disponível: ${produto.quantidade}` 
+          return res.status(400).json({
+            error: `Estoque insuficiente para ${produto.nome}. Disponível: ${produto.quantidade}`
           });
         }
-        
+
         const subtotal = produto.preco * item.quantidade;
         valorTotal += subtotal;
-        
+
         await storage.updateProduto(produto.id, {
           quantidade: produto.quantidade - item.quantidade
         });
-        
+
         produtosVendidos.push({
           nome: produto.nome,
           quantidade: item.quantidade,
@@ -202,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subtotal
         });
       }
-      
+
       const agora = new Date();
       const venda = await storage.createVenda({
         produto: produtosVendidos.map(p => p.nome).join(", "),
@@ -212,10 +212,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         itens: JSON.stringify(produtosVendidos),
         cliente_id: cliente_id || undefined
       });
-      
-      res.json({ 
-        ...venda, 
-        itens: produtosVendidos 
+
+      res.json({
+        ...venda,
+        itens: produtosVendidos
       });
     } catch (error) {
       res.status(500).json({ error: "Erro ao registrar venda" });
@@ -226,7 +226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const startDate = req.query.start_date as string;
       const endDate = req.query.end_date as string;
-      
+
       const vendas = await storage.getVendas(startDate, endDate);
       res.json(vendas);
     } catch (error) {
@@ -239,7 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const today = new Date().toISOString().split('T')[0];
       const vendas = await storage.getVendas(today, today);
       const total = vendas.reduce((sum, v) => sum + v.valor_total, 0);
-      
+
       res.json({ date: today, total, vendas: vendas.length });
     } catch (error) {
       res.status(500).json({ error: "Erro ao gerar relatório diário" });
@@ -251,13 +251,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const today = new Date();
       const weekAgo = new Date();
       weekAgo.setDate(today.getDate() - 7);
-      
+
       const vendas = await storage.getVendas(
         weekAgo.toISOString().split('T')[0],
         today.toISOString().split('T')[0]
       );
       const total = vendas.reduce((sum, v) => sum + v.valor_total, 0);
-      
+
       res.json({ total, vendas: vendas.length });
     } catch (error) {
       res.status(500).json({ error: "Erro ao gerar relatório semanal" });
@@ -270,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const today = new Date();
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(today.getDate() + 30);
-      
+
       const expiringProducts = produtos.filter(p => {
         if (!p.vencimento) return false;
         const expiryDate = new Date(p.vencimento);
@@ -284,7 +284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: daysUntilExpiry <= 7 ? 'critical' : 'warning'
         };
       }).sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
-      
+
       res.json(expiringProducts);
     } catch (error) {
       res.status(500).json({ error: "Erro ao gerar relatório de vencimentos" });
@@ -430,7 +430,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fornecedorId = req.query.fornecedor_id ? parseInt(req.query.fornecedor_id as string) : undefined;
       const startDate = req.query.start_date as string;
       const endDate = req.query.end_date as string;
-      
+
       const compras = await storage.getCompras(fornecedorId, startDate, endDate);
       res.json(compras);
     } catch (error) {
@@ -441,7 +441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/compras", async (req, res) => {
     try {
       const { fornecedor_id, produto_id, quantidade, valor_unitario, observacoes } = req.body;
-      
+
       const produto = await storage.getProduto(produto_id);
       if (!produto) {
         return res.status(404).json({ error: "Produto não encontrado" });
@@ -453,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const valor_total = valor_unitario * quantidade;
-      
+
       await storage.updateProduto(produto_id, {
         quantidade: produto.quantidade + quantidade
       });
@@ -478,10 +478,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const { quantidade: novaQuantidade, valor_unitario, observacoes, produto_id } = req.body;
-      
+
       const compraExistente = await storage.getCompras();
       const compra = compraExistente.find(c => c.id === id);
-      
+
       if (!compra) {
         return res.status(404).json({ error: "Compra não encontrada" });
       }
@@ -502,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (novaQuantidade !== undefined) updates.quantidade = novaQuantidade;
       if (valor_unitario !== undefined) updates.valor_unitario = valor_unitario;
       if (observacoes !== undefined) updates.observacoes = observacoes;
-      
+
       if (novaQuantidade !== undefined || valor_unitario !== undefined) {
         const quantidadeFinal = novaQuantidade !== undefined ? novaQuantidade : compra.quantidade;
         const valorUnitarioFinal = valor_unitario !== undefined ? valor_unitario : compra.valor_unitario;
@@ -519,11 +519,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/config-fiscal", async (req, res) => {
     try {
       const config = await storage.getConfigFiscal();
-      
+
       if (!config) {
         return res.json(null);
       }
-      
+
       res.json({
         ...config,
         focus_nfe_api_key: config.focus_nfe_api_key ? '***' : ''
@@ -537,7 +537,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const configData = insertConfigFiscalSchema.parse(req.body);
       const config = await storage.saveConfigFiscal(configData);
-      
+
       res.json({
         ...config,
         focus_nfe_api_key: '***'
@@ -553,10 +553,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/nfce/emitir", async (req, res) => {
     try {
       const config = await storage.getConfigFiscal();
-      
+
       if (!config) {
-        return res.status(400).json({ 
-          error: "Configuração fiscal não encontrada. Configure em Config. Fiscal primeiro." 
+        return res.status(400).json({
+          error: "Configuração fiscal não encontrada. Configure em Config. Fiscal primeiro."
         });
       }
 
@@ -567,9 +567,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          error: "Dados da NFCe inválidos", 
-          details: error.errors 
+        return res.status(400).json({
+          error: "Dados da NFCe inválidos",
+          details: error.errors
         });
       }
       console.error("Erro ao emitir NFCe:", error);
@@ -580,10 +580,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/nfce/:ref", async (req, res) => {
     try {
       const config = await storage.getConfigFiscal();
-      
+
       if (!config) {
-        return res.status(400).json({ 
-          error: "Configuração fiscal não encontrada" 
+        return res.status(400).json({
+          error: "Configuração fiscal não encontrada"
         });
       }
 
@@ -598,17 +598,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/nfce/:ref", async (req, res) => {
     try {
       const config = await storage.getConfigFiscal();
-      
+
       if (!config) {
-        return res.status(400).json({ 
-          error: "Configuração fiscal não encontrada" 
+        return res.status(400).json({
+          error: "Configuração fiscal não encontrada"
         });
       }
 
       const { justificativa } = req.body;
       if (!justificativa || justificativa.length < 15) {
-        return res.status(400).json({ 
-          error: "Justificativa deve ter no mínimo 15 caracteres" 
+        return res.status(400).json({
+          error: "Justificativa deve ter no mínimo 15 caracteres"
         });
       }
 

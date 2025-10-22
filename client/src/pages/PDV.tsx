@@ -44,30 +44,38 @@ export default function PDV() {
   const emitirNFCe = async (sale: any) => {
     setIsEmittingNF(true);
     try {
+      // Buscar dados completos dos produtos
       const produtos = await Promise.all(
         sale.itens.map(async (item: any) => {
-          const response = await fetch(`/api/produtos/codigo/${item.codigo_barras}`);
+          const barcode = item.codigo_barras || item.nome;
+          const response = await fetch(`/api/produtos/codigo/${barcode}`);
           return response.ok ? await response.json() : null;
         })
       );
+
+      // Validar se todos os produtos foram encontrados
+      const produtosNaoEncontrados = produtos.filter(p => !p);
+      if (produtosNaoEncontrados.length > 0) {
+        throw new Error("Alguns produtos não foram encontrados no sistema");
+      }
 
       const nfceData = {
         natureza_operacao: "Venda de mercadoria",
         tipo_documento: "1",
         finalidade_emissao: "1",
-        cnpj_emitente: configFiscal?.cnpj,
+        cnpj_emitente: configFiscal?.cnpj?.replace(/\D/g, ''),
         nome_destinatario: "CONSUMIDOR",
         items: sale.itens.map((item: any, index: number) => {
           const produto = produtos[index];
-          const subtotal = produto ? produto.preco * item.quantidade : 0;
+          const subtotal = item.subtotal || (produto.preco * item.quantidade);
           return {
             numero_item: index + 1,
-            codigo_produto: item.codigo_barras,
-            descricao: produto?.nome || `Produto ${item.codigo_barras}`,
+            codigo_produto: produto.codigo_barras || produto.id.toString(),
+            descricao: produto.nome,
             cfop: "5102",
             unidade_comercial: "UN",
             quantidade_comercial: item.quantidade,
-            valor_unitario_comercial: produto?.preco || 0,
+            valor_unitario_comercial: produto.preco,
             valor_bruto: subtotal,
             icms_origem: "0",
             icms_situacao_tributaria: "102",
@@ -90,16 +98,19 @@ export default function PDV() {
       const result = await response.json();
       
       toast({
-        title: "Nota Fiscal emitida!",
-        description: `NFCe gerada com sucesso. ${configFiscal?.ambiente === 'homologacao' ? '(Ambiente de Homologação)' : ''}`,
+        title: "✅ Nota Fiscal emitida com sucesso!",
+        description: configFiscal?.ambiente === 'homologacao' 
+          ? '(Ambiente de Homologação - Nota de teste)' 
+          : 'NFCe válida fiscalmente',
       });
 
       console.log("NFCe emitida:", result);
     } catch (error: any) {
+      console.error("Erro ao emitir NFCe:", error);
       toast({
         variant: "destructive",
-        title: "Erro ao emitir NFCe",
-        description: error.message || "Verifique a configuração fiscal.",
+        title: "❌ Erro ao emitir NFCe",
+        description: error.message || "Verifique a configuração fiscal e tente novamente.",
       });
     } finally {
       setIsEmittingNF(false);
@@ -129,9 +140,16 @@ export default function PDV() {
 
       console.log("Venda registrada:", result);
 
-      if (configFiscal) {
-        setLastSale(sale);
+      // Sempre perguntar sobre emissão de NFCe se houver configuração fiscal
+      if (configFiscal && configFiscal.focus_nfe_api_key) {
+        setLastSale({ ...sale, vendaId: result.id });
         setShowNFDialog(true);
+      } else if (!configFiscal) {
+        toast({
+          title: "Configuração Fiscal não encontrada",
+          description: "Configure em Config. Fiscal para emitir notas fiscais.",
+          variant: "default",
+        });
       }
     } catch (error: any) {
       toast({

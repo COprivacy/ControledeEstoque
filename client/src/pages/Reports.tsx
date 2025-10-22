@@ -190,31 +190,38 @@ export default function Reports() {
   const now = new Date();
   const today = now.toISOString().split('T')[0];
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-  const dailyTotal = vendas
-    .filter((v: any) => {
-      if (!v.data) return false;
-      const vendaDate = new Date(v.data).toISOString().split('T')[0];
-      return vendaDate === today;
-    })
-    .reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
-
-  const weeklyTotal = vendas
-    .filter((v: any) => {
-      if (!v.data) return false;
-      const vendaDate = new Date(v.data).toISOString().split('T')[0];
-      return vendaDate >= weekAgo && vendaDate <= today;
-    })
-    .reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
-
   const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const monthlyTotal = vendas
-    .filter((v: any) => {
-      if (!v.data) return false;
-      const vendaDate = new Date(v.data).toISOString().split('T')[0];
-      return vendaDate >= monthAgo && vendaDate <= today;
-    })
-    .reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
+
+  // Se há filtro ativo, mostrar apenas o total do período filtrado
+  const dailyTotal = (startDate && endDate) 
+    ? 0 // Não mostrar total diário quando há filtro customizado
+    : vendas
+        .filter((v: any) => {
+          if (!v.data) return false;
+          const vendaDate = new Date(v.data).toISOString().split('T')[0];
+          return vendaDate === today;
+        })
+        .reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
+
+  const weeklyTotal = (startDate && endDate)
+    ? 0 // Não mostrar total semanal quando há filtro customizado
+    : vendas
+        .filter((v: any) => {
+          if (!v.data) return false;
+          const vendaDate = new Date(v.data).toISOString().split('T')[0];
+          return vendaDate >= weekAgo && vendaDate <= today;
+        })
+        .reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
+
+  const monthlyTotal = (startDate && endDate)
+    ? vendas.reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0) // Mostrar total do período filtrado
+    : vendas
+        .filter((v: any) => {
+          if (!v.data) return false;
+          const vendaDate = new Date(v.data).toISOString().split('T')[0];
+          return vendaDate >= monthAgo && vendaDate <= today;
+        })
+        .reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
 
   const handleFilter = (filterStartDate: string, filterEndDate: string) => {
     setStartDate(filterStartDate);

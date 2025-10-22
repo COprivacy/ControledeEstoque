@@ -11,6 +11,7 @@ interface ReportsCardProps {
   monthlyTotal?: number; // Added for monthly sales
   onFilter?: (startDate: string, endDate: string) => void;
   onClearFilter?: () => void; // Added for clearing filter
+  isFiltered?: boolean; // Added to indicate if a filter is active
 }
 
 export default function ReportsCard({
@@ -18,7 +19,8 @@ export default function ReportsCard({
   weeklyTotal = 0,
   monthlyTotal = 0, // Added for monthly sales
   onFilter,
-  onClearFilter
+  onClearFilter,
+  isFiltered = false // Default to false
 }: ReportsCardProps) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");

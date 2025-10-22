@@ -2,7 +2,9 @@
 
 ## Overview
 
-A simple inventory management web application designed for Brazilian small businesses (minimarkets, retail shops). The system provides product management, point-of-sale (PDV) functionality with barcode scanning, sales tracking, and reporting features. Built with a focus on simplicity and mobile-first design for on-the-go inventory management.
+A simple inventory management web application designed for Brazilian small businesses (minimarkets, retail shops). The system provides product management, point-of-sale (PDV) functionality with barcode scanning, sales tracking, reporting features, and Brazilian invoice (NF-e/NFC-e) emission through Focus NFe API integration. Built with a focus on simplicity and mobile-first design for on-the-go inventory management.
+
+**Important:** Each user configures their own Focus NFe account credentials, ensuring the developer assumes no fiscal costs or responsibilities.
 
 ## User Preferences
 
@@ -41,6 +43,9 @@ Preferred communication style: Simple, everyday language.
 - Reports for sales analysis and expiration monitoring
 - Supplier management with purchase history and spending tracking
 - Purchase registration system with product linking to suppliers
+- **Brazilian Invoice (NF-e/NFC-e) Emission** via Focus NFe API
+- Fiscal configuration page with legal disclaimer
+- Optional invoice emission after each sale
 
 ### Backend Architecture
 
@@ -70,6 +75,7 @@ Preferred communication style: Simple, everyday language.
 - **Suppliers (Fornecedores):** id (serial), nome, cnpj, telefone, email, endereco, observacoes, data_cadastro
 - **Purchases (Compras):** id (serial), fornecedor_id, produto_id, quantidade, valor_unitario, valor_total, data, observacoes
 - **Clients (Clientes):** id (serial), nome, cpf_cnpj, telefone, email, endereco, observacoes, data_cadastro
+- **Fiscal Config (ConfigFiscal):** id (serial), cnpj, focus_nfe_token (encrypted), ambiente (homologacao/producao)
 
 **Storage Strategy:**
 - In-memory storage implementation (`MemStorage`) for development/testing
@@ -113,3 +119,15 @@ Preferred communication style: Simple, everyday language.
 3. **Progressive Enhancement:** Barcode scanner simulated via keyboard events for accessibility
 4. **Bilingual Support:** All UI text in Brazilian Portuguese for target audience
 5. **Mobile-First:** Responsive design prioritizing small screens for shop floor use
+6. **Fiscal Responsibility:** Each user provides their own Focus NFe credentials - no fiscal costs assumed by developer
+7. **Invoice Validation:** Zod schemas validate all invoice data before sending to Focus NFe API
+
+### Recent Changes (October 2025)
+
+**Brazilian Invoice System Implementation:**
+- Added Focus NFe API integration service (`server/focusnfe.ts`)
+- Created fiscal configuration page with legal disclaimer
+- Implemented NFC-e emission endpoints with Zod validation
+- Integrated invoice emission dialog in PDV (optional after sales)
+- Schema validation for all invoice payloads (`shared/nfce-schema.ts`)
+- Correct item calculation using actual product prices and subtotals

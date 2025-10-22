@@ -305,6 +305,7 @@ export default function PDV() {
                 <div className="space-y-2">
                   <p className="text-sm">Exemplos de portais por estado:</p>
                   <ul className="text-sm space-y-1 ml-4">
+                    <li>• MA: <a href="https://www.sefaz.ma.gov.br" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-semibold">sefaz.ma.gov.br</a></li>
                     <li>• SP: <a href="https://www.fazenda.sp.gov.br" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">fazenda.sp.gov.br</a></li>
                     <li>• MG: <a href="https://www.fazenda.mg.gov.br" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">fazenda.mg.gov.br</a></li>
                     <li>• RJ: <a href="https://www.fazenda.rj.gov.br" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">fazenda.rj.gov.br</a></li>
@@ -418,17 +419,27 @@ export default function PDV() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="font-semibold">Produtos/Serviços</Label>
-                      <div className="border rounded-lg p-3 bg-muted/50">
+                      <Label className="font-semibold">Produtos/Serviços - Informações Detalhadas</Label>
+                      <div className="border rounded-lg overflow-hidden">
+                        <div className="bg-muted/50 grid grid-cols-12 gap-2 p-2 text-xs font-semibold border-b">
+                          <div className="col-span-1">#</div>
+                          <div className="col-span-1">Cód.</div>
+                          <div className="col-span-4">Produto</div>
+                          <div className="col-span-2 text-center">Qtd</div>
+                          <div className="col-span-2 text-right">Vl. Unit.</div>
+                          <div className="col-span-2 text-right">Subtotal</div>
+                        </div>
                         {lastSale.itens.map((item: any, index: number) => {
                           const subtotal = item.subtotal || (item.preco_unitario * item.quantidade) || 0;
+                          const codigo = item.codigo_barras || `PROD${index + 1}`;
                           return (
-                            <div key={index} className="flex justify-between py-2 border-b last:border-b-0">
-                              <span>{item.nome}</span>
-                              <div className="text-right space-x-4">
-                                <span className="text-muted-foreground">Qtd: {item.quantidade}</span>
-                                <span className="font-medium">R$ {subtotal.toFixed(2)}</span>
-                              </div>
+                            <div key={index} className="grid grid-cols-12 gap-2 p-2 text-sm border-b last:border-b-0 hover:bg-muted/30">
+                              <div className="col-span-1 text-muted-foreground">{index + 1}</div>
+                              <div className="col-span-1 text-xs font-mono">{codigo.substring(0, 8)}</div>
+                              <div className="col-span-4 font-medium">{item.nome}</div>
+                              <div className="col-span-2 text-center">{item.quantidade}</div>
+                              <div className="col-span-2 text-right">R$ {(item.preco_unitario || 0).toFixed(2)}</div>
+                              <div className="col-span-2 text-right font-semibold">R$ {subtotal.toFixed(2)}</div>
                             </div>
                           );
                         })}
@@ -439,16 +450,18 @@ export default function PDV() {
                         className="w-full"
                         onClick={() => {
                           const texto = lastSale.itens
-                            .map((item: any) => {
+                            .map((item: any, index: number) => {
                               const subtotal = item.subtotal || (item.preco_unitario * item.quantidade) || 0;
-                              return `${item.nome} - Qtd: ${item.quantidade} - R$ ${subtotal.toFixed(2)}`;
+                              const codigo = item.codigo_barras || `PROD${index + 1}`;
+                              return `${index + 1}. Código: ${codigo}\n   Produto: ${item.nome}\n   Quantidade: ${item.quantidade}\n   Valor Unitário: R$ ${(item.preco_unitario || 0).toFixed(2)}\n   Subtotal: R$ ${subtotal.toFixed(2)}`;
                             })
-                            .join('\n');
-                          copyToClipboard(texto, "Lista de Produtos");
+                            .join('\n\n');
+                          const textoCompleto = `=== ITENS DA NOTA FISCAL ===\n\n${texto}\n\n=== TOTAL DA NOTA ===\nR$ ${lastSale.valorTotal.toFixed(2)}`;
+                          copyToClipboard(textoCompleto, "Lista Detalhada de Produtos");
                         }}
                       >
                         <Copy className="h-4 w-4 mr-2" />
-                        Copiar Lista Completa
+                        Copiar Lista Detalhada
                       </Button>
                     </div>
                   </>

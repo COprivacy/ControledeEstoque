@@ -1,7 +1,7 @@
 
 import StatsCards from "@/components/StatsCards";
 import ProductCard from "@/components/ProductCard";
-import { Crown, TrendingUp, TrendingDown, Package } from "lucide-react";
+import { Crown, TrendingUp, TrendingDown, Package, Target, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
@@ -13,9 +13,13 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer, Tooltip } from "recharts";
+import { Progress } from "@/components/ui/progress";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
+
+// Meta mensal de vendas (pode ser configurável)
+const META_MENSAL = 15000;
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -126,6 +130,72 @@ export default function Dashboard() {
       .slice(0, 5);
   }, [vendas]);
 
+  // Vendas por hora do dia (gráfico de calor)
+  const salesByHour = useMemo(() => {
+    const hourlyData = Array.from({ length: 24 }, (_, i) => ({
+      hour: `${i}h`,
+      vendas: 0,
+      valor: 0
+    }));
+
+    vendas.forEach((v: any) => {
+      if (v.data) {
+        const hour = new Date(v.data).getHours();
+        hourlyData[hour].vendas += 1;
+        hourlyData[hour].valor += v.valor_total || 0;
+      }
+    });
+
+    return hourlyData;
+  }, [vendas]);
+
+  // Comparativo mensal (últimos 6 meses)
+  const monthlyComparison = useMemo(() => {
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (5 - i));
+      return {
+        month: date.toLocaleDateString('pt-BR', { month: 'short' }),
+        fullMonth: date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+        year: date.getFullYear(),
+        monthNum: date.getMonth(),
+        vendas: 0
+      };
+    });
+
+    vendas.forEach((v: any) => {
+      if (v.data) {
+        const saleDate = new Date(v.data);
+        const saleMonth = saleDate.getMonth();
+        const saleYear = saleDate.getFullYear();
+        
+        const monthData = months.find(m => m.monthNum === saleMonth && m.year === saleYear);
+        if (monthData) {
+          monthData.vendas += v.valor_total || 0;
+        }
+      }
+    });
+
+    return months;
+  }, [vendas]);
+
+  // Vendas do mês atual
+  const currentMonthSales = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    return vendas
+      .filter((v: any) => {
+        if (!v.data) return false;
+        const saleDate = new Date(v.data);
+        return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
+      })
+      .reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
+  }, [vendas]);
+
+  const metaPercentage = (currentMonthSales / META_MENSAL) * 100;
+
   const chartConfig = {
     vendas: {
       label: "Vendas",
@@ -156,8 +226,138 @@ export default function Dashboard() {
         vendasHoje={todaySales}
       />
 
+      {/* Meta de Vendas */}
+      <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              Meta de Vendas do Mês
+            </div>
+            <Badge variant={metaPercentage >= 100 ? "default" : "secondary"}>
+              {metaPercentage.toFixed(1)}%
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Realizado</span>
+              <span className="font-bold">R$ {currentMonthSales.toFixed(2)}</span>
+            </div>
+            <Progress value={Math.min(metaPercentage, 100)} className="h-3" />
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Meta</span>
+              <span className="font-semibold">R$ {META_MENSAL.toFixed(2)}</span>
+            </div>
+          </div>
+          {metaPercentage >= 100 ? (
+            <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+              🎉 Parabéns! Meta atingida!
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Faltam R$ {(META_MENSAL - currentMonthSales).toFixed(2)} para atingir a meta
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Gráficos Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Vendas por Hora (Gráfico de Calor) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Vendas por Hora do Dia
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={salesByHour}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="hour" 
+                    className="text-xs"
+                    interval={2}
+                  />
+                  <YAxis className="text-xs" />
+                  <Tooltip 
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-background border rounded-lg p-2 shadow-lg">
+                            <p className="font-semibold">{payload[0].payload.hour}</p>
+                            <p className="text-sm">Vendas: {payload[0].payload.vendas}</p>
+                            <p className="text-sm">Valor: R$ {payload[0].payload.valor.toFixed(2)}</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar 
+                    dataKey="valor" 
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
+                  >
+                    {salesByHour.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.valor > 0 ? COLORS[index % COLORS.length] : '#e0e0e0'} 
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* Comparativo Mensal */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              Comparativo Mensal (6 meses)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyComparison}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="month" 
+                    className="text-xs"
+                  />
+                  <YAxis className="text-xs" />
+                  <Tooltip 
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-background border rounded-lg p-2 shadow-lg">
+                            <p className="font-semibold">{payload[0].payload.fullMonth}</p>
+                            <p className="text-sm">R$ {payload[0].payload.vendas.toFixed(2)}</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar 
+                    dataKey="vendas" 
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
         {/* Gráfico de Vendas dos Últimos 7 Dias */}
         <Card>
           <CardHeader>

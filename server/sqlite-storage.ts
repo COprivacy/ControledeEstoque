@@ -11,7 +11,9 @@ import {
   type Cliente,
   type InsertCliente,
   type Compra,
-  type InsertCompra
+  type InsertCompra,
+  type ConfigFiscal,
+  type InsertConfigFiscal
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import * as path from 'path';
@@ -108,6 +110,15 @@ export class SQLiteStorage implements IStorage {
         valor_total REAL NOT NULL,
         data TEXT NOT NULL,
         observacoes TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS config_fiscal (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cnpj TEXT NOT NULL,
+        razao_social TEXT NOT NULL,
+        focus_nfe_api_key TEXT NOT NULL,
+        ambiente TEXT NOT NULL DEFAULT 'homologacao',
+        updated_at TEXT NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS storage (
@@ -418,5 +429,48 @@ export class SQLiteStorage implements IStorage {
     this.compras.set(id, updatedCompra);
     await this.persistData();
     return updatedCompra;
+  }
+
+  async getConfigFiscal(): Promise<ConfigFiscal | undefined> {
+    const stmt = this.db.prepare('SELECT * FROM config_fiscal ORDER BY id DESC LIMIT 1');
+    const config = stmt.get() as ConfigFiscal | undefined;
+    return config;
+  }
+
+  async saveConfigFiscal(insertConfig: InsertConfigFiscal): Promise<ConfigFiscal> {
+    const updated_at = new Date().toISOString();
+    const config: Omit<ConfigFiscal, 'id'> = { ...insertConfig, updated_at };
+    
+    const existingConfig = await this.getConfigFiscal();
+    
+    if (existingConfig) {
+      const stmt = this.db.prepare(`
+        UPDATE config_fiscal 
+        SET cnpj = ?, razao_social = ?, focus_nfe_api_key = ?, ambiente = ?, updated_at = ?
+        WHERE id = ?
+      `);
+      stmt.run(
+        config.cnpj, 
+        config.razao_social, 
+        config.focus_nfe_api_key, 
+        config.ambiente, 
+        config.updated_at,
+        existingConfig.id
+      );
+      return { ...config, id: existingConfig.id };
+    } else {
+      const stmt = this.db.prepare(`
+        INSERT INTO config_fiscal (cnpj, razao_social, focus_nfe_api_key, ambiente, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+      const info = stmt.run(
+        config.cnpj, 
+        config.razao_social, 
+        config.focus_nfe_api_key, 
+        config.ambiente, 
+        config.updated_at
+      );
+      return { ...config, id: Number(info.lastInsertRowid) };
+    }
   }
 }

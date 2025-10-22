@@ -1,5 +1,5 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { Home, Package, ClipboardList, BarChart3, Scan, Settings, Users } from "lucide-react";
+import { Home, Package, ClipboardList, BarChart3, Scan, Settings, Users, FileText } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
 const menuItems = [
@@ -9,6 +9,7 @@ const menuItems = [
   { title: "Inventário", url: "/inventario", icon: ClipboardList },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
+  { title: "Config. Fiscal", url: "/config-fiscal", icon: FileText },
   { title: "Fornecedores", url: "/fornecedores", icon: Package },
   { title: "Clientes", url: "/clientes", icon: Users },
 ];

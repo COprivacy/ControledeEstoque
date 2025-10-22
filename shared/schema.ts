@@ -65,6 +65,15 @@ export const compras = pgTable("compras", {
   observacoes: text("observacoes"),
 });
 
+export const configFiscal = pgTable("config_fiscal", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  cnpj: text("cnpj").notNull(),
+  razao_social: text("razao_social").notNull(),
+  focus_nfe_api_key: text("focus_nfe_api_key").notNull(),
+  ambiente: text("ambiente").notNull().default("homologacao"),
+  updated_at: text("updated_at").notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
 });
@@ -104,6 +113,16 @@ export const insertCompraSchema = createInsertSchema(compras).omit({
   produto_id: z.number().int().positive(),
 });
 
+export const insertConfigFiscalSchema = createInsertSchema(configFiscal).omit({
+  id: true,
+  updated_at: true,
+}).extend({
+  cnpj: z.string().min(14, "CNPJ inválido"),
+  razao_social: z.string().min(1, "Razão social é obrigatória"),
+  focus_nfe_api_key: z.string().min(1, "Chave API é obrigatória"),
+  ambiente: z.enum(["homologacao", "producao"]).default("homologacao"),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertProduto = z.infer<typeof insertProdutoSchema>;
@@ -116,3 +135,5 @@ export type InsertCliente = z.infer<typeof insertClienteSchema>;
 export type Cliente = typeof clientes.$inferSelect;
 export type InsertCompra = z.infer<typeof insertCompraSchema>;
 export type Compra = typeof compras.$inferSelect;
+export type InsertConfigFiscal = z.infer<typeof insertConfigFiscalSchema>;
+export type ConfigFiscal = typeof configFiscal.$inferSelect;

@@ -1,8 +1,15 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertProdutoSchema, insertVendaSchema } from "@shared/schema";
+import { 
+  insertUserSchema, 
+  insertProdutoSchema, 
+  insertVendaSchema,
+  insertConfigFiscalSchema 
+} from "@shared/schema";
+import { nfceSchema } from "@shared/nfce-schema";
 import { z } from "zod";
+import { FocusNFeService } from "./focusnfe";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -506,6 +513,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(compraAtualizada);
     } catch (error) {
       res.status(500).json({ error: "Erro ao atualizar compra" });
+    }
+  });
+
+  app.get("/api/config-fiscal", async (req, res) => {
+    try {
+      const config = await storage.getConfigFiscal();
+      
+      if (!config) {
+        return res.json(null);
+      }
+      
+      res.json({
+        ...config,
+        focus_nfe_api_key: config.focus_nfe_api_key ? '***' : ''
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao buscar configuração fiscal" });
+    }
+  });
+
+  app.post("/api/config-fiscal", async (req, res) => {
+    try {
+      const configData = insertConfigFiscalSchema.parse(req.body);
+      const config = await storage.saveConfigFiscal(configData);
+      
+      res.json({
+        ...config,
+        focus_nfe_api_key: '***'
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Dados inválidos", details: error.errors });
+      }
+      res.status(500).json({ error: "Erro ao salvar configuração fiscal" });
+    }
+  });
+
+  app.post("/api/nfce/emitir", async (req, res) => {
+    try {
+      const config = await storage.getConfigFiscal();
+      
+      if (!config) {
+        return res.status(400).json({ 
+          error: "Configuração fiscal não encontrada. Configure em Config. Fiscal primeiro." 
+        });
+      }
+
+      const nfceData = nfceSchema.parse(req.body);
+
+      const focusNFe = new FocusNFeService(config);
+      const result = await focusNFe.emitirNFCe(nfceData);
+      res.json(result);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Dados da NFCe inválidos", 
+          details: error.errors 
+        });
+      }
+      console.error("Erro ao emitir NFCe:", error);
+      res.status(500).json({ error: error.message || "Erro ao emitir NFCe" });
+    }
+  });
+
+  app.get("/api/nfce/:ref", async (req, res) => {
+    try {
+      const config = await storage.getConfigFiscal();
+      
+      if (!config) {
+        return res.status(400).json({ 
+          error: "Configuração fiscal não encontrada" 
+        });
+      }
+
+      const focusNFe = new FocusNFeService(config);
+      const result = await focusNFe.consultarNFCe(req.params.ref);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Erro ao consultar NFCe" });
+    }
+  });
+
+  app.delete("/api/nfce/:ref", async (req, res) => {
+    try {
+      const config = await storage.getConfigFiscal();
+      
+      if (!config) {
+        return res.status(400).json({ 
+          error: "Configuração fiscal não encontrada" 
+        });
+      }
+
+      const { justificativa } = req.body;
+      if (!justificativa || justificativa.length < 15) {
+        return res.status(400).json({ 
+          error: "Justificativa deve ter no mínimo 15 caracteres" 
+        });
+      }
+
+      const focusNFe = new FocusNFeService(config);
+      const result = await focusNFe.cancelarNFCe(req.params.ref, justificativa);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Erro ao cancelar NFCe" });
     }
   });
 

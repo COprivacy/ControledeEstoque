@@ -14,6 +14,7 @@ import Inventory from "@/pages/Inventory";
 import Reports from "@/pages/Reports";
 import PDV from "@/pages/PDV";
 import Settings from "@/pages/Settings";
+import ConfigFiscal from "@/pages/ConfigFiscal";
 import Fornecedores from "@/pages/Fornecedores";
 import Clientes from "@/pages/Clientes";
 import DashboardLayout from "@/layouts/DashboardLayout";
@@ -90,6 +91,13 @@ function Router() {
         {() => (
           <DashboardLayout>
             <Settings />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/config-fiscal">
+        {() => (
+          <DashboardLayout>
+            <ConfigFiscal />
           </DashboardLayout>
         )}
       </Route>

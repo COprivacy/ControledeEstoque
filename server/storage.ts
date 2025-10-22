@@ -10,7 +10,9 @@ import {
   type Cliente,
   type InsertCliente,
   type Compra,
-  type InsertCompra
+  type InsertCompra,
+  type ConfigFiscal,
+  type InsertConfigFiscal
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import * as fs from 'fs/promises';
@@ -47,6 +49,8 @@ export interface IStorage {
   getCompras(fornecedorId?: number, startDate?: string, endDate?: string): Promise<Compra[]>;
   createCompra(insertCompra: InsertCompra): Promise<Compra>;
   updateCompra(id: number, updates: Partial<Compra>): Promise<Compra | undefined>;
+  getConfigFiscal(): Promise<ConfigFiscal | undefined>;
+  saveConfigFiscal(insertConfig: InsertConfigFiscal): Promise<ConfigFiscal>;
 }
 
 export abstract class Storage {

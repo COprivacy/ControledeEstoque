@@ -173,9 +173,15 @@ export default function PDV() {
       });
 
       console.log("Venda registrada:", result);
+      console.log("Itens da venda:", result.itens || sale.itens);
 
       // Sempre perguntar sobre emissão de NFCe
-      setLastSale({ ...sale, vendaId: result.id });
+      // Usar os itens retornados pelo backend que têm a estrutura correta
+      setLastSale({ 
+        ...sale, 
+        vendaId: result.id,
+        itens: result.itens || sale.itens 
+      });
       setShowNFDialog(true);
     } catch (error: any) {
       toast({
@@ -430,10 +436,13 @@ export default function PDV() {
                           <div className="col-span-2 text-right">Subtotal</div>
                         </div>
                         {lastSale.itens.map((item: any, index: number) => {
+                          // Debug: verificar estrutura do item
+                          console.log('Item da venda:', item);
+                          
                           // Buscar valores corretos considerando diferentes estruturas
-                          const preco_unit = item.preco_unitario || item.preco || 0;
-                          const qtd = item.quantidade || 1;
-                          const subtotal = item.subtotal || (preco_unit * qtd) || 0;
+                          const preco_unit = Number(item.preco_unitario || item.preco || 0);
+                          const qtd = Number(item.quantidade || 1);
+                          const subtotal = Number(item.subtotal || (preco_unit * qtd) || 0);
                           const codigo = item.codigo_barras || item.codigo || `PROD${index + 1}`;
                           const nome_produto = item.nome || item.produto || 'Produto sem nome';
                           
@@ -456,9 +465,10 @@ export default function PDV() {
                         onClick={() => {
                           const texto = lastSale.itens
                             .map((item: any, index: number) => {
-                              const preco_unit = item.preco_unitario || item.preco || 0;
-                              const qtd = item.quantidade || 1;
-                              const subtotal = item.subtotal || (preco_unit * qtd) || 0;
+                              console.log('Gerando texto para item:', item);
+                              const preco_unit = Number(item.preco_unitario || item.preco || 0);
+                              const qtd = Number(item.quantidade || 1);
+                              const subtotal = Number(item.subtotal || (preco_unit * qtd) || 0);
                               const codigo = item.codigo_barras || item.codigo || `PROD${index + 1}`;
                               const nome_produto = item.nome || item.produto || 'Produto sem nome';
                               return `${index + 1}. Código: ${codigo}\n   Produto: ${nome_produto}\n   Quantidade: ${qtd}\n   Valor Unitário: R$ ${preco_unit.toFixed(2)}\n   Subtotal: R$ ${subtotal.toFixed(2)}`;

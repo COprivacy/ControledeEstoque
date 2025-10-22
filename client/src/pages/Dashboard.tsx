@@ -15,16 +15,27 @@ import {
 } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Pencil } from "lucide-react";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
-// Meta mensal de vendas (pode ser configurável)
-const META_MENSAL = 15000;
+// Meta mensal de vendas padrão
+const META_MENSAL_PADRAO = 15000;
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [metaMensal, setMetaMensal] = useState<number>(() => {
+    const savedMeta = localStorage.getItem("meta_mensal");
+    return savedMeta ? parseFloat(savedMeta) : META_MENSAL_PADRAO;
+  });
+  const [editMetaDialogOpen, setEditMetaDialogOpen] = useState(false);
+  const [novaMeta, setNovaMeta] = useState<string>("");
   
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["/api/produtos"],
@@ -194,7 +205,29 @@ export default function Dashboard() {
       .reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
   }, [vendas]);
 
-  const metaPercentage = (currentMonthSales / META_MENSAL) * 100;
+  const metaPercentage = (currentMonthSales / metaMensal) * 100;
+
+  const handleSaveMeta = () => {
+    const metaValue = parseFloat(novaMeta);
+    if (isNaN(metaValue) || metaValue <= 0) {
+      toast({
+        title: "Valor inválido",
+        description: "Digite um valor válido para a meta",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setMetaMensal(metaValue);
+    localStorage.setItem("meta_mensal", metaValue.toString());
+    setEditMetaDialogOpen(false);
+    setNovaMeta("");
+    
+    toast({
+      title: "Meta atualizada!",
+      description: `Nova meta de vendas: R$ ${metaValue.toFixed(2)}`,
+    });
+  };
 
   const chartConfig = {
     vendas: {
@@ -234,9 +267,59 @@ export default function Dashboard() {
               <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               Meta de Vendas do Mês
             </div>
-            <Badge variant={metaPercentage >= 100 ? "default" : "secondary"}>
-              {metaPercentage.toFixed(1)}%
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={metaPercentage >= 100 ? "default" : "secondary"}>
+                {metaPercentage.toFixed(1)}%
+              </Badge>
+              <Dialog open={editMetaDialogOpen} onOpenChange={setEditMetaDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={() => setNovaMeta(metaMensal.toString())}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Editar Meta de Vendas</DialogTitle>
+                    <DialogDescription>
+                      Defina a nova meta mensal de vendas
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nova-meta">Valor da Meta (R$)</Label>
+                      <Input
+                        id="nova-meta"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={novaMeta}
+                        onChange={(e) => setNovaMeta(e.target.value)}
+                        placeholder="Ex: 15000.00"
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setEditMetaDialogOpen(false);
+                          setNovaMeta("");
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button onClick={handleSaveMeta}>
+                        Salvar Meta
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -248,7 +331,7 @@ export default function Dashboard() {
             <Progress value={Math.min(metaPercentage, 100)} className="h-3" />
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Meta</span>
-              <span className="font-semibold">R$ {META_MENSAL.toFixed(2)}</span>
+              <span className="font-semibold">R$ {metaMensal.toFixed(2)}</span>
             </div>
           </div>
           {metaPercentage >= 100 ? (
@@ -257,7 +340,7 @@ export default function Dashboard() {
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Faltam R$ {(META_MENSAL - currentMonthSales).toFixed(2)} para atingir a meta
+              Faltam R$ {(metaMensal - currentMonthSales).toFixed(2)} para atingir a meta
             </p>
           )}
         </CardContent>

@@ -42,6 +42,17 @@ export default function PDV() {
   };
 
   const emitirNFCe = async (sale: any) => {
+    // Verificar se há configuração fiscal
+    if (!configFiscal || !configFiscal.focus_nfe_api_key) {
+      toast({
+        variant: "destructive",
+        title: "❌ Configuração Fiscal não encontrada",
+        description: "Configure em Config. Fiscal para emitir notas fiscais.",
+      });
+      setShowNFDialog(false);
+      return;
+    }
+
     setIsEmittingNF(true);
     try {
       // Buscar dados completos dos produtos
@@ -140,17 +151,9 @@ export default function PDV() {
 
       console.log("Venda registrada:", result);
 
-      // Sempre perguntar sobre emissão de NFCe se houver configuração fiscal
-      if (configFiscal && configFiscal.focus_nfe_api_key) {
-        setLastSale({ ...sale, vendaId: result.id });
-        setShowNFDialog(true);
-      } else if (!configFiscal) {
-        toast({
-          title: "Configuração Fiscal não encontrada",
-          description: "Configure em Config. Fiscal para emitir notas fiscais.",
-          variant: "default",
-        });
-      }
+      // Sempre perguntar sobre emissão de NFCe
+      setLastSale({ ...sale, vendaId: result.id });
+      setShowNFDialog(true);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -207,11 +210,15 @@ export default function PDV() {
               <p className="font-medium">
                 Deseja emitir uma Nota Fiscal (NFCe) para esta venda?
               </p>
-              {configFiscal?.ambiente === 'homologacao' && (
+              {!configFiscal || !configFiscal.focus_nfe_api_key ? (
+                <p className="text-sm text-red-600 dark:text-red-500 font-medium">
+                  ⚠️ Configure a emissão fiscal em "Config. Fiscal" primeiro
+                </p>
+              ) : configFiscal?.ambiente === 'homologacao' ? (
                 <p className="text-sm text-yellow-600 dark:text-yellow-500">
                   Ambiente de Homologação - Nota para testes
                 </p>
-              )}
+              ) : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

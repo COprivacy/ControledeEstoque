@@ -430,15 +430,20 @@ export default function PDV() {
                           <div className="col-span-2 text-right">Subtotal</div>
                         </div>
                         {lastSale.itens.map((item: any, index: number) => {
-                          const subtotal = item.subtotal || (item.preco_unitario * item.quantidade) || 0;
-                          const codigo = item.codigo_barras || `PROD${index + 1}`;
+                          // Buscar valores corretos considerando diferentes estruturas
+                          const preco_unit = item.preco_unitario || item.preco || 0;
+                          const qtd = item.quantidade || 1;
+                          const subtotal = item.subtotal || (preco_unit * qtd) || 0;
+                          const codigo = item.codigo_barras || item.codigo || `PROD${index + 1}`;
+                          const nome_produto = item.nome || item.produto || 'Produto sem nome';
+                          
                           return (
                             <div key={index} className="grid grid-cols-12 gap-2 p-2 text-sm border-b last:border-b-0 hover:bg-muted/30">
                               <div className="col-span-1 text-muted-foreground">{index + 1}</div>
                               <div className="col-span-1 text-xs font-mono">{codigo.substring(0, 8)}</div>
-                              <div className="col-span-4 font-medium">{item.nome}</div>
-                              <div className="col-span-2 text-center">{item.quantidade}</div>
-                              <div className="col-span-2 text-right">R$ {(item.preco_unitario || 0).toFixed(2)}</div>
+                              <div className="col-span-4 font-medium">{nome_produto}</div>
+                              <div className="col-span-2 text-center">{qtd}</div>
+                              <div className="col-span-2 text-right">R$ {preco_unit.toFixed(2)}</div>
                               <div className="col-span-2 text-right font-semibold">R$ {subtotal.toFixed(2)}</div>
                             </div>
                           );
@@ -451,9 +456,12 @@ export default function PDV() {
                         onClick={() => {
                           const texto = lastSale.itens
                             .map((item: any, index: number) => {
-                              const subtotal = item.subtotal || (item.preco_unitario * item.quantidade) || 0;
-                              const codigo = item.codigo_barras || `PROD${index + 1}`;
-                              return `${index + 1}. Código: ${codigo}\n   Produto: ${item.nome}\n   Quantidade: ${item.quantidade}\n   Valor Unitário: R$ ${(item.preco_unitario || 0).toFixed(2)}\n   Subtotal: R$ ${subtotal.toFixed(2)}`;
+                              const preco_unit = item.preco_unitario || item.preco || 0;
+                              const qtd = item.quantidade || 1;
+                              const subtotal = item.subtotal || (preco_unit * qtd) || 0;
+                              const codigo = item.codigo_barras || item.codigo || `PROD${index + 1}`;
+                              const nome_produto = item.nome || item.produto || 'Produto sem nome';
+                              return `${index + 1}. Código: ${codigo}\n   Produto: ${nome_produto}\n   Quantidade: ${qtd}\n   Valor Unitário: R$ ${preco_unit.toFixed(2)}\n   Subtotal: R$ ${subtotal.toFixed(2)}`;
                             })
                             .join('\n\n');
                           const textoCompleto = `=== ITENS DA NOTA FISCAL ===\n\n${texto}\n\n=== TOTAL DA NOTA ===\nR$ ${lastSale.valorTotal.toFixed(2)}`;

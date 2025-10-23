@@ -516,6 +516,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Contas a Pagar
+  app.get("/api/contas-pagar", async (req, res) => {
+    try {
+      const contas = await storage.getContasPagar();
+      res.json(contas);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/contas-pagar", async (req, res) => {
+    try {
+      const conta = await storage.createContaPagar({
+        ...req.body,
+        status: "pendente",
+        data_cadastro: new Date().toISOString(),
+      });
+      res.json(conta);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/contas-pagar/:id", async (req, res) => {
+    try {
+      const conta = await storage.updateContaPagar(parseInt(req.params.id), req.body);
+      res.json(conta);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/contas-pagar/:id", async (req, res) => {
+    try {
+      await storage.deleteContaPagar(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/contas-pagar/:id/pagar", async (req, res) => {
+    try {
+      const conta = await storage.updateContaPagar(parseInt(req.params.id), {
+        status: "pago",
+        data_pagamento: new Date().toISOString(),
+      });
+      res.json(conta);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Contas a Receber
+  app.get("/api/contas-receber", async (req, res) => {
+    try {
+      const contas = await storage.getContasReceber();
+      res.json(contas);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/contas-receber", async (req, res) => {
+    try {
+      const conta = await storage.createContaReceber({
+        ...req.body,
+        status: "pendente",
+        data_cadastro: new Date().toISOString(),
+      });
+      res.json(conta);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/contas-receber/:id", async (req, res) => {
+    try {
+      const conta = await storage.updateContaReceber(parseInt(req.params.id), req.body);
+      res.json(conta);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/contas-receber/:id", async (req, res) => {
+    try {
+      await storage.deleteContaReceber(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/contas-receber/:id/receber", async (req, res) => {
+    try {
+      const conta = await storage.updateContaReceber(parseInt(req.params.id), {
+        status: "recebido",
+        data_recebimento: new Date().toISOString(),
+      });
+      res.json(conta);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Configuração Fiscal
   app.get("/api/config-fiscal", async (req, res) => {
     try {
       const config = await storage.getConfigFiscal();

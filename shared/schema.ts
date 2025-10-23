@@ -74,6 +74,28 @@ export const configFiscal = pgTable("config_fiscal", {
   updated_at: text("updated_at").notNull(),
 });
 
+export const contasPagar = pgTable("contas_pagar", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  descricao: text("descricao").notNull(),
+  valor: real("valor").notNull(),
+  data_vencimento: text("data_vencimento").notNull(),
+  data_pagamento: text("data_pagamento"),
+  categoria: text("categoria"),
+  status: text("status").default("pendente"), // pendente, pago
+  data_cadastro: text("data_cadastro").notNull(),
+});
+
+export const contasReceber = pgTable("contas_receber", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  descricao: text("descricao").notNull(),
+  valor: real("valor").notNull(),
+  data_vencimento: text("data_vencimento").notNull(),
+  data_recebimento: text("data_recebimento"),
+  categoria: text("categoria"),
+  status: text("status").default("pendente"), // pendente, recebido
+  data_cadastro: text("data_cadastro").notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
 });
@@ -137,3 +159,7 @@ export type InsertCompra = z.infer<typeof insertCompraSchema>;
 export type Compra = typeof compras.$inferSelect;
 export type InsertConfigFiscal = z.infer<typeof insertConfigFiscalSchema>;
 export type ConfigFiscal = typeof configFiscal.$inferSelect;
+export type InsertContasPagar = z.infer<typeof createInsertSchema(contasPagar)>;
+export type ContasPagar = typeof contasPagar.$inferSelect;
+export type InsertContasReceber = z.infer<typeof createInsertSchema(contasReceber)>;
+export type ContasReceber = typeof contasReceber.$inferSelect;

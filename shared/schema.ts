@@ -159,7 +159,17 @@ export type InsertCompra = z.infer<typeof insertCompraSchema>;
 export type Compra = typeof compras.$inferSelect;
 export type InsertConfigFiscal = z.infer<typeof insertConfigFiscalSchema>;
 export type ConfigFiscal = typeof configFiscal.$inferSelect;
-export type InsertContasPagar = z.infer<typeof createInsertSchema(contasPagar)>;
+export const insertContasPagarSchema = createInsertSchema(contasPagar).omit({
+  id: true,
+  data_cadastro: true,
+});
+
+export const insertContasReceberSchema = createInsertSchema(contasReceber).omit({
+  id: true,
+  data_cadastro: true,
+});
+
+export type InsertContasPagar = z.infer<typeof insertContasPagarSchema>;
 export type ContasPagar = typeof contasPagar.$inferSelect;
-export type InsertContasReceber = z.infer<typeof createInsertSchema(contasReceber)>;
+export type InsertContasReceber = z.infer<typeof insertContasReceberSchema>;
 export type ContasReceber = typeof contasReceber.$inferSelect;

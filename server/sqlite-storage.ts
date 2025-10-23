@@ -121,6 +121,28 @@ export class SQLiteStorage implements IStorage {
         updated_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS contas_pagar (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        descricao TEXT NOT NULL,
+        valor REAL NOT NULL,
+        data_vencimento TEXT NOT NULL,
+        data_pagamento TEXT,
+        categoria TEXT,
+        status TEXT DEFAULT 'pendente',
+        data_cadastro TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS contas_receber (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        descricao TEXT NOT NULL,
+        valor REAL NOT NULL,
+        data_vencimento TEXT NOT NULL,
+        data_recebimento TEXT,
+        categoria TEXT,
+        status TEXT DEFAULT 'pendente',
+        data_cadastro TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS storage (
         key TEXT PRIMARY KEY,
         data TEXT
@@ -472,5 +494,75 @@ export class SQLiteStorage implements IStorage {
       );
       return { ...config, id: Number(info.lastInsertRowid) };
     }
+  }
+
+  async getContasPagar(): Promise<any[]> {
+    const stmt = this.db.prepare('SELECT * FROM contas_pagar ORDER BY data_vencimento ASC');
+    return stmt.all();
+  }
+
+  async createContaPagar(data: any): Promise<any> {
+    const stmt = this.db.prepare(`
+      INSERT INTO contas_pagar (descricao, valor, data_vencimento, categoria, status, data_cadastro)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      data.descricao,
+      data.valor,
+      data.data_vencimento,
+      data.categoria || null,
+      data.status || 'pendente',
+      data.data_cadastro
+    );
+    return { ...data, id: Number(info.lastInsertRowid) };
+  }
+
+  async updateContaPagar(id: number, updates: any): Promise<any> {
+    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+    const values = Object.values(updates);
+    const stmt = this.db.prepare(`UPDATE contas_pagar SET ${fields} WHERE id = ?`);
+    stmt.run(...values, id);
+    const result = this.db.prepare('SELECT * FROM contas_pagar WHERE id = ?').get(id);
+    return result;
+  }
+
+  async deleteContaPagar(id: number): Promise<void> {
+    const stmt = this.db.prepare('DELETE FROM contas_pagar WHERE id = ?');
+    stmt.run(id);
+  }
+
+  async getContasReceber(): Promise<any[]> {
+    const stmt = this.db.prepare('SELECT * FROM contas_receber ORDER BY data_vencimento ASC');
+    return stmt.all();
+  }
+
+  async createContaReceber(data: any): Promise<any> {
+    const stmt = this.db.prepare(`
+      INSERT INTO contas_receber (descricao, valor, data_vencimento, categoria, status, data_cadastro)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      data.descricao,
+      data.valor,
+      data.data_vencimento,
+      data.categoria || null,
+      data.status || 'pendente',
+      data.data_cadastro
+    );
+    return { ...data, id: Number(info.lastInsertRowid) };
+  }
+
+  async updateContaReceber(id: number, updates: any): Promise<any> {
+    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+    const values = Object.values(updates);
+    const stmt = this.db.prepare(`UPDATE contas_receber SET ${fields} WHERE id = ?`);
+    stmt.run(...values, id);
+    const result = this.db.prepare('SELECT * FROM contas_receber WHERE id = ?').get(id);
+    return result;
+  }
+
+  async deleteContaReceber(id: number): Promise<void> {
+    const stmt = this.db.prepare('DELETE FROM contas_receber WHERE id = ?');
+    stmt.run(id);
   }
 }

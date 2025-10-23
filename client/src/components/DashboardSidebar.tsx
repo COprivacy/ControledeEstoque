@@ -1,17 +1,30 @@
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { Home, Package, ClipboardList, BarChart3, Scan, Settings, Users, FileText } from "lucide-react";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { Home, Package, ClipboardList, BarChart3, Scan, Settings, Users, FileText, DollarSign, CreditCard, TrendingUp, LineChart } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
-const menuItems = [
+const generalMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "Produtos", url: "/produtos", icon: Package },
   { title: "PDV", url: "/pdv", icon: Scan },
-  { title: "Inventário", url: "/inventario", icon: ClipboardList },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
-  { title: "Config. Fiscal", url: "/config-fiscal", icon: FileText },
+];
+
+const inventoryMenuItems = [
+  { title: "Produtos", url: "/produtos", icon: Package },
+  { title: "Inventário", url: "/inventario", icon: ClipboardList },
   { title: "Fornecedores", url: "/fornecedores", icon: Package },
   { title: "Clientes", url: "/clientes", icon: Users },
+];
+
+const financeMenuItems = [
+  { title: "Contas a Pagar", url: "/financeiro/contas-pagar", icon: CreditCard },
+  { title: "Contas a Receber", url: "/financeiro/contas-receber", icon: DollarSign },
+  { title: "Fluxo de PDV Projetado", url: "/financeiro/fluxo-pdv", icon: TrendingUp },
+  { title: "DRE Simplificado", url: "/financeiro/dre", icon: LineChart },
+];
+
+const configMenuItems = [
+  { title: "Configurações", url: "/configuracoes", icon: Settings },
+  { title: "Config. Fiscal", url: "/config-fiscal", icon: FileText },
 ];
 
 export default function DashboardSidebar() {
@@ -23,7 +36,61 @@ export default function DashboardSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {generalMenuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={location === item.url}>
+                    <Link href={item.url} data-testid={`link-${item.title.toLowerCase()}`}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Estoque</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {inventoryMenuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={location === item.url}>
+                    <Link href={item.url} data-testid={`link-${item.title.toLowerCase()}`}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Gestão Financeira</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {financeMenuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={location === item.url}>
+                    <Link href={item.url} data-testid={`link-${item.title.toLowerCase()}`}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Sistema</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {configMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={location === item.url}>
                     <Link href={item.url} data-testid={`link-${item.title.toLowerCase()}`}>

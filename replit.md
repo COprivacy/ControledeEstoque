@@ -43,6 +43,12 @@ Preferred communication style: Simple, everyday language.
 - Reports for sales analysis and expiration monitoring
 - Supplier management with purchase history and spending tracking
 - Purchase registration system with product linking to suppliers
+- Client management with purchase history tracking
+- **Financial Management Module:**
+  - Accounts Payable (Contas a Pagar)
+  - Accounts Receivable (Contas a Receber)
+  - Projected POS Cash Flow (Fluxo de PDV Projetado)
+  - Simplified Income Statement - DRE (DRE Simplificado)
 - **Brazilian Invoice (NF-e/NFC-e) Emission** via Focus NFe API
 - Fiscal configuration page with legal disclaimer
 - Optional invoice emission after each sale
@@ -123,6 +129,16 @@ Preferred communication style: Simple, everyday language.
 7. **Invoice Validation:** Zod schemas validate all invoice data before sending to Focus NFe API
 
 ### Recent Changes (October 2025)
+
+**Financial Management Module (October 23, 2025):**
+- Created new "Gestão Financeira" category in sidebar navigation
+- Added 4 new financial management pages:
+  - Contas a Pagar (Accounts Payable) - `/financeiro/contas-pagar`
+  - Contas a Receber (Accounts Receivable) - `/financeiro/contas-receber`
+  - Fluxo de PDV Projetado (Projected POS Cash Flow) - `/financeiro/fluxo-pdv`
+  - DRE Simplificado (Simplified Income Statement) - `/financeiro/dre`
+- Reorganized sidebar menu into logical sections: General, Estoque, Gestão Financeira, Sistema
+- Added appropriate icons for each financial feature (CreditCard, DollarSign, TrendingUp, LineChart)
 
 **Brazilian Invoice System Implementation:**
 - Added Focus NFe API integration service (`server/focusnfe.ts`)

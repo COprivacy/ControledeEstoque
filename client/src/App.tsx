@@ -17,6 +17,10 @@ import Settings from "@/pages/Settings";
 import ConfigFiscal from "@/pages/ConfigFiscal";
 import Fornecedores from "@/pages/Fornecedores";
 import Clientes from "@/pages/Clientes";
+import ContasPagar from "@/pages/ContasPagar";
+import ContasReceber from "@/pages/ContasReceber";
+import FluxoPDV from "@/pages/FluxoPDV";
+import DRE from "@/pages/DRE";
 import DashboardLayout from "@/layouts/DashboardLayout";
 
 function Router() {
@@ -98,6 +102,34 @@ function Router() {
         {() => (
           <DashboardLayout>
             <ConfigFiscal />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/financeiro/contas-pagar">
+        {() => (
+          <DashboardLayout>
+            <ContasPagar />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/financeiro/contas-receber">
+        {() => (
+          <DashboardLayout>
+            <ContasReceber />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/financeiro/fluxo-pdv">
+        {() => (
+          <DashboardLayout>
+            <FluxoPDV />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/financeiro/dre">
+        {() => (
+          <DashboardLayout>
+            <DRE />
           </DashboardLayout>
         )}
       </Route>

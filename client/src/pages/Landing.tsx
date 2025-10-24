@@ -1,12 +1,12 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Package, 
-  BarChart3, 
-  ShoppingCart, 
-  Users, 
-  FileText, 
+import {
+  Package,
+  BarChart3,
+  ShoppingCart,
+  Users,
+  FileText,
   TrendingUp,
   Check,
   Zap,
@@ -200,8 +200,8 @@ export default function Landing() {
           </div>
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {pricingPlans.map((plan, index) => (
-              <Card 
-                key={index} 
+              <Card
+                key={index}
                 className={`relative ${plan.popular ? 'border-4 border-blue-600 shadow-2xl scale-105' : 'border-2'}`}
                 data-testid={`card-plan-${plan.name.toLowerCase()}`}
               >
@@ -234,7 +234,7 @@ export default function Landing() {
                     ))}
                   </ul>
                   <Link href="/register">
-                    <Button 
+                    <Button
                       className={`w-full ${plan.popular ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
                       variant={plan.popular ? 'default' : 'outline'}
                       size="lg"

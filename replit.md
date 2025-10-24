@@ -130,6 +130,30 @@ Preferred communication style: Simple, everyday language.
 
 ### Recent Changes (October 2025)
 
+**Institutional Website Landing Page (October 24, 2025):**
+- Created modern institutional landing page in Slack style at `/` route
+- Implemented comprehensive Privacy Policy page at `/privacy`
+- Moved authentication to `/login` (previously at `/`)
+- Landing page features:
+  - Hero section with gradient headline and prominent CTAs
+  - Features section showcasing 6 core system capabilities
+  - Pricing section comparing Free vs Premium plans
+  - Sticky navigation bar with links to features, pricing, and privacy
+  - Responsive footer with organized links
+  - Mobile-first responsive design
+  - All interactive elements include data-testid attributes for testing
+- Updated Login page to connect to existing `/api/auth/login` endpoint
+- Login now properly handles authentication state and error messages
+- Design follows Slack-inspired principles: clean, minimalistic, clear CTAs
+- Complete routing structure:
+  - `/` - Landing page (public)
+  - `/login` - Authentication page (public)
+  - `/register` - Registration page (public)
+  - `/privacy` - Privacy Policy (public)
+  - `/dashboard` and other routes - Management system (authenticated)
+
+### Recent Changes (October 2025)
+
 **Financial Management Module (October 24, 2025):**
 - Created new "Gestão Financeira" category in sidebar navigation
 - Added 4 new financial management pages:

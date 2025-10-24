@@ -104,6 +104,9 @@ export default function Landing() {
               <Link href="/privacy" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" data-testid="link-privacy">
                 Privacidade
               </Link>
+              <Link href="/admin-publico" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" data-testid="link-admin">
+                Admin
+              </Link>
               <Link href="/login">
                 <Button variant="outline" data-testid="button-login">
                   Entrar
@@ -291,6 +294,7 @@ export default function Landing() {
               <ul className="space-y-2 text-sm">
                 <li><Link href="/privacy" className="hover:text-white transition-colors" data-testid="footer-link-privacy">Privacidade</Link></li>
                 <li><a href="#" className="hover:text-white transition-colors" data-testid="footer-link-terms">Termos de Uso</a></li>
+                <li><Link href="/admin-publico" className="hover:text-white transition-colors" data-testid="footer-link-admin">Painel Admin</Link></li>
               </ul>
             </div>
             <div>

@@ -18,7 +18,7 @@ const inventoryMenuItems = [
 const financeMenuItems = [
   { title: "Contas a Pagar", url: "/financeiro/contas-pagar", icon: CreditCard },
   { title: "Contas a Receber", url: "/financeiro/contas-receber", icon: DollarSign },
-  { title: "Fluxo de PDV Projetado", url: "/financeiro/fluxo-pdv", icon: TrendingUp },
+  { title: "Fluxo de Caixa", url: "/financeiro/fluxo-pdv", icon: TrendingUp },
   { title: "DRE Simplificado", url: "/financeiro/dre", icon: LineChart },
 ];
 

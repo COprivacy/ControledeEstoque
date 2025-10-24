@@ -65,8 +65,8 @@ export default function FluxoPDV() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold dark:text-white">Fluxo de PDV Projetado</h1>
-        <p className="text-muted-foreground mt-1">Análise de fluxo de caixa projetado do PDV</p>
+        <h1 className="text-3xl font-bold dark:text-white">Fluxo de Caixa Projetado</h1>
+        <p className="text-muted-foreground mt-1">Análise de fluxo de caixa projetado baseado em contas a pagar e receber</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">

@@ -19,9 +19,11 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Users, Crown, Shield, CheckCircle2, ArrowLeft } from "lucide-react";
+import { Users, Crown, Shield, CheckCircle2, ArrowLeft, UserPlus } from "lucide-react";
 import { Link } from "wouter";
 import backgroundImage from "@assets/generated_images/Pavisoft_Sistemas_tech_background_61320ac2.png";
 
@@ -38,6 +40,14 @@ export default function PublicAdmin() {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [adminPassword, setAdminPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    nome: "",
+    email: "",
+    senha: "",
+    plano: "free",
+    is_admin: "false"
+  });
 
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -66,6 +76,35 @@ export default function PublicAdmin() {
     },
   });
 
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: typeof newUserData) => {
+      const response = await apiRequest("POST", "/api/auth/register", userData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Usuário criado",
+        description: "O novo usuário foi criado com sucesso.",
+      });
+      setShowCreateForm(false);
+      setNewUserData({
+        nome: "",
+        email: "",
+        senha: "",
+        plano: "free",
+        is_admin: "false"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar usuário",
+        description: error.error || "Ocorreu um erro ao criar o usuário.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handlePlanChange = (userId: string, newPlan: string) => {
     updateUserMutation.mutate({ id: userId, updates: { plano: newPlan } });
   };
@@ -73,6 +112,19 @@ export default function PublicAdmin() {
   const handleAdminToggle = (userId: string, currentStatus: string) => {
     const newStatus = currentStatus === "true" ? "false" : "true";
     updateUserMutation.mutate({ id: userId, updates: { is_admin: newStatus } });
+  };
+
+  const handleCreateUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserData.nome || !newUserData.email || !newUserData.senha) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive",
+      });
+      return;
+    }
+    createUserMutation.mutate(newUserData);
   };
 
   const getPlanBadgeVariant = (plan: string) => {
@@ -252,6 +304,103 @@ export default function PublicAdmin() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="bg-white/95 backdrop-blur-md">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Criar Nova Conta</CardTitle>
+                <CardDescription>
+                  Adicione novos usuários ao sistema
+                </CardDescription>
+              </div>
+              <Button
+                onClick={() => setShowCreateForm(!showCreateForm)}
+                variant={showCreateForm ? "outline" : "default"}
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                {showCreateForm ? "Cancelar" : "Nova Conta"}
+              </Button>
+            </div>
+          </CardHeader>
+          {showCreateForm && (
+            <CardContent>
+              <form onSubmit={handleCreateUser} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nome">Nome Completo</Label>
+                    <Input
+                      id="nome"
+                      value={newUserData.nome}
+                      onChange={(e) => setNewUserData({ ...newUserData, nome: e.target.value })}
+                      placeholder="Digite o nome completo"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={newUserData.email}
+                      onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                      placeholder="Digite o email"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="senha">Senha</Label>
+                    <Input
+                      id="senha"
+                      type="password"
+                      value={newUserData.senha}
+                      onChange={(e) => setNewUserData({ ...newUserData, senha: e.target.value })}
+                      placeholder="Digite a senha"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="plano">Plano</Label>
+                    <Select
+                      value={newUserData.plano}
+                      onValueChange={(value) => setNewUserData({ ...newUserData, plano: value })}
+                    >
+                      <SelectTrigger id="plano">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="free">Free</SelectItem>
+                        <SelectItem value="premium">Premium</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="is_admin">Tipo de Usuário</Label>
+                    <Select
+                      value={newUserData.is_admin}
+                      onValueChange={(value) => setNewUserData({ ...newUserData, is_admin: value })}
+                    >
+                      <SelectTrigger id="is_admin">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="false">Usuário</SelectItem>
+                        <SelectItem value="true">Administrador</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={createUserMutation.isPending}
+                >
+                  {createUserMutation.isPending ? "Criando..." : "Criar Conta"}
+                </Button>
+              </form>
+            </CardContent>
+          )}
+        </Card>
 
         <Card className="bg-white/95 backdrop-blur-md">
           <CardHeader>

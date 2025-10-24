@@ -1,6 +1,6 @@
 
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -41,6 +41,15 @@ export default function PublicAdmin() {
   const [adminPassword, setAdminPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  
+  // Aplicar modo noturno ao carregar o componente
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+    return () => {
+      // Opcional: remover dark mode ao desmontar
+      // document.documentElement.classList.remove('dark');
+    };
+  }, []);
   const [newUserData, setNewUserData] = useState({
     nome: "",
     email: "",

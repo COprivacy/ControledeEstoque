@@ -71,7 +71,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: user.email,
         nome: user.nome,
         plano: user.plano,
-        is_admin: user.is_admin
+        is_admin: user.is_admin,
+        data_criacao: user.data_criacao,
+        data_expiracao_trial: user.data_expiracao_trial
       }));
       res.json(sanitizedUsers);
     } catch (error) {

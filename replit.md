@@ -140,6 +140,22 @@ Preferred communication style: Simple, everyday language.
 - Reorganized sidebar menu into logical sections: General, Estoque, Gestão Financeira, Sistema
 - Added appropriate icons for each financial feature (CreditCard, DollarSign, TrendingUp, LineChart)
 
+**Progressive Web App (PWA) Implementation (October 24, 2025):**
+- Implemented full PWA functionality with service workers
+- Created `manifest.json` with app configuration:
+  - App name, icons, theme colors, and display settings
+  - Shortcuts to PDV and Products pages
+  - Optimized for mobile installation
+- Service worker features:
+  - Offline support with intelligent caching strategy
+  - Caches static assets (JS, CSS, fonts, images)
+  - Falls back to cached version when offline
+  - Automatic updates with user notification
+- Generated custom app icons (192x192 and 512x512)
+- Added PWA meta tags for iOS and Android compatibility
+- Service worker registration only in production mode
+- Users can now install the app on their devices (mobile and desktop)
+
 **Non-Fiscal Receipt Feature (October 24, 2025):**
 - Added "Cupom Não-Fiscal" option in PDV after completing a sale
 - New button alongside existing NFC-e emission options

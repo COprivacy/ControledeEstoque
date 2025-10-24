@@ -47,7 +47,7 @@ export default function LoginForm({
       <Card className="w-full max-w-md relative z-10 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-white/20 dark:border-gray-800/50">
         <CardHeader className="space-y-2">
           <CardTitle className="text-2xl font-bold text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Pavisoft SmartEstoque
+            Pavisoft Sistemas
           </CardTitle>
           <CardDescription className="text-center text-gray-600 dark:text-gray-300">
             Entre com suas credenciais para acessar o sistema

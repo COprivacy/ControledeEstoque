@@ -252,13 +252,13 @@ export default function PDV() {
       </div>
 
       <AlertDialog open={showNFDialog} onOpenChange={setShowNFDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
+            <AlertDialogTitle className="flex items-center gap-2 text-xl">
+              <FileText className="h-6 w-6 text-primary" />
               Emitir Nota Fiscal?
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
+            <AlertDialogDescription className="space-y-2 text-base">
               <p>Venda registrada com sucesso!</p>
               <p className="font-medium">
                 Deseja emitir uma Nota Fiscal (NFCe) para esta venda?
@@ -274,59 +274,73 @@ export default function PDV() {
               ) : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-col gap-3 mt-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-                <Button
-                  variant="outline"
-                  onClick={() => handleEmissaoNF('nao')}
-                  className="w-full"
-                  disabled={isEmittingNF}
-                  data-testid="button-cancel-nf"
-                >
-                  Não, apenas venda
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => handleEmissaoNF('cupom')}
-                  className="w-full"
-                  disabled={isEmittingNF}
-                  data-testid="button-cupom-nao-fiscal"
-                >
-                  <Receipt className="h-4 w-4 mr-2" />
-                  Cupom Não-Fiscal
-                </Button>
+          <AlertDialogFooter className="flex flex-col gap-3 mt-6 sm:flex-col">
+            <Button
+              variant="outline"
+              onClick={() => handleEmissaoNF('nao')}
+              className="w-full justify-start h-auto py-3 px-4"
+              disabled={isEmittingNF}
+              data-testid="button-cancel-nf"
+            >
+              <div className="flex flex-col items-start gap-1">
+                <span className="font-semibold">Não, apenas venda</span>
+                <span className="text-xs text-muted-foreground">Registrar venda sem emitir documento fiscal</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-                <Button
-                  variant="outline"
-                  onClick={() => handleEmissaoNF('manual')}
-                  className="w-full"
-                  disabled={isEmittingNF}
-                  data-testid="button-manual-nf"
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Emissão Manual (Sefaz)
-                </Button>
-                <Button
-                  onClick={() => handleEmissaoNF('automatica')}
-                  className="w-full"
-                  disabled={isEmittingNF}
-                  data-testid="button-emit-nf"
-                >
-                  {isEmittingNF ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Emitindo...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="h-4 w-4 mr-2" />
-                      Emissão Automática
-                    </>
-                  )}
-                </Button>
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={() => handleEmissaoNF('cupom')}
+              className="w-full justify-start h-auto py-3 px-4"
+              disabled={isEmittingNF}
+              data-testid="button-cupom-nao-fiscal"
+            >
+              <Receipt className="h-5 w-5 mr-3 flex-shrink-0" />
+              <div className="flex flex-col items-start gap-1">
+                <span className="font-semibold">Cupom Não-Fiscal</span>
+                <span className="text-xs text-muted-foreground">Gerar comprovante sem valor fiscal</span>
               </div>
-            </AlertDialogFooter>
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={() => handleEmissaoNF('manual')}
+              className="w-full justify-start h-auto py-3 px-4"
+              disabled={isEmittingNF}
+              data-testid="button-manual-nf"
+            >
+              <ExternalLink className="h-5 w-5 mr-3 flex-shrink-0" />
+              <div className="flex flex-col items-start gap-1">
+                <span className="font-semibold">Emissão Manual (Sefaz)</span>
+                <span className="text-xs text-muted-foreground">Abrir dados para emitir no portal da Secretaria da Fazenda</span>
+              </div>
+            </Button>
+            
+            <Button
+              onClick={() => handleEmissaoNF('automatica')}
+              className="w-full justify-start h-auto py-3 px-4 bg-primary"
+              disabled={isEmittingNF}
+              data-testid="button-emit-nf"
+            >
+              {isEmittingNF ? (
+                <>
+                  <Loader2 className="h-5 w-5 mr-3 animate-spin flex-shrink-0" />
+                  <div className="flex flex-col items-start gap-1">
+                    <span className="font-semibold">Emitindo...</span>
+                    <span className="text-xs opacity-90">Aguarde o processamento</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <FileText className="h-5 w-5 mr-3 flex-shrink-0" />
+                  <div className="flex flex-col items-start gap-1">
+                    <span className="font-semibold">Emissão Automática</span>
+                    <span className="text-xs opacity-90">Emitir NFCe automaticamente via Focus NFe</span>
+                  </div>
+                </>
+              )}
+            </Button>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 

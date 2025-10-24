@@ -8,6 +8,8 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   senha: text("senha").notNull(),
   nome: text("nome").notNull(),
+  plano: text("plano").notNull().default("free"),
+  is_admin: text("is_admin").notNull().default("false"),
 });
 
 export const produtos = pgTable("produtos", {

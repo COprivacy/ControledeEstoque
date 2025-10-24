@@ -1,5 +1,5 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { Home, Package, ClipboardList, BarChart3, Scan, Settings, Users, FileText, DollarSign, CreditCard, TrendingUp, LineChart } from "lucide-react";
+import { Home, Package, ClipboardList, BarChart3, Scan, Settings, Users, FileText, DollarSign, CreditCard, TrendingUp, LineChart, Shield } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
 const generalMenuItems = [
@@ -23,6 +23,7 @@ const financeMenuItems = [
 ];
 
 const configMenuItems = [
+  { title: "Painel Admin", url: "/admin", icon: Shield },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
   { title: "Config. Fiscal", url: "/config-fiscal", icon: FileText },
 ];

@@ -9,6 +9,7 @@ import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Privacy from "@/pages/Privacy";
+import Admin from "@/pages/Admin";
 import Dashboard from "@/pages/Dashboard";
 import Products from "@/pages/Products";
 import AddProduct from "@/pages/AddProduct";
@@ -134,6 +135,13 @@ function Router() {
         {() => (
           <DashboardLayout>
             <DRE />
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/admin">
+        {() => (
+          <DashboardLayout>
+            <Admin />
           </DashboardLayout>
         )}
       </Route>

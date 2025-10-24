@@ -41,9 +41,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Email ou senha inválidos" });
       }
 
-      res.json({ id: user.id, email: user.email, nome: user.nome });
+      res.json({ id: user.id, email: user.email, nome: user.nome, plano: user.plano, is_admin: user.is_admin });
     } catch (error) {
       res.status(500).json({ error: "Erro ao fazer login" });
+    }
+  });
+
+  app.get("/api/users", async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      const sanitizedUsers = users.map(user => ({
+        id: user.id,
+        email: user.email,
+        nome: user.nome,
+        plano: user.plano,
+        is_admin: user.is_admin
+      }));
+      res.json(sanitizedUsers);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao buscar usuários" });
+    }
+  });
+
+  app.patch("/api/users/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      delete updates.senha;
+      delete updates.id;
+      
+      const updatedUser = await storage.updateUser(id, updates);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+
+      res.json({
+        id: updatedUser.id,
+        email: updatedUser.email,
+        nome: updatedUser.nome,
+        plano: updatedUser.plano,
+        is_admin: updatedUser.is_admin
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao atualizar usuário" });
     }
   });
 

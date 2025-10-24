@@ -27,6 +27,7 @@ export interface IStorage {
   getUsers?(): Promise<User[]>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(insertUser: InsertUser): Promise<User>;
+  updateUser?(id: string, updates: Partial<User>): Promise<User | undefined>;
   getProdutos(): Promise<Produto[]>;
   getProduto(id: number): Promise<Produto | undefined>;
   getProdutoByCodigoBarras(codigo: string): Promise<Produto | undefined>;
@@ -57,6 +58,7 @@ export abstract class Storage {
   abstract getUsers(): Promise<User[]>;
   abstract getUserByEmail(email: string): Promise<User | undefined>;
   abstract createUser(insertUser: InsertUser): Promise<User>;
+  abstract updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
 
   abstract getProdutos(): Promise<Produto[]>;
   abstract getProduto(id: number): Promise<Produto | undefined>;
@@ -321,10 +323,21 @@ export class MemStorage implements Storage { // Changed to implement Storage int
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id };
+    const user: User = { ...insertUser, id, plano: "free", is_admin: "false" };
     this.users.set(id, user);
     await this.persistData();
     return user;
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) {
+      return undefined;
+    }
+    const updatedUser = { ...user, ...updates };
+    this.users.set(id, updatedUser);
+    await this.persistData();
+    return updatedUser;
   }
 
   async getProdutos(): Promise<Produto[]> {

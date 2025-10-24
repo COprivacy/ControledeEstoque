@@ -23,7 +23,6 @@ const financeMenuItems = [
 ];
 
 const configMenuItems = [
-  { title: "Painel Admin", url: "/admin", icon: Shield },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
   { title: "Config. Fiscal", url: "/config-fiscal", icon: FileText },
 ];

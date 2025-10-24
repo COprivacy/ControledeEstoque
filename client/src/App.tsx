@@ -139,13 +139,6 @@ function Router() {
           </DashboardLayout>
         )}
       </Route>
-      <Route path="/admin">
-        {() => (
-          <DashboardLayout>
-            <Admin />
-          </DashboardLayout>
-        )}
-      </Route>
       <Route path="/admin-publico">
         {() => (
           <PublicAdmin />

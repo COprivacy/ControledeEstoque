@@ -282,6 +282,7 @@ export default function PDV() {
               disabled={isEmittingNF}
               data-testid="button-cancel-nf"
             >
+              <CheckCircle className="h-5 w-5 mr-3 flex-shrink-0" />
               <div className="flex flex-col items-start gap-1">
                 <span className="font-semibold">Não, apenas venda</span>
                 <span className="text-xs text-muted-foreground">Registrar venda sem emitir documento fiscal</span>

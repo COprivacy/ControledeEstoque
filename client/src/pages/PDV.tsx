@@ -252,96 +252,115 @@ export default function PDV() {
       </div>
 
       <AlertDialog open={showNFDialog} onOpenChange={setShowNFDialog}>
-        <AlertDialogContent className="max-w-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-xl">
-              <FileText className="h-6 w-6 text-primary" />
-              Emitir Nota Fiscal?
+        <AlertDialogContent className="max-w-3xl">
+          <AlertDialogHeader className="space-y-3">
+            <AlertDialogTitle className="flex items-center gap-3 text-2xl font-bold">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <FileText className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <span>Emitir Nota Fiscal?</span>
+                <span className="text-sm font-normal text-muted-foreground">
+                  Venda registrada com sucesso!
+                </span>
+              </div>
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2 text-base">
-              <p>Venda registrada com sucesso!</p>
-              <p className="font-medium">
-                Deseja emitir uma Nota Fiscal (NFCe) para esta venda?
-              </p>
-              {!configFiscal || !configFiscal.focus_nfe_api_key ? (
-                <p className="text-sm text-red-600 dark:text-red-500 font-medium">
-                  ⚠️ Configure a emissão fiscal em "Config. Fiscal" primeiro
+            
+            {!configFiscal || !configFiscal.focus_nfe_api_key ? (
+              <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 p-3">
+                <p className="text-sm text-red-600 dark:text-red-500 font-medium flex items-center gap-2">
+                  <span className="text-lg">⚠️</span>
+                  Configure a emissão fiscal em "Config. Fiscal" primeiro
                 </p>
-              ) : configFiscal?.ambiente === 'homologacao' ? (
-                <p className="text-sm text-yellow-600 dark:text-yellow-500">
+              </div>
+            ) : configFiscal?.ambiente === 'homologacao' ? (
+              <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900 p-3">
+                <p className="text-sm text-yellow-700 dark:text-yellow-500 font-medium flex items-center gap-2">
+                  <span className="text-lg">ℹ️</span>
                   Ambiente de Homologação - Nota para testes
                 </p>
-              ) : null}
-            </AlertDialogDescription>
+              </div>
+            ) : null}
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-col gap-3 mt-6 sm:flex-col">
+          
+          <div className="grid gap-3 mt-4">
             <Button
               variant="outline"
               onClick={() => handleEmissaoNF('nao')}
-              className="w-full justify-start h-auto py-3 px-4"
+              className="w-full justify-start h-auto py-4 px-5 hover:bg-muted/50 transition-all group"
               disabled={isEmittingNF}
               data-testid="button-cancel-nf"
             >
-              <CheckCircle className="h-5 w-5 mr-3 flex-shrink-0" />
-              <div className="flex flex-col items-start gap-1">
-                <span className="font-semibold">Não, apenas venda</span>
-                <span className="text-xs text-muted-foreground">Registrar venda sem emitir documento fiscal</span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-950/30 text-green-600 dark:text-green-500 mr-4 group-hover:scale-110 transition-transform">
+                <CheckCircle className="h-5 w-5" />
+              </div>
+              <div className="flex flex-col items-start gap-0.5 text-left">
+                <span className="font-semibold text-base">Não, apenas venda</span>
+                <span className="text-xs text-muted-foreground font-normal">Registrar venda sem emitir documento fiscal</span>
               </div>
             </Button>
             
             <Button
               variant="outline"
               onClick={() => handleEmissaoNF('cupom')}
-              className="w-full justify-start h-auto py-3 px-4"
+              className="w-full justify-start h-auto py-4 px-5 hover:bg-muted/50 transition-all group"
               disabled={isEmittingNF}
               data-testid="button-cupom-nao-fiscal"
             >
-              <Receipt className="h-5 w-5 mr-3 flex-shrink-0" />
-              <div className="flex flex-col items-start gap-1">
-                <span className="font-semibold">Cupom Não-Fiscal</span>
-                <span className="text-xs text-muted-foreground">Gerar comprovante sem valor fiscal</span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-blue-500 mr-4 group-hover:scale-110 transition-transform">
+                <Receipt className="h-5 w-5" />
+              </div>
+              <div className="flex flex-col items-start gap-0.5 text-left">
+                <span className="font-semibold text-base">Cupom Não-Fiscal</span>
+                <span className="text-xs text-muted-foreground font-normal">Gerar comprovante sem valor fiscal</span>
               </div>
             </Button>
             
             <Button
               variant="outline"
               onClick={() => handleEmissaoNF('manual')}
-              className="w-full justify-start h-auto py-3 px-4"
+              className="w-full justify-start h-auto py-4 px-5 hover:bg-muted/50 transition-all group"
               disabled={isEmittingNF}
               data-testid="button-manual-nf"
             >
-              <ExternalLink className="h-5 w-5 mr-3 flex-shrink-0" />
-              <div className="flex flex-col items-start gap-1">
-                <span className="font-semibold">Emissão Manual (Sefaz)</span>
-                <span className="text-xs text-muted-foreground">Abrir dados para emitir no portal da Secretaria da Fazenda</span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-950/30 text-purple-600 dark:text-purple-500 mr-4 group-hover:scale-110 transition-transform">
+                <ExternalLink className="h-5 w-5" />
+              </div>
+              <div className="flex flex-col items-start gap-0.5 text-left">
+                <span className="font-semibold text-base">Emissão Manual (Sefaz)</span>
+                <span className="text-xs text-muted-foreground font-normal">Abrir dados para emitir no portal da Secretaria da Fazenda</span>
               </div>
             </Button>
             
             <Button
               onClick={() => handleEmissaoNF('automatica')}
-              className="w-full justify-start h-auto py-3 px-4 bg-primary"
+              className="w-full justify-start h-auto py-4 px-5 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all group shadow-lg hover:shadow-xl"
               disabled={isEmittingNF}
               data-testid="button-emit-nf"
             >
               {isEmittingNF ? (
                 <>
-                  <Loader2 className="h-5 w-5 mr-3 animate-spin flex-shrink-0" />
-                  <div className="flex flex-col items-start gap-1">
-                    <span className="font-semibold">Emitindo...</span>
-                    <span className="text-xs opacity-90">Aguarde o processamento</span>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 mr-4">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  </div>
+                  <div className="flex flex-col items-start gap-0.5 text-left">
+                    <span className="font-semibold text-base">Emitindo...</span>
+                    <span className="text-xs opacity-90 font-normal">Aguarde o processamento</span>
                   </div>
                 </>
               ) : (
                 <>
-                  <FileText className="h-5 w-5 mr-3 flex-shrink-0" />
-                  <div className="flex flex-col items-start gap-1">
-                    <span className="font-semibold">Emissão Automática</span>
-                    <span className="text-xs opacity-90">Emitir NFCe automaticamente via Focus NFe</span>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 mr-4 group-hover:scale-110 transition-transform">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div className="flex flex-col items-start gap-0.5 text-left">
+                    <span className="font-semibold text-base">Emissão Automática</span>
+                    <span className="text-xs opacity-90 font-normal">Emitir NFCe automaticamente via Focus NFe</span>
                   </div>
                 </>
               )}
             </Button>
-          </AlertDialogFooter>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
 

@@ -131,7 +131,7 @@ export default function PDV() {
       }
 
       const result = await response.json();
-      
+
       toast({
         title: "✅ Nota Fiscal emitida com sucesso!",
         description: configFiscal?.ambiente === 'homologacao' 
@@ -167,7 +167,7 @@ export default function PDV() {
       }
 
       const result = await response.json();
-      
+
       toast({
         title: "Venda registrada com sucesso!",
         description: `Total: R$ ${sale.valorTotal.toFixed(2)}`,
@@ -199,6 +199,29 @@ export default function PDV() {
       title: "Produto não encontrado",
       description: `Código de barras: ${barcode}`,
     });
+  };
+
+  // Função para lidar com as opções de emissão de NF
+  const handleEmissaoNF = (opcao: 'nao' | 'cupom' | 'manual' | 'automatica') => {
+    setShowNFDialog(false);
+    switch (opcao) {
+      case 'nao':
+        // Não faz nada, apenas fecha o diálogo
+        break;
+      case 'cupom':
+        setShowCupomNaoFiscal(true);
+        break;
+      case 'manual':
+        setShowManualNFDialog(true);
+        break;
+      case 'automatica':
+        if (lastSale) {
+          emitirNFCe(lastSale);
+        }
+        break;
+      default:
+        break;
+    }
   };
 
   return (
@@ -251,52 +274,59 @@ export default function PDV() {
               ) : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel disabled={isEmittingNF} data-testid="button-cancel-nf">
-              Não, apenas venda
-            </AlertDialogCancel>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowNFDialog(false);
-                setShowCupomNaoFiscal(true);
-              }}
-              disabled={isEmittingNF}
-              data-testid="button-cupom-nao-fiscal"
-            >
-              <Receipt className="h-4 w-4 mr-2" />
-              Cupom Não-Fiscal
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowNFDialog(false);
-                setShowManualNFDialog(true);
-              }}
-              disabled={isEmittingNF}
-              data-testid="button-manual-nf"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Emissão Manual (Sefaz)
-            </Button>
-            <AlertDialogAction
-              onClick={() => lastSale && emitirNFCe(lastSale)}
-              disabled={isEmittingNF}
-              data-testid="button-emit-nf"
-            >
-              {isEmittingNF ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Emitindo...
-                </>
-              ) : (
-                <>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Emissão Automática
-                </>
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
+          <AlertDialogFooter className="flex flex-col gap-3 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                <Button
+                  variant="outline"
+                  onClick={() => handleEmissaoNF('nao')}
+                  className="w-full"
+                  disabled={isEmittingNF}
+                  data-testid="button-cancel-nf"
+                >
+                  Não, apenas venda
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleEmissaoNF('cupom')}
+                  className="w-full"
+                  disabled={isEmittingNF}
+                  data-testid="button-cupom-nao-fiscal"
+                >
+                  <Receipt className="h-4 w-4 mr-2" />
+                  Cupom Não-Fiscal
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                <Button
+                  variant="outline"
+                  onClick={() => handleEmissaoNF('manual')}
+                  className="w-full"
+                  disabled={isEmittingNF}
+                  data-testid="button-manual-nf"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Emissão Manual (Sefaz)
+                </Button>
+                <Button
+                  onClick={() => handleEmissaoNF('automatica')}
+                  className="w-full"
+                  disabled={isEmittingNF}
+                  data-testid="button-emit-nf"
+                >
+                  {isEmittingNF ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Emitindo...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Emissão Automática
+                    </>
+                  )}
+                </Button>
+              </div>
+            </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
@@ -451,14 +481,14 @@ export default function PDV() {
                         {lastSale.itens.map((item: any, index: number) => {
                           // Debug: verificar estrutura do item
                           console.log('Item da venda:', item);
-                          
+
                           // Buscar valores corretos considerando diferentes estruturas
                           const preco_unit = Number(item.preco_unitario || item.preco || 0);
                           const qtd = Number(item.quantidade || 1);
                           const subtotal = Number(item.subtotal || (preco_unit * qtd) || 0);
                           const codigo = item.codigo_barras || item.codigo || `PROD${index + 1}`;
                           const nome_produto = item.nome || item.produto || 'Produto sem nome';
-                          
+
                           return (
                             <div key={index} className="grid grid-cols-12 gap-2 p-2 text-sm border-b last:border-b-0 hover:bg-muted/30">
                               <div className="col-span-1 text-muted-foreground">{index + 1}</div>
@@ -574,7 +604,7 @@ export default function PDV() {
                       const qtd = Number(item.quantidade || 1);
                       const subtotal = Number(item.subtotal || (preco_unit * qtd) || 0);
                       const nome_produto = item.nome || item.produto || 'Produto';
-                      
+
                       return (
                         <div key={index} className="space-y-0.5">
                           <p className="truncate">{index + 1}. {nome_produto}</p>
@@ -642,7 +672,7 @@ Este cupom não substitui nota fiscal
 Obrigado pela preferência!
 ═══════════════════════════════════
                       `.trim();
-                      
+
                       copyToClipboard(cupomTexto, "Cupom Não-Fiscal");
                     }}
                     data-testid="button-copiar-cupom"

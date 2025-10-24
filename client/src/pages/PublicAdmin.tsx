@@ -321,59 +321,59 @@ export default function PublicAdmin() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="bg-white/95 backdrop-blur-md">
+          <Card className="bg-gray-900/95 backdrop-blur-md border-gray-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-gray-100">Total de Usuários</CardTitle>
+              <Users className="h-4 w-4 text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
+              <div className="text-2xl font-bold text-white">{stats.total}</div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/95 backdrop-blur-md">
+          <Card className="bg-gray-900/95 backdrop-blur-md border-gray-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Premium</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-100">Premium</CardTitle>
               <Crown className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.premium}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-white">{stats.premium}</div>
+              <p className="text-xs text-gray-400">
                 {stats.total > 0 ? Math.round((stats.premium / stats.total) * 100) : 0}% do total
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/95 backdrop-blur-md">
+          <Card className="bg-gray-900/95 backdrop-blur-md border-gray-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Free</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-100">Free</CardTitle>
               <CheckCircle2 className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.free}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-white">{stats.free}</div>
+              <p className="text-xs text-gray-400">
                 {stats.total > 0 ? Math.round((stats.free / stats.total) * 100) : 0}% do total
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/95 backdrop-blur-md">
+          <Card className="bg-gray-900/95 backdrop-blur-md border-gray-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Administradores</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-100">Administradores</CardTitle>
               <Shield className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.admins}</div>
+              <div className="text-2xl font-bold text-white">{stats.admins}</div>
             </CardContent>
           </Card>
         </div>
 
-        <Card className="bg-white/95 backdrop-blur-md">
+        <Card className="bg-gray-900/95 backdrop-blur-md border-gray-700">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Criar Nova Conta</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-gray-100">Criar Nova Conta</CardTitle>
+                <CardDescription className="text-gray-400">
                   Adicione novos usuários ao sistema
                 </CardDescription>
               </div>
@@ -465,35 +465,35 @@ export default function PublicAdmin() {
           )}
         </Card>
 
-        <Card className="bg-white/95 backdrop-blur-md">
+        <Card className="bg-gray-900/95 backdrop-blur-md border-gray-700">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-gray-100">
                   <CreditCard className="h-5 w-5 text-green-600" />
                   Integração com Asaas
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-gray-400">
                   Configure a integração com a API da Asaas para pagamentos
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            <div className="rounded-md border border-gray-700">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[200px]">Campo</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead className="w-[150px]">Ações</TableHead>
+                  <TableRow className="border-gray-700 hover:bg-gray-800/50">
+                    <TableHead className="w-[200px] text-gray-300">Campo</TableHead>
+                    <TableHead className="text-gray-300">Valor</TableHead>
+                    <TableHead className="w-[150px] text-gray-300">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">
+                  <TableRow className="border-gray-700 hover:bg-gray-800/50">
+                    <TableCell className="font-medium text-gray-300">
                       <div className="flex items-center gap-2">
-                        <Key className="h-4 w-4 text-muted-foreground" />
+                        <Key className="h-4 w-4 text-gray-400" />
                         API Key
                       </div>
                     </TableCell>
@@ -503,15 +503,15 @@ export default function PublicAdmin() {
                         placeholder="Insira sua API Key da Asaas"
                         value={asaasConfig.api_key}
                         onChange={(e) => setAsaasConfig({ ...asaasConfig, api_key: e.target.value })}
-                        className="max-w-md"
+                        className="max-w-md bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500"
                       />
                     </TableCell>
                     <TableCell></TableCell>
                   </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">
+                  <TableRow className="border-gray-700 hover:bg-gray-800/50">
+                    <TableCell className="font-medium text-gray-300">
                       <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4 text-muted-foreground" />
+                        <Shield className="h-4 w-4 text-gray-400" />
                         Ambiente
                       </div>
                     </TableCell>
@@ -565,31 +565,31 @@ export default function PublicAdmin() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/95 backdrop-blur-md">
+        <Card className="bg-gray-900/95 backdrop-blur-md border-gray-700">
           <CardHeader>
-            <CardTitle>Usuários Cadastrados</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-gray-100">Usuários Cadastrados</CardTitle>
+            <CardDescription className="text-gray-400">
               Visualize e gerencie todos os usuários do sistema
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            <div className="rounded-md border border-gray-700">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Plano</TableHead>
-                    <TableHead>Administrador</TableHead>
-                    <TableHead>Ações</TableHead>
+                  <TableRow className="border-gray-700 hover:bg-gray-800/50">
+                    <TableHead className="text-gray-300">Nome</TableHead>
+                    <TableHead className="text-gray-300">Email</TableHead>
+                    <TableHead className="text-gray-300">Plano</TableHead>
+                    <TableHead className="text-gray-300">Administrador</TableHead>
+                    <TableHead className="text-gray-300">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users && users.length > 0 ? (
                     users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.nome}</TableCell>
-                        <TableCell>{user.email}</TableCell>
+                      <TableRow key={user.id} className="border-gray-700 hover:bg-gray-800/50">
+                        <TableCell className="font-medium text-gray-200">{user.nome}</TableCell>
+                        <TableCell className="text-gray-300">{user.email}</TableCell>
                         <TableCell>
                           {editingUser === user.id ? (
                             <Select

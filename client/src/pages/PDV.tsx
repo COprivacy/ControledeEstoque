@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import PDVScanner from "@/components/PDVScanner";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Crown, FileText, Loader2, ExternalLink, Copy, CheckCircle } from "lucide-react";
+import { Crown, FileText, Loader2, ExternalLink, Copy, CheckCircle, Receipt, Printer } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +33,7 @@ export default function PDV() {
   const { toast } = useToast();
   const [showNFDialog, setShowNFDialog] = useState(false);
   const [showManualNFDialog, setShowManualNFDialog] = useState(false);
+  const [showCupomNaoFiscal, setShowCupomNaoFiscal] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
   const [isEmittingNF, setIsEmittingNF] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -254,6 +255,18 @@ export default function PDV() {
             <AlertDialogCancel disabled={isEmittingNF} data-testid="button-cancel-nf">
               Não, apenas venda
             </AlertDialogCancel>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowNFDialog(false);
+                setShowCupomNaoFiscal(true);
+              }}
+              disabled={isEmittingNF}
+              data-testid="button-cupom-nao-fiscal"
+            >
+              <Receipt className="h-4 w-4 mr-2" />
+              Cupom Não-Fiscal
+            </Button>
             <Button
               variant="outline"
               onClick={() => {
@@ -523,6 +536,152 @@ export default function PDV() {
                 Entendi, vou emitir
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showCupomNaoFiscal} onOpenChange={setShowCupomNaoFiscal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-primary" />
+              Cupom Não-Fiscal
+            </DialogTitle>
+            <DialogDescription>
+              Comprovante de venda sem valor fiscal
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {lastSale && (
+              <>
+                <div className="bg-white dark:bg-gray-900 p-6 rounded border-2 border-dashed border-gray-300 dark:border-gray-700 font-mono text-sm">
+                  <div className="text-center border-b-2 border-dashed border-gray-300 dark:border-gray-700 pb-3 mb-3">
+                    <p className="font-bold text-base">CUPOM NÃO-FISCAL</p>
+                    {configFiscal?.razao_social && (
+                      <p className="text-xs mt-2">{configFiscal.razao_social}</p>
+                    )}
+                    {configFiscal?.cnpj && (
+                      <p className="text-xs">CNPJ: {configFiscal.cnpj}</p>
+                    )}
+                    <p className="text-xs mt-2">{new Date().toLocaleString('pt-BR')}</p>
+                  </div>
+
+                  <div className="space-y-1 mb-3">
+                    <p className="font-bold border-b border-gray-300 dark:border-gray-700 pb-1">ITENS:</p>
+                    {lastSale.itens.map((item: any, index: number) => {
+                      const preco_unit = Number(item.preco_unitario || item.preco || 0);
+                      const qtd = Number(item.quantidade || 1);
+                      const subtotal = Number(item.subtotal || (preco_unit * qtd) || 0);
+                      const nome_produto = item.nome || item.produto || 'Produto';
+                      
+                      return (
+                        <div key={index} className="space-y-0.5">
+                          <p className="truncate">{index + 1}. {nome_produto}</p>
+                          <p className="text-xs pl-3">
+                            {qtd} x R$ {preco_unit.toFixed(2)} = R$ {subtotal.toFixed(2)}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="border-t-2 border-dashed border-gray-300 dark:border-gray-700 pt-2 space-y-1">
+                    <div className="flex justify-between">
+                      <span>SUBTOTAL:</span>
+                      <span>R$ {lastSale.valorTotal.toFixed(2)}</span>
+                    </div>
+                    {lastSale.desconto > 0 && (
+                      <div className="flex justify-between text-xs">
+                        <span>Desconto:</span>
+                        <span>- R$ {lastSale.desconto.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold text-base border-t border-gray-300 dark:border-gray-700 pt-1 mt-1">
+                      <span>TOTAL:</span>
+                      <span>R$ {lastSale.valorTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <div className="text-center border-t-2 border-dashed border-gray-300 dark:border-gray-700 mt-3 pt-3 text-xs">
+                    <p className="font-bold">⚠️ DOCUMENTO SEM VALOR FISCAL</p>
+                    <p className="mt-1">Este cupom não substitui nota fiscal</p>
+                    <p className="mt-2">Obrigado pela preferência!</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      const cupomTexto = `
+═══════════════════════════════════
+    CUPOM NÃO-FISCAL
+${configFiscal?.razao_social || 'Estabelecimento'}
+${configFiscal?.cnpj ? `CNPJ: ${configFiscal.cnpj}` : ''}
+${new Date().toLocaleString('pt-BR')}
+═══════════════════════════════════
+
+ITENS:
+${lastSale.itens.map((item: any, index: number) => {
+  const preco_unit = Number(item.preco_unitario || item.preco || 0);
+  const qtd = Number(item.quantidade || 1);
+  const subtotal = Number(item.subtotal || (preco_unit * qtd) || 0);
+  const nome_produto = item.nome || item.produto || 'Produto';
+  return `${index + 1}. ${nome_produto}\n   ${qtd} x R$ ${preco_unit.toFixed(2)} = R$ ${subtotal.toFixed(2)}`;
+}).join('\n\n')}
+
+───────────────────────────────────
+TOTAL: R$ ${lastSale.valorTotal.toFixed(2)}
+═══════════════════════════════════
+
+⚠️ DOCUMENTO SEM VALOR FISCAL
+Este cupom não substitui nota fiscal
+
+Obrigado pela preferência!
+═══════════════════════════════════
+                      `.trim();
+                      
+                      copyToClipboard(cupomTexto, "Cupom Não-Fiscal");
+                    }}
+                    data-testid="button-copiar-cupom"
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copiar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      window.print();
+                      toast({
+                        title: "Imprimir Cupom",
+                        description: "Abrindo diálogo de impressão...",
+                      });
+                    }}
+                    data-testid="button-imprimir-cupom"
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    Imprimir
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => {
+                      setShowCupomNaoFiscal(false);
+                      toast({
+                        title: "✅ Cupom gerado!",
+                        description: "Cupom não-fiscal disponível",
+                      });
+                    }}
+                    data-testid="button-fechar-cupom"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    OK
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>

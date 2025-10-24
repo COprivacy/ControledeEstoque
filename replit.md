@@ -130,7 +130,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Recent Changes (October 2025)
 
-**Financial Management Module (October 23, 2025):**
+**Financial Management Module (October 24, 2025):**
 - Created new "Gestão Financeira" category in sidebar navigation
 - Added 4 new financial management pages:
   - Contas a Pagar (Accounts Payable) - `/financeiro/contas-pagar`
@@ -139,6 +139,20 @@ Preferred communication style: Simple, everyday language.
   - DRE Simplificado (Simplified Income Statement) - `/financeiro/dre`
 - Reorganized sidebar menu into logical sections: General, Estoque, Gestão Financeira, Sistema
 - Added appropriate icons for each financial feature (CreditCard, DollarSign, TrendingUp, LineChart)
+
+**Non-Fiscal Receipt Feature (October 24, 2025):**
+- Added "Cupom Não-Fiscal" option in PDV after completing a sale
+- New button alongside existing NFC-e emission options
+- Generates formatted non-fiscal receipt with:
+  - Company information (if configured)
+  - Sale items with prices and quantities
+  - Total amount and discounts
+  - Clear warning that document has no fiscal value
+- Features:
+  - Copy receipt text to clipboard
+  - Print receipt option via browser print dialog
+  - Professional receipt formatting with dashed borders
+  - Responsive design for mobile and desktop
 
 **Brazilian Invoice System Implementation:**
 - Added Focus NFe API integration service (`server/focusnfe.ts`)

@@ -10,6 +10,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -33,11 +40,15 @@ interface User {
   nome: string;
   plano: string;
   is_admin: string;
+  data_criacao?: string;
+  data_expiracao_trial?: string;
 }
 
 export default function PublicAdmin() {
   const { toast } = useToast();
   const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [adminPassword, setAdminPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -142,6 +153,26 @@ export default function PublicAdmin() {
     createUserMutation.mutate(newUserData);
   };
 
+  const handleOpenEditModal = (user: User) => {
+    setUserToEdit(user);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveUserEdit = () => {
+    if (!userToEdit) return;
+    
+    updateUserMutation.mutate({ 
+      id: userToEdit.id, 
+      updates: {
+        nome: userToEdit.nome,
+        email: userToEdit.email,
+        plano: userToEdit.plano,
+        is_admin: userToEdit.is_admin,
+      }
+    });
+    setEditModalOpen(false);
+  };
+
   const handleTestAsaasConnection = async () => {
     if (!asaasConfig.api_key) {
       toast({
@@ -192,6 +223,20 @@ export default function PublicAdmin() {
 
   const getPlanBadgeVariant = (plan: string) => {
     return plan === "premium" ? "default" : "secondary";
+  };
+
+  const calcularDiasRestantes = (dataExpiracao?: string) => {
+    if (!dataExpiracao) return null;
+    const hoje = new Date();
+    const expiracao = new Date(dataExpiracao);
+    const diffTime = expiracao.getTime() - hoje.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const formatarData = (data?: string) => {
+    if (!data) return "N/A";
+    return new Date(data).toLocaleDateString('pt-BR');
   };
 
   const handleAdminLogin = () => {
@@ -579,18 +624,40 @@ export default function PublicAdmin() {
                   <TableRow className="border-gray-700 hover:bg-gray-800/50">
                     <TableHead className="text-gray-300">Nome</TableHead>
                     <TableHead className="text-gray-300">Email</TableHead>
+                    <TableHead className="text-gray-300">Data Criação</TableHead>
+                    <TableHead className="text-gray-300">Trial</TableHead>
                     <TableHead className="text-gray-300">Plano</TableHead>
-                    <TableHead className="text-gray-300">Administrador</TableHead>
+                    <TableHead className="text-gray-300">Admin</TableHead>
                     <TableHead className="text-gray-300">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users && users.length > 0 ? (
-                    users.map((user) => (
-                      <TableRow key={user.id} className="border-gray-700 hover:bg-gray-800/50">
-                        <TableCell className="font-medium text-gray-200">{user.nome}</TableCell>
-                        <TableCell className="text-gray-300">{user.email}</TableCell>
-                        <TableCell>
+                    users.map((user) => {
+                      const diasRestantes = calcularDiasRestantes(user.data_expiracao_trial);
+                      const trialExpirado = diasRestantes !== null && diasRestantes <= 0;
+                      
+                      return (
+                        <TableRow key={user.id} className="border-gray-700 hover:bg-gray-800/50">
+                          <TableCell className="font-medium text-gray-200">{user.nome}</TableCell>
+                          <TableCell className="text-gray-300">{user.email}</TableCell>
+                          <TableCell className="text-gray-300">{formatarData(user.data_criacao)}</TableCell>
+                          <TableCell>
+                            {user.plano === "free" && diasRestantes !== null ? (
+                              <Badge 
+                                variant={trialExpirado ? "destructive" : diasRestantes <= 3 ? "outline" : "secondary"}
+                                className={trialExpirado ? "" : diasRestantes <= 3 ? "border-yellow-500 text-yellow-500" : ""}
+                              >
+                                {trialExpirado 
+                                  ? "Expirado" 
+                                  : `${diasRestantes} dias`
+                                }
+                              </Badge>
+                            ) : (
+                              <span className="text-gray-500 text-sm">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
                           {editingUser === user.id ? (
                             <Select
                               defaultValue={user.plano}
@@ -638,29 +705,20 @@ export default function PublicAdmin() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {editingUser === user.id ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setEditingUser(null)}
-                            >
-                              Cancelar
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setEditingUser(user.id)}
-                            >
-                              Editar Plano
-                            </Button>
-                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenEditModal(user)}
+                          >
+                            Editar
+                          </Button>
                         </TableCell>
                       </TableRow>
-                    ))
+                      );
+                    })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                         Nenhum usuário cadastrado
                       </TableCell>
                     </TableRow>
@@ -670,6 +728,105 @@ export default function PublicAdmin() {
             </div>
           </CardContent>
         </Card>
+
+        <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+          <DialogContent className="bg-gray-900 border-gray-700 text-gray-100">
+            <DialogHeader>
+              <DialogTitle>Editar Usuário</DialogTitle>
+              <DialogDescription className="text-gray-400">
+                Edite as informações do usuário abaixo
+              </DialogDescription>
+            </DialogHeader>
+            {userToEdit && (
+              <div className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-nome">Nome</Label>
+                  <Input
+                    id="edit-nome"
+                    value={userToEdit.nome}
+                    onChange={(e) => setUserToEdit({ ...userToEdit, nome: e.target.value })}
+                    className="bg-gray-800 border-gray-700"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-email">Email</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={userToEdit.email}
+                    onChange={(e) => setUserToEdit({ ...userToEdit, email: e.target.value })}
+                    className="bg-gray-800 border-gray-700"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-plano">Plano</Label>
+                  <Select
+                    value={userToEdit.plano}
+                    onValueChange={(value) => setUserToEdit({ ...userToEdit, plano: value })}
+                  >
+                    <SelectTrigger id="edit-plano" className="bg-gray-800 border-gray-700">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="free">Free</SelectItem>
+                      <SelectItem value="premium">Premium</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-admin">Tipo de Usuário</Label>
+                  <Select
+                    value={userToEdit.is_admin}
+                    onValueChange={(value) => setUserToEdit({ ...userToEdit, is_admin: value })}
+                  >
+                    <SelectTrigger id="edit-admin" className="bg-gray-800 border-gray-700">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="false">Usuário</SelectItem>
+                      <SelectItem value="true">Administrador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {userToEdit.data_criacao && (
+                  <div className="space-y-2">
+                    <Label>Data de Criação</Label>
+                    <div className="text-sm text-gray-400">{formatarData(userToEdit.data_criacao)}</div>
+                  </div>
+                )}
+                {userToEdit.data_expiracao_trial && (
+                  <div className="space-y-2">
+                    <Label>Expiração do Trial</Label>
+                    <div className="text-sm text-gray-400">
+                      {formatarData(userToEdit.data_expiracao_trial)}
+                      {calcularDiasRestantes(userToEdit.data_expiracao_trial) !== null && (
+                        <span className="ml-2">
+                          ({calcularDiasRestantes(userToEdit.data_expiracao_trial)} dias restantes)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={handleSaveUserEdit}
+                    className="flex-1"
+                    disabled={updateUserMutation.isPending}
+                  >
+                    {updateUserMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditModalOpen(false)}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         <footer className="text-center text-white/80 text-sm">
           Desenvolvido por <span className="font-medium">Pavisoft Sistemas</span>

@@ -22,8 +22,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Email já cadastrado" });
       }
 
-      const user = await storage.createUser(userData);
-      res.json({ id: user.id, email: user.email, nome: user.nome });
+      const dataCriacao = new Date().toISOString();
+      const dataExpiracao = new Date();
+      dataExpiracao.setDate(dataExpiracao.getDate() + 10);
+
+      const userWithTrial = {
+        ...userData,
+        data_criacao: dataCriacao,
+        data_expiracao_trial: dataExpiracao.toISOString(),
+      };
+
+      const user = await storage.createUser(userWithTrial);
+      res.json({ 
+        id: user.id, 
+        email: user.email, 
+        nome: user.nome,
+        data_criacao: user.data_criacao,
+        data_expiracao_trial: user.data_expiracao_trial
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Dados inválidos", details: error.errors });

@@ -10,6 +10,7 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Privacy from "@/pages/Privacy";
 import Admin from "@/pages/Admin";
+import PublicAdmin from "@/pages/PublicAdmin";
 import Dashboard from "@/pages/Dashboard";
 import Products from "@/pages/Products";
 import AddProduct from "@/pages/AddProduct";
@@ -143,6 +144,11 @@ function Router() {
           <DashboardLayout>
             <Admin />
           </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/admin-publico">
+        {() => (
+          <PublicAdmin />
         )}
       </Route>
       <Route component={NotFound} />

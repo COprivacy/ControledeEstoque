@@ -5,8 +5,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import NotFound from "@/pages/not-found";
+import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import Privacy from "@/pages/Privacy";
 import Dashboard from "@/pages/Dashboard";
 import Products from "@/pages/Products";
 import AddProduct from "@/pages/AddProduct";
@@ -26,8 +28,10 @@ import DashboardLayout from "@/layouts/DashboardLayout";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Login} />
+      <Route path="/" component={Landing} />
+      <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/privacy" component={Privacy} />
       <Route path="/dashboard">
         {() => (
           <DashboardLayout>

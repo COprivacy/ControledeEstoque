@@ -16,11 +16,13 @@ import backgroundImage from "@assets/generated_images/Pavisoft_Sistemas_tech_bac
 interface LoginFormProps {
   onLogin?: (email: string, password: string) => void;
   onRegisterClick?: () => void;
+  isLoading?: boolean;
 }
 
 export default function LoginForm({
   onLogin,
   onRegisterClick,
+  isLoading = false,
 }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -89,8 +91,8 @@ export default function LoginForm({
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-3">
-            <Button type="submit" className="w-full" data-testid="button-login">
-              Entrar
+            <Button type="submit" className="w-full" data-testid="button-login" disabled={isLoading}>
+              {isLoading ? "Entrando..." : "Entrar"}
             </Button>
             <Button
               type="button"
@@ -98,6 +100,7 @@ export default function LoginForm({
               className="w-full"
               onClick={onRegisterClick}
               data-testid="button-register-nav"
+              disabled={isLoading}
             >
               Criar Conta
             </Button>

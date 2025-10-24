@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Users, Crown, Shield, CheckCircle2, ArrowLeft, UserPlus } from "lucide-react";
+import { Users, Crown, Shield, CheckCircle2, ArrowLeft, UserPlus, CreditCard, Key, TestTube } from "lucide-react";
 import { Link } from "wouter";
 import backgroundImage from "@assets/generated_images/Pavisoft_Sistemas_tech_background_61320ac2.png";
 
@@ -48,6 +48,12 @@ export default function PublicAdmin() {
     plano: "free",
     is_admin: "false"
   });
+  
+  const [asaasConfig, setAsaasConfig] = useState({
+    api_key: "",
+    ambiente: "sandbox" as "sandbox" | "production"
+  });
+  const [testingConnection, setTestingConnection] = useState(false);
 
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -125,6 +131,54 @@ export default function PublicAdmin() {
       return;
     }
     createUserMutation.mutate(newUserData);
+  };
+
+  const handleTestAsaasConnection = async () => {
+    if (!asaasConfig.api_key) {
+      toast({
+        title: "API Key necessária",
+        description: "Por favor, insira a API Key da Asaas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTestingConnection(true);
+    
+    try {
+      const baseUrl = asaasConfig.ambiente === "production" 
+        ? "https://api.asaas.com/v3" 
+        : "https://sandbox.asaas.com/api/v3";
+      
+      const response = await fetch(`${baseUrl}/myAccount`, {
+        headers: {
+          'access_token': asaasConfig.api_key,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: "Conexão bem-sucedida!",
+          description: `Conectado à conta: ${data.name || 'Conta Asaas'}`,
+        });
+      } else {
+        toast({
+          title: "Falha na conexão",
+          description: "Verifique sua API Key e tente novamente.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro na conexão",
+        description: "Não foi possível conectar à API da Asaas.",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingConnection(false);
+    }
   };
 
   const getPlanBadgeVariant = (plan: string) => {
@@ -400,6 +454,106 @@ export default function PublicAdmin() {
               </form>
             </CardContent>
           )}
+        </Card>
+
+        <Card className="bg-white/95 backdrop-blur-md">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-green-600" />
+                  Integração com Asaas
+                </CardTitle>
+                <CardDescription>
+                  Configure a integração com a API da Asaas para pagamentos
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[200px]">Campo</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead className="w-[150px]">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <Key className="h-4 w-4 text-muted-foreground" />
+                        API Key
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="password"
+                        placeholder="Insira sua API Key da Asaas"
+                        value={asaasConfig.api_key}
+                        onChange={(e) => setAsaasConfig({ ...asaasConfig, api_key: e.target.value })}
+                        className="max-w-md"
+                      />
+                    </TableCell>
+                    <TableCell></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-muted-foreground" />
+                        Ambiente
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={asaasConfig.ambiente}
+                        onValueChange={(value: "sandbox" | "production") => 
+                          setAsaasConfig({ ...asaasConfig, ambiente: value })
+                        }
+                      >
+                        <SelectTrigger className="max-w-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sandbox">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">Sandbox</Badge>
+                              <span className="text-xs text-muted-foreground">Testes</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="production">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="default">Produção</Badge>
+                              <span className="text-xs text-muted-foreground">Ambiente Real</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        onClick={handleTestAsaasConnection}
+                        disabled={testingConnection || !asaasConfig.api_key}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <TestTube className="h-4 w-4 mr-2" />
+                        {testingConnection ? "Testando..." : "Testar Conexão"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                <strong>Dica:</strong> Use o ambiente Sandbox para testes e Produção apenas quando estiver pronto para processar pagamentos reais. 
+                Você pode obter suas chaves de API no painel da Asaas em: Configurações → Integrações → API Key.
+              </p>
+            </div>
+          </CardContent>
         </Card>
 
         <Card className="bg-white/95 backdrop-blur-md">

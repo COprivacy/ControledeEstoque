@@ -166,7 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/vendas", async (req, res) => {
     try {
-      const { itens, cliente_id } = req.body;
+      const { itens, cliente_id, forma_pagamento } = req.body;
 
       if (!itens || !Array.isArray(itens) || itens.length === 0) {
         return res.status(400).json({ error: "Itens da venda são obrigatórios" });
@@ -210,7 +210,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         valor_total: valorTotal,
         data: agora.toISOString(),
         itens: JSON.stringify(produtosVendidos),
-        cliente_id: cliente_id || undefined
+        cliente_id: cliente_id || undefined,
+        forma_pagamento: forma_pagamento || 'dinheiro'
       });
 
       res.json({

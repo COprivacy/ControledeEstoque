@@ -29,6 +29,7 @@ export const vendas = pgTable("vendas", {
   data: text("data").notNull(),
   itens: text("itens"),
   cliente_id: integer("cliente_id"),
+  forma_pagamento: text("forma_pagamento"),
 });
 
 export const fornecedores = pgTable("fornecedores", {

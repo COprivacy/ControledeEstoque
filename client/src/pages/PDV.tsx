@@ -158,7 +158,10 @@ export default function PDV() {
       const response = await fetch('/api/vendas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sale)
+        body: JSON.stringify({
+          ...sale,
+          forma_pagamento: sale.forma_pagamento || 'dinheiro'
+        })
       });
 
       if (!response.ok) {

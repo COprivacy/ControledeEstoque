@@ -6,6 +6,7 @@ interface Sale {
   produto: string;
   quantidade_vendida: number;
   valor_total: number;
+  forma_pagamento: string; // Adicionado campo forma_pagamento
   data: string;
 }
 
@@ -30,6 +31,7 @@ export default function SalesTable({ sales }: SalesTableProps) {
             <TableHead>Produto</TableHead>
             <TableHead className="text-center">Quantidade</TableHead>
             <TableHead className="text-right">Valor Total</TableHead>
+            <TableHead>Forma de Pagamento</TableHead>
             <TableHead className="text-right">Data</TableHead>
           </TableRow>
         </TableHeader>
@@ -40,6 +42,13 @@ export default function SalesTable({ sales }: SalesTableProps) {
               <TableCell className="text-center">{sale.quantidade_vendida || 0}</TableCell>
               <TableCell className="text-right font-medium" data-testid={`text-value-${sale.id}`}>
                 R$ {(sale.valor_total || 0).toFixed(2)}
+              </TableCell>
+              <TableCell>
+                {sale.forma_pagamento === 'dinheiro' && '💵 Dinheiro'}
+                {sale.forma_pagamento === 'cartao_credito' && '💳 Cartão Crédito'}
+                {sale.forma_pagamento === 'cartao_debito' && '💳 Cartão Débito'}
+                {sale.forma_pagamento === 'pix' && '📱 PIX'}
+                {!sale.forma_pagamento && '💵 Dinheiro'} {/* Default to Dinheiro if not specified */}
               </TableCell>
               <TableCell className="text-right text-muted-foreground">
                 {sale.data ? formatDateTime(sale.data) : 'N/A'}

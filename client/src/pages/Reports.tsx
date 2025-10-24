@@ -80,16 +80,24 @@ export default function Reports() {
     yPosition += 10;
     
     // Tabela de vendas
-    const tableData = vendas.map((venda: any) => [
-      venda.produto || 'N/A',
-      venda.quantidade_vendida || 0,
-      `R$ ${(venda.valor_total || 0).toFixed(2)}`,
-      venda.data ? formatDateTime(venda.data) : 'N/A'
-    ]);
+    const tableData = vendas.map((venda: any) => {
+      let formaPagamento = 'Dinheiro';
+      if (venda.forma_pagamento === 'cartao_credito') formaPagamento = 'Cartão Crédito';
+      else if (venda.forma_pagamento === 'cartao_debito') formaPagamento = 'Cartão Débito';
+      else if (venda.forma_pagamento === 'pix') formaPagamento = 'PIX';
+      
+      return [
+        venda.produto || 'N/A',
+        venda.quantidade_vendida || 0,
+        `R$ ${(venda.valor_total || 0).toFixed(2)}`,
+        formaPagamento,
+        venda.data ? formatDateTime(venda.data) : 'N/A'
+      ];
+    });
     
     autoTable(doc, {
       startY: yPosition,
-      head: [['Produto', 'Quantidade', 'Valor Total', 'Data']],
+      head: [['Produto', 'Quantidade', 'Valor Total', 'Pagamento', 'Data']],
       body: tableData,
       theme: 'striped',
       headStyles: {
@@ -102,10 +110,11 @@ export default function Reports() {
         cellPadding: 3
       },
       columnStyles: {
-        0: { cellWidth: 70 },
-        1: { cellWidth: 30, halign: 'center' },
-        2: { cellWidth: 40, halign: 'right' },
-        3: { cellWidth: 45, halign: 'right' }
+        0: { cellWidth: 55 },
+        1: { cellWidth: 25, halign: 'center' },
+        2: { cellWidth: 35, halign: 'right' },
+        3: { cellWidth: 35, halign: 'center' },
+        4: { cellWidth: 35, halign: 'right' }
       }
     });
     

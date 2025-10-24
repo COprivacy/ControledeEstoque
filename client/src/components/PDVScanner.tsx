@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Scan, ShoppingCart, Plus, Minus, DollarSign, Wallet, User, Check, ChevronsUpDown, Users } from "lucide-react";
+import { Trash2, Scan, ShoppingCart, Plus, Minus, DollarSign, Wallet, User, Check, ChevronsUpDown, Users, CreditCard } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import type { Cliente } from "@shared/schema";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -33,7 +33,7 @@ interface CartItem {
 }
 
 interface PDVScannerProps {
-  onSaleComplete?: (sale: { itens: { codigo_barras: string; quantidade: number }[]; valorTotal: number; cliente_id?: number }) => void;
+  onSaleComplete?: (sale: { itens: { codigo_barras: string; quantidade: number }[]; valorTotal: number; cliente_id?: number; forma_pagamento?: string }) => void;
   onProductNotFound?: (barcode: string) => void;
   onFetchProduct?: (barcode: string) => Promise<any>;
 }
@@ -47,6 +47,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const [openCombobox, setOpenCombobox] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [descontoPercentual, setDescontoPercentual] = useState(0); // Novo estado para o percentual de desconto
+  const [formaPagamento, setFormaPagamento] = useState<string>("dinheiro"); // Novo estado para a forma de pagamento
   const inputRef = useRef<HTMLInputElement>(null);
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const valorPagoRef = useRef<HTMLInputElement>(null);
@@ -119,7 +120,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     setLastScanTime(now);
 
     try {
-      const produto = onFetchProduct 
+      const produto = onFetchProduct
         ? await onFetchProduct(scannedBarcode)
         : await mockFetchProduct(scannedBarcode);
 
@@ -206,9 +207,10 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
       quantidade: item.quantidade
     }));
 
-    const saleData: { itens: typeof itens; valorTotal: number; cliente_id?: number } = { 
-      itens, 
-      valorTotal 
+    const saleData: { itens: typeof itens; valorTotal: number; cliente_id?: number; forma_pagamento?: string } = {
+      itens,
+      valorTotal,
+      forma_pagamento: formaPagamento // Adiciona a forma de pagamento
     };
 
     if (clienteId && clienteId !== "none") {
@@ -226,6 +228,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     setValorPago("");
     setClienteId("none");
     setDescontoPercentual(0); // Reseta o desconto ao limpar o carrinho
+    setFormaPagamento("dinheiro"); // Reseta a forma de pagamento
     setShowConfirmDialog(false);
     inputRef.current?.focus();
   };
@@ -525,6 +528,44 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
 
               {cart.length > 0 && (
                 <>
+                  {/* Seleção de Forma de Pagamento */}
+                  <div className="space-y-2">
+                    <Label htmlFor="forma-pagamento" className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      Forma de Pagamento
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant={formaPagamento === "dinheiro" ? "default" : "outline"}
+                        onClick={() => setFormaPagamento("dinheiro")}
+                        className="h-10"
+                      >
+                        Dinheiro
+                      </Button>
+                      <Button
+                        variant={formaPagamento === "cartao_credito" ? "default" : "outline"}
+                        onClick={() => setFormaPagamento("cartao_credito")}
+                        className="h-10"
+                      >
+                        Cartão Crédito
+                      </Button>
+                      <Button
+                        variant={formaPagamento === "cartao_debito" ? "default" : "outline"}
+                        onClick={() => setFormaPagamento("cartao_debito")}
+                        className="h-10"
+                      >
+                        Cartão Débito
+                      </Button>
+                      <Button
+                        variant={formaPagamento === "pix" ? "default" : "outline"}
+                        onClick={() => setFormaPagamento("pix")}
+                        className="h-10"
+                      >
+                        Pix
+                      </Button>
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="valor-pago" className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4" />

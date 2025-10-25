@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Users, UserPlus, Trash2, Shield, Building2, CreditCard, Calendar } from "lucide-react";
+import { Users, UserPlus, Trash2, Shield, Building2, CreditCard, Edit, Power } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +42,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
 
 interface User {
   id: string;
@@ -51,28 +52,46 @@ interface User {
   is_admin: string;
   status: string;
   data_criacao?: string;
+  cargo?: string;
 }
 
 interface Permission {
-  pdv: boolean;
-  produtos: boolean;
-  inventario: boolean;
-  relatorios: boolean;
-  clientes: boolean;
-  fornecedores: boolean;
-  financeiro: boolean;
-  config_fiscal: boolean;
+  pdv: string;
+  produtos: string;
+  inventario: string;
+  relatorios: string;
+  clientes: string;
+  fornecedores: string;
+  financeiro: string;
+  config_fiscal: string;
+}
+
+interface EmployeeFormData {
+  nome: string;
+  email: string;
+  senha: string;
+  cargo: string;
 }
 
 export default function Admin() {
   const { toast } = useToast();
   const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [editEmployeeOpen, setEditEmployeeOpen] = useState(false);
   const [editPermissionsUser, setEditPermissionsUser] = useState<string | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<User | null>(null);
 
-  const [newEmployee, setNewEmployee] = useState({
+  const [newEmployee, setNewEmployee] = useState<EmployeeFormData>({
     nome: "",
     email: "",
     senha: "",
+    cargo: "",
+  });
+
+  const [editEmployee, setEditEmployee] = useState<EmployeeFormData>({
+    nome: "",
+    email: "",
+    senha: "",
+    cargo: "",
   });
 
   const [permissions, setPermissions] = useState<Record<string, Permission>>({});
@@ -103,7 +122,7 @@ export default function Admin() {
   const accountUsers = employees;
 
   const createEmployeeMutation = useMutation({
-    mutationFn: async (userData: typeof newEmployee) => {
+    mutationFn: async (userData: EmployeeFormData) => {
       const response = await apiRequest("POST", "/api/funcionarios", {
         ...userData,
         conta_id: currentUser.id,
@@ -117,12 +136,60 @@ export default function Admin() {
         description: "Novo funcionário criado com sucesso!",
       });
       setCreateUserOpen(false);
-      setNewEmployee({ nome: "", email: "", senha: "" });
+      setNewEmployee({ nome: "", email: "", senha: "", cargo: "" });
     },
     onError: (error) => {
       toast({
         title: "Erro ao criar funcionário",
         description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateEmployeeMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<EmployeeFormData> }) => {
+      const cleanUpdates = { ...updates };
+      if (!cleanUpdates.senha) {
+        delete cleanUpdates.senha;
+      }
+      const response = await apiRequest("PATCH", `/api/funcionarios/${id}`, cleanUpdates);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios"] });
+      toast({
+        title: "Funcionário atualizado",
+        description: "Dados do funcionário atualizados com sucesso!",
+      });
+      setEditEmployeeOpen(false);
+      setSelectedEmployee(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao atualizar funcionário",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const response = await apiRequest("PATCH", `/api/funcionarios/${id}`, { status });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios"] });
+      toast({
+        title: "Status atualizado",
+        description: "Status do funcionário atualizado com sucesso!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao atualizar status",
+        description: error instanceof Error ? error.message : "Ocorreu um erro",
         variant: "destructive",
       });
     },
@@ -155,15 +222,40 @@ export default function Admin() {
     }
   };
 
+  const handleEditEmployee = (employee: User) => {
+    setSelectedEmployee(employee);
+    setEditEmployee({
+      nome: employee.nome,
+      email: employee.email,
+      senha: "",
+      cargo: employee.cargo || "",
+    });
+    setEditEmployeeOpen(true);
+  };
+
+  const handleSaveEmployee = () => {
+    if (selectedEmployee) {
+      updateEmployeeMutation.mutate({
+        id: selectedEmployee.id,
+        updates: editEmployee,
+      });
+    }
+  };
+
+  const handleToggleStatus = (employee: User) => {
+    const newStatus = employee.status === "ativo" ? "inativo" : "ativo";
+    toggleStatusMutation.mutate({ id: employee.id, status: newStatus });
+  };
+
   const getDefaultPermissions = (): Permission => ({
-    pdv: false,
-    produtos: false,
-    inventario: false,
-    relatorios: false,
-    clientes: false,
-    fornecedores: false,
-    financeiro: false,
-    config_fiscal: false,
+    pdv: "false",
+    produtos: "false",
+    inventario: "false",
+    relatorios: "false",
+    clientes: "false",
+    fornecedores: "false",
+    financeiro: "false",
+    config_fiscal: "false",
   });
 
   const togglePermission = (userId: string, permission: keyof Permission) => {
@@ -362,6 +454,16 @@ export default function Admin() {
                     />
                   </div>
                   <div>
+                    <Label htmlFor="cargo">Cargo</Label>
+                    <Input
+                      id="cargo"
+                      value={newEmployee.cargo}
+                      onChange={(e) => setNewEmployee({ ...newEmployee, cargo: e.target.value })}
+                      placeholder="Ex: Vendedor, Gerente, Caixa"
+                      data-testid="input-employee-cargo"
+                    />
+                  </div>
+                  <div>
                     <Label htmlFor="senha">Senha Inicial</Label>
                     <Input
                       id="senha"
@@ -398,9 +500,9 @@ export default function Admin() {
                     <TableRow>
                       <TableHead>Nome</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>Cargo</TableHead>
                       <TableHead>Data de Cadastro</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Permissões</TableHead>
                       <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -410,6 +512,7 @@ export default function Admin() {
                         <TableRow key={employee.id} data-testid={`row-employee-${employee.id}`}>
                           <TableCell className="font-medium">{employee.nome}</TableCell>
                           <TableCell>{employee.email}</TableCell>
+                          <TableCell>{employee.cargo || "-"}</TableCell>
                           <TableCell>
                             {employee.data_criacao 
                               ? new Date(employee.data_criacao).toLocaleDateString('pt-BR')
@@ -421,25 +524,43 @@ export default function Admin() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openPermissionsDialog(employee.id)}
-                              data-testid={`button-edit-permissions-${employee.id}`}
-                            >
-                              <Shield className="h-4 w-4 mr-2" />
-                              Gerenciar
-                            </Button>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteEmployee(employee.id)}
-                              data-testid={`button-delete-employee-${employee.id}`}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditEmployee(employee)}
+                                data-testid={`button-edit-employee-${employee.id}`}
+                              >
+                                <Edit className="h-4 w-4 mr-1" />
+                                Editar
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openPermissionsDialog(employee.id)}
+                                data-testid={`button-edit-permissions-${employee.id}`}
+                              >
+                                <Shield className="h-4 w-4 mr-1" />
+                                Permissões
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleStatus(employee)}
+                                data-testid={`button-toggle-status-${employee.id}`}
+                              >
+                                <Power className="h-4 w-4 mr-1" />
+                                {employee.status === "ativo" ? "Desativar" : "Ativar"}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteEmployee(employee.id)}
+                                data-testid={`button-delete-employee-${employee.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -455,6 +576,83 @@ export default function Admin() {
               </div>
             </CardContent>
           </Card>
+
+          <Dialog open={editEmployeeOpen} onOpenChange={setEditEmployeeOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Editar Funcionário</DialogTitle>
+                <DialogDescription>
+                  Atualize os dados do funcionário
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-nome">Nome Completo</Label>
+                  <Input
+                    id="edit-nome"
+                    value={editEmployee.nome}
+                    onChange={(e) => setEditEmployee({ ...editEmployee, nome: e.target.value })}
+                    placeholder="Ex: João Silva"
+                    data-testid="input-edit-employee-name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-email">Email</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={editEmployee.email}
+                    onChange={(e) => setEditEmployee({ ...editEmployee, email: e.target.value })}
+                    placeholder="joao@empresa.com"
+                    data-testid="input-edit-employee-email"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-cargo">Cargo</Label>
+                  <Input
+                    id="edit-cargo"
+                    value={editEmployee.cargo}
+                    onChange={(e) => setEditEmployee({ ...editEmployee, cargo: e.target.value })}
+                    placeholder="Ex: Vendedor, Gerente, Caixa"
+                    data-testid="input-edit-employee-cargo"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-senha">Nova Senha (deixe em branco para não alterar)</Label>
+                  <Input
+                    id="edit-senha"
+                    type="password"
+                    value={editEmployee.senha}
+                    onChange={(e) => setEditEmployee({ ...editEmployee, senha: e.target.value })}
+                    placeholder="Nova senha (opcional)"
+                    data-testid="input-edit-employee-password"
+                  />
+                </div>
+                <Alert>
+                  <AlertDescription>
+                    Preencha apenas os campos que deseja alterar. A senha será atualizada apenas se você digitar uma nova.
+                  </AlertDescription>
+                </Alert>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleSaveEmployee} 
+                    className="flex-1"
+                    disabled={updateEmployeeMutation.isPending}
+                    data-testid="button-save-employee"
+                  >
+                    {updateEmployeeMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setEditEmployeeOpen(false)} 
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           <Dialog open={editPermissionsUser !== null} onOpenChange={(open) => !open && setEditPermissionsUser(null)}>
             <DialogContent className="max-w-2xl">

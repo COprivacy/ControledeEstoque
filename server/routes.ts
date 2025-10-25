@@ -304,7 +304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/funcionarios", async (req, res) => {
     try {
-      const { conta_id, nome, email, senha } = req.body;
+      const { conta_id, nome, email, senha, cargo } = req.body;
       
       if (!conta_id || !nome || !email || !senha) {
         return res.status(400).json({ error: "Dados incompletos" });
@@ -325,6 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         nome,
         email,
         senha,
+        cargo: cargo || null,
         status: "ativo",
         data_criacao: new Date().toISOString(),
       });

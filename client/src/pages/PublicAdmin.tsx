@@ -177,6 +177,25 @@ export default function PublicAdmin() {
     queryKey: ["/api/config-asaas"],
   });
 
+  const { data: allFuncionarios = [] } = useQuery({
+    queryKey: ["/api/funcionarios/all"],
+    queryFn: async () => {
+      // Buscar funcionários de todas as contas
+      const funcionarios: any[] = [];
+      for (const user of users) {
+        try {
+          const response = await apiRequest("GET", `/api/funcionarios?conta_id=${user.id}`);
+          const userFuncionarios = await response.json();
+          funcionarios.push(...userFuncionarios.map((f: any) => ({ ...f, conta_nome: user.nome })));
+        } catch (error) {
+          console.error(`Erro ao buscar funcionários do usuário ${user.id}:`, error);
+        }
+      }
+      return funcionarios;
+    },
+    enabled: users.length > 0,
+  });
+
   useEffect(() => {
     if (configAsaasData) {
       setAsaasConfig({
@@ -456,9 +475,10 @@ export default function PublicAdmin() {
       </div>
 
       <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="dashboard" data-testid="tab-dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="usuarios" data-testid="tab-usuarios">Usuários</TabsTrigger>
+          <TabsTrigger value="funcionarios" data-testid="tab-funcionarios">Funcionários</TabsTrigger>
           <TabsTrigger value="planos" data-testid="tab-planos">Planos</TabsTrigger>
           <TabsTrigger value="asaas" data-testid="tab-asaas">Integração Asaas</TabsTrigger>
         </TabsList>
@@ -785,6 +805,59 @@ export default function PublicAdmin() {
                       <TableRow>
                         <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                           Nenhum usuário encontrado
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="funcionarios" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Funcionários de Todas as Contas</CardTitle>
+              <CardDescription>
+                Visualize todos os funcionários cadastrados no sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Conta</TableHead>
+                      <TableHead>Data Criação</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allFuncionarios.length > 0 ? (
+                      allFuncionarios.map((func: any) => (
+                        <TableRow key={func.id}>
+                          <TableCell className="font-medium">{func.nome}</TableCell>
+                          <TableCell>{func.email}</TableCell>
+                          <TableCell>{func.conta_nome}</TableCell>
+                          <TableCell>
+                            {func.data_criacao
+                              ? new Date(func.data_criacao).toLocaleDateString('pt-BR')
+                              : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={func.status === "ativo" ? "default" : "secondary"}>
+                              {func.status || 'ativo'}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                          Nenhum funcionário cadastrado
                         </TableCell>
                       </TableRow>
                     )}

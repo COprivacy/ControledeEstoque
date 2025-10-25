@@ -268,7 +268,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!contaId) {
         return res.status(400).json({ error: "conta_id é obrigatório" });
       }
-      const funcionarios = await storage.getFuncionarios(contaId);
+      const allFuncionarios = await storage.getFuncionarios();
+      const funcionarios = allFuncionarios.filter(f => f.conta_id === contaId);
       res.json(funcionarios);
     } catch (error: any) {
       console.error("Erro ao buscar funcionários:", error);
@@ -282,6 +283,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!conta_id || !nome || !email || !senha) {
         return res.status(400).json({ error: "Dados incompletos" });
+      }
+
+      // Verificar se já existe funcionário com este email na mesma conta
+      const allFuncionarios = await storage.getFuncionarios();
+      const existingFuncionario = allFuncionarios.find(
+        f => f.email === email && f.conta_id === conta_id
+      );
+      
+      if (existingFuncionario) {
+        return res.status(400).json({ error: "Já existe um funcionário com este email nesta conta" });
       }
 
       const funcionario = await storage.createFuncionario({

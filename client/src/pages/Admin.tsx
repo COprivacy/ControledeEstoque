@@ -1,6 +1,6 @@
 
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -21,10 +21,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Users, Crown, Shield, CheckCircle2, AlertCircle, Trash2, UserPlus, Key, Webhook, Database, Activity, Filter, Search } from "lucide-react";
+import { Users, UserPlus, Trash2, Shield, Building2, CreditCard, Calendar } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -53,158 +52,69 @@ interface User {
   is_admin: string;
   status: string;
   data_criacao?: string;
-  data_expiracao_trial?: string;
-  data_expiracao_plano?: string;
-  ultimo_acesso?: string;
 }
 
-interface Plano {
-  id: number;
-  nome: string;
-  preco: number;
-  duracao_dias: number;
-  descricao?: string;
-  ativo: string;
-}
-
-interface ConfigAsaas {
-  id: number;
-  api_key: string;
-  ambiente: string;
-  webhook_url?: string;
-  account_id?: string;
-  ultima_sincronizacao?: string;
-  status_conexao?: string;
+interface Permission {
+  pdv: boolean;
+  produtos: boolean;
+  inventario: boolean;
+  relatorios: boolean;
+  clientes: boolean;
+  fornecedores: boolean;
+  financeiro: boolean;
+  config_fiscal: boolean;
 }
 
 export default function Admin() {
   const { toast } = useToast();
-  const [editingUser, setEditingUser] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterPlano, setFilterPlano] = useState<string>("todos");
-  const [filterStatus, setFilterStatus] = useState<string>("todos");
   const [createUserOpen, setCreateUserOpen] = useState(false);
-  const [createPlanoOpen, setCreatePlanoOpen] = useState(false);
-  const [testingAsaas, setTestingAsaas] = useState(false);
-
-  const [newUser, setNewUser] = useState({
+  const [editPermissionsUser, setEditPermissionsUser] = useState<string | null>(null);
+  
+  const [newEmployee, setNewEmployee] = useState({
     nome: "",
     email: "",
     senha: "",
-    plano: "free",
-    is_admin: "false",
   });
 
-  const [newPlano, setNewPlano] = useState({
-    nome: "",
-    preco: 0,
-    duracao_dias: 30,
-    descricao: "",
-  });
+  const [permissions, setPermissions] = useState<Record<string, Permission>>({});
 
-  const [asaasConfig, setAsaasConfig] = useState({
-    api_key: "",
-    ambiente: "sandbox",
-    webhook_url: "",
-    account_id: "",
-  });
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
-  // Configurar logout automático após 15min de inatividade
-  useEffect(() => {
-    let timer: NodeJS.Timeout | null = null;
-    
-    const resetTimer = () => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        localStorage.removeItem("user");
-        window.location.href = "/login";
-        toast({
-          title: "Sessão expirada",
-          description: "Você foi desconectado por inatividade",
-          variant: "destructive",
-        });
-      }, 15 * 60 * 1000); // 15 minutos
-    };
-
-    const events = ["mousedown", "keydown", "scroll", "touchstart"];
-    events.forEach(event => window.addEventListener(event, resetTimer));
-    resetTimer();
-
-    return () => {
-      events.forEach(event => window.removeEventListener(event, resetTimer));
-      if (timer) clearTimeout(timer);
-    };
-  }, [toast]);
-
-  const { data: users = [], isLoading: loadingUsers } = useQuery<User[]>({
+  const { data: employees = [], isLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
+    enabled: false,
   });
 
-  const { data: planos = [] } = useQuery<Plano[]>({
-    queryKey: ["/api/planos"],
-  });
+  const accountUsers = [];
 
-  const { data: configAsaasData } = useQuery<ConfigAsaas>({
-    queryKey: ["/api/config-asaas"],
-  });
-
-  useEffect(() => {
-    if (configAsaasData) {
-      setAsaasConfig({
-        api_key: configAsaasData.api_key || "",
-        ambiente: configAsaasData.ambiente || "sandbox",
-        webhook_url: configAsaasData.webhook_url || "",
-        account_id: configAsaasData.account_id || "",
+  const createEmployeeMutation = useMutation({
+    mutationFn: async (userData: typeof newEmployee) => {
+      const response = await apiRequest("POST", "/api/auth/register", {
+        ...userData,
+        plano: "free",
+        is_admin: "false",
       });
-    }
-  }, [configAsaasData]);
-
-  const updateUserMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<User> }) => {
-      const response = await apiRequest("PATCH", `/api/users/${id}`, updates);
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
-        title: "Usuário atualizado",
-        description: "As alterações foram salvas com sucesso.",
-      });
-      setEditingUser(null);
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro ao atualizar",
-        description: error instanceof Error ? error.message : "Ocorreu um erro",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const createUserMutation = useMutation({
-    mutationFn: async (userData: typeof newUser) => {
-      const response = await apiRequest("POST", "/api/auth/register", userData);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({
-        title: "Usuário criado",
-        description: "Novo usuário criado com sucesso!",
+        title: "Funcionário adicionado",
+        description: "Novo funcionário criado com sucesso!",
       });
       setCreateUserOpen(false);
-      setNewUser({ nome: "", email: "", senha: "", plano: "free", is_admin: "false" });
+      setNewEmployee({ nome: "", email: "", senha: "" });
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao criar usuário",
+        title: "Erro ao criar funcionário",
         description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  const deleteUserMutation = useMutation({
+  const deleteEmployeeMutation = useMutation({
     mutationFn: async (id: string) => {
       const response = await apiRequest("DELETE", `/api/users/${id}`);
       return response.json();
@@ -212,122 +122,52 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
-        title: "Usuário excluído",
-        description: "Usuário removido com sucesso.",
+        title: "Funcionário removido",
+        description: "Funcionário removido com sucesso.",
       });
     },
     onError: (error) => {
       toast({
-        title: "Erro ao excluir",
+        title: "Erro ao remover",
         description: error instanceof Error ? error.message : "Ocorreu um erro",
         variant: "destructive",
       });
     },
   });
 
-  const createPlanoMutation = useMutation({
-    mutationFn: async (planoData: typeof newPlano) => {
-      const response = await apiRequest("POST", "/api/planos", planoData);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/planos"] });
-      toast({
-        title: "Plano criado",
-        description: "Novo plano criado com sucesso!",
-      });
-      setCreatePlanoOpen(false);
-      setNewPlano({ nome: "", preco: 0, duracao_dias: 30, descricao: "" });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao criar plano",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const saveAsaasMutation = useMutation({
-    mutationFn: async (config: typeof asaasConfig) => {
-      const response = await apiRequest("POST", "/api/config-asaas", config);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/config-asaas"] });
-      toast({
-        title: "Configuração salva",
-        description: "Configuração Asaas atualizada com sucesso!",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao salvar",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const testAsaasConnection = async () => {
-    setTestingAsaas(true);
-    try {
-      const response = await apiRequest("POST", "/api/config-asaas/test", {
-        api_key: asaasConfig.api_key,
-        ambiente: asaasConfig.ambiente,
-      });
-      const result = await response.json();
-      
-      if (result.success) {
-        toast({
-          title: "Conexão bem-sucedida!",
-          description: result.message,
-        });
-        queryClient.invalidateQueries({ queryKey: ["/api/config-asaas"] });
-      } else {
-        toast({
-          title: "Falha na conexão",
-          description: result.message,
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Erro ao testar conexão",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setTestingAsaas(false);
+  const handleDeleteEmployee = (userId: string) => {
+    if (confirm("Tem certeza que deseja remover este funcionário?")) {
+      deleteEmployeeMutation.mutate(userId);
     }
   };
 
-  const handlePlanChange = (userId: string, newPlan: string) => {
-    updateUserMutation.mutate({ id: userId, updates: { plano: newPlan } });
+  const getDefaultPermissions = (): Permission => ({
+    pdv: false,
+    produtos: false,
+    inventario: false,
+    relatorios: false,
+    clientes: false,
+    fornecedores: false,
+    financeiro: false,
+    config_fiscal: false,
+  });
+
+  const togglePermission = (userId: string, permission: keyof Permission) => {
+    setPermissions(prev => ({
+      ...prev,
+      [userId]: {
+        ...(prev[userId] || getDefaultPermissions()),
+        [permission]: !(prev[userId]?.[permission] || false),
+      },
+    }));
   };
 
-  const handleAdminToggle = (userId: string, currentStatus: string) => {
-    const newStatus = currentStatus === "true" ? "false" : "true";
-    updateUserMutation.mutate({ id: userId, updates: { is_admin: newStatus } });
-  };
-
-  const handleStatusToggle = (userId: string, currentStatus: string) => {
-    const newStatus = currentStatus === "ativo" ? "inativo" : "ativo";
-    updateUserMutation.mutate({ id: userId, updates: { status: newStatus } });
-  };
-
-  const handleDeleteUser = (userId: string) => {
-    if (confirm("Tem certeza que deseja excluir este usuário?")) {
-      deleteUserMutation.mutate(userId);
-    }
-  };
-
-  const getPlanBadgeVariant = (plan: string) => {
-    return plan === "premium" ? "default" : "secondary";
-  };
-
-  const getStatusBadgeVariant = (status: string) => {
-    return status === "ativo" ? "default" : "destructive";
+  const savePermissions = (userId: string) => {
+    toast({
+      title: "Permissões atualizadas",
+      description: "As permissões foram salvas com sucesso.",
+    });
+    setEditPermissionsUser(null);
   };
 
   const calculateDaysRemaining = (expirationDate?: string) => {
@@ -338,28 +178,7 @@ export default function Admin() {
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPlano = filterPlano === "todos" || user.plano === filterPlano;
-    const matchesStatus = filterStatus === "todos" || user.status === filterStatus;
-    return matchesSearch && matchesPlano && matchesStatus;
-  });
-
-  const stats = {
-    total: users.length,
-    premium: users.filter((u) => u.plano === "premium").length,
-    free: users.filter((u) => u.plano === "free").length,
-    admins: users.filter((u) => u.is_admin === "true").length,
-    ativos: users.filter((u) => u.status === "ativo").length,
-    inativos: users.filter((u) => u.status === "inativo").length,
-    expiringTrial: users.filter(u => {
-      const days = calculateDaysRemaining(u.data_expiracao_trial);
-      return days !== null && days <= 3 && days > 0;
-    }).length,
-  };
-
-  if (loadingUsers) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
@@ -374,174 +193,132 @@ export default function Admin() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Painel Administrativo
+          Painel de Administração da Conta
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Gerencie usuários, planos e integrações do sistema
+          Gerencie funcionários e permissões da sua empresa
         </p>
       </div>
 
-      <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="usuarios">Usuários</TabsTrigger>
-          <TabsTrigger value="planos">Planos</TabsTrigger>
-          <TabsTrigger value="asaas">Integração Asaas</TabsTrigger>
+      <Tabs defaultValue="info" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="info" data-testid="tab-account-info">Informações da Conta</TabsTrigger>
+          <TabsTrigger value="funcionarios" data-testid="tab-employees">Funcionários</TabsTrigger>
         </TabsList>
 
-        {/* Dashboard */}
-        <TabsContent value="dashboard" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <TabsContent value="info" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Informações da Empresa</CardTitle>
+                <Building2 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.total}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.ativos} ativos, {stats.inativos} inativos
-                </p>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Nome</p>
+                  <p className="text-base font-medium">{currentUser.nome}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="text-base font-medium">{currentUser.email}</p>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Premium</CardTitle>
-                <Crown className="h-4 w-4 text-yellow-500" />
+                <CardTitle className="text-sm font-medium">Plano Atual</CardTitle>
+                <CreditCard className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.premium}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.total > 0 ? Math.round((stats.premium / stats.total) * 100) : 0}% do total
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Free</CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.free}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.total > 0 ? Math.round((stats.free / stats.total) * 100) : 0}% do total
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Administradores</CardTitle>
-                <Shield className="h-4 w-4 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.admins}</div>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Plano</p>
+                  <Badge variant={currentUser.plano === "premium" ? "default" : "secondary"} className="mt-1">
+                    {currentUser.plano === "premium" ? "Premium" : "Free"}
+                  </Badge>
+                </div>
+                {currentUser.data_expiracao_trial && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Trial</p>
+                    <p className="text-base font-medium">
+                      {calculateDaysRemaining(currentUser.data_expiracao_trial)} dias restantes
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
 
-          {stats.expiringTrial > 0 && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Atenção!</AlertTitle>
-              <AlertDescription>
-                {stats.expiringTrial} usuário(s) com trial expirando em até 3 dias.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {configAsaasData && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Status da Integração Asaas
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <Badge variant={configAsaasData.status_conexao === "conectado" ? "default" : "secondary"}>
-                    {configAsaasData.status_conexao === "conectado" ? "Conectado" : "Desconectado"}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    Ambiente: {configAsaasData.ambiente === "sandbox" ? "Sandbox" : "Produção"}
-                  </span>
-                  {configAsaasData.ultima_sincronizacao && (
-                    <span className="text-sm text-muted-foreground">
-                      Última sincronização: {new Date(configAsaasData.ultima_sincronizacao).toLocaleString('pt-BR')}
-                    </span>
-                  )}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Resumo da Equipe
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-8">
+                <div>
+                  <p className="text-2xl font-bold">{accountUsers.length}</p>
+                  <p className="text-sm text-muted-foreground">Funcionários cadastrados</p>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+                <div>
+                  <p className="text-2xl font-bold">{accountUsers.filter(u => u.status === "ativo").length}</p>
+                  <p className="text-sm text-muted-foreground">Funcionários ativos</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Alert variant="destructive">
+            <Shield className="h-4 w-4" />
+            <AlertTitle>Funcionalidade em Desenvolvimento</AlertTitle>
+            <AlertDescription>
+              O sistema de gerenciamento de funcionários está temporariamente desabilitado. 
+              Esta funcionalidade requer infraestrutura multi-tenant (separação por contas) que está sendo implementada.
+              Por enquanto, apenas o super admin (em /admin-publico) pode gerenciar todos os usuários do sistema.
+            </AlertDescription>
+          </Alert>
         </TabsContent>
 
-        {/* Usuários */}
-        <TabsContent value="usuarios" className="space-y-6">
-          <div className="flex gap-4 items-end">
-            <div className="flex-1">
-              <Label htmlFor="search">Buscar</Label>
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="search"
-                  placeholder="Nome ou email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-            </div>
+        <TabsContent value="funcionarios" className="space-y-6">
+          <Alert variant="destructive" className="mb-6">
+            <Shield className="h-4 w-4" />
+            <AlertTitle>Funcionalidade em Desenvolvimento</AlertTitle>
+            <AlertDescription>
+              O gerenciamento de funcionários está temporariamente desabilitado para evitar problemas de segurança.
+              Estamos implementando a infraestrutura de contas multi-tenant necessária para permitir que cada empresa gerencie apenas seus próprios funcionários.
+            </AlertDescription>
+          </Alert>
+          
+          <div className="flex justify-between items-center">
             <div>
-              <Label htmlFor="filter-plano">Plano</Label>
-              <Select value={filterPlano} onValueChange={setFilterPlano}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="free">Free</SelectItem>
-                  <SelectItem value="premium">Premium</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="filter-status">Status</Label>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="inativo">Inativo</SelectItem>
-                </SelectContent>
-              </Select>
+              <h2 className="text-2xl font-bold">Funcionários</h2>
+              <p className="text-muted-foreground">Gerencie os funcionários que têm acesso ao sistema</p>
             </div>
             <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button data-testid="button-add-employee" disabled>
                   <UserPlus className="h-4 w-4 mr-2" />
-                  Criar Usuário
+                  Adicionar Funcionário
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Criar Novo Usuário</DialogTitle>
+                  <DialogTitle>Adicionar Funcionário</DialogTitle>
                   <DialogDescription>
-                    Preencha os dados do novo usuário
+                    Crie um novo acesso para um funcionário da sua empresa
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="nome">Nome</Label>
+                    <Label htmlFor="nome">Nome Completo</Label>
                     <Input
                       id="nome"
-                      value={newUser.nome}
-                      onChange={(e) => setNewUser({ ...newUser, nome: e.target.value })}
+                      value={newEmployee.nome}
+                      onChange={(e) => setNewEmployee({ ...newEmployee, nome: e.target.value })}
+                      placeholder="Ex: João Silva"
+                      data-testid="input-employee-name"
                     />
                   </div>
                   <div>
@@ -549,42 +326,35 @@ export default function Admin() {
                     <Input
                       id="email"
                       type="email"
-                      value={newUser.email}
-                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      value={newEmployee.email}
+                      onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
+                      placeholder="joao@empresa.com"
+                      data-testid="input-employee-email"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="senha">Senha</Label>
+                    <Label htmlFor="senha">Senha Inicial</Label>
                     <Input
                       id="senha"
                       type="password"
-                      value={newUser.senha}
-                      onChange={(e) => setNewUser({ ...newUser, senha: e.target.value })}
+                      value={newEmployee.senha}
+                      onChange={(e) => setNewEmployee({ ...newEmployee, senha: e.target.value })}
+                      placeholder="Senha para primeiro acesso"
+                      data-testid="input-employee-password"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="plano">Plano</Label>
-                    <Select value={newUser.plano} onValueChange={(v) => setNewUser({ ...newUser, plano: v })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="free">Free</SelectItem>
-                        <SelectItem value="premium">Premium</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="is_admin"
-                      checked={newUser.is_admin === "true"}
-                      onChange={(e) => setNewUser({ ...newUser, is_admin: e.target.checked ? "true" : "false" })}
-                    />
-                    <Label htmlFor="is_admin">Administrador</Label>
-                  </div>
-                  <Button onClick={() => createUserMutation.mutate(newUser)} className="w-full">
-                    Criar Usuário
+                  <Alert>
+                    <AlertDescription>
+                      O funcionário poderá fazer login com este email e senha. Recomendamos que ele altere a senha no primeiro acesso.
+                    </AlertDescription>
+                  </Alert>
+                  <Button 
+                    onClick={() => createEmployeeMutation.mutate(newEmployee)} 
+                    className="w-full"
+                    disabled={createEmployeeMutation.isPending}
+                    data-testid="button-submit-employee"
+                  >
+                    {createEmployeeMutation.isPending ? "Criando..." : "Criar Acesso"}
                   </Button>
                 </div>
               </DialogContent>
@@ -599,218 +369,55 @@ export default function Admin() {
                     <TableRow>
                       <TableHead>Nome</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>Data Criação</TableHead>
-                      <TableHead>Plano</TableHead>
-                      <TableHead>Dias Restantes</TableHead>
+                      <TableHead>Data de Cadastro</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Admin</TableHead>
+                      <TableHead>Permissões</TableHead>
                       <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredUsers.length > 0 ? (
-                      filteredUsers.map((user) => {
-                        const daysRemaining = user.plano === "free" 
-                          ? calculateDaysRemaining(user.data_expiracao_trial)
-                          : calculateDaysRemaining(user.data_expiracao_plano);
-                        
-                        return (
-                          <TableRow key={user.id}>
-                            <TableCell className="font-medium">{user.nome}</TableCell>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell>
-                              {user.data_criacao 
-                                ? new Date(user.data_criacao).toLocaleDateString('pt-BR')
-                                : '-'}
-                            </TableCell>
-                            <TableCell>
-                              {editingUser === user.id ? (
-                                <Select
-                                  defaultValue={user.plano}
-                                  onValueChange={(value) => handlePlanChange(user.id, value)}
-                                >
-                                  <SelectTrigger className="w-32">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="free">Free</SelectItem>
-                                    <SelectItem value="premium">Premium</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <Badge
-                                  variant={getPlanBadgeVariant(user.plano)}
-                                  className="cursor-pointer"
-                                  onClick={() => setEditingUser(user.id)}
-                                >
-                                  {user.plano === "premium" ? (
-                                    <>
-                                      <Crown className="h-3 w-3 mr-1" />
-                                      Premium
-                                    </>
-                                  ) : (
-                                    "Free"
-                                  )}
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {daysRemaining !== null ? (
-                                <Badge variant={daysRemaining <= 3 ? "destructive" : "secondary"}>
-                                  {daysRemaining} dias
-                                </Badge>
-                              ) : (
-                                '-'
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={getStatusBadgeVariant(user.status)}
-                                className="cursor-pointer"
-                                onClick={() => handleStatusToggle(user.id, user.status)}
-                              >
-                                {user.status === "ativo" ? "Ativo" : "Inativo"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={user.is_admin === "true" ? "default" : "outline"}
-                                className="cursor-pointer"
-                                onClick={() => handleAdminToggle(user.id, user.is_admin)}
-                              >
-                                {user.is_admin === "true" ? (
-                                  <>
-                                    <Shield className="h-3 w-3 mr-1" />
-                                    Admin
-                                  </>
-                                ) : (
-                                  "Usuário"
-                                )}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteUser(user.id)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                          Nenhum usuário encontrado
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Planos */}
-        <TabsContent value="planos" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold">Gestão de Planos</h2>
-              <p className="text-muted-foreground">Gerencie os planos disponíveis no sistema</p>
-            </div>
-            <Dialog open={createPlanoOpen} onOpenChange={setCreatePlanoOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Criar Plano
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Criar Novo Plano</DialogTitle>
-                  <DialogDescription>
-                    Defina os detalhes do novo plano
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="plano-nome">Nome do Plano</Label>
-                    <Input
-                      id="plano-nome"
-                      value={newPlano.nome}
-                      onChange={(e) => setNewPlano({ ...newPlano, nome: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="plano-preco">Preço (R$)</Label>
-                    <Input
-                      id="plano-preco"
-                      type="number"
-                      step="0.01"
-                      value={newPlano.preco}
-                      onChange={(e) => setNewPlano({ ...newPlano, preco: parseFloat(e.target.value) })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="plano-duracao">Duração (dias)</Label>
-                    <Input
-                      id="plano-duracao"
-                      type="number"
-                      value={newPlano.duracao_dias}
-                      onChange={(e) => setNewPlano({ ...newPlano, duracao_dias: parseInt(e.target.value) })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="plano-descricao">Descrição</Label>
-                    <Textarea
-                      id="plano-descricao"
-                      value={newPlano.descricao}
-                      onChange={(e) => setNewPlano({ ...newPlano, descricao: e.target.value })}
-                    />
-                  </div>
-                  <Button onClick={() => createPlanoMutation.mutate(newPlano)} className="w-full">
-                    Criar Plano
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <Card>
-            <CardContent className="p-0">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Preço</TableHead>
-                      <TableHead>Duração</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {planos.length > 0 ? (
-                      planos.map((plano) => (
-                        <TableRow key={plano.id}>
-                          <TableCell className="font-medium">{plano.nome}</TableCell>
-                          <TableCell>R$ {plano.preco.toFixed(2)}</TableCell>
-                          <TableCell>{plano.duracao_dias} dias</TableCell>
-                          <TableCell>{plano.descricao || '-'}</TableCell>
+                    {accountUsers.length > 0 ? (
+                      accountUsers.map((employee) => (
+                        <TableRow key={employee.id} data-testid={`row-employee-${employee.id}`}>
+                          <TableCell className="font-medium">{employee.nome}</TableCell>
+                          <TableCell>{employee.email}</TableCell>
                           <TableCell>
-                            <Badge variant={plano.ativo === "true" ? "default" : "secondary"}>
-                              {plano.ativo === "true" ? "Ativo" : "Inativo"}
+                            {employee.data_criacao 
+                              ? new Date(employee.data_criacao).toLocaleDateString('pt-BR')
+                              : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={employee.status === "ativo" ? "default" : "secondary"}>
+                              {employee.status === "ativo" ? "Ativo" : "Inativo"}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditPermissionsUser(employee.id)}
+                              data-testid={`button-edit-permissions-${employee.id}`}
+                            >
+                              <Shield className="h-4 w-4 mr-2" />
+                              Gerenciar
+                            </Button>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteEmployee(employee.id)}
+                              data-testid={`button-delete-employee-${employee.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                          Nenhum plano cadastrado
+                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                          Nenhum funcionário cadastrado. Adicione funcionários para gerenciar os acessos.
                         </TableCell>
                       </TableRow>
                     )}
@@ -819,95 +426,69 @@ export default function Admin() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* Integração Asaas */}
-        <TabsContent value="asaas" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5" />
-                Configuração da API Asaas
-              </CardTitle>
-              <CardDescription>
-                Configure a integração com a plataforma de pagamentos Asaas
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="api-key">API Key</Label>
-                <Input
-                  id="api-key"
-                  type="password"
-                  value={asaasConfig.api_key}
-                  onChange={(e) => setAsaasConfig({ ...asaasConfig, api_key: e.target.value })}
-                  placeholder="Insira sua chave de API"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="ambiente">Ambiente</Label>
-                <Select
-                  value={asaasConfig.ambiente}
-                  onValueChange={(v) => setAsaasConfig({ ...asaasConfig, ambiente: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sandbox">Sandbox (Testes)</SelectItem>
-                    <SelectItem value="production">Produção</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="account-id">ID da Conta Asaas</Label>
-                <Input
-                  id="account-id"
-                  value={asaasConfig.account_id}
-                  onChange={(e) => setAsaasConfig({ ...asaasConfig, account_id: e.target.value })}
-                  placeholder="ID da sua conta"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="webhook-url">Webhook URL</Label>
-                <div className="flex gap-2">
-                  <Webhook className="h-4 w-4 mt-2 text-muted-foreground" />
-                  <Input
-                    id="webhook-url"
-                    value={asaasConfig.webhook_url}
-                    onChange={(e) => setAsaasConfig({ ...asaasConfig, webhook_url: e.target.value })}
-                    placeholder="https://seu-dominio.com/webhook/asaas"
-                  />
+          <Dialog open={editPermissionsUser !== null} onOpenChange={(open) => !open && setEditPermissionsUser(null)}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Gerenciar Permissões</DialogTitle>
+                <DialogDescription>
+                  Defina quais funcionalidades este funcionário pode acessar
+                </DialogDescription>
+              </DialogHeader>
+              {editPermissionsUser && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { key: 'pdv', label: 'PDV / Caixa', description: 'Realizar vendas e gerenciar caixa' },
+                      { key: 'produtos', label: 'Produtos', description: 'Cadastrar e editar produtos' },
+                      { key: 'inventario', label: 'Inventário', description: 'Gerenciar estoque' },
+                      { key: 'relatorios', label: 'Relatórios', description: 'Visualizar relatórios de vendas' },
+                      { key: 'clientes', label: 'Clientes', description: 'Gerenciar cadastro de clientes' },
+                      { key: 'fornecedores', label: 'Fornecedores', description: 'Gerenciar fornecedores' },
+                      { key: 'financeiro', label: 'Financeiro', description: 'Acessar contas a pagar/receber' },
+                      { key: 'config_fiscal', label: 'Config. Fiscal', description: 'Configurações fiscais e NF-e' },
+                    ].map((perm) => (
+                      <Card key={perm.key} className="cursor-pointer" onClick={() => togglePermission(editPermissionsUser, perm.key as keyof Permission)}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-medium">{perm.label}</h4>
+                              <p className="text-xs text-muted-foreground mt-1">{perm.description}</p>
+                            </div>
+                            <div className="ml-2">
+                              <input
+                                type="checkbox"
+                                checked={permissions[editPermissionsUser]?.[perm.key as keyof Permission] || false}
+                                onChange={() => {}}
+                                className="h-4 w-4"
+                                data-testid={`checkbox-permission-${perm.key}`}
+                              />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 pt-4">
+                    <Button 
+                      onClick={() => savePermissions(editPermissionsUser)} 
+                      className="flex-1"
+                      data-testid="button-save-permissions"
+                    >
+                      Salvar Permissões
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setEditPermissionsUser(null)} 
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button onClick={() => saveAsaasMutation.mutate(asaasConfig)}>
-                  <Database className="h-4 w-4 mr-2" />
-                  Salvar Configuração
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={testAsaasConnection}
-                  disabled={testingAsaas || !asaasConfig.api_key}
-                >
-                  {testingAsaas ? "Testando..." : "Testar Conexão"}
-                </Button>
-              </div>
-
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Importante!</AlertTitle>
-                <AlertDescription>
-                  Use o ambiente Sandbox para testes. Mude para Produção apenas quando estiver pronto
-                  para processar pagamentos reais. Mantenha sua API Key em segurança.
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
+              )}
+            </DialogContent>
+          </Dialog>
         </TabsContent>
       </Tabs>
     </div>

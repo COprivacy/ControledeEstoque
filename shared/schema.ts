@@ -16,6 +16,8 @@ export const users = pgTable("users", {
   ultimo_acesso: text("ultimo_acesso"),
   status: text("status").notNull().default("ativo"),
   asaas_customer_id: text("asaas_customer_id"),
+  conta_id: text("conta_id"),
+  permissoes: text("permissoes"),
 });
 
 export const produtos = pgTable("produtos", {

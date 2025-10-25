@@ -10,13 +10,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -28,11 +21,29 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Users, Crown, Shield, CheckCircle2, ArrowLeft, UserPlus, CreditCard, Key, TestTube } from "lucide-react";
-import { Link } from "wouter";
-import backgroundImage from "@assets/generated_images/Pavisoft_Sistemas_tech_background_61320ac2.png";
+import { Users, Crown, Shield, CheckCircle2, AlertCircle, Trash2, UserPlus, Key, Webhook, Database, Activity, Filter, Search } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 
 interface User {
   id: string;
@@ -40,45 +51,112 @@ interface User {
   nome: string;
   plano: string;
   is_admin: string;
+  status: string;
   data_criacao?: string;
   data_expiracao_trial?: string;
+  data_expiracao_plano?: string;
+  ultimo_acesso?: string;
+}
+
+interface Plano {
+  id: number;
+  nome: string;
+  preco: number;
+  duracao_dias: number;
+  descricao?: string;
+  ativo: string;
+}
+
+interface ConfigAsaas {
+  id: number;
+  api_key: string;
+  ambiente: string;
+  webhook_url?: string;
+  account_id?: string;
+  ultima_sincronizacao?: string;
+  status_conexao?: string;
 }
 
 export default function PublicAdmin() {
   const { toast } = useToast();
   const [editingUser, setEditingUser] = useState<string | null>(null);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [userToEdit, setUserToEdit] = useState<User | null>(null);
-  const [adminPassword, setAdminPassword] = useState("");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  
-  // Aplicar modo noturno ao carregar o componente
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-    return () => {
-      // Opcional: remover dark mode ao desmontar
-      // document.documentElement.classList.remove('dark');
-    };
-  }, []);
-  const [newUserData, setNewUserData] = useState({
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterPlano, setFilterPlano] = useState<string>("todos");
+  const [filterStatus, setFilterStatus] = useState<string>("todos");
+  const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [createPlanoOpen, setCreatePlanoOpen] = useState(false);
+  const [testingAsaas, setTestingAsaas] = useState(false);
+
+  const [newUser, setNewUser] = useState({
     nome: "",
     email: "",
     senha: "",
     plano: "free",
-    is_admin: "false"
+    is_admin: "false",
   });
-  
+
+  const [newPlano, setNewPlano] = useState({
+    nome: "",
+    preco: 0,
+    duracao_dias: 30,
+    descricao: "",
+  });
+
   const [asaasConfig, setAsaasConfig] = useState({
     api_key: "",
-    ambiente: "sandbox" as "sandbox" | "production"
+    ambiente: "sandbox",
+    webhook_url: "",
+    account_id: "",
   });
-  const [testingConnection, setTestingConnection] = useState(false);
 
-  const { data: users, isLoading } = useQuery<User[]>({
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    
+    const resetTimer = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+        toast({
+          title: "Sessão expirada",
+          description: "Você foi desconectado por inatividade",
+          variant: "destructive",
+        });
+      }, 15 * 60 * 1000);
+    };
+
+    const events = ["mousedown", "keydown", "scroll", "touchstart"];
+    events.forEach(event => window.addEventListener(event, resetTimer));
+    resetTimer();
+
+    return () => {
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+      if (timer) clearTimeout(timer);
+    };
+  }, [toast]);
+
+  const { data: users = [], isLoading: loadingUsers } = useQuery<User[]>({
     queryKey: ["/api/users"],
-    enabled: isAuthenticated,
   });
+
+  const { data: planos = [] } = useQuery<Plano[]>({
+    queryKey: ["/api/planos"],
+  });
+
+  const { data: configAsaasData } = useQuery<ConfigAsaas>({
+    queryKey: ["/api/config-asaas"],
+  });
+
+  useEffect(() => {
+    if (configAsaasData) {
+      setAsaasConfig({
+        api_key: configAsaasData.api_key || "",
+        ambiente: configAsaasData.ambiente || "sandbox",
+        webhook_url: configAsaasData.webhook_url || "",
+        account_id: configAsaasData.account_id || "",
+      });
+    }
+  }, [configAsaasData]);
 
   const updateUserMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<User> }) => {
@@ -96,14 +174,14 @@ export default function PublicAdmin() {
     onError: (error) => {
       toast({
         title: "Erro ao atualizar",
-        description: error instanceof Error ? error.message : "Ocorreu um erro ao atualizar o usuário.",
+        description: error instanceof Error ? error.message : "Ocorreu um erro",
         variant: "destructive",
       });
     },
   });
 
   const createUserMutation = useMutation({
-    mutationFn: async (userData: typeof newUserData) => {
+    mutationFn: async (userData: typeof newUser) => {
       const response = await apiRequest("POST", "/api/auth/register", userData);
       return response.json();
     },
@@ -111,25 +189,117 @@ export default function PublicAdmin() {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
         title: "Usuário criado",
-        description: "O novo usuário foi criado com sucesso.",
+        description: "Novo usuário criado com sucesso!",
       });
-      setShowCreateForm(false);
-      setNewUserData({
-        nome: "",
-        email: "",
-        senha: "",
-        plano: "free",
-        is_admin: "false"
-      });
+      setCreateUserOpen(false);
+      setNewUser({ nome: "", email: "", senha: "", plano: "free", is_admin: "false" });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Erro ao criar usuário",
-        description: error.error || "Ocorreu um erro ao criar o usuário.",
+        description: error.message,
         variant: "destructive",
       });
     },
   });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest("DELETE", `/api/users/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Usuário excluído",
+        description: "Usuário removido com sucesso.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao excluir",
+        description: error instanceof Error ? error.message : "Ocorreu um erro",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createPlanoMutation = useMutation({
+    mutationFn: async (planoData: typeof newPlano) => {
+      const response = await apiRequest("POST", "/api/planos", planoData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/planos"] });
+      toast({
+        title: "Plano criado",
+        description: "Novo plano criado com sucesso!",
+      });
+      setCreatePlanoOpen(false);
+      setNewPlano({ nome: "", preco: 0, duracao_dias: 30, descricao: "" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao criar plano",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const saveAsaasMutation = useMutation({
+    mutationFn: async (config: typeof asaasConfig) => {
+      const response = await apiRequest("POST", "/api/config-asaas", config);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/config-asaas"] });
+      toast({
+        title: "Configuração salva",
+        description: "Configuração Asaas atualizada com sucesso!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const testAsaasConnection = async () => {
+    setTestingAsaas(true);
+    try {
+      const response = await apiRequest("POST", "/api/config-asaas/test", {
+        api_key: asaasConfig.api_key,
+        ambiente: asaasConfig.ambiente,
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: "Conexão bem-sucedida!",
+          description: result.message,
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/config-asaas"] });
+      } else {
+        toast({
+          title: "Falha na conexão",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao testar conexão",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setTestingAsaas(false);
+    }
+  };
 
   const handlePlanChange = (userId: string, newPlan: string) => {
     updateUserMutation.mutate({ id: userId, updates: { plano: newPlan } });
@@ -140,84 +310,14 @@ export default function PublicAdmin() {
     updateUserMutation.mutate({ id: userId, updates: { is_admin: newStatus } });
   };
 
-  const handleCreateUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUserData.nome || !newUserData.email || !newUserData.senha) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Por favor, preencha todos os campos.",
-        variant: "destructive",
-      });
-      return;
-    }
-    createUserMutation.mutate(newUserData);
+  const handleStatusToggle = (userId: string, currentStatus: string) => {
+    const newStatus = currentStatus === "ativo" ? "inativo" : "ativo";
+    updateUserMutation.mutate({ id: userId, updates: { status: newStatus } });
   };
 
-  const handleOpenEditModal = (user: User) => {
-    setUserToEdit(user);
-    setEditModalOpen(true);
-  };
-
-  const handleSaveUserEdit = () => {
-    if (!userToEdit) return;
-    
-    updateUserMutation.mutate({ 
-      id: userToEdit.id, 
-      updates: {
-        nome: userToEdit.nome,
-        email: userToEdit.email,
-        plano: userToEdit.plano,
-        is_admin: userToEdit.is_admin,
-      }
-    });
-    setEditModalOpen(false);
-  };
-
-  const handleTestAsaasConnection = async () => {
-    if (!asaasConfig.api_key) {
-      toast({
-        title: "API Key necessária",
-        description: "Por favor, insira a API Key da Asaas.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setTestingConnection(true);
-    
-    try {
-      const baseUrl = asaasConfig.ambiente === "production" 
-        ? "https://api.asaas.com/v3" 
-        : "https://sandbox.asaas.com/api/v3";
-      
-      const response = await fetch(`${baseUrl}/myAccount`, {
-        headers: {
-          'access_token': asaasConfig.api_key,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        toast({
-          title: "Conexão bem-sucedida!",
-          description: `Conectado à conta: ${data.name || 'Conta Asaas'}`,
-        });
-      } else {
-        toast({
-          title: "Falha na conexão",
-          description: "Verifique sua API Key e tente novamente.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Erro na conexão",
-        description: "Não foi possível conectar à API da Asaas.",
-        variant: "destructive",
-      });
-    } finally {
-      setTestingConnection(false);
+  const handleDeleteUser = (userId: string) => {
+    if (confirm("Tem certeza que deseja excluir este usuário?")) {
+      deleteUserMutation.mutate(userId);
     }
   };
 
@@ -225,255 +325,248 @@ export default function PublicAdmin() {
     return plan === "premium" ? "default" : "secondary";
   };
 
-  const calcularDiasRestantes = (dataExpiracao?: string) => {
-    if (!dataExpiracao) return null;
-    const hoje = new Date();
-    const expiracao = new Date(dataExpiracao);
-    const diffTime = expiracao.getTime() - hoje.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+  const getStatusBadgeVariant = (status: string) => {
+    return status === "ativo" ? "default" : "destructive";
   };
 
-  const formatarData = (data?: string) => {
-    if (!data) return "N/A";
-    return new Date(data).toLocaleDateString('pt-BR');
+  const calculateDaysRemaining = (expirationDate?: string) => {
+    if (!expirationDate) return null;
+    const now = new Date();
+    const expiry = new Date(expirationDate);
+    const diff = expiry.getTime() - now.getTime();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
 
-  const handleAdminLogin = () => {
-    // Senha de administrador padrão: "admin123"
-    if (adminPassword === "admin123") {
-      setIsAuthenticated(true);
-      toast({
-        title: "Acesso concedido",
-        description: "Bem-vindo ao painel administrativo",
-      });
-    } else {
-      toast({
-        title: "Acesso negado",
-        description: "Senha de administrador incorreta",
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (!isAuthenticated) {
-    return (
-      <div 
-        className="min-h-screen flex items-center justify-center p-4"
-        style={{
-          backgroundImage: `url(${backgroundImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        }}
-      >
-        <div className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"></div>
-        
-        <Card className="w-full max-w-md relative z-10 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <Link href="/">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Voltar
-                </Button>
-              </Link>
-            </div>
-            <CardTitle className="text-2xl font-bold text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Painel Administrativo
-            </CardTitle>
-            <CardDescription className="text-center">
-              Acesso restrito aos administradores do sistema
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Senha de Administrador</label>
-              <input
-                type="password"
-                className="w-full px-3 py-2 border rounded-md"
-                placeholder="Digite a senha de administrador"
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAdminLogin()}
-              />
-            </div>
-            <Button onClick={handleAdminLogin} className="w-full">
-              <Shield className="h-4 w-4 mr-2" />
-              Acessar Painel
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div 
-        className="min-h-screen flex items-center justify-center"
-        style={{
-          backgroundImage: `url(${backgroundImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        }}
-      >
-        <div className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"></div>
-        <div className="text-center relative z-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-white">Carregando usuários...</p>
-        </div>
-      </div>
-    );
-  }
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesPlano = filterPlano === "todos" || user.plano === filterPlano;
+    const matchesStatus = filterStatus === "todos" || user.status === filterStatus;
+    return matchesSearch && matchesPlano && matchesStatus;
+  });
 
   const stats = {
-    total: users?.length || 0,
-    premium: users?.filter((u) => u.plano === "premium").length || 0,
-    free: users?.filter((u) => u.plano === "free").length || 0,
-    admins: users?.filter((u) => u.is_admin === "true").length || 0,
+    total: users.length,
+    premium: users.filter((u) => u.plano === "premium").length,
+    free: users.filter((u) => u.plano === "free").length,
+    admins: users.filter((u) => u.is_admin === "true").length,
+    ativos: users.filter((u) => u.status === "ativo").length,
+    inativos: users.filter((u) => u.status === "inativo").length,
+    expiringTrial: users.filter(u => {
+      const days = calculateDaysRemaining(u.data_expiracao_trial);
+      return days !== null && days <= 3 && days > 0;
+    }).length,
   };
 
+  if (loadingUsers) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div 
-      className="min-h-screen p-6"
-      style={{
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }}
-    >
-      <div className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"></div>
-      
-      <div className="relative z-10 max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white">
-              Painel Administrativo Público
-            </h1>
-            <p className="text-gray-200 mt-2">
-              Gerencie usuários, planos e permissões do sistema
-            </p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Painel Administrativo - Dono do Sistema
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">
+          Gerencie usuários, planos e integrações do sistema
+        </p>
+      </div>
+
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="dashboard" data-testid="tab-dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="usuarios" data-testid="tab-usuarios">Usuários</TabsTrigger>
+          <TabsTrigger value="planos" data-testid="tab-planos">Planos</TabsTrigger>
+          <TabsTrigger value="asaas" data-testid="tab-asaas">Integração Asaas</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="text-total-users">{stats.total}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats.ativos} ativos, {stats.inativos} inativos
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Premium</CardTitle>
+                <Crown className="h-4 w-4 text-yellow-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="text-premium-users">{stats.premium}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats.total > 0 ? Math.round((stats.premium / stats.total) * 100) : 0}% do total
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Free</CardTitle>
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="text-free-users">{stats.free}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats.total > 0 ? Math.round((stats.free / stats.total) * 100) : 0}% do total
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Administradores</CardTitle>
+                <Shield className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="text-admin-users">{stats.admins}</div>
+              </CardContent>
+            </Card>
           </div>
-          <Link href="/">
-            <Button variant="outline" className="bg-white/90">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar ao Site
-            </Button>
-          </Link>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="bg-gray-900/95 backdrop-blur-md border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-100">Total de Usuários</CardTitle>
-              <Users className="h-4 w-4 text-gray-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{stats.total}</div>
-            </CardContent>
-          </Card>
+          {stats.expiringTrial > 0 && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Atenção!</AlertTitle>
+              <AlertDescription>
+                {stats.expiringTrial} usuário(s) com trial expirando em até 3 dias.
+              </AlertDescription>
+            </Alert>
+          )}
 
-          <Card className="bg-gray-900/95 backdrop-blur-md border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-100">Premium</CardTitle>
-              <Crown className="h-4 w-4 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{stats.premium}</div>
-              <p className="text-xs text-gray-400">
-                {stats.total > 0 ? Math.round((stats.premium / stats.total) * 100) : 0}% do total
-              </p>
-            </CardContent>
-          </Card>
+          {configAsaasData && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Status da Integração Asaas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  <Badge variant={configAsaasData.status_conexao === "conectado" ? "default" : "secondary"}>
+                    {configAsaasData.status_conexao === "conectado" ? "Conectado" : "Desconectado"}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    Ambiente: {configAsaasData.ambiente === "sandbox" ? "Sandbox" : "Produção"}
+                  </span>
+                  {configAsaasData.ultima_sincronizacao && (
+                    <span className="text-sm text-muted-foreground">
+                      Última sincronização: {new Date(configAsaasData.ultima_sincronizacao).toLocaleString('pt-BR')}
+                    </span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
-          <Card className="bg-gray-900/95 backdrop-blur-md border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-100">Free</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{stats.free}</div>
-              <p className="text-xs text-gray-400">
-                {stats.total > 0 ? Math.round((stats.free / stats.total) * 100) : 0}% do total
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-900/95 backdrop-blur-md border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-100">Administradores</CardTitle>
-              <Shield className="h-4 w-4 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{stats.admins}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="bg-gray-900/95 backdrop-blur-md border-gray-700">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-gray-100">Criar Nova Conta</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Adicione novos usuários ao sistema
-                </CardDescription>
+        <TabsContent value="usuarios" className="space-y-6">
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
+              <Label htmlFor="search">Buscar</Label>
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="search"
+                  placeholder="Nome ou email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                  data-testid="input-search-users"
+                />
               </div>
-              <Button
-                onClick={() => setShowCreateForm(!showCreateForm)}
-                variant={showCreateForm ? "outline" : "default"}
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                {showCreateForm ? "Cancelar" : "Nova Conta"}
-              </Button>
             </div>
-          </CardHeader>
-          {showCreateForm && (
-            <CardContent>
-              <form onSubmit={handleCreateUser} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nome">Nome Completo</Label>
+            <div>
+              <Label htmlFor="filter-plano">Plano</Label>
+              <Select value={filterPlano} onValueChange={setFilterPlano}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="premium">Premium</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="filter-status">Status</Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-create-user">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Criar Usuário
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Criar Novo Usuário</DialogTitle>
+                  <DialogDescription>
+                    Preencha os dados do novo usuário
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="nome">Nome</Label>
                     <Input
                       id="nome"
-                      value={newUserData.nome}
-                      onChange={(e) => setNewUserData({ ...newUserData, nome: e.target.value })}
-                      placeholder="Digite o nome completo"
-                      required
+                      value={newUser.nome}
+                      onChange={(e) => setNewUser({ ...newUser, nome: e.target.value })}
+                      data-testid="input-new-user-name"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div>
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
                       type="email"
-                      value={newUserData.email}
-                      onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
-                      placeholder="Digite o email"
-                      required
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      data-testid="input-new-user-email"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div>
                     <Label htmlFor="senha">Senha</Label>
                     <Input
                       id="senha"
                       type="password"
-                      value={newUserData.senha}
-                      onChange={(e) => setNewUserData({ ...newUserData, senha: e.target.value })}
-                      placeholder="Digite a senha"
-                      required
+                      value={newUser.senha}
+                      onChange={(e) => setNewUser({ ...newUser, senha: e.target.value })}
+                      data-testid="input-new-user-password"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div>
                     <Label htmlFor="plano">Plano</Label>
-                    <Select
-                      value={newUserData.plano}
-                      onValueChange={(value) => setNewUserData({ ...newUserData, plano: value })}
-                    >
-                      <SelectTrigger id="plano">
+                    <Select value={newUser.plano} onValueChange={(v) => setNewUser({ ...newUser, plano: v })}>
+                      <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -482,356 +575,353 @@ export default function PublicAdmin() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="is_admin">Tipo de Usuário</Label>
-                    <Select
-                      value={newUserData.is_admin}
-                      onValueChange={(value) => setNewUserData({ ...newUserData, is_admin: value })}
-                    >
-                      <SelectTrigger id="is_admin">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="false">Usuário</SelectItem>
-                        <SelectItem value="true">Administrador</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="is_admin"
+                      checked={newUser.is_admin === "true"}
+                      onChange={(e) => setNewUser({ ...newUser, is_admin: e.target.checked ? "true" : "false" })}
+                      data-testid="checkbox-new-user-admin"
+                    />
+                    <Label htmlFor="is_admin">Administrador</Label>
                   </div>
+                  <Button onClick={() => createUserMutation.mutate(newUser)} className="w-full" data-testid="button-submit-new-user">
+                    Criar Usuário
+                  </Button>
                 </div>
-                <Button 
-                  type="submit" 
-                  className="w-full"
-                  disabled={createUserMutation.isPending}
-                >
-                  {createUserMutation.isPending ? "Criando..." : "Criar Conta"}
-                </Button>
-              </form>
-            </CardContent>
-          )}
-        </Card>
+              </DialogContent>
+            </Dialog>
+          </div>
 
-        <Card className="bg-gray-900/95 backdrop-blur-md border-gray-700">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-gray-100">
-                  <CreditCard className="h-5 w-5 text-green-600" />
-                  Integração com Asaas
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Configure a integração com a API da Asaas para pagamentos
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border border-gray-700">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-gray-700 hover:bg-gray-800/50">
-                    <TableHead className="w-[200px] text-gray-300">Campo</TableHead>
-                    <TableHead className="text-gray-300">Valor</TableHead>
-                    <TableHead className="w-[150px] text-gray-300">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow className="border-gray-700 hover:bg-gray-800/50">
-                    <TableCell className="font-medium text-gray-300">
-                      <div className="flex items-center gap-2">
-                        <Key className="h-4 w-4 text-gray-400" />
-                        API Key
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="password"
-                        placeholder="Insira sua API Key da Asaas"
-                        value={asaasConfig.api_key}
-                        onChange={(e) => setAsaasConfig({ ...asaasConfig, api_key: e.target.value })}
-                        className="max-w-md bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500"
-                      />
-                    </TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                  <TableRow className="border-gray-700 hover:bg-gray-800/50">
-                    <TableCell className="font-medium text-gray-300">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4 text-gray-400" />
-                        Ambiente
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={asaasConfig.ambiente}
-                        onValueChange={(value: "sandbox" | "production") => 
-                          setAsaasConfig({ ...asaasConfig, ambiente: value })
-                        }
-                      >
-                        <SelectTrigger className="max-w-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sandbox">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline">Sandbox</Badge>
-                              <span className="text-xs text-muted-foreground">Testes</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="production">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="default">Produção</Badge>
-                              <span className="text-xs text-muted-foreground">Ambiente Real</span>
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        onClick={handleTestAsaasConnection}
-                        disabled={testingConnection || !asaasConfig.api_key}
-                        variant="outline"
-                        size="sm"
-                      >
-                        <TestTube className="h-4 w-4 mr-2" />
-                        {testingConnection ? "Testando..." : "Testar Conexão"}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                <strong>Dica:</strong> Use o ambiente Sandbox para testes e Produção apenas quando estiver pronto para processar pagamentos reais. 
-                Você pode obter suas chaves de API no painel da Asaas em: Configurações → Integrações → API Key.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gray-900/95 backdrop-blur-md border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-gray-100">Usuários Cadastrados</CardTitle>
-            <CardDescription className="text-gray-400">
-              Visualize e gerencie todos os usuários do sistema
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border border-gray-700">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-gray-700 hover:bg-gray-800/50">
-                    <TableHead className="text-gray-300">Nome</TableHead>
-                    <TableHead className="text-gray-300">Email</TableHead>
-                    <TableHead className="text-gray-300">Data Criação</TableHead>
-                    <TableHead className="text-gray-300">Trial</TableHead>
-                    <TableHead className="text-gray-300">Plano</TableHead>
-                    <TableHead className="text-gray-300">Admin</TableHead>
-                    <TableHead className="text-gray-300">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users && users.length > 0 ? (
-                    users.map((user) => {
-                      const diasRestantes = calcularDiasRestantes(user.data_expiracao_trial);
-                      const trialExpirado = diasRestantes !== null && diasRestantes <= 0;
-                      
-                      return (
-                        <TableRow key={user.id} className="border-gray-700 hover:bg-gray-800/50">
-                          <TableCell className="font-medium text-gray-200">{user.nome}</TableCell>
-                          <TableCell className="text-gray-300">{user.email}</TableCell>
-                          <TableCell className="text-gray-300">{formatarData(user.data_criacao)}</TableCell>
-                          <TableCell>
-                            {user.plano === "free" && diasRestantes !== null ? (
-                              <Badge 
-                                variant={trialExpirado ? "destructive" : diasRestantes <= 3 ? "outline" : "secondary"}
-                                className={trialExpirado ? "" : diasRestantes <= 3 ? "border-yellow-500 text-yellow-500" : ""}
-                              >
-                                {trialExpirado 
-                                  ? "Expirado" 
-                                  : `${diasRestantes} dias`
-                                }
-                              </Badge>
-                            ) : (
-                              <span className="text-gray-500 text-sm">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                          {editingUser === user.id ? (
-                            <Select
-                              defaultValue={user.plano}
-                              onValueChange={(value) => handlePlanChange(user.id, value)}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="free">Free</SelectItem>
-                                <SelectItem value="premium">Premium</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <Badge
-                              variant={getPlanBadgeVariant(user.plano)}
-                              className="cursor-pointer"
-                              onClick={() => setEditingUser(user.id)}
-                            >
-                              {user.plano === "premium" ? (
-                                <>
-                                  <Crown className="h-3 w-3 mr-1" />
-                                  Premium
-                                </>
+          <Card>
+            <CardContent className="p-0">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Data Criação</TableHead>
+                      <TableHead>Plano</TableHead>
+                      <TableHead>Dias Restantes</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Admin</TableHead>
+                      <TableHead>Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.length > 0 ? (
+                      filteredUsers.map((user) => {
+                        const daysRemaining = user.plano === "free" 
+                          ? calculateDaysRemaining(user.data_expiracao_trial)
+                          : calculateDaysRemaining(user.data_expiracao_plano);
+                        
+                        return (
+                          <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
+                            <TableCell className="font-medium">{user.nome}</TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            <TableCell>
+                              {user.data_criacao 
+                                ? new Date(user.data_criacao).toLocaleDateString('pt-BR')
+                                : '-'}
+                            </TableCell>
+                            <TableCell>
+                              {editingUser === user.id ? (
+                                <Select
+                                  defaultValue={user.plano}
+                                  onValueChange={(value) => handlePlanChange(user.id, value)}
+                                >
+                                  <SelectTrigger className="w-32">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="free">Free</SelectItem>
+                                    <SelectItem value="premium">Premium</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               ) : (
-                                "Free"
+                                <Badge
+                                  variant={getPlanBadgeVariant(user.plano)}
+                                  className="cursor-pointer"
+                                  onClick={() => setEditingUser(user.id)}
+                                  data-testid={`badge-plan-${user.id}`}
+                                >
+                                  {user.plano === "premium" ? (
+                                    <>
+                                      <Crown className="h-3 w-3 mr-1" />
+                                      Premium
+                                    </>
+                                  ) : (
+                                    "Free"
+                                  )}
+                                </Badge>
                               )}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={user.is_admin === "true" ? "default" : "outline"}
-                            className="cursor-pointer"
-                            onClick={() => handleAdminToggle(user.id, user.is_admin)}
-                          >
-                            {user.is_admin === "true" ? (
-                              <>
-                                <Shield className="h-3 w-3 mr-1" />
-                                Admin
-                              </>
-                            ) : (
-                              "Usuário"
-                            )}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenEditModal(user)}
-                          >
-                            Editar
-                          </Button>
+                            </TableCell>
+                            <TableCell>
+                              {daysRemaining !== null ? (
+                                <Badge variant={daysRemaining <= 3 ? "destructive" : "secondary"}>
+                                  {daysRemaining} dias
+                                </Badge>
+                              ) : (
+                                '-'
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={getStatusBadgeVariant(user.status)}
+                                className="cursor-pointer"
+                                onClick={() => handleStatusToggle(user.id, user.status)}
+                                data-testid={`badge-status-${user.id}`}
+                              >
+                                {user.status === "ativo" ? "Ativo" : "Inativo"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={user.is_admin === "true" ? "default" : "outline"}
+                                className="cursor-pointer"
+                                onClick={() => handleAdminToggle(user.id, user.is_admin)}
+                                data-testid={`badge-admin-${user.id}`}
+                              >
+                                {user.is_admin === "true" ? (
+                                  <>
+                                    <Shield className="h-3 w-3 mr-1" />
+                                    Admin
+                                  </>
+                                ) : (
+                                  "Usuário"
+                                )}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteUser(user.id)}
+                                data-testid={`button-delete-${user.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                          Nenhum usuário encontrado
                         </TableCell>
                       </TableRow>
-                      );
-                    })
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                        Nenhum usuário cadastrado
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-          <DialogContent className="bg-gray-900 border-gray-700 text-gray-100">
-            <DialogHeader>
-              <DialogTitle>Editar Usuário</DialogTitle>
-              <DialogDescription className="text-gray-400">
-                Edite as informações do usuário abaixo
-              </DialogDescription>
-            </DialogHeader>
-            {userToEdit && (
-              <div className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-nome">Nome</Label>
-                  <Input
-                    id="edit-nome"
-                    value={userToEdit.nome}
-                    onChange={(e) => setUserToEdit({ ...userToEdit, nome: e.target.value })}
-                    className="bg-gray-800 border-gray-700"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-email">Email</Label>
-                  <Input
-                    id="edit-email"
-                    type="email"
-                    value={userToEdit.email}
-                    onChange={(e) => setUserToEdit({ ...userToEdit, email: e.target.value })}
-                    className="bg-gray-800 border-gray-700"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-plano">Plano</Label>
-                  <Select
-                    value={userToEdit.plano}
-                    onValueChange={(value) => setUserToEdit({ ...userToEdit, plano: value })}
-                  >
-                    <SelectTrigger id="edit-plano" className="bg-gray-800 border-gray-700">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="free">Free</SelectItem>
-                      <SelectItem value="premium">Premium</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-admin">Tipo de Usuário</Label>
-                  <Select
-                    value={userToEdit.is_admin}
-                    onValueChange={(value) => setUserToEdit({ ...userToEdit, is_admin: value })}
-                  >
-                    <SelectTrigger id="edit-admin" className="bg-gray-800 border-gray-700">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="false">Usuário</SelectItem>
-                      <SelectItem value="true">Administrador</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {userToEdit.data_criacao && (
-                  <div className="space-y-2">
-                    <Label>Data de Criação</Label>
-                    <div className="text-sm text-gray-400">{formatarData(userToEdit.data_criacao)}</div>
+        <TabsContent value="planos" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold">Gestão de Planos</h2>
+              <p className="text-muted-foreground">Gerencie os planos disponíveis no sistema</p>
+            </div>
+            <Dialog open={createPlanoOpen} onOpenChange={setCreatePlanoOpen}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-create-plan">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Criar Plano
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Criar Novo Plano</DialogTitle>
+                  <DialogDescription>
+                    Defina os detalhes do novo plano
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="plano-nome">Nome do Plano</Label>
+                    <Input
+                      id="plano-nome"
+                      value={newPlano.nome}
+                      onChange={(e) => setNewPlano({ ...newPlano, nome: e.target.value })}
+                      data-testid="input-plan-name"
+                    />
                   </div>
-                )}
-                {userToEdit.data_expiracao_trial && (
-                  <div className="space-y-2">
-                    <Label>Expiração do Trial</Label>
-                    <div className="text-sm text-gray-400">
-                      {formatarData(userToEdit.data_expiracao_trial)}
-                      {calcularDiasRestantes(userToEdit.data_expiracao_trial) !== null && (
-                        <span className="ml-2">
-                          ({calcularDiasRestantes(userToEdit.data_expiracao_trial)} dias restantes)
-                        </span>
-                      )}
-                    </div>
+                  <div>
+                    <Label htmlFor="plano-preco">Preço (R$)</Label>
+                    <Input
+                      id="plano-preco"
+                      type="number"
+                      step="0.01"
+                      value={newPlano.preco}
+                      onChange={(e) => setNewPlano({ ...newPlano, preco: parseFloat(e.target.value) })}
+                      data-testid="input-plan-price"
+                    />
                   </div>
-                )}
-                <div className="flex gap-2 pt-4">
-                  <Button
-                    onClick={handleSaveUserEdit}
-                    className="flex-1"
-                    disabled={updateUserMutation.isPending}
-                  >
-                    {updateUserMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                  <div>
+                    <Label htmlFor="plano-duracao">Duração (dias)</Label>
+                    <Input
+                      id="plano-duracao"
+                      type="number"
+                      value={newPlano.duracao_dias}
+                      onChange={(e) => setNewPlano({ ...newPlano, duracao_dias: parseInt(e.target.value) })}
+                      data-testid="input-plan-duration"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="plano-descricao">Descrição</Label>
+                    <Textarea
+                      id="plano-descricao"
+                      value={newPlano.descricao}
+                      onChange={(e) => setNewPlano({ ...newPlano, descricao: e.target.value })}
+                      data-testid="textarea-plan-description"
+                    />
+                  </div>
+                  <Button onClick={() => createPlanoMutation.mutate(newPlano)} className="w-full" data-testid="button-submit-plan">
+                    Criar Plano
                   </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setEditModalOpen(false)}
-                    className="flex-1"
-                  >
-                    Cancelar
-                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Preço</TableHead>
+                      <TableHead>Duração</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {planos.length > 0 ? (
+                      planos.map((plano) => (
+                        <TableRow key={plano.id} data-testid={`row-plan-${plano.id}`}>
+                          <TableCell className="font-medium">{plano.nome}</TableCell>
+                          <TableCell>R$ {plano.preco.toFixed(2)}</TableCell>
+                          <TableCell>{plano.duracao_dias} dias</TableCell>
+                          <TableCell>{plano.descricao || '-'}</TableCell>
+                          <TableCell>
+                            <Badge variant={plano.ativo === "true" ? "default" : "secondary"}>
+                              {plano.ativo === "true" ? "Ativo" : "Inativo"}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                          Nenhum plano cadastrado
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="asaas" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5" />
+                Configuração da API Asaas
+              </CardTitle>
+              <CardDescription>
+                Configure a integração com a plataforma de pagamentos Asaas
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="api-key">API Key</Label>
+                <Input
+                  id="api-key"
+                  type="password"
+                  value={asaasConfig.api_key}
+                  onChange={(e) => setAsaasConfig({ ...asaasConfig, api_key: e.target.value })}
+                  placeholder="Insira sua chave de API"
+                  data-testid="input-asaas-api-key"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="ambiente">Ambiente</Label>
+                <Select
+                  value={asaasConfig.ambiente}
+                  onValueChange={(v) => setAsaasConfig({ ...asaasConfig, ambiente: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sandbox">Sandbox (Testes)</SelectItem>
+                    <SelectItem value="production">Produção</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="account-id">ID da Conta Asaas</Label>
+                <Input
+                  id="account-id"
+                  value={asaasConfig.account_id}
+                  onChange={(e) => setAsaasConfig({ ...asaasConfig, account_id: e.target.value })}
+                  placeholder="ID da sua conta"
+                  data-testid="input-asaas-account-id"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="webhook-url">Webhook URL</Label>
+                <div className="flex gap-2">
+                  <Webhook className="h-4 w-4 mt-2 text-muted-foreground" />
+                  <Input
+                    id="webhook-url"
+                    value={asaasConfig.webhook_url}
+                    onChange={(e) => setAsaasConfig({ ...asaasConfig, webhook_url: e.target.value })}
+                    placeholder="https://seu-dominio.com/webhook/asaas"
+                    data-testid="input-asaas-webhook"
+                  />
                 </div>
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
 
-        <footer className="text-center text-white/80 text-sm">
-          Desenvolvido por <span className="font-medium">Pavisoft Sistemas</span>
-        </footer>
-      </div>
+              <div className="flex gap-2">
+                <Button onClick={() => saveAsaasMutation.mutate(asaasConfig)} data-testid="button-save-asaas-config">
+                  <Database className="h-4 w-4 mr-2" />
+                  Salvar Configuração
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={testAsaasConnection}
+                  disabled={testingAsaas || !asaasConfig.api_key}
+                  data-testid="button-test-asaas"
+                >
+                  {testingAsaas ? "Testando..." : "Testar Conexão"}
+                </Button>
+              </div>
+
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Importante!</AlertTitle>
+                <AlertDescription>
+                  Use o ambiente Sandbox para testes. Mude para Produção apenas quando estiver pronto
+                  para processar pagamentos reais. Mantenha sua API Key em segurança.
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

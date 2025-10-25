@@ -25,7 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Users, Crown, Shield, CheckCircle2, AlertCircle, Trash2, UserPlus, Key, Webhook, Database, Activity, Filter, Search } from "lucide-react";
+import { Users, Crown, Shield, CheckCircle2, AlertCircle, Trash2, UserPlus, Key, Webhook, Database, Activity, Filter, Search, TrendingUp, DollarSign, UserCheck, Lock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +45,18 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer } from "recharts";
+
+// Senha mais forte
+const ADMIN_PASSWORD = "Pavisoft@2025#Admin";
+const SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutos
+
+const COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 interface User {
   id: string;
@@ -93,16 +105,60 @@ export default function PublicAdmin() {
 
   useEffect(() => {
     const adminAuth = sessionStorage.getItem("admin_auth");
-    if (adminAuth === "authenticated") {
-      setIsAuthenticated(true);
+    const authTime = sessionStorage.getItem("admin_auth_time");
+    
+    if (adminAuth === "authenticated" && authTime) {
+      const elapsed = Date.now() - parseInt(authTime);
+      if (elapsed < SESSION_TIMEOUT) {
+        setIsAuthenticated(true);
+      } else {
+        sessionStorage.removeItem("admin_auth");
+        sessionStorage.removeItem("admin_auth_time");
+        toast({
+          title: "Sessão expirada",
+          description: "Por favor, faça login novamente",
+          variant: "destructive",
+        });
+      }
     }
-  }, []);
+  }, [toast]);
+
+  // Auto-logout por inatividade
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let timer: NodeJS.Timeout;
+    
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        setIsAuthenticated(false);
+        sessionStorage.removeItem("admin_auth");
+        sessionStorage.removeItem("admin_auth_time");
+        toast({
+          title: "Sessão expirada",
+          description: "Você foi desconectado por inatividade",
+          variant: "destructive",
+        });
+      }, SESSION_TIMEOUT);
+    };
+
+    const events = ["mousedown", "keydown", "scroll", "touchstart"];
+    events.forEach(event => window.addEventListener(event, resetTimer));
+    resetTimer();
+
+    return () => {
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+      clearTimeout(timer);
+    };
+  }, [isAuthenticated, toast]);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === "admin123") {
+    if (password === ADMIN_PASSWORD) {
       setIsAuthenticated(true);
       sessionStorage.setItem("admin_auth", "authenticated");
+      sessionStorage.setItem("admin_auth_time", Date.now().toString());
       toast({
         title: "Acesso concedido",
         description: "Bem-vindo ao painel administrativo",
@@ -139,32 +195,6 @@ export default function PublicAdmin() {
     account_id: "",
   });
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout | null = null;
-    
-    const resetTimer = () => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        localStorage.removeItem("user");
-        window.location.href = "/login";
-        toast({
-          title: "Sessão expirada",
-          description: "Você foi desconectado por inatividade",
-          variant: "destructive",
-        });
-      }, 15 * 60 * 1000);
-    };
-
-    const events = ["mousedown", "keydown", "scroll", "touchstart"];
-    events.forEach(event => window.addEventListener(event, resetTimer));
-    resetTimer();
-
-    return () => {
-      events.forEach(event => window.removeEventListener(event, resetTimer));
-      if (timer) clearTimeout(timer);
-    };
-  }, [toast]);
-
   const { data: users = [], isLoading: loadingUsers } = useQuery<User[]>({
     queryKey: ["/api/users"],
   });
@@ -180,7 +210,6 @@ export default function PublicAdmin() {
   const { data: allFuncionarios = [] } = useQuery({
     queryKey: ["/api/funcionarios/all"],
     queryFn: async () => {
-      // Buscar funcionários de todas as contas
       const funcionarios: any[] = [];
       for (const user of users) {
         try {
@@ -407,45 +436,75 @@ export default function PublicAdmin() {
     }).length,
   };
 
+  // Dados para gráficos
+  const userGrowthData = users.slice(-7).map((u, i) => ({
+    day: `Dia ${i + 1}`,
+    usuarios: i + 1
+  }));
+
+  const planDistributionData = [
+    { name: "Premium", value: stats.premium, color: "#2563EB" },
+    { name: "Free", value: stats.free, color: "#10B981" }
+  ].filter(item => item.value > 0);
+
+  const statusDistributionData = [
+    { name: "Ativos", value: stats.ativos, color: "#10B981" },
+    { name: "Inativos", value: stats.inativos, color: "#EF4444" }
+  ].filter(item => item.value > 0);
+
+  const revenueData = planos.map(p => ({
+    nome: p.nome,
+    receita: p.preco * users.filter(u => u.plano === p.nome.toLowerCase()).length
+  }));
+
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-        <Card className="w-full max-w-md mx-4">
-          <CardHeader>
-            <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
-              <Shield className="h-6 w-6 text-blue-600" />
-              Acesso Administrativo
-            </CardTitle>
-            <CardDescription className="text-center">
-              Insira a senha para acessar o painel
-            </CardDescription>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600">
+        <Card className="w-full max-w-md mx-4 shadow-2xl border-2">
+          <CardHeader className="space-y-4 text-center pb-8">
+            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <Lock className="h-10 w-10 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-3xl font-bold">Painel Administrativo</CardTitle>
+              <CardDescription className="text-base mt-2">
+                Sistema Pavisoft - Acesso Restrito
+              </CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="admin-password">Senha</Label>
+            <form onSubmit={handlePasswordSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="admin-password" className="text-base font-semibold">Senha de Administrador</Label>
                 <Input
                   id="admin-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Digite a senha de administrador"
+                  placeholder="Digite a senha"
                   autoFocus
+                  className="h-12 text-base"
                 />
               </div>
-              <Button type="submit" className="w-full">
-                <Key className="h-4 w-4 mr-2" />
-                Entrar
+              <Button type="submit" className="w-full h-12 text-base font-semibold">
+                <Key className="h-5 w-5 mr-2" />
+                Acessar Painel
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                className="w-full"
+                className="w-full h-12"
                 onClick={() => setLocation("/")}
               >
-                Voltar
+                Voltar ao Site
               </Button>
             </form>
+            <Alert className="mt-6 border-blue-200 bg-blue-50 dark:bg-blue-950">
+              <Shield className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-sm">
+                Este painel é exclusivo para administradores do sistema. Sessão expira em 10 minutos de inatividade.
+              </AlertDescription>
+            </Alert>
           </CardContent>
         </Card>
       </div>
@@ -454,622 +513,756 @@ export default function PublicAdmin() {
 
   if (loadingUsers) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Carregando...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg font-semibold text-gray-600 dark:text-gray-400">Carregando dados...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Painel Administrativo - Dono do Sistema
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Gerencie usuários, planos e integrações do sistema
-        </p>
-      </div>
-
-      <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="dashboard" data-testid="tab-dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="usuarios" data-testid="tab-usuarios">Usuários</TabsTrigger>
-          <TabsTrigger value="funcionarios" data-testid="tab-funcionarios">Funcionários</TabsTrigger>
-          <TabsTrigger value="planos" data-testid="tab-planos">Planos</TabsTrigger>
-          <TabsTrigger value="asaas" data-testid="tab-asaas">Integração Asaas</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="dashboard" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-total-users">{stats.total}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.ativos} ativos, {stats.inativos} inativos
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Premium</CardTitle>
-                <Crown className="h-4 w-4 text-yellow-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-premium-users">{stats.premium}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.total > 0 ? Math.round((stats.premium / stats.total) * 100) : 0}% do total
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Free</CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-free-users">{stats.free}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.total > 0 ? Math.round((stats.free / stats.total) * 100) : 0}% do total
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Administradores</CardTitle>
-                <Shield className="h-4 w-4 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-admin-users">{stats.admins}</div>
-              </CardContent>
-            </Card>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="container mx-auto px-6 py-8 space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Painel Administrativo Pavisoft
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2 text-lg">
+              Gestão completa do sistema
+            </p>
           </div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setIsAuthenticated(false);
+              sessionStorage.removeItem("admin_auth");
+              sessionStorage.removeItem("admin_auth_time");
+              setLocation("/");
+            }}
+            className="gap-2"
+          >
+            <Lock className="h-4 w-4" />
+            Sair
+          </Button>
+        </div>
 
-          {stats.expiringTrial > 0 && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Atenção!</AlertTitle>
-              <AlertDescription>
-                {stats.expiringTrial} usuário(s) com trial expirando em até 3 dias.
-              </AlertDescription>
-            </Alert>
-          )}
+        <Tabs defaultValue="dashboard" className="w-full">
+          <TabsList className="grid w-full grid-cols-5 h-14 bg-white dark:bg-gray-800 shadow-lg rounded-xl">
+            <TabsTrigger value="dashboard" className="text-base" data-testid="tab-dashboard">
+              <Activity className="h-5 w-5 mr-2" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="usuarios" className="text-base" data-testid="tab-usuarios">
+              <Users className="h-5 w-5 mr-2" />
+              Usuários
+            </TabsTrigger>
+            <TabsTrigger value="funcionarios" className="text-base" data-testid="tab-funcionarios">
+              <UserCheck className="h-5 w-5 mr-2" />
+              Funcionários
+            </TabsTrigger>
+            <TabsTrigger value="planos" className="text-base" data-testid="tab-planos">
+              <Crown className="h-5 w-5 mr-2" />
+              Planos
+            </TabsTrigger>
+            <TabsTrigger value="asaas" className="text-base" data-testid="tab-asaas">
+              <DollarSign className="h-5 w-5 mr-2" />
+              Pagamentos
+            </TabsTrigger>
+          </TabsList>
 
-          {configAsaasData && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Status da Integração Asaas
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <Badge variant={configAsaasData.status_conexao === "conectado" ? "default" : "secondary"}>
-                    {configAsaasData.status_conexao === "conectado" ? "Conectado" : "Desconectado"}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    Ambiente: {configAsaasData.ambiente === "sandbox" ? "Sandbox" : "Produção"}
-                  </span>
-                  {configAsaasData.ultima_sincronizacao && (
-                    <span className="text-sm text-muted-foreground">
-                      Última sincronização: {new Date(configAsaasData.ultima_sincronizacao).toLocaleString('pt-BR')}
+          <TabsContent value="dashboard" className="space-y-6 mt-6">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-lg">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-lg font-medium">Total de Usuários</CardTitle>
+                  <Users className="h-8 w-8 opacity-80" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold" data-testid="text-total-users">{stats.total}</div>
+                  <p className="text-sm opacity-90 mt-2">
+                    {stats.ativos} ativos • {stats.inativos} inativos
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-yellow-500 to-orange-600 text-white border-0 shadow-lg">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-lg font-medium">Planos Premium</CardTitle>
+                  <Crown className="h-8 w-8 opacity-80" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold" data-testid="text-premium-users">{stats.premium}</div>
+                  <p className="text-sm opacity-90 mt-2">
+                    {stats.total > 0 ? Math.round((stats.premium / stats.total) * 100) : 0}% do total
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white border-0 shadow-lg">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-lg font-medium">Planos Free</CardTitle>
+                  <CheckCircle2 className="h-8 w-8 opacity-80" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold" data-testid="text-free-users">{stats.free}</div>
+                  <p className="text-sm opacity-90 mt-2">
+                    {stats.total > 0 ? Math.round((stats.free / stats.total) * 100) : 0}% do total
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-purple-500 to-pink-600 text-white border-0 shadow-lg">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-lg font-medium">Administradores</CardTitle>
+                  <Shield className="h-8 w-8 opacity-80" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold" data-testid="text-admin-users">{stats.admins}</div>
+                  <p className="text-sm opacity-90 mt-2">Acessos privilegiados</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Alertas */}
+            {stats.expiringTrial > 0 && (
+              <Alert variant="destructive" className="border-2">
+                <AlertCircle className="h-5 w-5" />
+                <AlertTitle className="text-lg font-semibold">Atenção Urgente!</AlertTitle>
+                <AlertDescription className="text-base">
+                  {stats.expiringTrial} usuário(s) com trial expirando em até 3 dias. Tome ação imediata.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Gráficos */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <TrendingUp className="h-6 w-6 text-blue-600" />
+                    Distribuição de Planos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer config={{}} className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={planDistributionData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {planDistributionData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Activity className="h-6 w-6 text-green-600" />
+                    Status dos Usuários
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer config={{}} className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={statusDistributionData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {statusDistributionData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+
+              {revenueData.length > 0 && (
+                <Card className="shadow-lg lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <DollarSign className="h-6 w-6 text-green-600" />
+                      Receita por Plano
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer config={{}} className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={revenueData}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis dataKey="nome" className="text-sm" />
+                          <YAxis className="text-sm" />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Bar dataKey="receita" fill="#10B981" radius={[8, 8, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Status Asaas */}
+            {configAsaasData && (
+              <Card className="shadow-lg border-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Activity className="h-6 w-6" />
+                    Status da Integração Asaas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <Badge variant={configAsaasData.status_conexao === "conectado" ? "default" : "secondary"} className="text-base px-4 py-2">
+                      {configAsaasData.status_conexao === "conectado" ? "✓ Conectado" : "✗ Desconectado"}
+                    </Badge>
+                    <span className="text-base text-muted-foreground">
+                      <strong>Ambiente:</strong> {configAsaasData.ambiente === "sandbox" ? "Sandbox" : "Produção"}
                     </span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
+                    {configAsaasData.ultima_sincronizacao && (
+                      <span className="text-base text-muted-foreground">
+                        <strong>Última sincronização:</strong> {new Date(configAsaasData.ultima_sincronizacao).toLocaleString('pt-BR')}
+                      </span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
-        <TabsContent value="usuarios" className="space-y-6">
-          <div className="flex gap-4 items-end">
-            <div className="flex-1">
-              <Label htmlFor="search">Buscar</Label>
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="search"
-                  placeholder="Nome ou email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                  data-testid="input-search-users"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="filter-plano">Plano</Label>
-              <Select value={filterPlano} onValueChange={setFilterPlano}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="free">Free</SelectItem>
-                  <SelectItem value="premium">Premium</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="filter-status">Status</Label>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="inativo">Inativo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
-              <DialogTrigger asChild>
-                <Button data-testid="button-create-user">
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Criar Usuário
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Criar Novo Usuário</DialogTitle>
-                  <DialogDescription>
-                    Preencha os dados do novo usuário
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="nome">Nome</Label>
-                    <Input
-                      id="nome"
-                      value={newUser.nome}
-                      onChange={(e) => setNewUser({ ...newUser, nome: e.target.value })}
-                      data-testid="input-new-user-name"
-                    />
+          <TabsContent value="usuarios" className="space-y-6 mt-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <div className="flex gap-4 items-end flex-wrap">
+                  <div className="flex-1 min-w-[200px]">
+                    <Label htmlFor="search" className="text-base">Buscar</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        id="search"
+                        placeholder="Nome ou email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 h-12"
+                        data-testid="input-search-users"
+                      />
+                    </div>
                   </div>
                   <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={newUser.email}
-                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                      data-testid="input-new-user-email"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="senha">Senha</Label>
-                    <Input
-                      id="senha"
-                      type="password"
-                      value={newUser.senha}
-                      onChange={(e) => setNewUser({ ...newUser, senha: e.target.value })}
-                      data-testid="input-new-user-password"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="plano">Plano</Label>
-                    <Select value={newUser.plano} onValueChange={(v) => setNewUser({ ...newUser, plano: v })}>
-                      <SelectTrigger>
+                    <Label htmlFor="filter-plano" className="text-base">Plano</Label>
+                    <Select value={filterPlano} onValueChange={setFilterPlano}>
+                      <SelectTrigger className="w-36 h-12">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
                         <SelectItem value="free">Free</SelectItem>
                         <SelectItem value="premium">Premium</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="is_admin"
-                      checked={newUser.is_admin === "true"}
-                      onChange={(e) => setNewUser({ ...newUser, is_admin: e.target.checked ? "true" : "false" })}
-                      data-testid="checkbox-new-user-admin"
-                    />
-                    <Label htmlFor="is_admin">Administrador</Label>
+                  <div>
+                    <Label htmlFor="filter-status" className="text-base">Status</Label>
+                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                      <SelectTrigger className="w-36 h-12">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
+                        <SelectItem value="ativo">Ativo</SelectItem>
+                        <SelectItem value="inativo">Inativo</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <Button onClick={() => createUserMutation.mutate(newUser)} className="w-full" data-testid="button-submit-new-user">
-                    Criar Usuário
-                  </Button>
+                  <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="h-12" data-testid="button-create-user">
+                        <UserPlus className="h-5 w-5 mr-2" />
+                        Criar Usuário
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Criar Novo Usuário</DialogTitle>
+                        <DialogDescription>
+                          Preencha os dados do novo usuário
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="nome">Nome</Label>
+                          <Input
+                            id="nome"
+                            value={newUser.nome}
+                            onChange={(e) => setNewUser({ ...newUser, nome: e.target.value })}
+                            data-testid="input-new-user-name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="email">Email</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={newUser.email}
+                            onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                            data-testid="input-new-user-email"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="senha">Senha</Label>
+                          <Input
+                            id="senha"
+                            type="password"
+                            value={newUser.senha}
+                            onChange={(e) => setNewUser({ ...newUser, senha: e.target.value })}
+                            data-testid="input-new-user-password"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="plano">Plano</Label>
+                          <Select value={newUser.plano} onValueChange={(v) => setNewUser({ ...newUser, plano: v })}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="free">Free</SelectItem>
+                              <SelectItem value="premium">Premium</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="is_admin"
+                            checked={newUser.is_admin === "true"}
+                            onChange={(e) => setNewUser({ ...newUser, is_admin: e.target.checked ? "true" : "false" })}
+                            data-testid="checkbox-new-user-admin"
+                          />
+                          <Label htmlFor="is_admin">Administrador</Label>
+                        </div>
+                        <Button onClick={() => createUserMutation.mutate(newUser)} className="w-full" data-testid="button-submit-new-user">
+                          Criar Usuário
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="font-semibold">Nome</TableHead>
+                        <TableHead className="font-semibold">Email</TableHead>
+                        <TableHead className="font-semibold">Data Criação</TableHead>
+                        <TableHead className="font-semibold">Plano</TableHead>
+                        <TableHead className="font-semibold">Dias Restantes</TableHead>
+                        <TableHead className="font-semibold">Status</TableHead>
+                        <TableHead className="font-semibold">Admin</TableHead>
+                        <TableHead className="font-semibold">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers.length > 0 ? (
+                        filteredUsers.map((user) => {
+                          const daysRemaining = user.plano === "free" 
+                            ? calculateDaysRemaining(user.data_expiracao_trial)
+                            : calculateDaysRemaining(user.data_expiracao_plano);
+                          
+                          return (
+                            <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
+                              <TableCell className="font-medium">{user.nome}</TableCell>
+                              <TableCell>{user.email}</TableCell>
+                              <TableCell>
+                                {user.data_criacao 
+                                  ? new Date(user.data_criacao).toLocaleDateString('pt-BR')
+                                  : '-'}
+                              </TableCell>
+                              <TableCell>
+                                {editingUser === user.id ? (
+                                  <Select
+                                    defaultValue={user.plano}
+                                    onValueChange={(value) => handlePlanChange(user.id, value)}
+                                  >
+                                    <SelectTrigger className="w-32">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="free">Free</SelectItem>
+                                      <SelectItem value="premium">Premium</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <Badge
+                                    variant={getPlanBadgeVariant(user.plano)}
+                                    className="cursor-pointer"
+                                    onClick={() => setEditingUser(user.id)}
+                                    data-testid={`badge-plan-${user.id}`}
+                                  >
+                                    {user.plano === "premium" ? (
+                                      <>
+                                        <Crown className="h-3 w-3 mr-1" />
+                                        Premium
+                                      </>
+                                    ) : (
+                                      "Free"
+                                    )}
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {daysRemaining !== null ? (
+                                  <Badge variant={daysRemaining <= 3 ? "destructive" : "secondary"}>
+                                    {daysRemaining} dias
+                                  </Badge>
+                                ) : (
+                                  '-'
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={getStatusBadgeVariant(user.status)}
+                                  className="cursor-pointer"
+                                  onClick={() => handleStatusToggle(user.id, user.status)}
+                                  data-testid={`badge-status-${user.id}`}
+                                >
+                                  {user.status === "ativo" ? "Ativo" : "Inativo"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={user.is_admin === "true" ? "default" : "outline"}
+                                  className="cursor-pointer"
+                                  onClick={() => handleAdminToggle(user.id, user.is_admin)}
+                                  data-testid={`badge-admin-${user.id}`}
+                                >
+                                  {user.is_admin === "true" ? (
+                                    <>
+                                      <Shield className="h-3 w-3 mr-1" />
+                                      Admin
+                                    </>
+                                  ) : (
+                                    "Usuário"
+                                  )}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteUser(user.id)}
+                                  data-testid={`button-delete-${user.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                            Nenhum usuário encontrado
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          <Card>
-            <CardContent className="p-0">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Data Criação</TableHead>
-                      <TableHead>Plano</TableHead>
-                      <TableHead>Dias Restantes</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Admin</TableHead>
-                      <TableHead>Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.length > 0 ? (
-                      filteredUsers.map((user) => {
-                        const daysRemaining = user.plano === "free" 
-                          ? calculateDaysRemaining(user.data_expiracao_trial)
-                          : calculateDaysRemaining(user.data_expiracao_plano);
-                        
-                        return (
-                          <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
-                            <TableCell className="font-medium">{user.nome}</TableCell>
-                            <TableCell>{user.email}</TableCell>
+          <TabsContent value="funcionarios" className="space-y-6 mt-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-2xl">Funcionários de Todas as Contas</CardTitle>
+                <CardDescription className="text-base">
+                  Visualize todos os funcionários cadastrados no sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="font-semibold">Nome</TableHead>
+                        <TableHead className="font-semibold">Email</TableHead>
+                        <TableHead className="font-semibold">Conta</TableHead>
+                        <TableHead className="font-semibold">Data Criação</TableHead>
+                        <TableHead className="font-semibold">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allFuncionarios.length > 0 ? (
+                        allFuncionarios.map((func: any) => (
+                          <TableRow key={func.id}>
+                            <TableCell className="font-medium">{func.nome}</TableCell>
+                            <TableCell>{func.email}</TableCell>
+                            <TableCell>{func.conta_nome}</TableCell>
                             <TableCell>
-                              {user.data_criacao 
-                                ? new Date(user.data_criacao).toLocaleDateString('pt-BR')
+                              {func.data_criacao
+                                ? new Date(func.data_criacao).toLocaleDateString('pt-BR')
                                 : '-'}
                             </TableCell>
                             <TableCell>
-                              {editingUser === user.id ? (
-                                <Select
-                                  defaultValue={user.plano}
-                                  onValueChange={(value) => handlePlanChange(user.id, value)}
-                                >
-                                  <SelectTrigger className="w-32">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="free">Free</SelectItem>
-                                    <SelectItem value="premium">Premium</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <Badge
-                                  variant={getPlanBadgeVariant(user.plano)}
-                                  className="cursor-pointer"
-                                  onClick={() => setEditingUser(user.id)}
-                                  data-testid={`badge-plan-${user.id}`}
-                                >
-                                  {user.plano === "premium" ? (
-                                    <>
-                                      <Crown className="h-3 w-3 mr-1" />
-                                      Premium
-                                    </>
-                                  ) : (
-                                    "Free"
-                                  )}
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {daysRemaining !== null ? (
-                                <Badge variant={daysRemaining <= 3 ? "destructive" : "secondary"}>
-                                  {daysRemaining} dias
-                                </Badge>
-                              ) : (
-                                '-'
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={getStatusBadgeVariant(user.status)}
-                                className="cursor-pointer"
-                                onClick={() => handleStatusToggle(user.id, user.status)}
-                                data-testid={`badge-status-${user.id}`}
-                              >
-                                {user.status === "ativo" ? "Ativo" : "Inativo"}
+                              <Badge variant={func.status === "ativo" ? "default" : "secondary"}>
+                                {func.status || 'ativo'}
                               </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={user.is_admin === "true" ? "default" : "outline"}
-                                className="cursor-pointer"
-                                onClick={() => handleAdminToggle(user.id, user.is_admin)}
-                                data-testid={`badge-admin-${user.id}`}
-                              >
-                                {user.is_admin === "true" ? (
-                                  <>
-                                    <Shield className="h-3 w-3 mr-1" />
-                                    Admin
-                                  </>
-                                ) : (
-                                  "Usuário"
-                                )}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteUser(user.id)}
-                                data-testid={`button-delete-${user.id}`}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
                             </TableCell>
                           </TableRow>
-                        );
-                      })
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                          Nenhum usuário encontrado
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="funcionarios" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Funcionários de Todas as Contas</CardTitle>
-              <CardDescription>
-                Visualize todos os funcionários cadastrados no sistema
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Conta</TableHead>
-                      <TableHead>Data Criação</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {allFuncionarios.length > 0 ? (
-                      allFuncionarios.map((func: any) => (
-                        <TableRow key={func.id}>
-                          <TableCell className="font-medium">{func.nome}</TableCell>
-                          <TableCell>{func.email}</TableCell>
-                          <TableCell>{func.conta_nome}</TableCell>
-                          <TableCell>
-                            {func.data_criacao
-                              ? new Date(func.data_criacao).toLocaleDateString('pt-BR')
-                              : '-'}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={func.status === "ativo" ? "default" : "secondary"}>
-                              {func.status || 'ativo'}
-                            </Badge>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                            Nenhum funcionário cadastrado
                           </TableCell>
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                          Nenhum funcionário cadastrado
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="planos" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold">Gestão de Planos</h2>
-              <p className="text-muted-foreground">Gerencie os planos disponíveis no sistema</p>
-            </div>
-            <Dialog open={createPlanoOpen} onOpenChange={setCreatePlanoOpen}>
-              <DialogTrigger asChild>
-                <Button data-testid="button-create-plan">
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Criar Plano
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Criar Novo Plano</DialogTitle>
-                  <DialogDescription>
-                    Defina os detalhes do novo plano
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="plano-nome">Nome do Plano</Label>
-                    <Input
-                      id="plano-nome"
-                      value={newPlano.nome}
-                      onChange={(e) => setNewPlano({ ...newPlano, nome: e.target.value })}
-                      data-testid="input-plan-name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="plano-preco">Preço (R$)</Label>
-                    <Input
-                      id="plano-preco"
-                      type="number"
-                      step="0.01"
-                      value={newPlano.preco}
-                      onChange={(e) => setNewPlano({ ...newPlano, preco: parseFloat(e.target.value) })}
-                      data-testid="input-plan-price"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="plano-duracao">Duração (dias)</Label>
-                    <Input
-                      id="plano-duracao"
-                      type="number"
-                      value={newPlano.duracao_dias}
-                      onChange={(e) => setNewPlano({ ...newPlano, duracao_dias: parseInt(e.target.value) })}
-                      data-testid="input-plan-duration"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="plano-descricao">Descrição</Label>
-                    <Textarea
-                      id="plano-descricao"
-                      value={newPlano.descricao}
-                      onChange={(e) => setNewPlano({ ...newPlano, descricao: e.target.value })}
-                      data-testid="textarea-plan-description"
-                    />
-                  </div>
-                  <Button onClick={() => createPlanoMutation.mutate(newPlano)} className="w-full" data-testid="button-submit-plan">
-                    Criar Plano
-                  </Button>
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          <Card>
-            <CardContent className="p-0">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Preço</TableHead>
-                      <TableHead>Duração</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {planos.length > 0 ? (
-                      planos.map((plano) => (
-                        <TableRow key={plano.id} data-testid={`row-plan-${plano.id}`}>
-                          <TableCell className="font-medium">{plano.nome}</TableCell>
-                          <TableCell>R$ {plano.preco.toFixed(2)}</TableCell>
-                          <TableCell>{plano.duracao_dias} dias</TableCell>
-                          <TableCell>{plano.descricao || '-'}</TableCell>
-                          <TableCell>
-                            <Badge variant={plano.ativo === "true" ? "default" : "secondary"}>
-                              {plano.ativo === "true" ? "Ativo" : "Inativo"}
-                            </Badge>
+          <TabsContent value="planos" className="space-y-6 mt-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-2xl">Gestão de Planos</CardTitle>
+                    <CardDescription className="text-base">Gerencie os planos disponíveis no sistema</CardDescription>
+                  </div>
+                  <Dialog open={createPlanoOpen} onOpenChange={setCreatePlanoOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="h-12" data-testid="button-create-plan">
+                        <UserPlus className="h-5 w-5 mr-2" />
+                        Criar Plano
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Criar Novo Plano</DialogTitle>
+                        <DialogDescription>
+                          Defina os detalhes do novo plano
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="plano-nome">Nome do Plano</Label>
+                          <Input
+                            id="plano-nome"
+                            value={newPlano.nome}
+                            onChange={(e) => setNewPlano({ ...newPlano, nome: e.target.value })}
+                            data-testid="input-plan-name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="plano-preco">Preço (R$)</Label>
+                          <Input
+                            id="plano-preco"
+                            type="number"
+                            step="0.01"
+                            value={newPlano.preco}
+                            onChange={(e) => setNewPlano({ ...newPlano, preco: parseFloat(e.target.value) })}
+                            data-testid="input-plan-price"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="plano-duracao">Duração (dias)</Label>
+                          <Input
+                            id="plano-duracao"
+                            type="number"
+                            value={newPlano.duracao_dias}
+                            onChange={(e) => setNewPlano({ ...newPlano, duracao_dias: parseInt(e.target.value) })}
+                            data-testid="input-plan-duration"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="plano-descricao">Descrição</Label>
+                          <Textarea
+                            id="plano-descricao"
+                            value={newPlano.descricao}
+                            onChange={(e) => setNewPlano({ ...newPlano, descricao: e.target.value })}
+                            data-testid="textarea-plan-description"
+                          />
+                        </div>
+                        <Button onClick={() => createPlanoMutation.mutate(newPlano)} className="w-full" data-testid="button-submit-plan">
+                          Criar Plano
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="font-semibold">Nome</TableHead>
+                        <TableHead className="font-semibold">Preço</TableHead>
+                        <TableHead className="font-semibold">Duração</TableHead>
+                        <TableHead className="font-semibold">Descrição</TableHead>
+                        <TableHead className="font-semibold">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {planos.length > 0 ? (
+                        planos.map((plano) => (
+                          <TableRow key={plano.id} data-testid={`row-plan-${plano.id}`}>
+                            <TableCell className="font-medium">{plano.nome}</TableCell>
+                            <TableCell>R$ {plano.preco.toFixed(2)}</TableCell>
+                            <TableCell>{plano.duracao_dias} dias</TableCell>
+                            <TableCell>{plano.descricao || '-'}</TableCell>
+                            <TableCell>
+                              <Badge variant={plano.ativo === "true" ? "default" : "secondary"}>
+                                {plano.ativo === "true" ? "Ativo" : "Inativo"}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                            Nenhum plano cadastrado
                           </TableCell>
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                          Nenhum plano cadastrado
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="asaas" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5" />
-                Configuração da API Asaas
-              </CardTitle>
-              <CardDescription>
-                Configure a integração com a plataforma de pagamentos Asaas
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="api-key">API Key</Label>
-                <Input
-                  id="api-key"
-                  type="password"
-                  value={asaasConfig.api_key}
-                  onChange={(e) => setAsaasConfig({ ...asaasConfig, api_key: e.target.value })}
-                  placeholder="Insira sua chave de API"
-                  data-testid="input-asaas-api-key"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="ambiente">Ambiente</Label>
-                <Select
-                  value={asaasConfig.ambiente}
-                  onValueChange={(v) => setAsaasConfig({ ...asaasConfig, ambiente: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sandbox">Sandbox (Testes)</SelectItem>
-                    <SelectItem value="production">Produção</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="account-id">ID da Conta Asaas</Label>
-                <Input
-                  id="account-id"
-                  value={asaasConfig.account_id}
-                  onChange={(e) => setAsaasConfig({ ...asaasConfig, account_id: e.target.value })}
-                  placeholder="ID da sua conta"
-                  data-testid="input-asaas-account-id"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="webhook-url">Webhook URL</Label>
-                <div className="flex gap-2">
-                  <Webhook className="h-4 w-4 mt-2 text-muted-foreground" />
+          <TabsContent value="asaas" className="space-y-6 mt-6">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-2xl">
+                  <Key className="h-6 w-6" />
+                  Configuração da API Asaas
+                </CardTitle>
+                <CardDescription className="text-base">
+                  Configure a integração com a plataforma de pagamentos Asaas
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="api-key" className="text-base">API Key</Label>
                   <Input
-                    id="webhook-url"
-                    value={asaasConfig.webhook_url}
-                    onChange={(e) => setAsaasConfig({ ...asaasConfig, webhook_url: e.target.value })}
-                    placeholder="https://seu-dominio.com/webhook/asaas"
-                    data-testid="input-asaas-webhook"
+                    id="api-key"
+                    type="password"
+                    value={asaasConfig.api_key}
+                    onChange={(e) => setAsaasConfig({ ...asaasConfig, api_key: e.target.value })}
+                    placeholder="Insira sua chave de API"
+                    className="h-12"
+                    data-testid="input-asaas-api-key"
                   />
                 </div>
-              </div>
 
-              <div className="flex gap-2">
-                <Button onClick={() => saveAsaasMutation.mutate(asaasConfig)} data-testid="button-save-asaas-config">
-                  <Database className="h-4 w-4 mr-2" />
-                  Salvar Configuração
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={testAsaasConnection}
-                  disabled={testingAsaas || !asaasConfig.api_key}
-                  data-testid="button-test-asaas"
-                >
-                  {testingAsaas ? "Testando..." : "Testar Conexão"}
-                </Button>
-              </div>
+                <div>
+                  <Label htmlFor="ambiente" className="text-base">Ambiente</Label>
+                  <Select
+                    value={asaasConfig.ambiente}
+                    onValueChange={(v) => setAsaasConfig({ ...asaasConfig, ambiente: v })}
+                  >
+                    <SelectTrigger className="h-12">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sandbox">Sandbox (Testes)</SelectItem>
+                      <SelectItem value="production">Produção</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Importante!</AlertTitle>
-                <AlertDescription>
-                  Use o ambiente Sandbox para testes. Mude para Produção apenas quando estiver pronto
-                  para processar pagamentos reais. Mantenha sua API Key em segurança.
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                <div>
+                  <Label htmlFor="account-id" className="text-base">ID da Conta Asaas</Label>
+                  <Input
+                    id="account-id"
+                    value={asaasConfig.account_id}
+                    onChange={(e) => setAsaasConfig({ ...asaasConfig, account_id: e.target.value })}
+                    placeholder="ID da sua conta"
+                    className="h-12"
+                    data-testid="input-asaas-account-id"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="webhook-url" className="text-base">Webhook URL</Label>
+                  <div className="flex gap-2">
+                    <Webhook className="h-5 w-5 mt-3 text-muted-foreground" />
+                    <Input
+                      id="webhook-url"
+                      value={asaasConfig.webhook_url}
+                      onChange={(e) => setAsaasConfig({ ...asaasConfig, webhook_url: e.target.value })}
+                      placeholder="https://seu-dominio.com/webhook/asaas"
+                      className="h-12"
+                      data-testid="input-asaas-webhook"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button onClick={() => saveAsaasMutation.mutate(asaasConfig)} className="h-12" data-testid="button-save-asaas-config">
+                    <Database className="h-5 w-5 mr-2" />
+                    Salvar Configuração
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={testAsaasConnection}
+                    disabled={testingAsaas || !asaasConfig.api_key}
+                    className="h-12"
+                    data-testid="button-test-asaas"
+                  >
+                    {testingAsaas ? "Testando..." : "Testar Conexão"}
+                  </Button>
+                </div>
+
+                <Alert className="border-2">
+                  <AlertCircle className="h-5 w-5" />
+                  <AlertTitle className="text-base font-semibold">Importante!</AlertTitle>
+                  <AlertDescription className="text-base">
+                    Use o ambiente Sandbox para testes. Mude para Produção apenas quando estiver pronto
+                    para processar pagamentos reais. Mantenha sua API Key em segurança.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

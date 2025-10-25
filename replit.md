@@ -149,6 +149,35 @@ Preferred communication style: Simple, everyday language.
   - `permissoes` (text) - For storing employee permissions in JSON format
 - **Security Note:** Multi-tenant infrastructure is not yet implemented. The `/admin` panel is disabled to prevent data leakage between different accounts. Backend endpoints need tenant scoping (`conta_id` validation) before enabling this feature.
 
+**Employee Management System in Admin Panel (October 25, 2025):**
+- Implemented comprehensive employee management features in `/admin` panel:
+  - **Add New Employees:** Create employee accounts with name, email, password, and job title (cargo)
+  - **Edit Employee Data:** Update employee information including name, email, optional password change, and cargo
+  - **Job Title Field:** Added `cargo` field to funcionarios schema to store employee roles (Vendedor, Gerente, Caixa, etc.)
+  - **Status Management:** Toggle employees between active/inactive status with dedicated button
+  - **Permission Management:** Granular permission control by category:
+    - PDV / Caixa (Point of Sale)
+    - Produtos (Products)
+    - Inventário (Inventory)
+    - Relatórios (Reports)
+    - Clientes (Clients)
+    - Fornecedores (Suppliers)
+    - Financeiro (Financial)
+    - Config. Fiscal (Fiscal Configuration)
+  - **Delete Employees:** Remove employee accounts with confirmation dialog
+  - **Account Information Tab:** Display company info, current plan, and team summary statistics
+- UI improvements:
+  - Clean tabbed interface with "Informações da Conta" and "Funcionários" tabs
+  - Comprehensive employee table showing name, email, cargo, registration date, and status
+  - Modal dialogs for creating and editing employees with proper validation
+  - Visual permission cards with checkboxes for easy management
+  - Responsive design for mobile and desktop use
+  - All interactive elements include data-testid attributes for testing
+- Backend enhancements:
+  - Updated POST `/api/funcionarios` to accept cargo field
+  - PATCH `/api/funcionarios/:id` supports updating all employee fields including optional password
+  - Proper default permissions initialization when creating new employees
+
 **Institutional Website Landing Page (October 24, 2025):**
 - Created modern institutional landing page in Slack style at `/` route
 - Implemented comprehensive Privacy Policy page at `/privacy`

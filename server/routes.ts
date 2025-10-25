@@ -70,13 +70,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: user.id,
         email: user.email,
         nome: user.nome,
-        plano: user.plano,
-        is_admin: user.is_admin,
-        data_criacao: user.data_criacao,
-        data_expiracao_trial: user.data_expiracao_trial
+        plano: user.plano || "free",
+        is_admin: user.is_admin || "false",
+        data_criacao: user.data_criacao || null,
+        data_expiracao_trial: user.data_expiracao_trial || null
       }));
       res.json(sanitizedUsers);
     } catch (error) {
+      console.error("Erro ao buscar usuários:", error);
       res.status(500).json({ error: "Erro ao buscar usuários" });
     }
   });

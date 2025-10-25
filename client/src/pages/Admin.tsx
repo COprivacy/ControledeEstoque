@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import {
@@ -69,7 +68,7 @@ export default function Admin() {
   const { toast } = useToast();
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [editPermissionsUser, setEditPermissionsUser] = useState<string | null>(null);
-  
+
   const [newEmployee, setNewEmployee] = useState({
     nome: "",
     email: "",
@@ -120,10 +119,10 @@ export default function Admin() {
       setCreateUserOpen(false);
       setNewEmployee({ nome: "", email: "", senha: "" });
     },
-    onError: (error: Error) {
+    onError: (error) => {
       toast({
         title: "Erro ao criar funcionário",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive",
       });
     },

@@ -2,9 +2,7 @@
 
 ## Overview
 
-A simple inventory management web application designed for Brazilian small businesses (minimarkets, retail shops). The system provides product management, point-of-sale (PDV) functionality with barcode scanning, sales tracking, reporting features, and Brazilian invoice (NF-e/NFC-e) emission through Focus NFe API integration. Built with a focus on simplicity and mobile-first design for on-the-go inventory management.
-
-**Important:** Each user configures their own Focus NFe account credentials, ensuring the developer assumes no fiscal costs or responsibilities.
+A web application designed for Brazilian small businesses, offering inventory management, point-of-sale (PDV) with barcode scanning, sales tracking, and reporting. A key feature is the integration with Focus NFe API for Brazilian invoice (NF-e/NFC-e) emission. The system prioritizes simplicity, mobile-first design, and includes comprehensive financial management and employee permission controls. Users are responsible for their Focus NFe account credentials.
 
 ## User Preferences
 
@@ -12,240 +10,31 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend Architecture
+### Frontend
 
-**Technology Stack:**
-- React 18 with TypeScript
-- Vite as build tool and dev server
-- Wouter for client-side routing
-- TanStack Query (React Query) for server state management
-- Tailwind CSS for styling with shadcn/ui component library
+- **Technology Stack:** React 18, TypeScript, Vite, Wouter, TanStack Query, Tailwind CSS, shadcn/ui.
+- **Design System:** shadcn/ui "new-york" preset, custom Brazilian Portuguese color palette, responsive mobile-first design.
+- **Key Features:** Product management (barcode, expiration), PDV, sales tracking, dashboard alerts, reports (sales, expiration), supplier/purchase management, client management, full Financial Management Module (Accounts Payable/Receivable, Projected POS Cash Flow, Simplified Income Statement), Brazilian Invoice (NF-e/NFC-e) emission, optional non-fiscal receipt, and PWA support.
+- **Admin Panels:**
+    - `/admin-publico`: Super admin for system owner (user management, plan management, Asaas integration).
+    - `/admin`: Account admin for customers (employee management, permissions - currently disabled for security).
+- **Access Control:** Permission-based system for employees with frontend protection via `usePermissions` and `ProtectedRoute` hooks.
 
-**Design System:**
-- Based on shadcn/ui "new-york" style preset
-- Custom color palette with Brazilian Portuguese branding
-- Neutral base colors (0 0% 94% background, #2563EB primary blue)
-- Responsive mobile-first layout using Tailwind breakpoints
-- Design guidelines documented in `design_guidelines.md`
+### Backend
 
-**Component Architecture:**
-- Presentational components in `/client/src/components` with clear prop interfaces
-- Page components in `/client/src/pages` handling routing and business logic
-- Shared UI components from shadcn/ui in `/client/src/components/ui`
-- Layout wrapper (`DashboardLayout`) with sidebar navigation and header
-- Component examples for documentation in `/client/src/components/examples`
+- **Technology Stack:** Node.js, Express.js, TypeScript, Drizzle ORM, Neon Serverless PostgreSQL.
+- **Database:** Drizzle ORM with PostgreSQL, schema in `/shared/schema.ts`, Zod validation.
+- **API Design:** RESTful with JSON responses, authentication, CRUD for products, sales, and reports.
+- **Data Models:** Users, Products, Sales, Suppliers, Purchases, Clients, Fiscal Config.
+- **Architectural Decisions:** Monorepo structure, type safety via shared TypeScript schemas, progressive enhancement (barcode simulation), bilingual support (Brazilian Portuguese), mobile-first design, fiscal responsibility (user-provided NFe credentials), and invoice data validation with Zod.
+- **Security Note:** Multi-tenant infrastructure is not fully implemented. Backend endpoints require tenant scoping (`conta_id` validation) for robust security before enabling the `/admin` panel. Server-side session/token validation is a future enhancement.
 
-**Key Features:**
-- Product management with barcode support and expiration date tracking
-- PDV (Point of Sale) with real-time barcode scanner simulation
-- Sales tracking with cart functionality
-- Dashboard with inventory alerts (low stock, expiring products)
-- Reports for sales analysis and expiration monitoring
-- Supplier management with purchase history and spending tracking
-- Purchase registration system with product linking to suppliers
-- Client management with purchase history tracking
-- **Financial Management Module:**
-  - Accounts Payable (Contas a Pagar)
-  - Accounts Receivable (Contas a Receber)
-  - Projected POS Cash Flow (Fluxo de PDV Projetado)
-  - Simplified Income Statement - DRE (DRE Simplificado)
-- **Brazilian Invoice (NF-e/NFC-e) Emission** via Focus NFe API
-- Fiscal configuration page with legal disclaimer
-- Optional invoice emission after each sale
+## External Dependencies
 
-### Backend Architecture
-
-**Technology Stack:**
-- Node.js with Express.js for REST API
-- TypeScript for type safety
-- Drizzle ORM for database operations
-- Neon Serverless PostgreSQL adapter
-
-**Database Layer:**
-- Drizzle ORM with PostgreSQL dialect
-- Schema defined in `/shared/schema.ts` with Zod validation
-- Three main tables: `users`, `produtos` (products), `vendas` (sales)
-- Migration management via drizzle-kit
-
-**API Design:**
-- RESTful endpoints with JSON responses
-- Authentication routes: `/api/auth/register`, `/api/auth/login`
-- Product CRUD: `/api/produtos/*` with barcode lookup support
-- Sales: `/api/vendas` with multi-item support via JSON array
-- Reports: Daily/weekly aggregations and expiring products filter
-
-**Data Models:**
-- **Users:** id (UUID), email (unique), senha (password), nome (name)
-- **Products:** id (serial), nome, categoria, preco, quantidade, estoque_minimo, codigo_barras, vencimento
-- **Sales:** id (serial), produto, quantidade_vendida, valor_total, data, itens (JSON for multi-item sales), cliente_id
-- **Suppliers (Fornecedores):** id (serial), nome, cnpj, telefone, email, endereco, observacoes, data_cadastro
-- **Purchases (Compras):** id (serial), fornecedor_id, produto_id, quantidade, valor_unitario, valor_total, data, observacoes
-- **Clients (Clientes):** id (serial), nome, cpf_cnpj, telefone, email, endereco, observacoes, data_cadastro
-- **Fiscal Config (ConfigFiscal):** id (serial), cnpj, focus_nfe_token (encrypted), ambiente (homologacao/producao)
-
-**Storage Strategy:**
-- In-memory storage implementation (`MemStorage`) for development/testing
-- Interface-based design (`IStorage`) allows swapping to database implementation
-- Seed data includes demo users and products with various expiration dates
-
-### External Dependencies
-
-**UI Component Library:**
-- Radix UI primitives for accessible components (accordion, dialog, dropdown, select, etc.)
-- shadcn/ui configuration for consistent design system
-- Lucide React for iconography
-
-**Database & ORM:**
-- Neon Serverless PostgreSQL (`@neondatabase/serverless`)
-- Drizzle ORM (`drizzle-orm`, `drizzle-zod`)
-- PostgreSQL session store (`connect-pg-simple`) for Express sessions
-
-**Form Management:**
-- React Hook Form with Zod resolvers (`@hookform/resolvers`)
-- Zod for schema validation and type inference
-
-**Utilities:**
-- date-fns for date manipulation and formatting
-- clsx and tailwind-merge for conditional styling
-- class-variance-authority for component variants
-
-**Development Tools:**
-- Vite plugins for Replit integration (cartographer, dev banner, runtime error overlay)
-- TypeScript compiler with strict mode
-- ESBuild for production server bundling
-
-**Authentication:**
-- Basic email/password authentication (currently plain text, needs bcrypt implementation)
-- Session-based approach with cookies
-
-**Key Architectural Decisions:**
-
-1. **Monorepo Structure:** Client, server, and shared code in single repository with path aliases
-2. **Type Safety:** Shared TypeScript schemas between frontend and backend via `/shared` directory
-3. **Progressive Enhancement:** Barcode scanner simulated via keyboard events for accessibility
-4. **Bilingual Support:** All UI text in Brazilian Portuguese for target audience
-5. **Mobile-First:** Responsive design prioritizing small screens for shop floor use
-6. **Fiscal Responsibility:** Each user provides their own Focus NFe credentials - no fiscal costs assumed by developer
-7. **Invoice Validation:** Zod schemas validate all invoice data before sending to Focus NFe API
-
-### Recent Changes (October 2025)
-
-**Admin Panel Reorganization (October 25, 2025):**
-- Reorganized admin panel structure to support two levels of administration:
-  - `/admin-publico` - Super admin panel for system owner (Pavisoft)
-  - `/admin` - Account admin panel for customers (temporarily disabled)
-- Moved complete super admin functionality from `/admin` to `/admin-publico`:
-  - User management (view, edit, delete all system users)
-  - Plan management (create, edit, delete subscription plans)
-  - Asaas payment integration and webhook handling
-  - System dashboard with metrics
-- Created new `/admin` panel for account administrators:
-  - Designed for customers who purchased plans
-  - Intended to manage employees and their permissions (PDV access, etc.)
-  - Currently **disabled** due to security considerations
-- Updated sidebar navigation to show admin panel only for `is_admin === "true"` users
-- Added fields to user schema:
-  - `conta_id` (text) - For future multi-tenant account grouping
-  - `permissoes` (text) - For storing employee permissions in JSON format
-- **Security Note:** Multi-tenant infrastructure is not yet implemented. The `/admin` panel is disabled to prevent data leakage between different accounts. Backend endpoints need tenant scoping (`conta_id` validation) before enabling this feature.
-
-**Employee Management System in Admin Panel (October 25, 2025):**
-- Implemented comprehensive employee management features in `/admin` panel:
-  - **Add New Employees:** Create employee accounts with name, email, password, and job title (cargo)
-  - **Edit Employee Data:** Update employee information including name, email, optional password change, and cargo
-  - **Job Title Field:** Added `cargo` field to funcionarios schema to store employee roles (Vendedor, Gerente, Caixa, etc.)
-  - **Status Management:** Toggle employees between active/inactive status with dedicated button
-  - **Permission Management:** Granular permission control by category:
-    - PDV / Caixa (Point of Sale)
-    - Produtos (Products)
-    - Inventário (Inventory)
-    - Relatórios (Reports)
-    - Clientes (Clients)
-    - Fornecedores (Suppliers)
-    - Financeiro (Financial)
-    - Config. Fiscal (Fiscal Configuration)
-  - **Delete Employees:** Remove employee accounts with confirmation dialog
-  - **Account Information Tab:** Display company info, current plan, and team summary statistics
-- UI improvements:
-  - Clean tabbed interface with "Informações da Conta" and "Funcionários" tabs
-  - Comprehensive employee table showing name, email, cargo, registration date, and status
-  - Modal dialogs for creating and editing employees with proper validation
-  - Visual permission cards with checkboxes for easy management
-  - Responsive design for mobile and desktop use
-  - All interactive elements include data-testid attributes for testing
-- Backend enhancements:
-  - Updated POST `/api/funcionarios` to accept cargo field
-  - PATCH `/api/funcionarios/:id` supports updating all employee fields including optional password
-  - Proper default permissions initialization when creating new employees
-
-**Institutional Website Landing Page (October 24, 2025):**
-- Created modern institutional landing page in Slack style at `/` route
-- Implemented comprehensive Privacy Policy page at `/privacy`
-- Moved authentication to `/login` (previously at `/`)
-- Landing page features:
-  - Hero section with gradient headline and prominent CTAs
-  - Features section showcasing 6 core system capabilities
-  - Pricing section comparing Free vs Premium plans
-  - Sticky navigation bar with links to features, pricing, and privacy
-  - Responsive footer with organized links
-  - Mobile-first responsive design
-  - All interactive elements include data-testid attributes for testing
-- Updated Login page to connect to existing `/api/auth/login` endpoint
-- Login now properly handles authentication state and error messages
-- Design follows Slack-inspired principles: clean, minimalistic, clear CTAs
-- Complete routing structure:
-  - `/` - Landing page (public)
-  - `/login` - Authentication page (public)
-  - `/register` - Registration page (public)
-  - `/privacy` - Privacy Policy (public)
-  - `/dashboard` and other routes - Management system (authenticated)
-
-### Recent Changes (October 2025)
-
-**Financial Management Module (October 24, 2025):**
-- Created new "Gestão Financeira" category in sidebar navigation
-- Added 4 new financial management pages:
-  - Contas a Pagar (Accounts Payable) - `/financeiro/contas-pagar`
-  - Contas a Receber (Accounts Receivable) - `/financeiro/contas-receber`
-  - Fluxo de PDV Projetado (Projected POS Cash Flow) - `/financeiro/fluxo-pdv`
-  - DRE Simplificado (Simplified Income Statement) - `/financeiro/dre`
-- Reorganized sidebar menu into logical sections: General, Estoque, Gestão Financeira, Sistema
-- Added appropriate icons for each financial feature (CreditCard, DollarSign, TrendingUp, LineChart)
-
-**Progressive Web App (PWA) Implementation (October 24, 2025):**
-- Implemented full PWA functionality with service workers
-- Created `manifest.json` with app configuration:
-  - App name, icons, theme colors, and display settings
-  - Shortcuts to PDV and Products pages
-  - Optimized for mobile installation
-- Service worker features:
-  - Offline support with intelligent caching strategy
-  - Caches static assets (JS, CSS, fonts, images)
-  - Falls back to cached version when offline
-  - Automatic updates with user notification
-- Generated custom app icons (192x192 and 512x512)
-- Added PWA meta tags for iOS and Android compatibility
-- Service worker registration only in production mode
-- Users can now install the app on their devices (mobile and desktop)
-
-**Non-Fiscal Receipt Feature (October 24, 2025):**
-- Added "Cupom Não-Fiscal" option in PDV after completing a sale
-- New button alongside existing NFC-e emission options
-- Generates formatted non-fiscal receipt with:
-  - Company information (if configured)
-  - Sale items with prices and quantities
-  - Total amount and discounts
-  - Clear warning that document has no fiscal value
-- Features:
-  - Copy receipt text to clipboard
-  - Print receipt option via browser print dialog
-  - Professional receipt formatting with dashed borders
-  - Responsive design for mobile and desktop
-
-**Brazilian Invoice System Implementation:**
-- Added Focus NFe API integration service (`server/focusnfe.ts`)
-- Created fiscal configuration page with legal disclaimer
-- Implemented NFC-e emission endpoints with Zod validation
-- Integrated invoice emission dialog in PDV (optional after sales)
-- Schema validation for all invoice payloads (`shared/nfce-schema.ts`)
-- Correct item calculation using actual product prices and subtotals
+- **UI Components:** Radix UI primitives, shadcn/ui, Lucide React (iconography).
+- **Database:** Neon Serverless PostgreSQL (`@neondatabase/serverless`), Drizzle ORM (`drizzle-orm`, `drizzle-zod`), `connect-pg-simple`.
+- **Form Management:** React Hook Form, Zod (`@hookform/resolvers`).
+- **Utilities:** `date-fns`, `clsx`, `tailwind-merge`, `class-variance-authority`.
+- **Development Tools:** Vite plugins for Replit, TypeScript, ESBuild.
+- **Authentication:** Basic email/password (needs bcrypt).
+- **Invoice Integration:** Focus NFe API.

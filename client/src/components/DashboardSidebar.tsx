@@ -25,13 +25,11 @@ const financeMenuItems = [
 const configMenuItems = [
   { title: "Configurações", url: "/configuracoes", icon: Settings },
   { title: "Config. Fiscal", url: "/config-fiscal", icon: FileText },
+  { title: "Painel Admin", url: "/admin", icon: Shield },
 ];
 
 export default function DashboardSidebar() {
   const [location] = useLocation();
-  
-  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-  const isAdmin = currentUser.is_admin === "true";
 
   return (
     <Sidebar>
@@ -103,16 +101,6 @@ export default function DashboardSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              {isAdmin && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={location === "/admin"}>
-                    <Link href="/admin" data-testid="link-painel-admin">
-                      <Shield className="h-4 w-4" />
-                      <span>Painel Admin</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

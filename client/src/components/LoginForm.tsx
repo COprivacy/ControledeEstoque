@@ -94,16 +94,6 @@ export default function LoginForm({
             <Button type="submit" className="w-full" data-testid="button-login" disabled={isLoading}>
               {isLoading ? "Entrando..." : "Entrar"}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={onRegisterClick}
-              data-testid="button-register-nav"
-              disabled={isLoading}
-            >
-              Criar Conta
-            </Button>
           </CardFooter>
         </form>
       </Card>

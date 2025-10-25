@@ -155,11 +155,6 @@ export default function Landing() {
                   Entrar
                 </Button>
               </Link>
-              <Link href="/register">
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg shadow-blue-500/50">
-                  Criar Conta
-                </Button>
-              </Link>
             </div>
             <div className="md:hidden">
               <Link href="/login">

@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";
@@ -44,56 +45,72 @@ function Router() {
       <Route path="/produtos">
         {() => (
           <DashboardLayout>
-            <Products />
+            <ProtectedRoute requiredPermission="produtos">
+              <Products />
+            </ProtectedRoute>
           </DashboardLayout>
         )}
       </Route>
       <Route path="/produtos/adicionar">
         {() => (
           <DashboardLayout>
-            <AddProduct />
+            <ProtectedRoute requiredPermission="produtos">
+              <AddProduct />
+            </ProtectedRoute>
           </DashboardLayout>
         )}
       </Route>
       <Route path="/produtos/editar/:id">
         {() => (
           <DashboardLayout>
-            <AddProduct />
+            <ProtectedRoute requiredPermission="produtos">
+              <AddProduct />
+            </ProtectedRoute>
           </DashboardLayout>
         )}
       </Route>
       <Route path="/inventario">
         {() => (
           <DashboardLayout>
-            <Inventory />
+            <ProtectedRoute requiredPermission="inventario">
+              <Inventory />
+            </ProtectedRoute>
           </DashboardLayout>
         )}
       </Route>
       <Route path="/fornecedores">
         {() => (
           <DashboardLayout>
-            <Fornecedores />
+            <ProtectedRoute requiredPermission="fornecedores">
+              <Fornecedores />
+            </ProtectedRoute>
           </DashboardLayout>
         )}
       </Route>
       <Route path="/clientes">
         {() => (
           <DashboardLayout>
-            <Clientes />
+            <ProtectedRoute requiredPermission="clientes">
+              <Clientes />
+            </ProtectedRoute>
           </DashboardLayout>
         )}
       </Route>
       <Route path="/pdv">
         {() => (
           <DashboardLayout>
-            <PDV />
+            <ProtectedRoute requiredPermission="pdv">
+              <PDV />
+            </ProtectedRoute>
           </DashboardLayout>
         )}
       </Route>
       <Route path="/relatorios">
         {() => (
           <DashboardLayout>
-            <Reports />
+            <ProtectedRoute requiredPermission="relatorios">
+              <Reports />
+            </ProtectedRoute>
           </DashboardLayout>
         )}
       </Route>
@@ -107,35 +124,45 @@ function Router() {
       <Route path="/config-fiscal">
         {() => (
           <DashboardLayout>
-            <ConfigFiscal />
+            <ProtectedRoute requiredPermission="config_fiscal">
+              <ConfigFiscal />
+            </ProtectedRoute>
           </DashboardLayout>
         )}
       </Route>
       <Route path="/financeiro/contas-pagar">
         {() => (
           <DashboardLayout>
-            <ContasPagar />
+            <ProtectedRoute requiredPermission="financeiro">
+              <ContasPagar />
+            </ProtectedRoute>
           </DashboardLayout>
         )}
       </Route>
       <Route path="/financeiro/contas-receber">
         {() => (
           <DashboardLayout>
-            <ContasReceber />
+            <ProtectedRoute requiredPermission="financeiro">
+              <ContasReceber />
+            </ProtectedRoute>
           </DashboardLayout>
         )}
       </Route>
       <Route path="/financeiro/fluxo-pdv">
         {() => (
           <DashboardLayout>
-            <FluxoPDV />
+            <ProtectedRoute requiredPermission="financeiro">
+              <FluxoPDV />
+            </ProtectedRoute>
           </DashboardLayout>
         )}
       </Route>
       <Route path="/financeiro/dre">
         {() => (
           <DashboardLayout>
-            <DRE />
+            <ProtectedRoute requiredPermission="financeiro">
+              <DRE />
+            </ProtectedRoute>
           </DashboardLayout>
         )}
       </Route>

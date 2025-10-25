@@ -142,7 +142,17 @@ export const insertCompraSchema = createInsertSchema(compras).omit({
   valor_total: z.coerce.number().positive(),
   fornecedor_id: z.number().int().positive(),
   produto_id: z.number().int().positive(),
+});
 
+export const insertConfigFiscalSchema = createInsertSchema(configFiscal).omit({
+  id: true,
+  updated_at: true,
+}).extend({
+  cnpj: z.string().min(14, "CNPJ inválido"),
+  razao_social: z.string().min(1, "Razão social é obrigatória"),
+  focus_nfe_api_key: z.string().min(1, "Chave API é obrigatória"),
+  ambiente: z.enum(["homologacao", "producao"]).default("homologacao"),
+});
 
 export const planos = pgTable("planos", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -187,24 +197,22 @@ export const insertLogAdminSchema = createInsertSchema(logsAdmin).omit({
   id: true,
 });
 
+export const insertContasPagarSchema = createInsertSchema(contasPagar).omit({
+  id: true,
+  data_cadastro: true,
+});
+
+export const insertContasReceberSchema = createInsertSchema(contasReceber).omit({
+  id: true,
+  data_cadastro: true,
+});
+
 export type InsertPlano = z.infer<typeof insertPlanoSchema>;
 export type Plano = typeof planos.$inferSelect;
 export type InsertConfigAsaas = z.infer<typeof insertConfigAsaasSchema>;
 export type ConfigAsaas = typeof configAsaas.$inferSelect;
 export type InsertLogAdmin = z.infer<typeof insertLogAdminSchema>;
 export type LogAdmin = typeof logsAdmin.$inferSelect;
-
-});
-
-export const insertConfigFiscalSchema = createInsertSchema(configFiscal).omit({
-  id: true,
-  updated_at: true,
-}).extend({
-  cnpj: z.string().min(14, "CNPJ inválido"),
-  razao_social: z.string().min(1, "Razão social é obrigatória"),
-  focus_nfe_api_key: z.string().min(1, "Chave API é obrigatória"),
-  ambiente: z.enum(["homologacao", "producao"]).default("homologacao"),
-});
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -220,16 +228,6 @@ export type InsertCompra = z.infer<typeof insertCompraSchema>;
 export type Compra = typeof compras.$inferSelect;
 export type InsertConfigFiscal = z.infer<typeof insertConfigFiscalSchema>;
 export type ConfigFiscal = typeof configFiscal.$inferSelect;
-export const insertContasPagarSchema = createInsertSchema(contasPagar).omit({
-  id: true,
-  data_cadastro: true,
-});
-
-export const insertContasReceberSchema = createInsertSchema(contasReceber).omit({
-  id: true,
-  data_cadastro: true,
-});
-
 export type InsertContasPagar = z.infer<typeof insertContasPagarSchema>;
 export type ContasPagar = typeof contasPagar.$inferSelect;
 export type InsertContasReceber = z.infer<typeof insertContasReceberSchema>;

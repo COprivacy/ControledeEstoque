@@ -33,9 +33,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const user = await storage.createUser(userWithTrial);
-      res.json({ 
-        id: user.id, 
-        email: user.email, 
+      res.json({
+        id: user.id,
+        email: user.email,
         nome: user.nome,
         data_criacao: user.data_criacao,
         data_expiracao_trial: user.data_expiracao_trial
@@ -63,6 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User routes
   app.get("/api/users", async (req, res) => {
     try {
       const users = await storage.getUsers();
@@ -86,12 +87,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const updates = req.body;
-      
+
       delete updates.senha;
       delete updates.id;
-      
+
       const updatedUser = await storage.updateUser(id, updates);
-      
+
       if (!updatedUser) {
         return res.status(404).json({ error: "Usuário não encontrado" });
       }
@@ -117,7 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const deleted = await storage.deleteUser(id);
-      
+
       if (!deleted) {
         return res.status(404).json({ error: "Usuário não encontrado" });
       }
@@ -208,7 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/config-asaas/test", async (req, res) => {
     try {
       const { api_key, ambiente } = req.body;
-      
+
       if (!api_key) {
         return res.status(400).json({ error: "API Key é obrigatória" });
       }
@@ -216,11 +217,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { AsaasService } = await import('./asaas');
       const asaas = new AsaasService({ apiKey: api_key, ambiente });
       const result = await asaas.testConnection();
-      
+
       if (result.success) {
         await storage.updateConfigAsaasStatus('conectado', new Date().toISOString());
       }
-      
+
       res.json(result);
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });

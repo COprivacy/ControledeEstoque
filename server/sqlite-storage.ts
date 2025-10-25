@@ -315,6 +315,11 @@ export class SQLiteStorage implements IStorage {
     return this.users.get(id);
   }
 
+  async getUserById(id: string): Promise<User | undefined> {
+    const stmt = this.db.prepare('SELECT * FROM users WHERE id = ?');
+    return stmt.get(id);
+  }
+
   async getUserByEmail(email: string): Promise<User | undefined> {
     for (const user of this.users.values()) {
       if (user.email === email) {
@@ -328,19 +333,58 @@ export class SQLiteStorage implements IStorage {
     const id = randomUUID();
     const newUser: User = { ...insertUser, id };
     this.users.set(id, newUser);
+    const stmt = this.db.prepare(`
+      INSERT INTO users (id, email, senha, nome, plano, is_admin, data_criacao, data_expiracao_trial, data_expiracao_plano, ultimo_acesso, status, asaas_customer_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(
+      id,
+      newUser.email,
+      newUser.senha,
+      newUser.nome,
+      newUser.plano || 'free',
+      newUser.is_admin || 'false',
+      newUser.data_criacao || new Date().toISOString(),
+      newUser.data_expiracao_trial || null,
+      newUser.data_expiracao_plano || null,
+      newUser.ultimo_acesso || null,
+      newUser.status || 'ativo',
+      newUser.asaas_customer_id || null
+    );
     await this.persistData();
     return newUser;
   }
 
-  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (!user) {
-      return undefined;
-    }
-    const updatedUser = { ...user, ...updates };
-    this.users.set(id, updatedUser);
-    await this.persistData();
-    return updatedUser;
+  async updateUser(id: string, updates: Partial<User>): Promise<User | null> {
+    const stmt = this.db.prepare(`
+      UPDATE users SET 
+        nome = COALESCE(?, nome),
+        email = COALESCE(?, email),
+        plano = COALESCE(?, plano),
+        is_admin = COALESCE(?, is_admin),
+        status = COALESCE(?, status),
+        data_expiracao_plano = COALESCE(?, data_expiracao_plano),
+        ultimo_acesso = COALESCE(?, ultimo_acesso)
+      WHERE id = ?
+    `);
+
+    stmt.run(
+      updates.nome || null,
+      updates.email || null,
+      updates.plano || null,
+      updates.is_admin || null,
+      updates.status || null,
+      updates.data_expiracao_plano || null,
+      updates.ultimo_acesso || null,
+      id
+    );
+
+    return this.getUserById(id);
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    const stmt = this.db.prepare('DELETE FROM users WHERE id = ?');
+    stmt.run(id);
   }
 
   async getProdutos(): Promise<Produto[]> {
@@ -514,9 +558,9 @@ export class SQLiteStorage implements IStorage {
   async saveConfigFiscal(insertConfig: InsertConfigFiscal): Promise<ConfigFiscal> {
     const updated_at = new Date().toISOString();
     const config: Omit<ConfigFiscal, 'id'> = { ...insertConfig, updated_at };
-    
+
     const existingConfig = await this.getConfigFiscal();
-    
+
     if (existingConfig) {
       const stmt = this.db.prepare(`
         UPDATE config_fiscal 
@@ -524,10 +568,10 @@ export class SQLiteStorage implements IStorage {
         WHERE id = ?
       `);
       stmt.run(
-        config.cnpj, 
-        config.razao_social, 
-        config.focus_nfe_api_key, 
-        config.ambiente, 
+        config.cnpj,
+        config.razao_social,
+        config.focus_nfe_api_key,
+        config.ambiente,
         config.updated_at,
         existingConfig.id
       );
@@ -538,10 +582,10 @@ export class SQLiteStorage implements IStorage {
         VALUES (?, ?, ?, ?, ?)
       `);
       const info = stmt.run(
-        config.cnpj, 
-        config.razao_social, 
-        config.focus_nfe_api_key, 
-        config.ambiente, 
+        config.cnpj,
+        config.razao_social,
+        config.focus_nfe_api_key,
+        config.ambiente,
         config.updated_at
       );
       return { ...config, id: Number(info.lastInsertRowid) };
@@ -618,15 +662,14 @@ export class SQLiteStorage implements IStorage {
     stmt.run(id);
   }
 
-  async deleteUser(id: string): Promise<boolean> {
-    const deleted = this.users.delete(id);
-    if (deleted) await this.persistData();
-    return deleted;
+  async deleteUser(id: string): Promise<void> {
+    const stmt = this.db.prepare('DELETE FROM users WHERE id = ?');
+    stmt.run(id);
   }
 
   // Planos
   async getPlanos(): Promise<any[]> {
-    const stmt = this.db.prepare('SELECT * FROM planos ORDER BY preco ASC');
+    const stmt = this.db.prepare('SELECT * FROM planos WHERE ativo = "true" ORDER BY preco ASC');
     return stmt.all();
   }
 
@@ -640,7 +683,7 @@ export class SQLiteStorage implements IStorage {
       data.preco,
       data.duracao_dias,
       data.descricao || null,
-      data.ativo || 'true',
+      data.ativo || "true",
       data.data_criacao
     );
     return { ...data, id: Number(info.lastInsertRowid) };
@@ -661,53 +704,57 @@ export class SQLiteStorage implements IStorage {
   }
 
   // Config Asaas
-  async getConfigAsaas(): Promise<any> {
+  async getConfigAsaas(): Promise<any | null> {
     const stmt = this.db.prepare('SELECT * FROM config_asaas ORDER BY id DESC LIMIT 1');
-    return stmt.get();
+    return stmt.get() || null;
   }
 
   async saveConfigAsaas(data: any): Promise<any> {
-    const updated_at = new Date().toISOString();
     const existing = await this.getConfigAsaas();
-    
+
     if (existing) {
       const stmt = this.db.prepare(`
-        UPDATE config_asaas 
-        SET api_key = ?, ambiente = ?, webhook_url = ?, account_id = ?, updated_at = ?
+        UPDATE config_asaas SET 
+          api_key = ?,
+          ambiente = ?,
+          webhook_url = ?,
+          account_id = ?,
+          updated_at = ?
         WHERE id = ?
       `);
       stmt.run(
         data.api_key,
-        data.ambiente || 'sandbox',
+        data.ambiente,
         data.webhook_url || null,
         data.account_id || null,
-        updated_at,
+        data.updated_at,
         existing.id
       );
-      return { ...data, id: existing.id, updated_at };
+      return { ...data, id: existing.id };
     } else {
       const stmt = this.db.prepare(`
-        INSERT INTO config_asaas (api_key, ambiente, webhook_url, account_id, updated_at)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO config_asaas (api_key, ambiente, webhook_url, account_id, status_conexao, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
       `);
       const info = stmt.run(
         data.api_key,
-        data.ambiente || 'sandbox',
+        data.ambiente,
         data.webhook_url || null,
         data.account_id || null,
-        updated_at
+        "desconectado",
+        data.updated_at
       );
-      return { ...data, id: Number(info.lastInsertRowid), updated_at };
+      return { ...data, id: Number(info.lastInsertRowid), status_conexao: "desconectado" };
     }
   }
 
-  async updateConfigAsaasStatus(status: string, sincronizacao: string): Promise<void> {
+  async updateConfigAsaasStatus(status: string): Promise<void> {
     const stmt = this.db.prepare(`
       UPDATE config_asaas 
       SET status_conexao = ?, ultima_sincronizacao = ?
       WHERE id = (SELECT id FROM config_asaas ORDER BY id DESC LIMIT 1)
     `);
-    stmt.run(status, sincronizacao);
+    stmt.run(status, new Date().toISOString());
   }
 
   // Logs Admin

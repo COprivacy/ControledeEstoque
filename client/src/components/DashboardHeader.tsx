@@ -52,6 +52,7 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
     logoUrl: "",
     storeName: "Controle de Estoque Simples"
   });
+  const [userName, setUserName] = useState("");
 
   useEffect(() => {
     const saved = localStorage.getItem("customization");
@@ -76,7 +77,26 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
         document.documentElement.style.setProperty('--background', hexToHSL(customization.backgroundColor));
       }
     }
+
+    // Buscar nome do usuário do localStorage
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserName(user.nome || "Usuário");
+      } catch (e) {
+        setUserName("Usuário");
+      }
+    }
   }, []);
+
+  const getInitials = (name: string) => {
+    const parts = name.split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
 
   return (
     <header className="border-b bg-background">
@@ -89,10 +109,26 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
         </div>
         <div className="flex items-center gap-4">
           <ThemeToggle />
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground" data-testid="text-user-email">{userEmail}</span>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="gap-2" data-testid="button-user-menu">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                    {userName ? getInitials(userName) : "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium" data-testid="text-user-name">
+                  {userName || "Usuário"}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem className="flex flex-col items-start gap-1 cursor-default" disabled>
+                <span className="text-xs text-muted-foreground">Email</span>
+                <span className="text-sm font-medium" data-testid="text-user-email">{userEmail}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             variant="outline"
             size="sm"

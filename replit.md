@@ -130,6 +130,25 @@ Preferred communication style: Simple, everyday language.
 
 ### Recent Changes (October 2025)
 
+**Admin Panel Reorganization (October 25, 2025):**
+- Reorganized admin panel structure to support two levels of administration:
+  - `/admin-publico` - Super admin panel for system owner (Pavisoft)
+  - `/admin` - Account admin panel for customers (temporarily disabled)
+- Moved complete super admin functionality from `/admin` to `/admin-publico`:
+  - User management (view, edit, delete all system users)
+  - Plan management (create, edit, delete subscription plans)
+  - Asaas payment integration and webhook handling
+  - System dashboard with metrics
+- Created new `/admin` panel for account administrators:
+  - Designed for customers who purchased plans
+  - Intended to manage employees and their permissions (PDV access, etc.)
+  - Currently **disabled** due to security considerations
+- Updated sidebar navigation to show admin panel only for `is_admin === "true"` users
+- Added fields to user schema:
+  - `conta_id` (text) - For future multi-tenant account grouping
+  - `permissoes` (text) - For storing employee permissions in JSON format
+- **Security Note:** Multi-tenant infrastructure is not yet implemented. The `/admin` panel is disabled to prevent data leakage between different accounts. Backend endpoints need tenant scoping (`conta_id` validation) before enabling this feature.
+
 **Institutional Website Landing Page (October 24, 2025):**
 - Created modern institutional landing page in Slack style at `/` route
 - Implemented comprehensive Privacy Policy page at `/privacy`

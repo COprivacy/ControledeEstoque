@@ -342,7 +342,7 @@ export class SQLiteStorage implements IStorage {
       permissoesFuncionarios: Object.fromEntries(this.permissoesFuncionarios),
     };
 
-    this.db.prepare('CREATE TABLE IF NOT EXISTS storage (key TEXT PRIMARY KEY, data TEXT)').run();
+    this.db.exec('CREATE TABLE IF NOT EXISTS storage (key TEXT PRIMARY KEY, data TEXT)');
     this.db.prepare('INSERT OR REPLACE INTO storage (key, data) VALUES (?, ?)').run('storage', JSON.stringify(data));
   }
 
@@ -744,41 +744,47 @@ export class SQLiteStorage implements IStorage {
   }
 
   async saveConfigAsaas(data: any): Promise<any> {
-    const existing = await this.getConfigAsaas();
+    try {
+      const existing = await this.getConfigAsaas();
+      const updatedAt = data.updated_at || new Date().toISOString();
 
-    if (existing) {
-      const stmt = this.db.prepare(`
-        UPDATE config_asaas SET 
-          api_key = ?,
-          ambiente = ?,
-          webhook_url = ?,
-          account_id = ?,
-          updated_at = ?
-        WHERE id = ?
-      `);
-      stmt.run(
-        data.api_key,
-        data.ambiente,
-        data.webhook_url || null,
-        data.account_id || null,
-        data.updated_at,
-        existing.id
-      );
-      return { ...data, id: existing.id };
-    } else {
-      const stmt = this.db.prepare(`
-        INSERT INTO config_asaas (api_key, ambiente, webhook_url, account_id, status_conexao, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `);
-      const info = stmt.run(
-        data.api_key,
-        data.ambiente,
-        data.webhook_url || null,
-        data.account_id || null,
-        "desconectado",
-        data.updated_at
-      );
-      return { ...data, id: Number(info.lastInsertRowid), status_conexao: "desconectado" };
+      if (existing) {
+        const stmt = this.db.prepare(`
+          UPDATE config_asaas SET 
+            api_key = ?,
+            ambiente = ?,
+            webhook_url = ?,
+            account_id = ?,
+            updated_at = ?
+          WHERE id = ?
+        `);
+        stmt.run(
+          data.api_key,
+          data.ambiente,
+          data.webhook_url || null,
+          data.account_id || null,
+          updatedAt,
+          existing.id
+        );
+        return { ...data, id: existing.id, updated_at: updatedAt };
+      } else {
+        const stmt = this.db.prepare(`
+          INSERT INTO config_asaas (api_key, ambiente, webhook_url, account_id, status_conexao, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `);
+        const info = stmt.run(
+          data.api_key,
+          data.ambiente,
+          data.webhook_url || null,
+          data.account_id || null,
+          "desconectado",
+          updatedAt
+        );
+        return { ...data, id: Number(info.lastInsertRowid), status_conexao: "desconectado", updated_at: updatedAt };
+      }
+    } catch (error) {
+      console.error("Erro no saveConfigAsaas:", error);
+      throw new Error(`Erro ao salvar configuração Asaas: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
   }
 
@@ -815,7 +821,7 @@ export class SQLiteStorage implements IStorage {
   async getFuncionarios(): Promise<Funcionario[]> {
     return Array.from(this.funcionarios.values());
   }
-  
+
   async getFuncionariosByContaId(contaId: string): Promise<Funcionario[]> {
     return Array.from(this.funcionarios.values()).filter(f => f.conta_id === contaId);
   }
@@ -859,7 +865,7 @@ export class SQLiteStorage implements IStorage {
 
   async savePermissoesFuncionario(funcionarioId: string, permissoes: Partial<PermissaoFuncionario>): Promise<PermissaoFuncionario> {
     const existingPermissoes = this.permissoesFuncionarios.get(funcionarioId) || [];
-    
+
     if (existingPermissoes.length > 0) {
       // Atualizar permissões existentes
       const updated = {

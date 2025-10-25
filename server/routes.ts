@@ -232,12 +232,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/config-asaas", async (req, res) => {
     try {
-      const config = await storage.saveConfigAsaas(req.body);
+      const configData = {
+        ...req.body,
+        updated_at: new Date().toISOString()
+      };
+      const config = await storage.saveConfigAsaas(configData);
       res.json({
         ...config,
         api_key: '***'
       });
     } catch (error) {
+      console.error("Erro ao salvar config Asaas:", error);
       res.status(500).json({ error: "Erro ao salvar configuração Asaas" });
     }
   });

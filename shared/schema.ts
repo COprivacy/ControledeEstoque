@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -198,23 +198,41 @@ export const insertConfigAsaasSchema = createInsertSchema(configAsaas).omit({
 export const insertLogAdminSchema = createInsertSchema(logsAdmin).omit({
   id: true,
 });
-
-export const insertContasPagarSchema = createInsertSchema(contasPagar).omit({
-  id: true,
-  data_cadastro: true,
-});
-
-export const insertContasReceberSchema = createInsertSchema(contasReceber).omit({
-  id: true,
-  data_cadastro: true,
-});
-
-export type InsertPlano = z.infer<typeof insertPlanoSchema>;
-export type Plano = typeof planos.$inferSelect;
-export type InsertConfigAsaas = z.infer<typeof insertConfigAsaasSchema>;
-export type ConfigAsaas = typeof configAsaas.$inferSelect;
-export type InsertLogAdmin = z.infer<typeof insertLogAdminSchema>;
 export type LogAdmin = typeof logsAdmin.$inferSelect;
+export type InsertLogAdmin = z.infer<typeof insertLogAdminSchema>;
+
+// Funcionários (multi-tenant)
+export const funcionarios = pgTable("funcionarios", {
+  id: text("id").primaryKey(),
+  conta_id: text("conta_id").notNull(), // ID do usuário dono da conta
+  nome: text("nome").notNull(),
+  email: text("email").notNull(),
+  senha: text("senha").notNull(),
+  status: text("status").notNull().default("ativo"),
+  data_criacao: text("data_criacao"),
+});
+
+export const insertFuncionarioSchema = createInsertSchema(funcionarios);
+export type Funcionario = typeof funcionarios.$inferSelect;
+export type InsertFuncionario = z.infer<typeof insertFuncionarioSchema>;
+
+// Permissões dos funcionários
+export const permissoesFuncionarios = pgTable("permissoes_funcionarios", {
+  id: serial("id").primaryKey(),
+  funcionario_id: text("funcionario_id").notNull(),
+  pdv: text("pdv").notNull().default("false"),
+  produtos: text("produtos").notNull().default("false"),
+  inventario: text("inventario").notNull().default("false"),
+  relatorios: text("relatorios").notNull().default("false"),
+  clientes: text("clientes").notNull().default("false"),
+  fornecedores: text("fornecedores").notNull().default("false"),
+  financeiro: text("financeiro").notNull().default("false"),
+  config_fiscal: text("config_fiscal").notNull().default("false"),
+});
+
+export const insertPermissaoFuncionarioSchema = createInsertSchema(permissoesFuncionarios);
+export type PermissaoFuncionario = typeof permissoesFuncionarios.$inferSelect;
+export type InsertPermissaoFuncionario = z.infer<typeof insertPermissaoFuncionarioSchema>;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;

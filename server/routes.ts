@@ -261,6 +261,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Funcionários (multi-tenant)
+  app.get("/api/funcionarios", async (req, res) => {
+    try {
+      const contaId = req.query.conta_id as string;
+      if (!contaId) {
+        return res.status(400).json({ error: "conta_id é obrigatório" });
+      }
+      const funcionarios = await storage.getFuncionarios(contaId);
+      res.json(funcionarios);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao buscar funcionários" });
+    }
+  });
+
+  app.post("/api/funcionarios", async (req, res) => {
+    try {
+      const { conta_id, nome, email, senha } = req.body;
+      
+      if (!conta_id || !nome || !email || !senha) {
+        return res.status(400).json({ error: "Dados incompletos" });
+      }
+
+      const funcionario = await storage.createFuncionario({
+        conta_id,
+        nome,
+        email,
+        senha,
+        status: "ativo",
+        data_criacao: new Date().toISOString(),
+      });
+
+      // Criar permissões padrão (todas desabilitadas)
+      await storage.savePermissoesFuncionario(funcionario.id, {
+        pdv: "false",
+        produtos: "false",
+        inventario: "false",
+        relatorios: "false",
+        clientes: "false",
+        fornecedores: "false",
+        financeiro: "false",
+        config_fiscal: "false",
+      });
+
+      res.json(funcionario);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao criar funcionário" });
+    }
+  });
+
+  app.patch("/api/funcionarios/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      delete updates.id;
+      delete updates.conta_id;
+      
+      const funcionario = await storage.updateFuncionario(id, updates);
+      
+      if (!funcionario) {
+        return res.status(404).json({ error: "Funcionário não encontrado" });
+      }
+      
+      res.json(funcionario);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao atualizar funcionário" });
+    }
+  });
+
+  app.delete("/api/funcionarios/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteFuncionario(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "Funcionário não encontrado" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao deletar funcionário" });
+    }
+  });
+
+  // Permissões de Funcionários
+  app.get("/api/funcionarios/:id/permissoes", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const permissoes = await storage.getPermissoesFuncionario(id);
+      
+      if (!permissoes) {
+        return res.json({
+          pdv: "false",
+          produtos: "false",
+          inventario: "false",
+          relatorios: "false",
+          clientes: "false",
+          fornecedores: "false",
+          financeiro: "false",
+          config_fiscal: "false",
+        });
+      }
+      
+      res.json(permissoes);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao buscar permissões" });
+    }
+  });
+
+  app.post("/api/funcionarios/:id/permissoes", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const permissoes = await storage.savePermissoesFuncionario(id, req.body);
+      res.json(permissoes);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao salvar permissões" });
+    }
+  });
+
   app.get("/api/produtos", async (req, res) => {
     try {
       const produtos = await storage.getProdutos();

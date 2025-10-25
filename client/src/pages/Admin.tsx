@@ -81,23 +81,38 @@ export default function Admin() {
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
   const { data: employees = [], isLoading } = useQuery<User[]>({
-    queryKey: ["/api/users"],
-    enabled: false,
+    queryKey: ["/api/funcionarios", { conta_id: currentUser.id }],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/funcionarios?conta_id=${currentUser.id}`);
+      return response.json();
+    },
   });
 
-  const accountUsers = [];
+  const { data: allPermissions = {} } = useQuery({
+    queryKey: ["/api/funcionarios/permissoes", currentUser.id],
+    queryFn: async () => {
+      const perms: Record<string, Permission> = {};
+      for (const emp of employees) {
+        const response = await apiRequest("GET", `/api/funcionarios/${emp.id}/permissoes`);
+        perms[emp.id] = await response.json();
+      }
+      return perms;
+    },
+    enabled: employees.length > 0,
+  });
+
+  const accountUsers = employees;
 
   const createEmployeeMutation = useMutation({
     mutationFn: async (userData: typeof newEmployee) => {
-      const response = await apiRequest("POST", "/api/auth/register", {
+      const response = await apiRequest("POST", "/api/funcionarios", {
         ...userData,
-        plano: "free",
-        is_admin: "false",
+        conta_id: currentUser.id,
       });
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios"] });
       toast({
         title: "Funcionário adicionado",
         description: "Novo funcionário criado com sucesso!",
@@ -105,7 +120,7 @@ export default function Admin() {
       setCreateUserOpen(false);
       setNewEmployee({ nome: "", email: "", senha: "" });
     },
-    onError: (error: Error) => {
+    onError: (error: Error) {
       toast({
         title: "Erro ao criar funcionário",
         description: error.message,
@@ -116,11 +131,11 @@ export default function Admin() {
 
   const deleteEmployeeMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await apiRequest("DELETE", `/api/users/${id}`);
+      const response = await apiRequest("DELETE", `/api/funcionarios/${id}`);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios"] });
       toast({
         title: "Funcionário removido",
         description: "Funcionário removido com sucesso.",
@@ -153,21 +168,54 @@ export default function Admin() {
   });
 
   const togglePermission = (userId: string, permission: keyof Permission) => {
-    setPermissions(prev => ({
-      ...prev,
-      [userId]: {
-        ...(prev[userId] || getDefaultPermissions()),
-        [permission]: !(prev[userId]?.[permission] || false),
-      },
-    }));
+    setPermissions(prev => {
+      const current = prev[userId] || allPermissions[userId] || getDefaultPermissions();
+      return {
+        ...prev,
+        [userId]: {
+          ...current,
+          [permission]: current[permission] === "true" ? "false" : "true",
+        },
+      };
+    });
   };
 
+  const openPermissionsDialog = (userId: string) => {
+    setEditPermissionsUser(userId);
+    if (allPermissions[userId]) {
+      setPermissions(prev => ({
+        ...prev,
+        [userId]: allPermissions[userId],
+      }));
+    }
+  };
+
+  const savePermissionsMutation = useMutation({
+    mutationFn: async ({ userId, perms }: { userId: string; perms: Permission }) => {
+      const response = await apiRequest("POST", `/api/funcionarios/${userId}/permissoes`, perms);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios/permissoes"] });
+      toast({
+        title: "Permissões atualizadas",
+        description: "As permissões foram salvas com sucesso.",
+      });
+      setEditPermissionsUser(null);
+      setPermissions({});
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao salvar permissões",
+        description: error instanceof Error ? error.message : "Ocorreu um erro",
+        variant: "destructive",
+      });
+    },
+  });
+
   const savePermissions = (userId: string) => {
-    toast({
-      title: "Permissões atualizadas",
-      description: "As permissões foram salvas com sucesso.",
-    });
-    setEditPermissionsUser(null);
+    const perms = permissions[userId] || getDefaultPermissions();
+    savePermissionsMutation.mutate({ userId, perms });
   };
 
   const calculateDaysRemaining = (expirationDate?: string) => {
@@ -270,27 +318,9 @@ export default function Admin() {
             </CardContent>
           </Card>
 
-          <Alert variant="destructive">
-            <Shield className="h-4 w-4" />
-            <AlertTitle>Funcionalidade em Desenvolvimento</AlertTitle>
-            <AlertDescription>
-              O sistema de gerenciamento de funcionários está temporariamente desabilitado. 
-              Esta funcionalidade requer infraestrutura multi-tenant (separação por contas) que está sendo implementada.
-              Por enquanto, apenas o super admin (em /admin-publico) pode gerenciar todos os usuários do sistema.
-            </AlertDescription>
-          </Alert>
-        </TabsContent>
+          </TabsContent>
 
         <TabsContent value="funcionarios" className="space-y-6">
-          <Alert variant="destructive" className="mb-6">
-            <Shield className="h-4 w-4" />
-            <AlertTitle>Funcionalidade em Desenvolvimento</AlertTitle>
-            <AlertDescription>
-              O gerenciamento de funcionários está temporariamente desabilitado para evitar problemas de segurança.
-              Estamos implementando a infraestrutura de contas multi-tenant necessária para permitir que cada empresa gerencie apenas seus próprios funcionários.
-            </AlertDescription>
-          </Alert>
-          
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold">Funcionários</h2>
@@ -298,7 +328,7 @@ export default function Admin() {
             </div>
             <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
               <DialogTrigger asChild>
-                <Button data-testid="button-add-employee" disabled>
+                <Button data-testid="button-add-employee">
                   <UserPlus className="h-4 w-4 mr-2" />
                   Adicionar Funcionário
                 </Button>
@@ -395,7 +425,7 @@ export default function Admin() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setEditPermissionsUser(employee.id)}
+                              onClick={() => openPermissionsDialog(employee.id)}
                               data-testid={`button-edit-permissions-${employee.id}`}
                             >
                               <Shield className="h-4 w-4 mr-2" />
@@ -458,7 +488,7 @@ export default function Admin() {
                             <div className="ml-2">
                               <input
                                 type="checkbox"
-                                checked={permissions[editPermissionsUser]?.[perm.key as keyof Permission] || false}
+                                checked={(permissions[editPermissionsUser]?.[perm.key as keyof Permission] || allPermissions[editPermissionsUser]?.[perm.key as keyof Permission] || "false") === "true"}
                                 onChange={() => {}}
                                 className="h-4 w-4"
                                 data-testid={`checkbox-permission-${perm.key}`}

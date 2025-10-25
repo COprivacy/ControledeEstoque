@@ -13,7 +13,10 @@ import {
   type Compra,
   type InsertCompra,
   type ConfigFiscal,
-  type InsertConfigFiscal
+  type InsertConfigFiscal,
+  type Funcionario,
+  type InsertFuncionario,
+  type PermissaoFuncionario,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import * as path from 'path';
@@ -32,6 +35,8 @@ export class SQLiteStorage implements IStorage {
   private fornecedores: Map<number, Fornecedor> = new Map();
   private clientes: Map<number, Cliente> = new Map();
   private compras: Map<number, Compra> = new Map();
+  private funcionarios: Map<string, Funcionario> = new Map();
+  private permissoesFuncionarios: Map<string, PermissaoFuncionario[]> = new Map();
 
   private nextUserId = 1;
   private nextProdutoId = 1;
@@ -39,6 +44,7 @@ export class SQLiteStorage implements IStorage {
   private nextFornecedorId = 1;
   private nextClienteId = 1;
   private nextCompraId = 1;
+  private nextFuncionarioId = 1;
 
   constructor(dbPath?: string) {
     const defaultPath = path.join(__dirname, 'database.db');
@@ -184,6 +190,24 @@ export class SQLiteStorage implements IStorage {
         detalhes TEXT,
         data TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS funcionarios (
+        id TEXT PRIMARY KEY,
+        nome TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        senha TEXT NOT NULL,
+        cargo TEXT NOT NULL,
+        data_contratacao TEXT NOT NULL,
+        salario REAL NOT NULL,
+        ativo TEXT NOT NULL DEFAULT 'true'
+      );
+
+      CREATE TABLE IF NOT EXISTS permissoes_funcionarios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        funcionario_id TEXT NOT NULL,
+        permissao TEXT NOT NULL,
+        FOREIGN KEY (funcionario_id) REFERENCES funcionarios(id)
+      );
     `);
   }
 
@@ -255,7 +279,10 @@ export class SQLiteStorage implements IStorage {
 
   private async loadData() {
     try {
-      const data = JSON.parse(this.db.prepare('SELECT data FROM storage LIMIT 1').get()?.data || '{}');
+      const storageData = this.db.prepare('SELECT data FROM storage WHERE key = ? LIMIT 1').get('storage');
+      if (!storageData) return;
+
+      const data = JSON.parse(storageData.data);
 
       this.nextUserId = data.nextUserId || 1;
       this.nextProdutoId = data.nextProdutoId || 1;
@@ -263,6 +290,7 @@ export class SQLiteStorage implements IStorage {
       this.nextFornecedorId = data.nextFornecedorId || 1;
       this.nextClienteId = data.nextClienteId || 1;
       this.nextCompraId = data.nextCompraId || 1;
+      this.nextFuncionarioId = data.nextFuncionarioId || 1;
 
       if (data.users) {
         data.users.forEach((u: User) => this.users.set(u.id, u));
@@ -282,6 +310,14 @@ export class SQLiteStorage implements IStorage {
       if (data.compras) {
         data.compras.forEach((c: Compra) => this.compras.set(c.id, c));
       }
+      if (data.funcionarios) {
+        data.funcionarios.forEach((f: Funcionario) => this.funcionarios.set(f.id, f));
+      }
+      if (data.permissoesFuncionarios) {
+        Object.keys(data.permissoesFuncionarios).forEach(key => {
+          this.permissoesFuncionarios.set(key, data.permissoesFuncionarios[key]);
+        });
+      }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     }
@@ -289,22 +325,25 @@ export class SQLiteStorage implements IStorage {
 
   private async persistData() {
     const data = {
-      users: Array.from(this.users.values()),
-      produtos: Array.from(this.produtos.values()),
-      vendas: Array.from(this.vendas.values()),
-      fornecedores: Array.from(this.fornecedores.values()),
-      clientes: Array.from(this.clientes.values()),
-      compras: Array.from(this.compras.values()),
       nextUserId: this.nextUserId,
       nextProdutoId: this.nextProdutoId,
       nextVendaId: this.nextVendaId,
       nextFornecedorId: this.nextFornecedorId,
       nextClienteId: this.nextClienteId,
       nextCompraId: this.nextCompraId,
+      nextFuncionarioId: this.nextFuncionarioId,
+      users: Array.from(this.users.values()),
+      produtos: Array.from(this.produtos.values()),
+      vendas: Array.from(this.vendas.values()),
+      fornecedores: Array.from(this.fornecedores.values()),
+      clientes: Array.from(this.clientes.values()),
+      compras: Array.from(this.compras.values()),
+      funcionarios: Array.from(this.funcionarios.values()),
+      permissoesFuncionarios: Object.fromEntries(this.permissoesFuncionarios),
     };
-    const jsonData = JSON.stringify(data);
+
     this.db.prepare('CREATE TABLE IF NOT EXISTS storage (key TEXT PRIMARY KEY, data TEXT)').run();
-    this.db.prepare('INSERT OR REPLACE INTO storage (key, data) VALUES (?, ?)').run('storage', jsonData);
+    this.db.prepare('INSERT OR REPLACE INTO storage (key, data) VALUES (?, ?)').run('storage', JSON.stringify(data));
   }
 
   async getUsers(): Promise<User[]> {
@@ -770,5 +809,68 @@ export class SQLiteStorage implements IStorage {
       data.data
     );
     return { ...data, id: Number(info.lastInsertRowid) };
+  }
+
+  // Funcionarios
+  async getFuncionarios(): Promise<Funcionario[]> {
+    return Array.from(this.funcionarios.values());
+  }
+
+  async getFuncionario(id: string): Promise<Funcionario | undefined> {
+    return this.funcionarios.get(id);
+  }
+
+  async createFuncionario(insertFuncionario: InsertFuncionario): Promise<Funcionario> {
+    const id = randomUUID();
+    const newFuncionario: Funcionario = { ...insertFuncionario, id };
+    this.funcionarios.set(id, newFuncionario);
+    await this.persistData();
+    return newFuncionario;
+  }
+
+  async updateFuncionario(id: string, updates: Partial<Funcionario>): Promise<Funcionario | undefined> {
+    const funcionario = this.funcionarios.get(id);
+    if (!funcionario) return undefined;
+
+    const updatedFuncionario = { ...funcionario, ...updates };
+    this.funcionarios.set(id, updatedFuncionario);
+    await this.persistData();
+    return updatedFuncionario;
+  }
+
+  async deleteFuncionario(id: string): Promise<boolean> {
+    const deleted = this.funcionarios.delete(id);
+    if (deleted) {
+      this.permissoesFuncionarios.delete(id);
+      await this.persistData();
+    }
+    return deleted;
+  }
+
+  // Permissões Funcionários
+  async getPermissoesFuncionario(funcionarioId: string): Promise<PermissaoFuncionario[]> {
+    return this.permissoesFuncionarios.get(funcionarioId) || [];
+  }
+
+  async addPermissaoFuncionario(funcionarioId: string, permissao: PermissaoFuncionario): Promise<void> {
+    const permissoes = this.permissoesFuncionarios.get(funcionarioId) || [];
+    permissoes.push(permissao);
+    this.permissoesFuncionarios.set(funcionarioId, permissoes);
+    await this.persistData();
+  }
+
+  async removePermissaoFuncionario(funcionarioId: string, permissaoId: number): Promise<boolean> {
+    const permissoes = this.permissoesFuncionarios.get(funcionarioId);
+    if (!permissoes) return false;
+
+    const initialLength = permissoes.length;
+    const updatedPermissoes = permissoes.filter(p => p.id !== permissaoId);
+    this.permissoesFuncionarios.set(funcionarioId, updatedPermissoes);
+
+    if (updatedPermissoes.length < initialLength) {
+      await this.persistData();
+      return true;
+    }
+    return false;
   }
 }

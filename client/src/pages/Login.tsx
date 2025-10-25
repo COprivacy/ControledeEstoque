@@ -12,14 +12,35 @@ export default function Login() {
   const handleLogin = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/auth/login", { 
-        email, 
-        senha: password 
+      // Tenta fazer login como usuário comum primeiro
+      const response = await apiRequest("POST", "/api/auth/login", {
+        email,
+        senha: password
       });
+
+      if (!response.ok) {
+        // Se falhar, tenta fazer login como funcionário
+        const funcionarioResponse = await apiRequest("POST", "/api/auth/login-funcionario", {
+          email,
+          senha: password
+        });
+        if (!funcionarioResponse.ok) {
+          throw new Error("Email ou senha inválidos");
+        }
+        const funcionario = await funcionarioResponse.json();
+        localStorage.setItem("user", JSON.stringify(funcionario));
+
+        toast({
+          title: "Login realizado com sucesso!",
+          description: `Bem-vindo, ${funcionario.nome}`,
+        });
+        setLocation("/pdv"); // Redireciona funcionário para o PDV
+        return;
+      }
 
       const user = await response.json();
       localStorage.setItem("user", JSON.stringify(user));
-      
+
       toast({
         title: "Login realizado com sucesso!",
         description: `Bem-vindo, ${user.nome}`,

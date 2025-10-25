@@ -51,13 +51,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, senha } = req.body;
+      
+      // Primeiro tenta autenticar como usuário principal
       const user = await storage.getUserByEmail(email);
-
-      if (!user || user.senha !== senha) {
-        return res.status(401).json({ error: "Email ou senha inválidos" });
+      if (user && user.senha === senha) {
+        return res.json({ 
+          id: user.id, 
+          email: user.email, 
+          nome: user.nome, 
+          plano: user.plano, 
+          is_admin: user.is_admin,
+          tipo: "usuario"
+        });
       }
 
-      res.json({ id: user.id, email: user.email, nome: user.nome, plano: user.plano, is_admin: user.is_admin });
+      // Se não encontrou, tenta autenticar como funcionário
+      const funcionarios = await storage.getFuncionarios();
+      const funcionario = funcionarios.find(f => f.email === email && f.senha === senha);
+      
+      if (funcionario) {
+        return res.json({ 
+          id: funcionario.id, 
+          email: funcionario.email, 
+          nome: funcionario.nome, 
+          plano: "free",
+          is_admin: "false",
+          tipo: "funcionario",
+          conta_id: funcionario.conta_id
+        });
+      }
+
+      return res.status(401).json({ error: "Email ou senha inválidos" });
     } catch (error) {
       res.status(500).json({ error: "Erro ao fazer login" });
     }

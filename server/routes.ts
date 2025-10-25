@@ -270,8 +270,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const funcionarios = await storage.getFuncionarios(contaId);
       res.json(funcionarios);
-    } catch (error) {
-      res.status(500).json({ error: "Erro ao buscar funcionários" });
+    } catch (error: any) {
+      console.error("Erro ao buscar funcionários:", error);
+      res.status(500).json({ error: error.message || "Erro ao buscar funcionários" });
     }
   });
 
@@ -305,8 +306,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json(funcionario);
-    } catch (error) {
-      res.status(500).json({ error: "Erro ao criar funcionário" });
+    } catch (error: any) {
+      console.error("Erro ao criar funcionário:", error);
+      res.status(500).json({ error: error.message || "Erro ao criar funcionário" });
     }
   });
 

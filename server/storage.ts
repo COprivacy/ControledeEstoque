@@ -748,6 +748,114 @@ export class MemStorage implements Storage { // Changed to implement Storage int
       JSON.stringify(this.permissoesFuncionarios, null, 2)
     );
   }
+
+  // Contas a Pagar
+  private contasPagar: any[] = [];
+  private nextContaPagarId: number = 1;
+
+  async getContasPagar(): Promise<any[]> {
+    try {
+      const data = await fs.readFile(this.contasPagarPath, 'utf-8');
+      this.contasPagar = JSON.parse(data);
+      return this.contasPagar;
+    } catch {
+      return this.contasPagar;
+    }
+  }
+
+  async createContaPagar(conta: any): Promise<any> {
+    const novaConta = {
+      ...conta,
+      id: this.nextContaPagarId++,
+    };
+    this.contasPagar.push(novaConta);
+    await fs.writeFile(this.contasPagarPath, JSON.stringify(this.contasPagar, null, 2));
+    return novaConta;
+  }
+
+  async updateContaPagar(id: number, updates: any): Promise<any> {
+    const index = this.contasPagar.findIndex(c => c.id === id);
+    if (index === -1) return null;
+    
+    this.contasPagar[index] = { ...this.contasPagar[index], ...updates };
+    await fs.writeFile(this.contasPagarPath, JSON.stringify(this.contasPagar, null, 2));
+    return this.contasPagar[index];
+  }
+
+  async deleteContaPagar(id: number): Promise<boolean> {
+    const index = this.contasPagar.findIndex(c => c.id === id);
+    if (index === -1) return false;
+    
+    this.contasPagar.splice(index, 1);
+    await fs.writeFile(this.contasPagarPath, JSON.stringify(this.contasPagar, null, 2));
+    return true;
+  }
+
+  // Contas a Receber
+  private contasReceber: any[] = [];
+  private nextContaReceberId: number = 1;
+
+  async getContasReceber(): Promise<any[]> {
+    try {
+      const data = await fs.readFile(this.contasReceberPath, 'utf-8');
+      this.contasReceber = JSON.parse(data);
+      return this.contasReceber;
+    } catch {
+      return this.contasReceber;
+    }
+  }
+
+  async createContaReceber(conta: any): Promise<any> {
+    const novaConta = {
+      ...conta,
+      id: this.nextContaReceberId++,
+    };
+    this.contasReceber.push(novaConta);
+    await fs.writeFile(this.contasReceberPath, JSON.stringify(this.contasReceber, null, 2));
+    return novaConta;
+  }
+
+  async updateContaReceber(id: number, updates: any): Promise<any> {
+    const index = this.contasReceber.findIndex(c => c.id === id);
+    if (index === -1) return null;
+    
+    this.contasReceber[index] = { ...this.contasReceber[index], ...updates };
+    await fs.writeFile(this.contasReceberPath, JSON.stringify(this.contasReceber, null, 2));
+    return this.contasReceber[index];
+  }
+
+  async deleteContaReceber(id: number): Promise<boolean> {
+    const index = this.contasReceber.findIndex(c => c.id === id);
+    if (index === -1) return false;
+    
+    this.contasReceber.splice(index, 1);
+    await fs.writeFile(this.contasReceberPath, JSON.stringify(this.contasReceber, null, 2));
+    return true;
+  }
+
+  // Config Fiscal
+  private configFiscal?: ConfigFiscal;
+
+  async getConfigFiscal(): Promise<ConfigFiscal | undefined> {
+    try {
+      const data = await fs.readFile(this.configFiscalPath, 'utf-8');
+      this.configFiscal = JSON.parse(data);
+      return this.configFiscal;
+    } catch {
+      return undefined;
+    }
+  }
+
+  async saveConfigFiscal(insertConfig: InsertConfigFiscal): Promise<ConfigFiscal> {
+    const config: ConfigFiscal = {
+      ...insertConfig,
+      id: 1,
+      updated_at: new Date().toISOString(),
+    };
+    this.configFiscal = config;
+    await fs.writeFile(this.configFiscalPath, JSON.stringify(config, null, 2));
+    return config;
+  }
 }
 
 import { SQLiteStorage } from './sqlite-storage';

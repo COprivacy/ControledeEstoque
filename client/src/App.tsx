@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminRoute } from "@/components/AdminRoute";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";
@@ -174,7 +175,9 @@ function Router() {
       <Route path="/admin">
         {() => (
           <DashboardLayout>
-            <Admin />
+            <AdminRoute>
+              <Admin />
+            </AdminRoute>
           </DashboardLayout>
         )}
       </Route>

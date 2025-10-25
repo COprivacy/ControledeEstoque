@@ -1,6 +1,7 @@
 
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import {
   Table,
   TableBody,
@@ -79,6 +80,9 @@ interface ConfigAsaas {
 
 export default function PublicAdmin() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState("");
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPlano, setFilterPlano] = useState<string>("todos");
@@ -86,6 +90,32 @@ export default function PublicAdmin() {
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [createPlanoOpen, setCreatePlanoOpen] = useState(false);
   const [testingAsaas, setTestingAsaas] = useState(false);
+
+  useEffect(() => {
+    const adminAuth = sessionStorage.getItem("admin_auth");
+    if (adminAuth === "authenticated") {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === "admin123") {
+      setIsAuthenticated(true);
+      sessionStorage.setItem("admin_auth", "authenticated");
+      toast({
+        title: "Acesso concedido",
+        description: "Bem-vindo ao painel administrativo",
+      });
+    } else {
+      toast({
+        title: "Senha incorreta",
+        description: "Tente novamente",
+        variant: "destructive",
+      });
+      setPassword("");
+    }
+  };
 
   const [newUser, setNewUser] = useState({
     nome: "",
@@ -357,6 +387,51 @@ export default function PublicAdmin() {
       return days !== null && days <= 3 && days > 0;
     }).length,
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
+        <Card className="w-full max-w-md mx-4">
+          <CardHeader>
+            <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
+              <Shield className="h-6 w-6 text-blue-600" />
+              Acesso Administrativo
+            </CardTitle>
+            <CardDescription className="text-center">
+              Insira a senha para acessar o painel
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="admin-password">Senha</Label>
+                <Input
+                  id="admin-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Digite a senha de administrador"
+                  autoFocus
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                <Key className="h-4 w-4 mr-2" />
+                Entrar
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => setLocation("/")}
+              >
+                Voltar
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (loadingUsers) {
     return (

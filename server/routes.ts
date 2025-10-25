@@ -77,7 +77,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           plano: "free",
           is_admin: "false",
           tipo: "funcionario",
-          conta_id: funcionario.conta_id
+          conta_id: funcionario.conta_id,
+          cargo: "Funcionário"
         });
       }
 

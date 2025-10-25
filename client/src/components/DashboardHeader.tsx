@@ -53,6 +53,7 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
     storeName: "Controle de Estoque Simples"
   });
   const [userName, setUserName] = useState("");
+  const [userCargo, setUserCargo] = useState("");
 
   useEffect(() => {
     const saved = localStorage.getItem("customization");
@@ -84,8 +85,10 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
       try {
         const user = JSON.parse(userStr);
         setUserName(user.nome || "Usuário");
+        setUserCargo(user.cargo || (user.tipo === "funcionario" ? "Funcionário" : "Administrador"));
       } catch (e) {
         setUserName("Usuário");
+        setUserCargo("Usuário");
       }
     }
   }, []);
@@ -123,6 +126,10 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem className="flex flex-col items-start gap-1 cursor-default" disabled>
+                <span className="text-xs text-muted-foreground">Cargo</span>
+                <span className="text-sm font-medium">{userCargo}</span>
+              </DropdownMenuItem>
               <DropdownMenuItem className="flex flex-col items-start gap-1 cursor-default" disabled>
                 <span className="text-xs text-muted-foreground">Email</span>
                 <span className="text-sm font-medium" data-testid="text-user-email">{userEmail}</span>

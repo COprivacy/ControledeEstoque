@@ -10,7 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Mail, Lock } from "lucide-react";
+import { Mail, Lock, ArrowLeft } from "lucide-react";
+import { Link } from "wouter";
 import backgroundImage from "@assets/generated_images/Pavisoft_Sistemas_tech_background_61320ac2.png";
 
 interface LoginFormProps {
@@ -46,7 +47,17 @@ export default function LoginForm({
       }}
     >
       <div className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"></div>
-      <Card className="w-full max-w-md relative z-10 bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-white/20 dark:border-gray-800/50">
+      <div className="w-full max-w-md relative z-10 space-y-4">
+        <Link href="/">
+          <Button 
+            variant="outline" 
+            className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 text-white hover:text-white"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar ao Site
+          </Button>
+        </Link>
+        <Card className="bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-white/20 dark:border-gray-800/50">
         <CardHeader className="space-y-2">
           <CardTitle className="text-2xl font-bold text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Pavisoft Sistemas
@@ -97,6 +108,7 @@ export default function LoginForm({
           </CardFooter>
         </form>
       </Card>
+      </div>
     </div>
   );
 }

@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Lock, User } from "lucide-react";
+import { Mail, Lock, User, ArrowLeft } from "lucide-react";
+import { Link } from "wouter";
 
 interface RegisterFormProps {
   onRegister?: (name: string, email: string, password: string) => void;
@@ -25,7 +26,14 @@ export default function RegisterForm({ onRegister, onLoginClick }: RegisterFormP
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+      <div className="w-full max-w-md space-y-4">
+        <Link href="/">
+          <Button variant="outline">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar ao Site
+          </Button>
+        </Link>
+        <Card className="w-full">
         <CardHeader className="space-y-2">
           <CardTitle className="text-2xl font-bold text-center">Criar Conta</CardTitle>
           <CardDescription className="text-center">Preencha os dados para criar sua conta</CardDescription>
@@ -97,6 +105,7 @@ export default function RegisterForm({ onRegister, onLoginClick }: RegisterFormP
           </CardFooter>
         </form>
       </Card>
+      </div>
     </div>
   );
 }

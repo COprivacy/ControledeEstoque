@@ -117,12 +117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/users/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const deleted = await storage.deleteUser(id);
-
-      if (!deleted) {
-        return res.status(404).json({ error: "Usuário não encontrado" });
-      }
-
+      await storage.deleteUser(id);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Erro ao deletar usuário" });
@@ -219,7 +214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await asaas.testConnection();
 
       if (result.success) {
-        await storage.updateConfigAsaasStatus('conectado', new Date().toISOString());
+        await storage.updateConfigAsaasStatus('conectado');
       }
 
       res.json(result);

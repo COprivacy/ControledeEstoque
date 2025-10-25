@@ -662,11 +662,6 @@ export class SQLiteStorage implements IStorage {
     stmt.run(id);
   }
 
-  async deleteUser(id: string): Promise<void> {
-    const stmt = this.db.prepare('DELETE FROM users WHERE id = ?');
-    stmt.run(id);
-  }
-
   // Planos
   async getPlanos(): Promise<any[]> {
     const stmt = this.db.prepare('SELECT * FROM planos WHERE ativo = "true" ORDER BY preco ASC');

@@ -80,6 +80,16 @@ export interface IStorage {
   deleteFuncionario(id: string): Promise<boolean>;
   getPermissoesFuncionario(funcionarioId: string): Promise<PermissaoFuncionario | undefined>;
   savePermissoesFuncionario(funcionarioId: string, permissoes: Partial<PermissaoFuncionario>): Promise<PermissaoFuncionario>;
+  
+  // Métodos para Contas a Pagar/Receber
+  getContasPagar?(): Promise<any[]>;
+  createContaPagar?(conta: any): Promise<any>;
+  updateContaPagar?(id: number, updates: any): Promise<any>;
+  deleteContaPagar?(id: number): Promise<boolean>;
+  getContasReceber?(): Promise<any[]>;
+  createContaReceber?(conta: any): Promise<any>;
+  updateContaReceber?(id: number, updates: any): Promise<any>;
+  deleteContaReceber?(id: number): Promise<boolean>;
 }
 
 export abstract class Storage {
@@ -123,14 +133,24 @@ export abstract class Storage {
   abstract deleteFuncionario(id: string): Promise<boolean>;
   abstract getPermissoesFuncionario(funcionarioId: string): Promise<PermissaoFuncionario | undefined>;
   abstract savePermissoesFuncionario(funcionarioId: string, permissoes: Partial<PermissaoFuncionario>): Promise<PermissaoFuncionario>;
+
+  abstract getConfigFiscal(): Promise<ConfigFiscal | undefined>;
+  abstract saveConfigFiscal(insertConfig: InsertConfigFiscal): Promise<ConfigFiscal>;
 }
 
 export class MemStorage implements Storage { // Changed to implement Storage interface
   private users: Map<string, User>;
   private produtos: Map<number, Produto>;
   private vendas: Map<number, Venda>;
+  private fornecedores: Map<number, Fornecedor>;
+  private clientes: Map<number, Cliente>;
+  private compras: Map<number, Compra>;
   private nextProdutoId: number;
   private nextVendaId: number;
+  private nextFornecedorId: number;
+  private nextClienteId: number;
+  private nextCompraId: number;
+  private logsAdmin: LogAdmin[] = [];
 
   // Mock file paths for demonstration
   private usersPath: string;
@@ -152,6 +172,18 @@ export class MemStorage implements Storage { // Changed to implement Storage int
   private permissoesFuncionarios: PermissaoFuncionario[] = [];
 
   constructor(dataDir: string = __dirname) {
+    this.users = new Map();
+    this.produtos = new Map();
+    this.vendas = new Map();
+    this.fornecedores = new Map();
+    this.clientes = new Map();
+    this.compras = new Map();
+    this.nextProdutoId = 1;
+    this.nextVendaId = 1;
+    this.nextFornecedorId = 1;
+    this.nextClienteId = 1;
+    this.nextCompraId = 1;
+    
     this.usersPath = path.join(dataDir, 'users.json');
     this.produtosPath = path.join(dataDir, 'produtos.json');
     this.vendasPath = path.join(dataDir, 'vendas.json');

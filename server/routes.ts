@@ -127,15 +127,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rotas de Planos
   app.get("/api/planos", async (req, res) => {
     try {
+      if (!storage.getPlanos) {
+        return res.status(501).json({ error: "Método getPlanos não implementado" });
+      }
       const planos = await storage.getPlanos();
       res.json(planos);
     } catch (error) {
+      console.error("Erro ao buscar planos:", error);
       res.status(500).json({ error: "Erro ao buscar planos" });
     }
   });
 
   app.post("/api/planos", async (req, res) => {
     try {
+      if (!storage.createPlano) {
+        return res.status(501).json({ error: "Método createPlano não implementado" });
+      }
       const planoData = {
         ...req.body,
         data_criacao: new Date().toISOString(),
@@ -143,12 +150,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const plano = await storage.createPlano(planoData);
       res.json(plano);
     } catch (error) {
+      console.error("Erro ao criar plano:", error);
       res.status(500).json({ error: "Erro ao criar plano" });
     }
   });
 
   app.put("/api/planos/:id", async (req, res) => {
     try {
+      if (!storage.updatePlano) {
+        return res.status(501).json({ error: "Método updatePlano não implementado" });
+      }
       const id = parseInt(req.params.id);
       const plano = await storage.updatePlano(id, req.body);
       if (!plano) {
@@ -156,12 +167,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(plano);
     } catch (error) {
+      console.error("Erro ao atualizar plano:", error);
       res.status(500).json({ error: "Erro ao atualizar plano" });
     }
   });
 
   app.delete("/api/planos/:id", async (req, res) => {
     try {
+      if (!storage.deletePlano) {
+        return res.status(501).json({ error: "Método deletePlano não implementado" });
+      }
       const id = parseInt(req.params.id);
       const deleted = await storage.deletePlano(id);
       if (!deleted) {
@@ -169,6 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ success: true });
     } catch (error) {
+      console.error("Erro ao deletar plano:", error);
       res.status(500).json({ error: "Erro ao deletar plano" });
     }
   });

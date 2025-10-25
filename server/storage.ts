@@ -12,7 +12,13 @@ import {
   type Compra,
   type InsertCompra,
   type ConfigFiscal,
-  type InsertConfigFiscal
+  type InsertConfigFiscal,
+  type Plano,
+  type InsertPlano,
+  type ConfigAsaas,
+  type InsertConfigAsaas,
+  type LogAdmin,
+  type InsertLogAdmin
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import * as fs from 'fs/promises';
@@ -28,6 +34,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(insertUser: InsertUser): Promise<User>;
   updateUser?(id: string, updates: Partial<User>): Promise<User | undefined>;
+  deleteUser?(id: string): Promise<void>;
   getProdutos(): Promise<Produto[]>;
   getProduto(id: number): Promise<Produto | undefined>;
   getProdutoByCodigoBarras(codigo: string): Promise<Produto | undefined>;
@@ -52,6 +59,15 @@ export interface IStorage {
   updateCompra(id: number, updates: Partial<Compra>): Promise<Compra | undefined>;
   getConfigFiscal(): Promise<ConfigFiscal | undefined>;
   saveConfigFiscal(insertConfig: InsertConfigFiscal): Promise<ConfigFiscal>;
+  getPlanos?(): Promise<Plano[]>;
+  createPlano?(plano: InsertPlano): Promise<Plano>;
+  updatePlano?(id: number, updates: Partial<Plano>): Promise<Plano | undefined>;
+  deletePlano?(id: number): Promise<boolean>;
+  getConfigAsaas?(): Promise<ConfigAsaas | null>;
+  saveConfigAsaas?(config: InsertConfigAsaas): Promise<ConfigAsaas>;
+  updateConfigAsaasStatus?(status: string): Promise<void>;
+  getLogsAdmin?(): Promise<LogAdmin[]>;
+  createLogAdmin?(log: InsertLogAdmin): Promise<LogAdmin>;
 }
 
 export abstract class Storage {

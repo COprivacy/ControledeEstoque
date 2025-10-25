@@ -664,7 +664,7 @@ export class SQLiteStorage implements IStorage {
 
   // Planos
   async getPlanos(): Promise<any[]> {
-    const stmt = this.db.prepare('SELECT * FROM planos WHERE ativo = "true" ORDER BY preco ASC');
+    const stmt = this.db.prepare('SELECT * FROM planos WHERE ativo = \'true\' ORDER BY preco ASC');
     return stmt.all();
   }
 

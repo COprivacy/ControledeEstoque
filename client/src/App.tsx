@@ -144,6 +144,13 @@ function Router() {
           <PublicAdmin />
         )}
       </Route>
+      <Route path="/admin">
+        {() => (
+          <DashboardLayout>
+            <Admin />
+          </DashboardLayout>
+        )}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

@@ -86,7 +86,6 @@ export default function Admin() {
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [createPlanoOpen, setCreatePlanoOpen] = useState(false);
   const [testingAsaas, setTestingAsaas] = useState(false);
-  const [inactivityTimer, setInactivityTimer] = useState<NodeJS.Timeout | null>(null);
 
   const [newUser, setNewUser] = useState({
     nome: "",
@@ -112,9 +111,11 @@ export default function Admin() {
 
   // Configurar logout automático após 15min de inatividade
   useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    
     const resetTimer = () => {
-      if (inactivityTimer) clearTimeout(inactivityTimer);
-      const timer = setTimeout(() => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
         localStorage.removeItem("user");
         window.location.href = "/login";
         toast({
@@ -123,7 +124,6 @@ export default function Admin() {
           variant: "destructive",
         });
       }, 15 * 60 * 1000); // 15 minutos
-      setInactivityTimer(timer);
     };
 
     const events = ["mousedown", "keydown", "scroll", "touchstart"];
@@ -132,9 +132,9 @@ export default function Admin() {
 
     return () => {
       events.forEach(event => window.removeEventListener(event, resetTimer));
-      if (inactivityTimer) clearTimeout(inactivityTimer);
+      if (timer) clearTimeout(timer);
     };
-  }, [inactivityTimer]);
+  }, [toast]);
 
   const { data: users = [], isLoading: loadingUsers } = useQuery<User[]>({
     queryKey: ["/api/users"],

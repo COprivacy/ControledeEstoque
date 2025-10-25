@@ -25,6 +25,7 @@ const financeMenuItems = [
 const configMenuItems = [
   { title: "Configurações", url: "/configuracoes", icon: Settings },
   { title: "Config. Fiscal", url: "/config-fiscal", icon: FileText },
+  { title: "Painel Admin", url: "/admin", icon: Shield },
 ];
 
 export default function DashboardSidebar() {

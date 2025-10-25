@@ -30,41 +30,30 @@ const defaultPermissions: Permissions = {
 export function usePermissions() {
   const { user } = useUser();
 
-  const { data: permissions, isLoading } = useQuery<Permissions>({
-    queryKey: ["/api/funcionarios", user?.id, "permissoes"],
-    enabled: !!user && user.tipo === "funcionario",
-  });
+  const isPremium = (): boolean => {
+    if (!user) return false;
+    if (user.plano === 'premium') return true;
 
-  // Se for usuário principal ou admin, tem todas as permissões
-  if (user && user.tipo === "usuario") {
-    return {
-      permissions: {
-        dashboard: "true",
-        pdv: "true",
-        produtos: "true",
-        inventario: "true",
-        relatorios: "true",
-        clientes: "true",
-        fornecedores: "true",
-        financeiro: "true",
-        config_fiscal: "true",
-        configuracoes: "true",
-      } as Permissions,
-      isLoading: false,
-      hasPermission: () => true,
-    };
-  }
+    // Trial de 7 dias tem acesso completo
+    if (user.data_expiracao_trial) {
+      const now = new Date();
+      const expirationDate = new Date(user.data_expiracao_trial);
+      return now < expirationDate;
+    }
 
-  // Se for funcionário, usa as permissões da API
-  const userPermissions = permissions || defaultPermissions;
-
-  const hasPermission = (permission: keyof Permissions): boolean => {
-    return userPermissions[permission] === "true";
+    return false;
   };
 
-  return {
-    permissions: userPermissions,
-    isLoading,
-    hasPermission,
+  const hasPermission = (permission: string): boolean => {
+    if (!user) return false;
+    if (user.tipo_usuario === 'admin') return true;
+
+    // Usuários em trial ou premium têm acesso completo
+    if (isPremium()) return true;
+
+    const userPermissions = user.permissoes || [];
+    return userPermissions.includes(permission);
   };
+
+  return { hasPermission, isPremium };
 }

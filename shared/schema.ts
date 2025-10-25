@@ -255,3 +255,28 @@ export type InsertContasPagar = z.infer<typeof insertContasPagarSchema>;
 export type ContasPagar = typeof contasPagar.$inferSelect;
 export type InsertContasReceber = z.infer<typeof insertContasReceberSchema>;
 export type ContasReceber = typeof contasReceber.$inferSelect;
+
+export function hasPermission(user: User, permission: string): boolean {
+  // Admin sempre tem todas as permissões
+  if (user.tipo_usuario === 'admin') return true;
+
+  // Usuários em trial ou premium têm acesso completo
+  if (isPremium(user)) return true;
+
+  // Verifica se o usuário tem a permissão específica
+  const userPermissions = user.permissoes || [];
+  return userPermissions.includes(permission);
+}
+
+export function isPremium(user: User): boolean {
+  if (user.plano === 'premium') return true;
+
+  // Verifica se está em trial ativo (7 dias grátis com acesso completo)
+  if (user.data_expiracao_trial) {
+    const now = new Date();
+    const expirationDate = new Date(user.data_expiracao_trial);
+    return now < expirationDate;
+  }
+
+  return false;
+}

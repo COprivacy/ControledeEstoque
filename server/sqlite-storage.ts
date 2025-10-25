@@ -848,8 +848,41 @@ export class SQLiteStorage implements IStorage {
   }
 
   // Permissões Funcionários
-  async getPermissoesFuncionario(funcionarioId: string): Promise<PermissaoFuncionario[]> {
-    return this.permissoesFuncionarios.get(funcionarioId) || [];
+  async getPermissoesFuncionario(funcionarioId: string): Promise<PermissaoFuncionario | undefined> {
+    const permissoes = this.permissoesFuncionarios.get(funcionarioId);
+    return permissoes && permissoes.length > 0 ? permissoes[0] : undefined;
+  }
+
+  async savePermissoesFuncionario(funcionarioId: string, permissoes: Partial<PermissaoFuncionario>): Promise<PermissaoFuncionario> {
+    const existingPermissoes = this.permissoesFuncionarios.get(funcionarioId) || [];
+    
+    if (existingPermissoes.length > 0) {
+      // Atualizar permissões existentes
+      const updated = {
+        ...existingPermissoes[0],
+        ...permissoes,
+      };
+      this.permissoesFuncionarios.set(funcionarioId, [updated]);
+      await this.persistData();
+      return updated;
+    } else {
+      // Criar novas permissões
+      const newPermissao: PermissaoFuncionario = {
+        id: Date.now(),
+        funcionario_id: funcionarioId,
+        pdv: permissoes.pdv || "false",
+        produtos: permissoes.produtos || "false",
+        inventario: permissoes.inventario || "false",
+        relatorios: permissoes.relatorios || "false",
+        clientes: permissoes.clientes || "false",
+        fornecedores: permissoes.fornecedores || "false",
+        financeiro: permissoes.financeiro || "false",
+        config_fiscal: permissoes.config_fiscal || "false",
+      };
+      this.permissoesFuncionarios.set(funcionarioId, [newPermissao]);
+      await this.persistData();
+      return newPermissao;
+    }
   }
 
   async addPermissaoFuncionario(funcionarioId: string, permissao: PermissaoFuncionario): Promise<void> {

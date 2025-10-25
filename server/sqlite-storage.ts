@@ -54,7 +54,15 @@ export class SQLiteStorage implements IStorage {
         id TEXT PRIMARY KEY,
         email TEXT NOT NULL UNIQUE,
         senha TEXT NOT NULL,
-        nome TEXT NOT NULL
+        nome TEXT NOT NULL,
+        plano TEXT NOT NULL DEFAULT 'free',
+        is_admin TEXT NOT NULL DEFAULT 'false',
+        data_criacao TEXT,
+        data_expiracao_trial TEXT,
+        data_expiracao_plano TEXT,
+        ultimo_acesso TEXT,
+        status TEXT NOT NULL DEFAULT 'ativo',
+        asaas_customer_id TEXT
       );
 
       CREATE TABLE IF NOT EXISTS produtos (
@@ -146,6 +154,35 @@ export class SQLiteStorage implements IStorage {
       CREATE TABLE IF NOT EXISTS storage (
         key TEXT PRIMARY KEY,
         data TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS planos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        preco REAL NOT NULL,
+        duracao_dias INTEGER NOT NULL,
+        descricao TEXT,
+        ativo TEXT NOT NULL DEFAULT 'true',
+        data_criacao TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS config_asaas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        api_key TEXT NOT NULL,
+        ambiente TEXT NOT NULL DEFAULT 'sandbox',
+        webhook_url TEXT,
+        account_id TEXT,
+        ultima_sincronizacao TEXT,
+        status_conexao TEXT DEFAULT 'desconectado',
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS logs_admin (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id TEXT NOT NULL,
+        acao TEXT NOT NULL,
+        detalhes TEXT,
+        data TEXT NOT NULL
       );
     `);
   }
@@ -579,5 +616,117 @@ export class SQLiteStorage implements IStorage {
   async deleteContaReceber(id: number): Promise<void> {
     const stmt = this.db.prepare('DELETE FROM contas_receber WHERE id = ?');
     stmt.run(id);
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const deleted = this.users.delete(id);
+    if (deleted) await this.persistData();
+    return deleted;
+  }
+
+  // Planos
+  async getPlanos(): Promise<any[]> {
+    const stmt = this.db.prepare('SELECT * FROM planos ORDER BY preco ASC');
+    return stmt.all();
+  }
+
+  async createPlano(data: any): Promise<any> {
+    const stmt = this.db.prepare(`
+      INSERT INTO planos (nome, preco, duracao_dias, descricao, ativo, data_criacao)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      data.nome,
+      data.preco,
+      data.duracao_dias,
+      data.descricao || null,
+      data.ativo || 'true',
+      data.data_criacao
+    );
+    return { ...data, id: Number(info.lastInsertRowid) };
+  }
+
+  async updatePlano(id: number, updates: any): Promise<any> {
+    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+    const values = Object.values(updates);
+    const stmt = this.db.prepare(`UPDATE planos SET ${fields} WHERE id = ?`);
+    stmt.run(...values, id);
+    return this.db.prepare('SELECT * FROM planos WHERE id = ?').get(id);
+  }
+
+  async deletePlano(id: number): Promise<boolean> {
+    const stmt = this.db.prepare('DELETE FROM planos WHERE id = ?');
+    const result = stmt.run(id);
+    return result.changes > 0;
+  }
+
+  // Config Asaas
+  async getConfigAsaas(): Promise<any> {
+    const stmt = this.db.prepare('SELECT * FROM config_asaas ORDER BY id DESC LIMIT 1');
+    return stmt.get();
+  }
+
+  async saveConfigAsaas(data: any): Promise<any> {
+    const updated_at = new Date().toISOString();
+    const existing = await this.getConfigAsaas();
+    
+    if (existing) {
+      const stmt = this.db.prepare(`
+        UPDATE config_asaas 
+        SET api_key = ?, ambiente = ?, webhook_url = ?, account_id = ?, updated_at = ?
+        WHERE id = ?
+      `);
+      stmt.run(
+        data.api_key,
+        data.ambiente || 'sandbox',
+        data.webhook_url || null,
+        data.account_id || null,
+        updated_at,
+        existing.id
+      );
+      return { ...data, id: existing.id, updated_at };
+    } else {
+      const stmt = this.db.prepare(`
+        INSERT INTO config_asaas (api_key, ambiente, webhook_url, account_id, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+      const info = stmt.run(
+        data.api_key,
+        data.ambiente || 'sandbox',
+        data.webhook_url || null,
+        data.account_id || null,
+        updated_at
+      );
+      return { ...data, id: Number(info.lastInsertRowid), updated_at };
+    }
+  }
+
+  async updateConfigAsaasStatus(status: string, sincronizacao: string): Promise<void> {
+    const stmt = this.db.prepare(`
+      UPDATE config_asaas 
+      SET status_conexao = ?, ultima_sincronizacao = ?
+      WHERE id = (SELECT id FROM config_asaas ORDER BY id DESC LIMIT 1)
+    `);
+    stmt.run(status, sincronizacao);
+  }
+
+  // Logs Admin
+  async getLogsAdmin(): Promise<any[]> {
+    const stmt = this.db.prepare('SELECT * FROM logs_admin ORDER BY data DESC LIMIT 100');
+    return stmt.all();
+  }
+
+  async createLogAdmin(data: any): Promise<any> {
+    const stmt = this.db.prepare(`
+      INSERT INTO logs_admin (usuario_id, acao, detalhes, data)
+      VALUES (?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      data.usuario_id,
+      data.acao,
+      data.detalhes || null,
+      data.data
+    );
+    return { ...data, id: Number(info.lastInsertRowid) };
   }
 }

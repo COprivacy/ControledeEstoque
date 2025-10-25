@@ -101,10 +101,151 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: updatedUser.email,
         nome: updatedUser.nome,
         plano: updatedUser.plano,
-        is_admin: updatedUser.is_admin
+        is_admin: updatedUser.is_admin,
+        status: updatedUser.status,
+        data_criacao: updatedUser.data_criacao,
+        data_expiracao_trial: updatedUser.data_expiracao_trial,
+        data_expiracao_plano: updatedUser.data_expiracao_plano,
+        ultimo_acesso: updatedUser.ultimo_acesso
       });
     } catch (error) {
       res.status(500).json({ error: "Erro ao atualizar usuário" });
+    }
+  });
+
+  app.delete("/api/users/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteUser(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao deletar usuário" });
+    }
+  });
+
+  // Rotas de Planos
+  app.get("/api/planos", async (req, res) => {
+    try {
+      const planos = await storage.getPlanos();
+      res.json(planos);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao buscar planos" });
+    }
+  });
+
+  app.post("/api/planos", async (req, res) => {
+    try {
+      const planoData = {
+        ...req.body,
+        data_criacao: new Date().toISOString(),
+      };
+      const plano = await storage.createPlano(planoData);
+      res.json(plano);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao criar plano" });
+    }
+  });
+
+  app.put("/api/planos/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const plano = await storage.updatePlano(id, req.body);
+      if (!plano) {
+        return res.status(404).json({ error: "Plano não encontrado" });
+      }
+      res.json(plano);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao atualizar plano" });
+    }
+  });
+
+  app.delete("/api/planos/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deletePlano(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Plano não encontrado" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao deletar plano" });
+    }
+  });
+
+  // Rotas de Configuração Asaas
+  app.get("/api/config-asaas", async (req, res) => {
+    try {
+      const config = await storage.getConfigAsaas();
+      if (!config) {
+        return res.json(null);
+      }
+      res.json({
+        ...config,
+        api_key: config.api_key ? '***' : ''
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao buscar configuração Asaas" });
+    }
+  });
+
+  app.post("/api/config-asaas", async (req, res) => {
+    try {
+      const config = await storage.saveConfigAsaas(req.body);
+      res.json({
+        ...config,
+        api_key: '***'
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao salvar configuração Asaas" });
+    }
+  });
+
+  app.post("/api/config-asaas/test", async (req, res) => {
+    try {
+      const { api_key, ambiente } = req.body;
+      
+      if (!api_key) {
+        return res.status(400).json({ error: "API Key é obrigatória" });
+      }
+
+      const { AsaasService } = await import('./asaas');
+      const asaas = new AsaasService({ apiKey: api_key, ambiente });
+      const result = await asaas.testConnection();
+      
+      if (result.success) {
+        await storage.updateConfigAsaasStatus('conectado', new Date().toISOString());
+      }
+      
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // Logs Admin
+  app.get("/api/logs-admin", async (req, res) => {
+    try {
+      const logs = await storage.getLogsAdmin();
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao buscar logs" });
+    }
+  });
+
+  app.post("/api/logs-admin", async (req, res) => {
+    try {
+      const log = await storage.createLogAdmin({
+        ...req.body,
+        data: new Date().toISOString(),
+      });
+      res.json(log);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao criar log" });
     }
   });
 

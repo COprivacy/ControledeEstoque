@@ -12,6 +12,10 @@ export const users = pgTable("users", {
   is_admin: text("is_admin").notNull().default("false"),
   data_criacao: text("data_criacao"),
   data_expiracao_trial: text("data_expiracao_trial"),
+  data_expiracao_plano: text("data_expiracao_plano"),
+  ultimo_acesso: text("ultimo_acesso"),
+  status: text("status").notNull().default("ativo"),
+  asaas_customer_id: text("asaas_customer_id"),
 });
 
 export const produtos = pgTable("produtos", {
@@ -138,6 +142,58 @@ export const insertCompraSchema = createInsertSchema(compras).omit({
   valor_total: z.coerce.number().positive(),
   fornecedor_id: z.number().int().positive(),
   produto_id: z.number().int().positive(),
+
+
+export const planos = pgTable("planos", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  nome: text("nome").notNull(),
+  preco: real("preco").notNull(),
+  duracao_dias: integer("duracao_dias").notNull(),
+  descricao: text("descricao"),
+  ativo: text("ativo").notNull().default("true"),
+  data_criacao: text("data_criacao").notNull(),
+});
+
+export const configAsaas = pgTable("config_asaas", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  api_key: text("api_key").notNull(),
+  ambiente: text("ambiente").notNull().default("sandbox"),
+  webhook_url: text("webhook_url"),
+  account_id: text("account_id"),
+  ultima_sincronizacao: text("ultima_sincronizacao"),
+  status_conexao: text("status_conexao").default("desconectado"),
+  updated_at: text("updated_at").notNull(),
+});
+
+export const logsAdmin = pgTable("logs_admin", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  usuario_id: text("usuario_id").notNull(),
+  acao: text("acao").notNull(),
+  detalhes: text("detalhes"),
+  data: text("data").notNull(),
+});
+
+export const insertPlanoSchema = createInsertSchema(planos).omit({
+  id: true,
+  data_criacao: true,
+});
+
+export const insertConfigAsaasSchema = createInsertSchema(configAsaas).omit({
+  id: true,
+  updated_at: true,
+});
+
+export const insertLogAdminSchema = createInsertSchema(logsAdmin).omit({
+  id: true,
+});
+
+export type InsertPlano = z.infer<typeof insertPlanoSchema>;
+export type Plano = typeof planos.$inferSelect;
+export type InsertConfigAsaas = z.infer<typeof insertConfigAsaasSchema>;
+export type ConfigAsaas = typeof configAsaas.$inferSelect;
+export type InsertLogAdmin = z.infer<typeof insertLogAdminSchema>;
+export type LogAdmin = typeof logsAdmin.$inferSelect;
+
 });
 
 export const insertConfigFiscalSchema = createInsertSchema(configFiscal).omit({

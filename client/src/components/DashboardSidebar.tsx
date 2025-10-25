@@ -8,12 +8,12 @@ type MenuItem = {
   title: string;
   url: string;
   icon: any;
-  permission?: "pdv" | "produtos" | "inventario" | "relatorios" | "clientes" | "fornecedores" | "financeiro" | "config_fiscal";
+  permission?: "dashboard" | "pdv" | "produtos" | "inventario" | "relatorios" | "clientes" | "fornecedores" | "financeiro" | "config_fiscal" | "configuracoes";
   adminOnly?: boolean;
 };
 
 const generalMenuItems: MenuItem[] = [
-  { title: "Dashboard", url: "/dashboard", icon: Home },
+  { title: "Dashboard", url: "/dashboard", icon: Home, permission: "dashboard" },
   { title: "PDV", url: "/pdv", icon: Scan, permission: "pdv" },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3, permission: "relatorios" },
 ];
@@ -33,7 +33,7 @@ const financeMenuItems: MenuItem[] = [
 ];
 
 const configMenuItems: MenuItem[] = [
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
+  { title: "Configurações", url: "/configuracoes", icon: Settings, permission: "configuracoes" },
   { title: "Config. Fiscal", url: "/config-fiscal", icon: FileText, permission: "config_fiscal" },
   { title: "Painel Admin", url: "/admin", icon: Shield, adminOnly: true },
 ];

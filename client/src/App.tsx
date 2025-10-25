@@ -39,7 +39,9 @@ function Router() {
       <Route path="/dashboard">
         {() => (
           <DashboardLayout>
-            <Dashboard />
+            <ProtectedRoute requiredPermission="dashboard">
+              <Dashboard />
+            </ProtectedRoute>
           </DashboardLayout>
         )}
       </Route>
@@ -118,7 +120,9 @@ function Router() {
       <Route path="/configuracoes">
         {() => (
           <DashboardLayout>
-            <Settings />
+            <ProtectedRoute requiredPermission="configuracoes">
+              <Settings />
+            </ProtectedRoute>
           </DashboardLayout>
         )}
       </Route>

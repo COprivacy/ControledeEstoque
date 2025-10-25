@@ -221,6 +221,7 @@ export type InsertFuncionario = z.infer<typeof insertFuncionarioSchema>;
 export const permissoesFuncionarios = pgTable("permissoes_funcionarios", {
   id: serial("id").primaryKey(),
   funcionario_id: text("funcionario_id").notNull(),
+  dashboard: text("dashboard").notNull().default("false"),
   pdv: text("pdv").notNull().default("false"),
   produtos: text("produtos").notNull().default("false"),
   inventario: text("inventario").notNull().default("false"),
@@ -229,6 +230,7 @@ export const permissoesFuncionarios = pgTable("permissoes_funcionarios", {
   fornecedores: text("fornecedores").notNull().default("false"),
   financeiro: text("financeiro").notNull().default("false"),
   config_fiscal: text("config_fiscal").notNull().default("false"),
+  configuracoes: text("configuracoes").notNull().default("false"),
 });
 
 export const insertPermissaoFuncionarioSchema = createInsertSchema(permissoesFuncionarios);

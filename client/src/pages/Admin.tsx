@@ -666,6 +666,7 @@ export default function Admin() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     {[
+                      { key: 'dashboard', label: 'Dashboard', description: 'Acessar página principal do sistema' },
                       { key: 'pdv', label: 'PDV / Caixa', description: 'Realizar vendas e gerenciar caixa' },
                       { key: 'produtos', label: 'Produtos', description: 'Cadastrar e editar produtos' },
                       { key: 'inventario', label: 'Inventário', description: 'Gerenciar estoque' },
@@ -674,6 +675,7 @@ export default function Admin() {
                       { key: 'fornecedores', label: 'Fornecedores', description: 'Gerenciar fornecedores' },
                       { key: 'financeiro', label: 'Financeiro', description: 'Acessar contas a pagar/receber' },
                       { key: 'config_fiscal', label: 'Config. Fiscal', description: 'Configurações fiscais e NF-e' },
+                      { key: 'configuracoes', label: 'Configurações', description: 'Acessar configurações do sistema' },
                     ].map((perm) => (
                       <Card key={perm.key} className="cursor-pointer" onClick={() => togglePermission(editPermissionsUser, perm.key as keyof Permission)}>
                         <CardContent className="p-4">

@@ -713,6 +713,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
       const newPermissao: PermissaoFuncionario = {
         id: this.permissoesFuncionarios.length + 1,
         funcionario_id: funcionarioId,
+        dashboard: permissoes.dashboard || "false",
         pdv: permissoes.pdv || "false",
         produtos: permissoes.produtos || "false",
         inventario: permissoes.inventario || "false",
@@ -721,6 +722,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
         fornecedores: permissoes.fornecedores || "false",
         financeiro: permissoes.financeiro || "false",
         config_fiscal: permissoes.config_fiscal || "false",
+        configuracoes: permissoes.configuracoes || "false",
       };
       this.permissoesFuncionarios.push(newPermissao);
       await this.savePermissoesFuncionarios();

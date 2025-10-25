@@ -874,6 +874,7 @@ export class SQLiteStorage implements IStorage {
       const newPermissao: PermissaoFuncionario = {
         id: Date.now(),
         funcionario_id: funcionarioId,
+        dashboard: permissoes.dashboard || "false",
         pdv: permissoes.pdv || "false",
         produtos: permissoes.produtos || "false",
         inventario: permissoes.inventario || "false",
@@ -882,6 +883,7 @@ export class SQLiteStorage implements IStorage {
         fornecedores: permissoes.fornecedores || "false",
         financeiro: permissoes.financeiro || "false",
         config_fiscal: permissoes.config_fiscal || "false",
+        configuracoes: permissoes.configuracoes || "false",
       };
       this.permissoesFuncionarios.set(funcionarioId, [newPermissao]);
       await this.persistData();

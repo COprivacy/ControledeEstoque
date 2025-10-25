@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@/hooks/use-user";
 
 interface Permissions {
+  dashboard: string;
   pdv: string;
   produtos: string;
   inventario: string;
@@ -10,9 +11,11 @@ interface Permissions {
   fornecedores: string;
   financeiro: string;
   config_fiscal: string;
+  configuracoes: string;
 }
 
 const defaultPermissions: Permissions = {
+  dashboard: "false",
   pdv: "false",
   produtos: "false",
   inventario: "false",
@@ -21,6 +24,7 @@ const defaultPermissions: Permissions = {
   fornecedores: "false",
   financeiro: "false",
   config_fiscal: "false",
+  configuracoes: "false",
 };
 
 export function usePermissions() {
@@ -35,6 +39,7 @@ export function usePermissions() {
   if (user && user.tipo === "usuario") {
     return {
       permissions: {
+        dashboard: "true",
         pdv: "true",
         produtos: "true",
         inventario: "true",
@@ -43,6 +48,7 @@ export function usePermissions() {
         fornecedores: "true",
         financeiro: "true",
         config_fiscal: "true",
+        configuracoes: "true",
       } as Permissions,
       isLoading: false,
       hasPermission: () => true,

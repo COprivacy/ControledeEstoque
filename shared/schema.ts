@@ -208,6 +208,7 @@ export const funcionarios = pgTable("funcionarios", {
   nome: text("nome").notNull(),
   email: text("email").notNull(),
   senha: text("senha").notNull(),
+  cargo: text("cargo"),
   status: text("status").notNull().default("ativo"),
   data_criacao: text("data_criacao"),
 });

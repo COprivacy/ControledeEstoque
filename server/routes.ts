@@ -969,9 +969,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/contas-pagar/:id", async (req, res) => {
     try {
-      await storage.deleteContaPagar(parseInt(req.params.id));
+      const id = parseInt(req.params.id);
+      console.log(`🗑️ Deletando conta a pagar ID: ${id}`);
+      await storage.deleteContaPagar(id);
+      console.log(`✅ Conta a pagar ${id} deletada com sucesso`);
       res.json({ success: true });
     } catch (error: any) {
+      console.log(`❌ Erro ao deletar conta a pagar:`, error);
       res.status(500).json({ error: error.message });
     }
   });
@@ -1022,9 +1026,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/contas-receber/:id", async (req, res) => {
     try {
-      await storage.deleteContaReceber(parseInt(req.params.id));
+      const id = parseInt(req.params.id);
+      console.log(`🗑️ Deletando conta a receber ID: ${id}`);
+      await storage.deleteContaReceber(id);
+      console.log(`✅ Conta a receber ${id} deletada com sucesso`);
       res.json({ success: true });
     } catch (error: any) {
+      console.log(`❌ Erro ao deletar conta a receber:`, error);
       res.status(500).json({ error: error.message });
     }
   });

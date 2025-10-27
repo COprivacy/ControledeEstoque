@@ -1317,6 +1317,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/webhook/asaas", async (req, res) => {
     try {
+      // Verificação de segurança: validar token do webhook
+      const webhookToken = req.headers['asaas-access-token'];
+      const config = await storage.getConfigAsaas();
+      
+      if (!config || !webhookToken || webhookToken !== config.api_key) {
+        console.warn("Tentativa de webhook não autorizada");
+        return res.status(401).json({ error: "Não autorizado" });
+      }
+
       const { event, payment } = req.body;
 
       console.log("Webhook Asaas recebido:", event, payment);
@@ -1367,7 +1376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/subscriptions", async (req, res) => {
+  app.get("/api/subscriptions", requireAdmin, async (req, res) => {
     try {
       const subscriptions = await storage.getSubscriptions();
       res.json(subscriptions || []);

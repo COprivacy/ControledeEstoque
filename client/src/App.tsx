@@ -41,7 +41,13 @@ function Router() {
       <Route path="/privacy" component={Privacy} />
       <Route path="/ajuda" component={Ajuda} />
       <Route path="/contato" component={Contato} />
-      <Route path="/admin-publico" component={AdminPublico} />
+      <Route path="/admin-publico">
+        {() => (
+          <AdminRoute>
+            <AdminPublico />
+          </AdminRoute>
+        )}
+      </Route>
       <Route path="/dashboard">
         {() => (
           <DashboardLayout>

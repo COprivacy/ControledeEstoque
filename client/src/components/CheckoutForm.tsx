@@ -29,11 +29,14 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { validateCpfOrCnpj } from "@/lib/validators";
 
 const checkoutSchema = z.object({
   nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
   email: z.string().email("Email inválido"),
-  cpfCnpj: z.string().min(11, "CPF/CNPJ inválido"),
+  cpfCnpj: z.string().refine(validateCpfOrCnpj, {
+    message: "CPF/CNPJ inválido",
+  }),
   formaPagamento: z.enum(["BOLETO", "CREDIT_CARD", "PIX"], {
     errorMap: () => ({ message: "Selecione uma forma de pagamento" }),
   }),

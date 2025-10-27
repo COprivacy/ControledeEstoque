@@ -67,9 +67,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, senha } = req.body;
 
+      if (!email || !senha) {
+        return res.status(400).json({ error: "Email e senha são obrigatórios" });
+      }
+
       // Primeiro tenta autenticar como usuário principal
       const user = await storage.getUserByEmail(email);
       if (user && user.senha === senha) {
+        console.log(`✅ Login bem-sucedido para usuário: ${user.email}`);
         return res.json({
           id: user.id,
           email: user.email,
@@ -81,24 +86,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Se não encontrou, tenta autenticar como funcionário
-      const funcionarios = await storage.getFuncionarios();
-      const funcionario = funcionarios.find(f => f.email === email && f.senha === senha);
+      try {
+        const funcionarios = await storage.getFuncionarios();
+        const funcionario = funcionarios.find(f => f.email === email && f.senha === senha);
 
-      if (funcionario) {
-        return res.json({
-          id: funcionario.id,
-          email: funcionario.email,
-          nome: funcionario.nome,
-          plano: "free",
-          is_admin: "false",
-          tipo: "funcionario",
-          conta_id: funcionario.conta_id,
-          cargo: "Funcionário"
-        });
+        if (funcionario) {
+          console.log(`✅ Login bem-sucedido para funcionário: ${funcionario.email}`);
+          return res.json({
+            id: funcionario.id,
+            email: funcionario.email,
+            nome: funcionario.nome,
+            plano: "free",
+            is_admin: "false",
+            tipo: "funcionario",
+            conta_id: funcionario.conta_id,
+            cargo: "Funcionário"
+          });
+        }
+      } catch (funcError) {
+        console.log("Nenhum funcionário encontrado, continuando...");
       }
 
+      console.log(`❌ Falha de login para: ${email}`);
       return res.status(401).json({ error: "Email ou senha inválidos" });
     } catch (error) {
+      console.error("Erro ao fazer login:", error);
       res.status(500).json({ error: "Erro ao fazer login" });
     }
   });

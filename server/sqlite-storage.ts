@@ -560,6 +560,9 @@ export class SQLiteStorage implements IStorage {
   async deleteUser(id: string): Promise<void> {
     const stmt = this.db.prepare('DELETE FROM users WHERE id = ?');
     stmt.run(id);
+    // Também remove do Map em memória
+    this.users.delete(id);
+    await this.persistData();
   }
 
   async getProdutos(): Promise<Produto[]> {

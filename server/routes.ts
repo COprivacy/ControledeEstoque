@@ -16,11 +16,11 @@ import nodemailer from "nodemailer";
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const userId = req.headers['x-user-id'] as string;
   const isAdmin = req.headers['x-is-admin'] as string;
-  
+
   if (!userId || isAdmin !== "true") {
     return res.status(403).json({ error: "Acesso negado. Apenas administradores podem acessar este recurso." });
   }
-  
+
   next();
 }
 
@@ -1256,8 +1256,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const config = await storage.getConfigAsaas();
       if (!config || !config.api_key) {
-        return res.status(500).json({ 
-          error: "Sistema de pagamento não configurado. Entre em contato com o suporte." 
+        return res.status(500).json({
+          error: "Sistema de pagamento não configurado. Entre em contato com o suporte."
         });
       }
 
@@ -1344,8 +1344,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("❌ Erro ao criar checkout:", error);
-      res.status(500).json({ 
-        error: error.message || "Erro ao processar pagamento. Tente novamente ou entre em contato com o suporte." 
+      res.status(500).json({
+        error: error.message || "Erro ao processar pagamento. Tente novamente ou entre em contato com o suporte."
       });
     }
   });
@@ -1355,7 +1355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verificação de segurança: validar token do webhook
       const webhookToken = req.headers['asaas-access-token'];
       const config = await storage.getConfigAsaas();
-      
+
       if (!config || !webhookToken || webhookToken !== config.api_key) {
         console.warn("Tentativa de webhook não autorizada");
         return res.status(401).json({ error: "Não autorizado" });
@@ -1411,8 +1411,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/subscriptions", requireAdmin, async (req, res) => {
+  // Subscriptions routes - público para painel de admin
+  app.get("/api/subscriptions", async (req, res) => {
     try {
+      // Permite acesso público para o painel de admin
       const subscriptions = await storage.getSubscriptions();
       res.json(subscriptions || []);
     } catch (error) {

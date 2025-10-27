@@ -16,7 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, RefreshCw, ArrowLeft, Users, DollarSign, CreditCard, TrendingUp, Edit2, Save, X, Mail, Phone, MapPin, User, Calendar } from "lucide-react";
+import { Loader2, RefreshCw, ArrowLeft, Users, DollarSign, CreditCard, TrendingUp, Edit2, Save, X, Mail, Phone, MapPin, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -79,6 +79,8 @@ export default function AdminPublico() {
   const [activeTab, setActiveTab] = useState("planos-assinaturas");
   const [editingClient, setEditingClient] = useState<Cliente | null>(null);
   const [editedClientData, setEditedClientData] = useState<Cliente | null>(null);
+  const [configAsaasOpen, setConfigAsaasOpen] = useState(false);
+  const [testingAsaas, setTestingAsaas] = useState(false);
 
   const { data: subscriptions = [], isLoading: isLoadingSubscriptions } = useQuery<Subscription[]>({
     queryKey: ["/api/subscriptions"],
@@ -90,6 +92,10 @@ export default function AdminPublico() {
 
   const { data: clientes = [], isLoading: isLoadingClientes } = useQuery<Cliente[]>({
     queryKey: ["/api/clientes"],
+  });
+
+  const { data: configAsaas } = useQuery({
+    queryKey: ["/api/config-asaas"],
   });
 
   const updateClienteMutation = useMutation({
@@ -140,6 +146,60 @@ export default function AdminPublico() {
       });
     },
   });
+
+  const saveConfigAsaasMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/config-asaas", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/config-asaas"] });
+      toast({
+        title: "Configuração salva",
+        description: "Configuração Asaas atualizada com sucesso",
+      });
+      setConfigAsaasOpen(false);
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar a configuração",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const testAsaasConnection = async (apiKey: string, ambiente: string) => {
+    setTestingAsaas(true);
+    try {
+      const response = await apiRequest("POST", "/api/config-asaas/test", {
+        api_key: apiKey,
+        ambiente,
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: "Conexão bem-sucedida!",
+          description: result.message,
+        });
+      } else {
+        toast({
+          title: "Falha na conexão",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao testar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setTestingAsaas(false);
+    }
+  };
 
   const getUserInfo = (userId: string) => {
     return users.find(u => u.id === userId);
@@ -311,7 +371,7 @@ export default function AdminPublico() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-gray-900 border border-gray-800 grid grid-cols-3 w-full">
+          <TabsList className="bg-gray-900 border border-gray-800 grid grid-cols-4 w-full">
             <TabsTrigger value="planos-assinaturas" className="data-[state=active]:bg-blue-600">
               Planos & Assinaturas
             </TabsTrigger>
@@ -320,6 +380,9 @@ export default function AdminPublico() {
             </TabsTrigger>
             <TabsTrigger value="base-clientes" className="data-[state=active]:bg-purple-600">
               Base de Clientes
+            </TabsTrigger>
+            <TabsTrigger value="integracao-asaas" className="data-[state=active]:bg-orange-600">
+              Integração Asaas
             </TabsTrigger>
           </TabsList>
 
@@ -619,6 +682,177 @@ export default function AdminPublico() {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Tab Integração Asaas */}
+          <TabsContent value="integracao-asaas" className="mt-6">
+            <div className="grid gap-6">
+              {/* Status da Conexão */}
+              <Card className="bg-gray-900 border-gray-800">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <DollarSign className="h-6 w-6" />
+                    Status da Integração Asaas
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Configuração e status da conexão com o gateway de pagamentos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                      <p className="text-gray-400 text-sm mb-1">Status da Conexão</p>
+                      <div className="flex items-center gap-2">
+                        {configAsaas?.status_conexao === "conectado" ? (
+                          <>
+                            <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-green-400 font-semibold">Conectado</span>
+                          </>
+                        ) : (
+                          <>
+                            <div className="h-3 w-3 bg-red-500 rounded-full"></div>
+                            <span className="text-red-400 font-semibold">Desconectado</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                      <p className="text-gray-400 text-sm mb-1">Ambiente</p>
+                      <Badge variant={configAsaas?.ambiente === "production" ? "default" : "secondary"}>
+                        {configAsaas?.ambiente === "production" ? "Produção" : "Sandbox"}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {configAsaas?.ultima_sincronizacao && (
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                      <p className="text-gray-400 text-sm mb-1">Última Sincronização</p>
+                      <p className="text-white">{formatDateTime(configAsaas.ultima_sincronizacao)}</p>
+                    </div>
+                  )}
+
+                  <Dialog open={configAsaasOpen} onOpenChange={setConfigAsaasOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="w-full bg-orange-600 hover:bg-orange-700">
+                        <Edit2 className="h-4 w-4 mr-2" />
+                        Configurar Integração Asaas
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <DollarSign className="h-5 w-5" />
+                          Configuração Asaas
+                        </DialogTitle>
+                        <DialogDescription className="text-gray-400">
+                          Configure a integração com o gateway de pagamentos Asaas
+                        </DialogDescription>
+                      </DialogHeader>
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const formData = new FormData(e.currentTarget);
+                          const data = {
+                            api_key: formData.get("api_key"),
+                            ambiente: formData.get("ambiente"),
+                            webhook_url: formData.get("webhook_url"),
+                          };
+                          saveConfigAsaasMutation.mutate(data);
+                        }}
+                        className="space-y-4 py-4"
+                      >
+                        <div>
+                          <Label htmlFor="api_key" className="text-gray-300">API Key</Label>
+                          <Input
+                            id="api_key"
+                            name="api_key"
+                            type="password"
+                            defaultValue={configAsaas?.api_key || ""}
+                            placeholder="Sua API Key do Asaas"
+                            className="bg-gray-800 border-gray-700 text-white"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="ambiente" className="text-gray-300">Ambiente</Label>
+                          <Select name="ambiente" defaultValue={configAsaas?.ambiente || "sandbox"}>
+                            <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                              <SelectValue placeholder="Selecione o ambiente" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                              <SelectItem value="sandbox">Sandbox (Testes)</SelectItem>
+                              <SelectItem value="production">Produção</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="webhook_url" className="text-gray-300">Webhook URL</Label>
+                          <Input
+                            id="webhook_url"
+                            name="webhook_url"
+                            type="url"
+                            defaultValue={configAsaas?.webhook_url || ""}
+                            placeholder="https://seudominio.com/api/webhook/asaas"
+                            className="bg-gray-800 border-gray-700 text-white"
+                          />
+                        </div>
+                        <div className="flex gap-2 pt-4">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              const apiKey = (document.getElementById("api_key") as HTMLInputElement)?.value;
+                              const ambiente = (document.querySelector('[name="ambiente"]') as HTMLInputElement)?.value;
+                              if (apiKey) {
+                                testAsaasConnection(apiKey, ambiente || "sandbox");
+                              }
+                            }}
+                            disabled={testingAsaas}
+                            className="bg-gray-800 border-gray-700"
+                          >
+                            {testingAsaas ? "Testando..." : "Testar Conexão"}
+                          </Button>
+                          <Button
+                            type="submit"
+                            className="flex-1 bg-green-600 hover:bg-green-700"
+                            disabled={saveConfigAsaasMutation.isPending}
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            {saveConfigAsaasMutation.isPending ? "Salvando..." : "Salvar Configuração"}
+                          </Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </CardContent>
+              </Card>
+
+              {/* Informações da Conta Asaas */}
+              {configAsaas?.account_id && (
+                <Card className="bg-gray-900 border-gray-800">
+                  <CardHeader>
+                    <CardTitle className="text-white">Informações da Conta</CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Dados da sua conta Asaas
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-gray-800 p-4 rounded-lg">
+                        <p className="text-gray-400 text-sm mb-1">Account ID</p>
+                        <p className="text-white font-mono text-sm">{configAsaas.account_id}</p>
+                      </div>
+                      <div className="bg-gray-800 p-4 rounded-lg">
+                        <p className="text-gray-400 text-sm mb-1">Webhook URL</p>
+                        <p className="text-white text-sm truncate">
+                          {configAsaas.webhook_url || "Não configurado"}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </div>

@@ -1217,13 +1217,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { nome, email, cpfCnpj, plano, formaPagamento } = req.body;
 
+      // Validação de dados
       if (!nome || !email || !plano || !formaPagamento) {
-        return res.status(400).json({ error: "Dados incompletos" });
+        return res.status(400).json({ error: "Dados incompletos. Por favor, preencha todos os campos." });
+      }
+
+      // Validação de email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: "Email inválido" });
       }
 
       const planoValues = {
         premium_mensal: 79.99,
         premium_anual: 767.04
+      };
+
+      const planoNomes = {
+        premium_mensal: "Premium Mensal",
+        premium_anual: "Premium Anual"
       };
 
       if (!planoValues[plano as keyof typeof planoValues]) {
@@ -1232,7 +1244,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const config = await storage.getConfigAsaas();
       if (!config || !config.api_key) {
-        return res.status(500).json({ error: "Configuração da API de pagamento não encontrada" });
+        return res.status(500).json({ 
+          error: "Sistema de pagamento não configurado. Entre em contato com o suporte." 
+        });
       }
 
       const { AsaasService } = await import('./asaas');
@@ -1241,6 +1255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ambiente: config.ambiente as 'sandbox' | 'production'
       });
 
+      // Criar ou atualizar cliente no Asaas
       const asaasCustomer = await asaas.createCustomer({
         name: nome,
         email,
@@ -1250,21 +1265,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 3);
 
+      // Criar cobrança
       const payment = await asaas.createPayment({
         customer: asaasCustomer.id,
         billingType: formaPagamento,
         value: planoValues[plano as keyof typeof planoValues],
         dueDate: dueDate.toISOString().split('T')[0],
-        description: `Assinatura ${plano === 'premium_mensal' ? 'Premium Mensal' : 'Premium Anual'}`,
+        description: `Assinatura ${planoNomes[plano as keyof typeof planoNomes]} - Pavisoft Sistemas`,
         externalReference: `${plano}_${Date.now()}`
       });
 
+      // Criar ou atualizar usuário
       let user = await storage.getUserByEmail(email);
       if (!user) {
+        const senhaTemporaria = Math.random().toString(36).slice(-8);
         user = await storage.createUser({
           nome,
           email,
-          senha: Math.random().toString(36).slice(-8),
+          senha: senhaTemporaria,
           plano: "free",
           is_admin: "false",
           status: "ativo",
@@ -1283,6 +1301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dataVencimento.setFullYear(dataVencimento.getFullYear() + 1);
       }
 
+      // Criar registro de assinatura
       const subscription = await storage.createSubscription({
         user_id: user.id,
         plano,
@@ -1297,6 +1316,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pix_qrcode: payment.encodedImage,
       });
 
+      console.log(`✅ Assinatura criada com sucesso - User: ${user.email}, Plano: ${planoNomes[plano as keyof typeof planoNomes]}, Pagamento: ${formaPagamento}`);
+
       res.json({
         success: true,
         subscription,
@@ -1307,11 +1328,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           bankSlipUrl: payment.bankSlipUrl,
           pixQrCode: payment.encodedImage,
         },
-        message: "Cobrança criada com sucesso!"
+        message: `Assinatura ${planoNomes[plano as keyof typeof planoNomes]} criada com sucesso! Realize o pagamento para ativar.`
       });
     } catch (error: any) {
-      console.error("Erro ao criar checkout:", error);
-      res.status(500).json({ error: error.message || "Erro ao processar pagamento" });
+      console.error("❌ Erro ao criar checkout:", error);
+      res.status(500).json({ 
+        error: error.message || "Erro ao processar pagamento. Tente novamente ou entre em contato com o suporte." 
+      });
     }
   });
 

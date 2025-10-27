@@ -10,7 +10,6 @@ import {
 import { nfceSchema } from "@shared/nfce-schema";
 import { FocusNFeService } from "./focusnfe";
 import { z } from "zod";
-import nodemailer from "nodemailer";
 
 // Middleware para verificar se o usuário é admin
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -25,59 +24,6 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-
-  // Rota de contato
-  app.post("/api/contato", async (req, res) => {
-    try {
-      const { nome, email, assunto, mensagem } = req.body;
-
-      // Validação básica
-      if (!nome || !email || !assunto || !mensagem) {
-        return res.status(400).json({
-          error: "Todos os campos são obrigatórios"
-        });
-      }
-
-      // Configurar transporte de email (usando Gmail como exemplo)
-      // NOTA: Em produção, use variáveis de ambiente para credenciais
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: 'pavisoft.suporte@gmail.com',
-          pass: process.env.EMAIL_PASSWORD || '' // Configure a senha via variáveis de ambiente
-        }
-      });
-
-      // Configurar email
-      const mailOptions = {
-        from: email,
-        to: 'pavisoft.suporte@gmail.com',
-        subject: `[Contato Site] ${assunto}`,
-        html: `
-          <h2>Nova mensagem de contato</h2>
-          <p><strong>Nome:</strong> ${nome}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Assunto:</strong> ${assunto}</p>
-          <p><strong>Mensagem:</strong></p>
-          <p>${mensagem.replace(/\n/g, '<br>')}</p>
-        `,
-        replyTo: email
-      };
-
-      // Enviar email
-      await transporter.sendMail(mailOptions);
-
-      res.json({
-        success: true,
-        message: "Mensagem enviada com sucesso"
-      });
-    } catch (error) {
-      console.error("Erro ao enviar email:", error);
-      res.status(500).json({
-        error: "Erro ao enviar mensagem. Tente novamente mais tarde."
-      });
-    }
-  });
 
   // User registration
   app.post("/api/auth/register", async (req, res) => {
@@ -1171,59 +1117,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error: any) {
       res.status(500).json({ error: error.message || "Erro ao cancelar NFCe" });
-    }
-  });
-
-  app.post("/api/signup-free-trial", async (req, res) => {
-    try {
-      const { nome, email, senha } = req.body;
-
-      if (!nome || !email || !senha) {
-        return res.status(400).json({ error: "Todos os campos são obrigatórios" });
-      }
-
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
-        return res.status(400).json({ error: "Email já cadastrado" });
-      }
-
-      const dataCriacao = new Date().toISOString();
-      const dataExpiracao = new Date();
-      dataExpiracao.setDate(dataExpiracao.getDate() + 7);
-
-      const user = await storage.createUser({
-        nome,
-        email,
-        senha,
-        plano: "free_trial",
-        data_criacao: dataCriacao,
-        data_expiracao_trial: dataExpiracao.toISOString(),
-        status: "ativo",
-        is_admin: "false",
-      });
-
-      const subscription = await storage.createSubscription({
-        user_id: user.id,
-        plano: "free_trial",
-        status: "ativo",
-        valor: 0,
-        data_inicio: dataCriacao,
-        data_vencimento: dataExpiracao.toISOString(),
-      });
-
-      res.json({
-        user: {
-          id: user.id,
-          nome: user.nome,
-          email: user.email,
-          plano: user.plano,
-        },
-        subscription,
-        message: "Teste grátis de 7 dias iniciado com sucesso!"
-      });
-    } catch (error) {
-      console.error("Erro ao criar teste grátis:", error);
-      res.status(500).json({ error: "Erro ao criar conta" });
     }
   });
 

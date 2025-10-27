@@ -37,7 +37,7 @@ export default function LoginForm({
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex items-center justify-center p-4 relative"
       style={{
         backgroundImage: `url(${backgroundImage})`,
@@ -49,8 +49,8 @@ export default function LoginForm({
       <div className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"></div>
       <div className="w-full max-w-md relative z-10 space-y-4">
         <Link href="/">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 text-white hover:text-white"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />

@@ -7,15 +7,8 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import NotFound from "@/pages/not-found";
-import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import Privacy from "@/pages/Privacy";
-import Ajuda from "@/pages/Ajuda";
-import Contato from "@/pages/Contato";
 import Admin from "@/pages/Admin";
-import PublicAdmin from "@/pages/PublicAdmin";
-import AdminPublico from "@/pages/AdminPublico";
 import Dashboard from "@/pages/Dashboard";
 import Products from "@/pages/Products";
 import AddProduct from "@/pages/AddProduct";
@@ -35,13 +28,8 @@ import DashboardLayout from "@/layouts/DashboardLayout";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Landing} />
+      <Route path="/" component={Login} />
       <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      <Route path="/privacy" component={Privacy} />
-      <Route path="/ajuda" component={Ajuda} />
-      <Route path="/contato" component={Contato} />
-      <Route path="/admin-publico" component={AdminPublico} />
       <Route path="/dashboard">
         {() => (
           <DashboardLayout>
@@ -177,7 +165,6 @@ function Router() {
           </DashboardLayout>
         )}
       </Route>
-      <Route path="/admin-publico" component={AdminPublico} />
       <Route path="/admin">
         {() => (
           <DashboardLayout>

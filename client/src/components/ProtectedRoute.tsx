@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { useUser } from "@/hooks/use-user";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Lock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";

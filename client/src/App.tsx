@@ -175,27 +175,15 @@ function Router() {
           </DashboardLayout>
         )}
       </Route>
-      <Route path="/admin-publico" component={() => (
+      <Route path="/admin-master">
+        {() => (
+          <DashboardLayout>
             <AdminRoute>
-              <DashboardLayout>
-                <AdminPublico />
-              </DashboardLayout>
+              <AdminPublico />
             </AdminRoute>
-          )} />
-          <Route path="/admin-master" component={() => (
-            <AdminRoute>
-              <DashboardLayout>
-                <AdminPublico />
-              </DashboardLayout>
-            </AdminRoute>
-          )} />
-          <Route path="/settings" component={() => (
-        <DashboardLayout>
-          <ProtectedRoute requiredPermission="settings">
-            <Settings />
-          </ProtectedRoute>
-        </DashboardLayout>
-      )} />
+          </DashboardLayout>
+        )}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

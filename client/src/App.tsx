@@ -24,6 +24,7 @@ import ContasReceber from "@/pages/ContasReceber";
 import FluxoPDV from "@/pages/FluxoPDV";
 import DRE from "@/pages/DRE";
 import DashboardLayout from "@/layouts/DashboardLayout";
+import AdminPublico from "@/pages/AdminPublico"; // Assuming AdminPublico is the component for the master admin panel
 
 function Router() {
   return (
@@ -174,6 +175,27 @@ function Router() {
           </DashboardLayout>
         )}
       </Route>
+      <Route path="/admin-publico" component={() => (
+            <AdminRoute>
+              <DashboardLayout>
+                <AdminPublico />
+              </DashboardLayout>
+            </AdminRoute>
+          )} />
+          <Route path="/admin-master" component={() => (
+            <AdminRoute>
+              <DashboardLayout>
+                <AdminPublico />
+              </DashboardLayout>
+            </AdminRoute>
+          )} />
+          <Route path="/settings" component={() => (
+        <DashboardLayout>
+          <ProtectedRoute requiredPermission="settings">
+            <Settings />
+          </ProtectedRoute>
+        </DashboardLayout>
+      )} />
       <Route component={NotFound} />
     </Switch>
   );

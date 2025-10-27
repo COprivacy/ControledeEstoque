@@ -45,7 +45,11 @@ export default function Login() {
         title: "Login realizado com sucesso!",
         description: `Bem-vindo, ${user.nome}`,
       });
-      setLocation("/dashboard");
+
+      // Verifica se o usuário é admin master e redireciona
+      const isAdminMaster = user.is_admin === "true";
+      setLocation(isAdminMaster ? "/admin-master" : "/dashboard");
+
     } catch (error) {
       toast({
         title: "Erro ao fazer login",

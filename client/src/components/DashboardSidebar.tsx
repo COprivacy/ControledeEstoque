@@ -1,7 +1,7 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { Home, Package, ClipboardList, BarChart3, Scan, Settings, Users, FileText, DollarSign, CreditCard, TrendingUp, LineChart, Shield, Lock } from "lucide-react";
+import { Home, Package, ClipboardList, BarChart3, Scan, Settings, Users, FileText, DollarSign, CreditCard, TrendingUp, LineChart, Shield, Lock, Crown } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useUser } from "@/hooks/use-user";
 
 type MenuItem = {
@@ -101,6 +101,16 @@ export default function DashboardSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {configMenuItems.map(renderMenuItem)}
+              {user?.is_admin === "true" && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link href="/admin-master">
+                      <Crown className="h-4 w-4" />
+                      <span>Admin Master</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

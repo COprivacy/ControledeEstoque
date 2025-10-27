@@ -25,6 +25,14 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
+  // Middleware para desabilitar cache em todas as rotas da API
+  app.use('/api', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+  });
+
   // User registration
   app.post("/api/auth/register", async (req, res) => {
     try {

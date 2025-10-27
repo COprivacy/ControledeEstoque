@@ -91,12 +91,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const dataCriacao = new Date().toISOString();
       const dataExpiracao = new Date();
-      dataExpiracao.setDate(dataExpiracao.getDate() + 10);
+      dataExpiracao.setDate(dataExpiracao.getDate() + 7);
 
       const userWithTrial = {
         ...userData,
         data_criacao: dataCriacao,
         data_expiracao_trial: dataExpiracao.toISOString(),
+        status: "ativo"
       };
 
       const user = await storage.createUser(userWithTrial);
@@ -108,6 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data_expiracao_trial: user.data_expiracao_trial
       });
     } catch (error) {
+      console.error("Erro ao registrar usuário:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Dados inválidos", details: error.errors });
       }

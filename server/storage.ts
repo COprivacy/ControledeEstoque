@@ -19,9 +19,11 @@ import {
   type InsertConfigAsaas,
   type LogAdmin,
   type InsertLogAdmin,
-  type Funcionario, // Import Funcionario type
-  type InsertFuncionario, // Import InsertFuncionario type
-  type PermissaoFuncionario // Import PermissaoFuncionario type
+  type Funcionario,
+  type InsertFuncionario,
+  type PermissaoFuncionario,
+  type Subscription,
+  type InsertSubscription
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import * as fs from 'fs/promises';
@@ -72,6 +74,13 @@ export interface IStorage {
   getLogsAdmin?(): Promise<LogAdmin[]>;
   createLogAdmin?(log: InsertLogAdmin): Promise<LogAdmin>;
 
+  // Métodos para Subscriptions
+  getSubscriptions?(): Promise<Subscription[]>;
+  getSubscription?(id: number): Promise<Subscription | undefined>;
+  getSubscriptionsByUser?(userId: string): Promise<Subscription[]>;
+  createSubscription?(subscription: InsertSubscription): Promise<Subscription>;
+  updateSubscription?(id: number, updates: Partial<Subscription>): Promise<Subscription | undefined>;
+  
   // Métodos para Funcionários e Permissões
   getFuncionarios(contaId: string): Promise<Funcionario[]>;
   getFuncionario(id: string): Promise<Funcionario | undefined>;
@@ -151,8 +160,9 @@ export class MemStorage implements Storage { // Changed to implement Storage int
   private nextClienteId: number;
   private nextCompraId: number;
   private logsAdmin: LogAdmin[] = [];
+  private subscriptions: Map<number, Subscription>;
+  private nextSubscriptionId: number;
 
-  // Mock file paths for demonstration
   private usersPath: string;
   private produtosPath: string;
   private vendasPath: string;
@@ -167,6 +177,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
   private logsAdminPath: string;
   private funcionariosPath: string;
   private permissoesPath: string;
+  private subscriptionsPath: string;
 
   private funcionarios: Funcionario[] = [];
   private permissoesFuncionarios: PermissaoFuncionario[] = [];
@@ -178,11 +189,13 @@ export class MemStorage implements Storage { // Changed to implement Storage int
     this.fornecedores = new Map();
     this.clientes = new Map();
     this.compras = new Map();
+    this.subscriptions = new Map();
     this.nextProdutoId = 1;
     this.nextVendaId = 1;
     this.nextFornecedorId = 1;
     this.nextClienteId = 1;
     this.nextCompraId = 1;
+    this.nextSubscriptionId = 1;
     
     this.usersPath = path.join(dataDir, 'users.json');
     this.produtosPath = path.join(dataDir, 'produtos.json');
@@ -198,6 +211,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
     this.logsAdminPath = path.join(dataDir, 'logs_admin.json');
     this.funcionariosPath = path.join(dataDir, 'funcionarios.json');
     this.permissoesPath = path.join(dataDir, 'permissoes_funcionarios.json');
+    this.subscriptionsPath = path.join(dataDir, 'subscriptions.json');
     this.init();
   }
 
@@ -652,6 +666,47 @@ export class MemStorage implements Storage { // Changed to implement Storage int
     this.logsAdmin.splice(index, 1);
     await this.saveLogsAdmin();
     return true;
+  }
+
+  async getSubscriptions(): Promise<Subscription[]> {
+    return Array.from(this.subscriptions.values());
+  }
+
+  async getSubscription(id: number): Promise<Subscription | undefined> {
+    return this.subscriptions.get(id);
+  }
+
+  async getSubscriptionsByUser(userId: string): Promise<Subscription[]> {
+    return Array.from(this.subscriptions.values()).filter(s => s.user_id === userId);
+  }
+
+  async createSubscription(subscription: InsertSubscription): Promise<Subscription> {
+    const newSubscription: Subscription = {
+      ...subscription,
+      id: this.nextSubscriptionId++,
+      data_criacao: new Date().toISOString(),
+    };
+    this.subscriptions.set(newSubscription.id, newSubscription);
+    await this.saveSubscriptions();
+    return newSubscription;
+  }
+
+  async updateSubscription(id: number, updates: Partial<Subscription>): Promise<Subscription | undefined> {
+    const subscription = this.subscriptions.get(id);
+    if (!subscription) return undefined;
+    const updatedSubscription = { ...subscription, ...updates, data_atualizacao: new Date().toISOString() };
+    this.subscriptions.set(id, updatedSubscription);
+    await this.saveSubscriptions();
+    return updatedSubscription;
+  }
+
+  private async saveSubscriptions() {
+    try {
+      const subscriptionsArray = Array.from(this.subscriptions.values());
+      await fs.writeFile(this.subscriptionsPath, JSON.stringify(subscriptionsArray, null, 2));
+    } catch (error) {
+      console.error('Error saving subscriptions:', error);
+    }
   }
 
   // Funcionários

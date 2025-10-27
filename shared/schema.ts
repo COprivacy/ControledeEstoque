@@ -185,6 +185,25 @@ export const logsAdmin = pgTable("logs_admin", {
   data: text("data").notNull(),
 });
 
+export const subscriptions = pgTable("subscriptions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  user_id: text("user_id").notNull(),
+  plano: text("plano").notNull(),
+  status: text("status").notNull().default("pendente"),
+  valor: real("valor").notNull().default(0),
+  data_inicio: text("data_inicio"),
+  data_vencimento: text("data_vencimento"),
+  asaas_payment_id: text("asaas_payment_id"),
+  asaas_subscription_id: text("asaas_subscription_id"),
+  forma_pagamento: text("forma_pagamento"),
+  status_pagamento: text("status_pagamento"),
+  invoice_url: text("invoice_url"),
+  bank_slip_url: text("bank_slip_url"),
+  pix_qrcode: text("pix_qrcode"),
+  data_criacao: text("data_criacao").notNull(),
+  data_atualizacao: text("data_atualizacao"),
+});
+
 export const insertPlanoSchema = createInsertSchema(planos).omit({
   id: true,
   data_criacao: true,
@@ -200,6 +219,23 @@ export const insertLogAdminSchema = createInsertSchema(logsAdmin).omit({
 });
 export type LogAdmin = typeof logsAdmin.$inferSelect;
 export type InsertLogAdmin = z.infer<typeof insertLogAdminSchema>;
+
+export const insertContasPagarSchema = createInsertSchema(contasPagar).omit({
+  id: true,
+  data_cadastro: true,
+});
+
+export const insertContasReceberSchema = createInsertSchema(contasReceber).omit({
+  id: true,
+  data_cadastro: true,
+});
+
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
+  id: true,
+  data_criacao: true,
+});
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
 
 // Funcionários (multi-tenant)
 export const funcionarios = pgTable("funcionarios", {

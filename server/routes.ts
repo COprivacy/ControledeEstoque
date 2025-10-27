@@ -10,9 +10,64 @@ import {
 import { nfceSchema } from "@shared/nfce-schema";
 import { FocusNFeService } from "./focusnfe";
 import { z } from "zod";
+import nodemailer from "nodemailer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
+  // Rota de contato
+  app.post("/api/contato", async (req, res) => {
+    try {
+      const { nome, email, assunto, mensagem } = req.body;
+
+      // Validação básica
+      if (!nome || !email || !assunto || !mensagem) {
+        return res.status(400).json({
+          error: "Todos os campos são obrigatórios"
+        });
+      }
+
+      // Configurar transporte de email (usando Gmail como exemplo)
+      // NOTA: Em produção, use variáveis de ambiente para credenciais
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: 'pavisoft.suporte@gmail.com',
+          pass: process.env.EMAIL_PASSWORD || '' // Configure a senha via variáveis de ambiente
+        }
+      });
+
+      // Configurar email
+      const mailOptions = {
+        from: email,
+        to: 'pavisoft.suporte@gmail.com',
+        subject: `[Contato Site] ${assunto}`,
+        html: `
+          <h2>Nova mensagem de contato</h2>
+          <p><strong>Nome:</strong> ${nome}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Assunto:</strong> ${assunto}</p>
+          <p><strong>Mensagem:</strong></p>
+          <p>${mensagem.replace(/\n/g, '<br>')}</p>
+        `,
+        replyTo: email
+      };
+
+      // Enviar email
+      await transporter.sendMail(mailOptions);
+
+      res.json({
+        success: true,
+        message: "Mensagem enviada com sucesso"
+      });
+    } catch (error) {
+      console.error("Erro ao enviar email:", error);
+      res.status(500).json({
+        error: "Erro ao enviar mensagem. Tente novamente mais tarde."
+      });
+    }
+  });
+
+  // User registration
   app.post("/api/auth/register", async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
@@ -51,15 +106,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, senha } = req.body;
-      
+
       // Primeiro tenta autenticar como usuário principal
       const user = await storage.getUserByEmail(email);
       if (user && user.senha === senha) {
-        return res.json({ 
-          id: user.id, 
-          email: user.email, 
-          nome: user.nome, 
-          plano: user.plano, 
+        return res.json({
+          id: user.id,
+          email: user.email,
+          nome: user.nome,
+          plano: user.plano,
           is_admin: user.is_admin,
           tipo: "usuario"
         });
@@ -68,12 +123,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Se não encontrou, tenta autenticar como funcionário
       const funcionarios = await storage.getFuncionarios();
       const funcionario = funcionarios.find(f => f.email === email && f.senha === senha);
-      
+
       if (funcionario) {
-        return res.json({ 
-          id: funcionario.id, 
-          email: funcionario.email, 
-          nome: funcionario.nome, 
+        return res.json({
+          id: funcionario.id,
+          email: funcionario.email,
+          nome: funcionario.nome,
           plano: "free",
           is_admin: "false",
           tipo: "funcionario",
@@ -310,7 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/funcionarios", async (req, res) => {
     try {
       const { conta_id, nome, email, senha, cargo } = req.body;
-      
+
       if (!conta_id || !nome || !email || !senha) {
         return res.status(400).json({ error: "Dados incompletos" });
       }
@@ -320,7 +375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingFuncionario = allFuncionarios.find(
         f => f.email === email && f.conta_id === conta_id
       );
-      
+
       if (existingFuncionario) {
         return res.status(400).json({ error: "Já existe um funcionário com este email nesta conta" });
       }
@@ -358,16 +413,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const updates = req.body;
-      
+
       delete updates.id;
       delete updates.conta_id;
-      
+
       const funcionario = await storage.updateFuncionario(id, updates);
-      
+
       if (!funcionario) {
         return res.status(404).json({ error: "Funcionário não encontrado" });
       }
-      
+
       res.json(funcionario);
     } catch (error) {
       res.status(500).json({ error: "Erro ao atualizar funcionário" });
@@ -378,11 +433,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const deleted = await storage.deleteFuncionario(id);
-      
+
       if (!deleted) {
         return res.status(404).json({ error: "Funcionário não encontrado" });
       }
-      
+
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Erro ao deletar funcionário" });
@@ -394,7 +449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const permissoes = await storage.getPermissoesFuncionario(id);
-      
+
       if (!permissoes) {
         return res.json({
           pdv: "false",
@@ -407,7 +462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           config_fiscal: "false",
         });
       }
-      
+
       res.json(permissoes);
     } catch (error) {
       res.status(500).json({ error: "Erro ao buscar permissões" });

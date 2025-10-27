@@ -11,6 +11,8 @@ import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Privacy from "@/pages/Privacy";
+import Ajuda from "@/pages/Ajuda";
+import Contato from "@/pages/Contato";
 import Admin from "@/pages/Admin";
 import PublicAdmin from "@/pages/PublicAdmin";
 import Dashboard from "@/pages/Dashboard";
@@ -36,6 +38,8 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/privacy" component={Privacy} />
+      <Route path="/ajuda" component={Ajuda} />
+      <Route path="/contato" component={Contato} />
       <Route path="/dashboard">
         {() => (
           <DashboardLayout>

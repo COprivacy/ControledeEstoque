@@ -397,14 +397,14 @@ export default function Landing() {
               <ul className="space-y-2 text-sm">
                 <li><Link href="/privacy" className="text-gray-400 hover:text-blue-400 transition-colors">Privacidade</Link></li>
                 <li><a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">Termos de Uso</a></li>
-                <li><Link href="/admin-publico" className="text-gray-400 hover:text-blue-400 transition-colors">Painel Admin</Link></li>
+                <li><Link href="/admin-publico" className="text-gray-400 hover:text-blue-400 transition-colors">Painel</Link></li>
               </ul>
             </div>
             <div>
               <h3 className="text-white font-semibold mb-4">Suporte</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">Ajuda</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">Contato</a></li>
+                <li><Link href="/ajuda" className="text-gray-400 hover:text-blue-400 transition-colors">Ajuda</Link></li>
+                <li><Link href="/contato" className="text-gray-400 hover:text-blue-400 transition-colors">Contato</Link></li>
               </ul>
             </div>
           </div>

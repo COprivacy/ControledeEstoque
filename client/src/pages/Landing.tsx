@@ -31,9 +31,7 @@ export default function Landing() {
   } | null>(null);
 
   const handlePlanClick = (planName: string) => {
-    if (planName === "Teste Grátis") {
-      setLocation("/register");
-    } else if (planName === "Premium Mensal") {
+    if (planName === "Premium Mensal") {
       setSelectedPlan({
         plano: "premium_mensal",
         nome: "Premium Mensal",
@@ -84,33 +82,12 @@ export default function Landing() {
 
   const pricingPlans = [
     {
-      name: "Teste Grátis",
-      price: "Grátis",
-      period: "por 7 dias",
-      description: "Experimente todos os recursos premium",
-      features: [
-        "Acesso completo por 7 dias",
-        "Produtos ilimitados",
-        "Usuários ilimitados",
-        "Gestão de permissões",
-        "PDV integrado",
-        "Relatórios avançados",
-        "Emissão de NF-e/NFC-e",
-        "Controle financeiro completo",
-        "Dashboard em tempo real",
-        "Suporte por email",
-        "Sem cartão de crédito"
-      ],
-      cta: "Começar Teste Grátis",
-      popular: false,
-      gradient: "from-green-500 to-emerald-600"
-    },
-    {
       name: "Premium Mensal",
       price: "R$ 79,99",
       period: "/mês",
       description: "Para negócios em crescimento",
       features: [
+        "7 dias de teste grátis",
         "Produtos ilimitados",
         "Usuários ilimitados",
         "Gestão de permissões",
@@ -122,7 +99,7 @@ export default function Landing() {
         "Backup automático diário",
         "Integrações personalizadas"
       ],
-      cta: "Assinar Agora",
+      cta: "Começar Teste Grátis",
       popular: true,
       gradient: "from-blue-600 to-purple-600"
     },
@@ -133,6 +110,7 @@ export default function Landing() {
       discount: "20% de desconto",
       description: "Economia máxima para seu negócio",
       features: [
+        "7 dias de teste grátis",
         "Todos os recursos Premium",
         "20% de economia anual",
         "R$ 63,92/mês (equivalente)",
@@ -145,7 +123,7 @@ export default function Landing() {
         "Consultoria de implementação",
         "Atualizações antecipadas"
       ],
-      cta: "Assinar Plano Anual",
+      cta: "Começar Teste Grátis",
       popular: false,
       gradient: "from-purple-600 to-pink-600"
     }
@@ -294,7 +272,7 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {pricingPlans.map((plan, index) => (
               <Card
                 key={index}
@@ -323,9 +301,8 @@ export default function Landing() {
 
                 <CardHeader className="text-center pb-8 pt-8">
                   <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${plan.gradient} flex items-center justify-center`}>
-                    {index === 0 && <Zap className="h-8 w-8 text-white" />}
-                    {index === 1 && <Rocket className="h-8 w-8 text-white" />}
-                    {index === 2 && <Shield className="h-8 w-8 text-white" />}
+                    {index === 0 && <Rocket className="h-8 w-8 text-white" />}
+                    {index === 1 && <Shield className="h-8 w-8 text-white" />}
                   </div>
                   <CardTitle className="text-2xl text-white mb-2">{plan.name}</CardTitle>
                   <CardDescription className="text-gray-400">{plan.description}</CardDescription>

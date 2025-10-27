@@ -51,7 +51,7 @@ export class SQLiteStorage implements IStorage {
     this.db = new Database(dbPath || defaultPath);
     this.initializeTables();
     this.loadData();
-    this.seedData();
+    this.seedData().catch(err => console.error('Erro ao fazer seed de dados:', err));
   }
 
   private initializeTables() {
@@ -268,10 +268,47 @@ export class SQLiteStorage implements IStorage {
     `);
   }
 
-  private seedData() {
+  private async seedData() {
     const userCount = this.db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
 
     if (userCount.count === 0) {
+      // Primeiro, tentar carregar usuários do arquivo users.json
+      try {
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        const usersJsonPath = path.join(__dirname, 'users.json');
+        const usersData = await fs.readFile(usersJsonPath, 'utf-8');
+        const usersFromFile = JSON.parse(usersData) as User[];
+        
+        if (usersFromFile.length > 0) {
+          const insertUser = this.db.prepare(`
+            INSERT INTO users (id, email, senha, nome, plano, is_admin, data_criacao, data_expiracao_trial, data_expiracao_plano, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `);
+          
+          for (const user of usersFromFile) {
+            insertUser.run(
+              user.id,
+              user.email,
+              user.senha,
+              user.nome,
+              user.plano || 'free',
+              user.is_admin || 'false',
+              user.data_criacao || new Date().toISOString(),
+              user.data_expiracao_trial || null,
+              user.data_expiracao_plano || null,
+              user.status || 'ativo'
+            );
+            this.users.set(user.id, user);
+          }
+          console.log(`✅ ${usersFromFile.length} usuário(s) carregado(s) do arquivo users.json`);
+          return;
+        }
+      } catch (error) {
+        console.warn('Arquivo users.json não encontrado ou vazio, usando dados padrão');
+      }
+
+      // Se não encontrou arquivo ou está vazio, usar dados padrão
       const users: InsertUser[] = [
         { email: "loja1@gmail.com", senha: "loja123", nome: "Loja 1" },
         { email: "loja2@gmail.com", senha: "loja456", nome: "Loja 2" },
@@ -417,11 +454,21 @@ export class SQLiteStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
+    // Primeiro tenta buscar no banco de dados SQLite
+    const stmt = this.db.prepare('SELECT * FROM users WHERE email = ?');
+    const userFromDb = stmt.get(email) as User | undefined;
+    
+    if (userFromDb) {
+      return userFromDb;
+    }
+    
+    // Se não encontrar, busca no Map em memória
     for (const user of this.users.values()) {
       if (user.email === email) {
         return user;
       }
     }
+    
     return undefined;
   }
 

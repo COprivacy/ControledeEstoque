@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -81,6 +80,16 @@ export default function AdminPublico() {
   const [editedClientData, setEditedClientData] = useState<Cliente | null>(null);
   const [configAsaasOpen, setConfigAsaasOpen] = useState(false);
   const [testingAsaas, setTestingAsaas] = useState(false);
+  const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [newUserForm, setNewUserData] = useState({
+    nome: "",
+    email: "",
+    senha: "",
+    plano: "free",
+    is_admin: "false",
+  });
+
 
   const { data: subscriptions = [], isLoading: isLoadingSubscriptions } = useQuery<Subscription[]>({
     queryKey: ["/api/subscriptions"],
@@ -177,7 +186,7 @@ export default function AdminPublico() {
         ambiente,
       });
       const result = await response.json();
-      
+
       if (result.success) {
         toast({
           title: "Conexão bem-sucedida!",
@@ -268,11 +277,123 @@ export default function AdminPublico() {
   const receitaPendente = subscriptions
     .filter(s => s.status === "pendente")
     .reduce((sum, s) => sum + s.valor, 0);
-  
+
   // Clientes com planos pagos
-  const clientesComPlanos = users.filter(u => 
+  const clientesComPlanos = users.filter(u =>
     subscriptions.some(s => s.user_id === u.id && s.status === "ativo")
   );
+
+  // Mutations para gerenciamento de usuários
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: typeof newUserForm) => {
+      const response = await apiRequest("POST", "/api/auth/register", {
+        ...userData,
+        data_criacao: new Date().toISOString(),
+        status: "ativo",
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Usuário criado",
+        description: "Novo usuário criado com sucesso!",
+      });
+      setCreateUserOpen(false);
+      setNewUserData({
+        nome: "",
+        email: "",
+        senha: "",
+        plano: "free",
+        is_admin: "false",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar usuário",
+        description: error.message || "Ocorreu um erro",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      const response = await apiRequest("PATCH", `/api/users/${id}`, updates);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Usuário atualizado",
+        description: "Dados atualizados com sucesso!",
+      });
+      setEditingUser(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao atualizar",
+        description: error.message || "Ocorreu um erro",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest("DELETE", `/api/users/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Usuário removido",
+        description: "Usuário excluído com sucesso",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao deletar",
+        description: error.message || "Ocorreu um erro",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    createUserMutation.mutate(newUserForm);
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setNewUserData({
+      nome: user.nome,
+      email: user.email,
+      senha: "", // Reset password field
+      plano: user.plano,
+      is_admin: user.status === "admin" ? "true" : "false", // Assuming 'admin' status means is_admin
+    });
+  };
+
+  const handleUpdateUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingUser) {
+      const updates = { ...newUserForm };
+      // Remove password if it's empty to avoid sending empty password
+      if (!updates.senha) {
+        delete updates.senha;
+      }
+      updateUserMutation.mutate({ id: editingUser.id, updates });
+    }
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    if (confirm("Tem certeza que deseja excluir este usuário?")) {
+      deleteUserMutation.mutate(userId);
+    }
+  };
+
 
   if (isLoadingSubscriptions || isLoadingUsers || isLoadingClientes) {
     return (
@@ -474,53 +595,252 @@ export default function AdminPublico() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="flex justify-end mb-4">
+                  <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="bg-green-600 hover:bg-green-700">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Novo Usuário
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-xl">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <UserPlus className="h-5 w-5" />
+                          Criar Novo Usuário
+                        </DialogTitle>
+                        <DialogDescription className="text-gray-400">
+                          Preencha os campos abaixo para criar um novo usuário
+                        </DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={handleCreateUser} className="space-y-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="nome" className="text-gray-300">Nome Completo</Label>
+                            <Input
+                              id="nome"
+                              value={newUserForm.nome}
+                              onChange={(e) => setNewUserData({ ...newUserForm, nome: e.target.value })}
+                              className="bg-gray-800 border-gray-700 text-white"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="email" className="text-gray-300">Email</Label>
+                            <Input
+                              id="email"
+                              type="email"
+                              value={newUserForm.email}
+                              onChange={(e) => setNewUserData({ ...newUserForm, email: e.target.value })}
+                              className="bg-gray-800 border-gray-700 text-white"
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="senha" className="text-gray-300">Senha</Label>
+                            <Input
+                              id="senha"
+                              type="password"
+                              value={newUserForm.senha}
+                              onChange={(e) => setNewUserData({ ...newUserForm, senha: e.target.value })}
+                              className="bg-gray-800 border-gray-700 text-white"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="plano" className="text-gray-300">Plano</Label>
+                            <Select
+                              name="plano"
+                              value={newUserForm.plano}
+                              onValueChange={(value) => setNewUserData({ ...newUserForm, plano: value })}
+                            >
+                              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                                <SelectValue placeholder="Selecione o plano" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                                <SelectItem value="free">Free</SelectItem>
+                                <SelectItem value="basic">Basic</SelectItem>
+                                <SelectItem value="pro">Pro</SelectItem>
+                                <SelectItem value="premium">Premium</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="checkbox"
+                            id="is_admin"
+                            checked={newUserForm.is_admin === "true"}
+                            onChange={(e) => setNewUserData({ ...newUserForm, is_admin: e.target.checked ? "true" : "false" })}
+                            className="w-auto h-4 text-green-600 focus:ring-green-500 border-gray-700 bg-gray-800"
+                          />
+                          <Label htmlFor="is_admin" className="text-gray-300">Administrador</Label>
+                        </div>
+                        <div className="flex justify-end gap-2 pt-4">
+                          <Button variant="outline" onClick={() => setCreateUserOpen(false)} className="bg-gray-800 border-gray-700">
+                            <X className="h-4 w-4 mr-1" />
+                            Cancelar
+                          </Button>
+                          <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                            <Save className="h-4 w-4 mr-1" />
+                            Criar Usuário
+                          </Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <Table>
                   <TableHeader>
                     <TableRow className="border-gray-800">
                       <TableHead className="text-gray-400">Nome</TableHead>
                       <TableHead className="text-gray-400">Email</TableHead>
-                      <TableHead className="text-gray-400">Plano Atual</TableHead>
+                      <TableHead className="text-gray-400">Plano</TableHead>
                       <TableHead className="text-gray-400">Status</TableHead>
+                      <TableHead className="text-gray-400">Administrador</TableHead>
                       <TableHead className="text-gray-400">ID Cliente Asaas</TableHead>
                       <TableHead className="text-gray-400">Data Cadastro</TableHead>
                       <TableHead className="text-gray-400">Expira Em</TableHead>
-                      <TableHead className="text-gray-400">Assinaturas</TableHead>
+                      <TableHead className="text-gray-400">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {clientesComPlanos.map((user) => {
-                      const userSubscriptions = subscriptions.filter(s => s.user_id === user.id);
-                      const activeSubscription = userSubscriptions.find(s => s.status === "ativo");
-                      return (
-                        <TableRow key={user.id} className="border-gray-800">
-                          <TableCell className="text-white font-semibold">{user.nome}</TableCell>
-                          <TableCell className="text-gray-300">{user.email}</TableCell>
-                          <TableCell>
-                            <Badge variant="default" className="bg-green-600">
-                              {user.plano.toUpperCase()}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{getStatusBadge(user.status)}</TableCell>
-                          <TableCell className="text-xs text-gray-400 font-mono">
-                            {user.asaas_customer_id || "-"}
-                          </TableCell>
-                          <TableCell className="text-gray-300">{formatDate(user.data_criacao)}</TableCell>
-                          <TableCell className="text-gray-300">
-                            {formatDate(user.data_expiracao_plano || user.data_expiracao_trial)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">
-                              {userSubscriptions.length} total
-                            </Badge>
-                            {activeSubscription && (
-                              <Badge variant="default" className="ml-2">
-                                {formatCurrency(activeSubscription.valor)}/mês
-                              </Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {users.map((user) => (
+                      <TableRow key={user.id} className="border-gray-800">
+                        <TableCell className="text-white font-semibold">{user.nome}</TableCell>
+                        <TableCell className="text-gray-300">{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant="default" className="bg-blue-600">
+                            {user.plano.toUpperCase()}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(user.status)}</TableCell>
+                        <TableCell>
+                          {user.is_admin ? (
+                            <Badge variant="default" className="bg-purple-600">Sim</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-gray-400">Não</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs text-gray-400 font-mono">
+                          {user.asaas_customer_id || "-"}
+                        </TableCell>
+                        <TableCell className="text-gray-300">{formatDate(user.data_criacao)}</TableCell>
+                        <TableCell className="text-gray-300">
+                          {formatDate(user.data_expiracao_plano || user.data_expiracao_trial)}
+                        </TableCell>
+                        <TableCell className="flex gap-2">
+                          <Dialog open={editingUser?.id === user.id} onOpenChange={(open) => !open && setEditingUser(null)}>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditUser(user)}
+                                className="bg-gray-800 border-gray-700"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-xl">
+                              <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2">
+                                  <User className="h-5 w-5" />
+                                  Editar Usuário
+                                </DialogTitle>
+                                <DialogDescription className="text-gray-400">
+                                  Atualize as informações do usuário
+                                </DialogDescription>
+                              </DialogHeader>
+                              <form onSubmit={handleUpdateUser} className="space-y-4 py-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <Label htmlFor="edit-nome" className="text-gray-300">Nome Completo</Label>
+                                    <Input
+                                      id="edit-nome"
+                                      value={newUserForm.nome}
+                                      onChange={(e) => setNewUserData({ ...newUserForm, nome: e.target.value })}
+                                      className="bg-gray-800 border-gray-700 text-white"
+                                      required
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-email" className="text-gray-300">Email</Label>
+                                    <Input
+                                      id="edit-email"
+                                      type="email"
+                                      value={newUserForm.email}
+                                      onChange={(e) => setNewUserData({ ...newUserForm, email: e.target.value })}
+                                      className="bg-gray-800 border-gray-700 text-white"
+                                      required
+                                    />
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <Label htmlFor="edit-senha" className="text-gray-300">Nova Senha (Opcional)</Label>
+                                    <Input
+                                      id="edit-senha"
+                                      type="password"
+                                      value={newUserForm.senha}
+                                      onChange={(e) => setNewUserData({ ...newUserForm, senha: e.target.value })}
+                                      className="bg-gray-800 border-gray-700 text-white"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-plano" className="text-gray-300">Plano</Label>
+                                    <Select
+                                      name="plano"
+                                      value={newUserForm.plano}
+                                      onValueChange={(value) => setNewUserData({ ...newUserForm, plano: value })}
+                                    >
+                                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                                        <SelectValue placeholder="Selecione o plano" />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                                        <SelectItem value="free">Free</SelectItem>
+                                        <SelectItem value="basic">Basic</SelectItem>
+                                        <SelectItem value="pro">Pro</SelectItem>
+                                        <SelectItem value="premium">Premium</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    type="checkbox"
+                                    id="edit-is_admin"
+                                    checked={newUserForm.is_admin === "true"}
+                                    onChange={(e) => setNewUserData({ ...newUserForm, is_admin: e.target.checked ? "true" : "false" })}
+                                    className="w-auto h-4 text-green-600 focus:ring-green-500 border-gray-700 bg-gray-800"
+                                  />
+                                  <Label htmlFor="edit-is_admin" className="text-gray-300">Administrador</Label>
+                                </div>
+                                <div className="flex justify-end gap-2 pt-4">
+                                  <Button variant="outline" onClick={() => setEditingUser(null)} className="bg-gray-800 border-gray-700">
+                                    <X className="h-4 w-4 mr-1" />
+                                    Cancelar
+                                  </Button>
+                                  <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                                    <Save className="h-4 w-4 mr-1" />
+                                    Salvar Alterações
+                                  </Button>
+                                </div>
+                              </form>
+                            </DialogContent>
+                          </Dialog>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="bg-red-700 hover:bg-red-800"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </CardContent>

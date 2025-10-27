@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Users, UserPlus, Trash2, Shield, Building2, CreditCard, Edit, Power } from "lucide-react";
+import { Users, UserPlus, Trash2, Shield, Building2, CreditCard, Edit, Power, Check, Crown, Zap } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -372,10 +372,22 @@ export default function Admin() {
               <CardContent className="space-y-3">
                 <div>
                   <p className="text-xs text-muted-foreground">Plano</p>
-                  <Badge variant={currentUser.plano === "premium" ? "default" : "secondary"} className="mt-1">
-                    {currentUser.plano === "premium" ? "Premium" : "Free"}
+                  <Badge variant={currentUser.plano === "premium" || currentUser.plano === "mensal" || currentUser.plano === "anual" ? "default" : "secondary"} className="mt-1">
+                    {currentUser.plano === "trial" && "7 Dias Free Trial"}
+                    {currentUser.plano === "mensal" && "Mensal"}
+                    {currentUser.plano === "anual" && "Anual"}
+                    {currentUser.plano === "premium" && "Premium"}
+                    {!["trial", "mensal", "anual", "premium"].includes(currentUser.plano) && "Free"}
                   </Badge>
                 </div>
+                {currentUser.data_expiracao_plano && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Expira em</p>
+                    <p className="text-base font-medium">
+                      {calculateDaysRemaining(currentUser.data_expiracao_plano)} dias
+                    </p>
+                  </div>
+                )}
                 {currentUser.data_expiracao_trial && (
                   <div>
                     <p className="text-xs text-muted-foreground">Trial</p>
@@ -386,6 +398,131 @@ export default function Admin() {
                 )}
               </CardContent>
             </Card>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Planos Disponíveis</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Escolha o plano ideal para sua empresa</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Plano Mensal */}
+              <Card className="relative overflow-hidden border-2 border-blue-200 dark:border-blue-900 hover:shadow-lg transition-all">
+                <div className="absolute top-0 right-0 bg-blue-500 text-white px-3 py-1 text-xs font-semibold rounded-bl-lg">
+                  POPULAR
+                </div>
+                <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                      <Zap className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-2xl">Plano Mensal</CardTitle>
+                      <CardDescription>Flexibilidade mês a mês</CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex items-baseline gap-2 mt-4">
+                    <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">R$ 49,90</span>
+                    <span className="text-gray-600 dark:text-gray-400">/mês</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Acesso completo ao sistema</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">PDV, Produtos e Estoque</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Gestão Financeira completa</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Emissão de NF-e/NFC-e</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Relatórios e Dashboard</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Suporte prioritário</span>
+                    </div>
+                  </div>
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" size="lg" data-testid="button-plan-mensal">
+                    Assinar Plano Mensal
+                  </Button>
+                  <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                    Cancele quando quiser, sem multas
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Plano Anual */}
+              <Card className="relative overflow-hidden border-2 border-purple-200 dark:border-purple-900 hover:shadow-lg transition-all">
+                <div className="absolute top-0 right-0 bg-purple-500 text-white px-3 py-1 text-xs font-semibold rounded-bl-lg flex items-center gap-1">
+                  <Crown className="h-3 w-3" />
+                  ECONOMIZE 20%
+                </div>
+                <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                      <Crown className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-2xl">Plano Anual</CardTitle>
+                      <CardDescription>Melhor custo-benefício</CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex items-baseline gap-2 mt-4">
+                    <span className="text-4xl font-bold text-purple-600 dark:text-purple-400">R$ 39,90</span>
+                    <span className="text-gray-600 dark:text-gray-400">/mês</span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    R$ 478,80 cobrado anualmente
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">Tudo do plano mensal, mais:</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Economia de R$ 120,00/ano</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Suporte VIP exclusivo</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Atualizações prioritárias</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Backup automático diário</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Consultoria mensal inclusa</span>
+                    </div>
+                  </div>
+                  <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white" size="lg" data-testid="button-plan-anual">
+                    Assinar Plano Anual
+                  </Button>
+                  <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                    Pagamento único anual • Garantia de 7 dias
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
           <Card>

@@ -15,6 +15,7 @@ import Ajuda from "@/pages/Ajuda";
 import Contato from "@/pages/Contato";
 import Admin from "@/pages/Admin";
 import PublicAdmin from "@/pages/PublicAdmin";
+import AdminPublico from "@/pages/AdminPublico";
 import Dashboard from "@/pages/Dashboard";
 import Products from "@/pages/Products";
 import AddProduct from "@/pages/AddProduct";
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/privacy" component={Privacy} />
       <Route path="/ajuda" component={Ajuda} />
       <Route path="/contato" component={Contato} />
+      <Route path="/admin-publico" component={AdminPublico} />
       <Route path="/dashboard">
         {() => (
           <DashboardLayout>

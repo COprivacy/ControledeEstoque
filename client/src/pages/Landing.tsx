@@ -1,5 +1,6 @@
 
-import { Link } from "wouter";
+import { useState } from "react";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -18,8 +19,36 @@ import {
   Database,
   Lock
 } from "lucide-react";
+import { CheckoutForm } from "@/components/CheckoutForm";
 
 export default function Landing() {
+  const [, setLocation] = useLocation();
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{
+    plano: "premium_mensal" | "premium_anual";
+    nome: string;
+    preco: string;
+  } | null>(null);
+
+  const handlePlanClick = (planName: string) => {
+    if (planName === "Teste Grátis") {
+      setLocation("/register");
+    } else if (planName === "Premium Mensal") {
+      setSelectedPlan({
+        plano: "premium_mensal",
+        nome: "Premium Mensal",
+        preco: "R$ 79,99/mês"
+      });
+      setCheckoutOpen(true);
+    } else if (planName === "Premium Anual") {
+      setSelectedPlan({
+        plano: "premium_anual",
+        nome: "Premium Anual",
+        preco: "R$ 767,04/ano"
+      });
+      setCheckoutOpen(true);
+    }
+  };
   const features = [
     {
       icon: Package,
@@ -324,17 +353,17 @@ export default function Landing() {
                     ))}
                   </ul>
 
-                  <Link href="/register">
-                    <Button
-                      className={`w-full py-6 text-lg font-semibold transition-all duration-300 ${
-                        plan.popular
-                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg shadow-blue-500/50'
-                          : 'bg-slate-800 hover:bg-slate-700 text-white border border-blue-500/30'
-                      }`}
-                    >
-                      {plan.cta}
-                    </Button>
-                  </Link>
+                  <Button
+                    onClick={() => handlePlanClick(plan.name)}
+                    className={`w-full py-6 text-lg font-semibold transition-all duration-300 ${
+                      plan.popular
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg shadow-blue-500/50'
+                        : 'bg-slate-800 hover:bg-slate-700 text-white border border-blue-500/30'
+                    }`}
+                    data-testid={`button-${plan.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    {plan.cta}
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -413,6 +442,16 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      {selectedPlan && (
+        <CheckoutForm
+          open={checkoutOpen}
+          onOpenChange={setCheckoutOpen}
+          plano={selectedPlan.plano}
+          planoNome={selectedPlan.nome}
+          planoPreco={selectedPlan.preco}
+        />
+      )}
     </div>
   );
 }

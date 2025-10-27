@@ -86,7 +86,7 @@ export default function AdminPublico() {
     nome: "",
     email: "",
     senha: "",
-    plano: "free",
+    plano: "trial",
     is_admin: "false",
   });
 
@@ -304,7 +304,7 @@ export default function AdminPublico() {
         nome: "",
         email: "",
         senha: "",
-        plano: "free",
+        plano: "trial",
         is_admin: "false",
       });
     },
@@ -316,6 +316,21 @@ export default function AdminPublico() {
       });
     },
   });
+
+  const calcularDataExpiracao = (plano: string): string | null => {
+    const hoje = new Date();
+    if (plano === "trial") {
+      hoje.setDate(hoje.getDate() + 7);
+      return hoje.toISOString();
+    } else if (plano === "mensal") {
+      hoje.setMonth(hoje.getMonth() + 1);
+      return hoje.toISOString();
+    } else if (plano === "anual") {
+      hoje.setFullYear(hoje.getFullYear() + 1);
+      return hoje.toISOString();
+    }
+    return null;
+  };
 
   const updateUserMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
@@ -362,7 +377,12 @@ export default function AdminPublico() {
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
-    createUserMutation.mutate(newUserForm);
+    const dataExpiracao = calcularDataExpiracao(newUserForm.plano);
+    const userData = {
+      ...newUserForm,
+      data_expiracao_plano: dataExpiracao,
+    };
+    createUserMutation.mutate(userData);
   };
 
   const handleEditUser = (user: User) => {
@@ -384,6 +404,10 @@ export default function AdminPublico() {
       if (!updates.senha) {
         delete updates.senha;
       }
+      // Calcula a data de expiração baseada no plano
+      const dataExpiracao = calcularDataExpiracao(updates.plano);
+      updates.data_expiracao_plano = dataExpiracao;
+      
       updateUserMutation.mutate({ id: editingUser.id, updates });
     }
   };
@@ -660,10 +684,9 @@ export default function AdminPublico() {
                                 <SelectValue placeholder="Selecione o plano" />
                               </SelectTrigger>
                               <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                                <SelectItem value="free">Free</SelectItem>
-                                <SelectItem value="basic">Basic</SelectItem>
-                                <SelectItem value="pro">Pro</SelectItem>
-                                <SelectItem value="premium">Premium</SelectItem>
+                                <SelectItem value="trial">7 dias free trial</SelectItem>
+                                <SelectItem value="mensal">Mensal</SelectItem>
+                                <SelectItem value="anual">Anual</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -799,10 +822,9 @@ export default function AdminPublico() {
                                         <SelectValue placeholder="Selecione o plano" />
                                       </SelectTrigger>
                                       <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                                        <SelectItem value="free">Free</SelectItem>
-                                        <SelectItem value="basic">Basic</SelectItem>
-                                        <SelectItem value="pro">Pro</SelectItem>
-                                        <SelectItem value="premium">Premium</SelectItem>
+                                        <SelectItem value="trial">7 dias free trial</SelectItem>
+                                        <SelectItem value="mensal">Mensal</SelectItem>
+                                        <SelectItem value="anual">Anual</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </div>

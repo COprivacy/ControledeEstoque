@@ -36,10 +36,20 @@ export function usePermissions() {
     // Admin sempre tem acesso
     if (user.is_admin === "true") return true;
     
-    // Plano premium tem acesso
-    if (user.plano === 'premium') return true;
+    // Verifica se tem plano ativo (trial, mensal ou anual)
+    if (user.plano === 'trial' || user.plano === 'mensal' || user.plano === 'anual') {
+      // Verifica se a data de expiração ainda é válida
+      if (user.data_expiracao_plano) {
+        const now = new Date();
+        const expirationDate = new Date(user.data_expiracao_plano);
+        return now < expirationDate;
+      }
+    }
 
-    // Trial de 7 dias tem acesso completo
+    // Mantém compatibilidade com planos antigos
+    if (user.plano === 'premium') return true;
+    
+    // Trial antigo (por compatibilidade)
     if (user.data_expiracao_trial) {
       const now = new Date();
       const expirationDate = new Date(user.data_expiracao_trial);

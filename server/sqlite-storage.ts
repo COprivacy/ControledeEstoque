@@ -269,24 +269,51 @@ export class SQLiteStorage implements IStorage {
   }
 
   private async seedData() {
-    const userCount = this.db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
-
-    if (userCount.count === 0) {
-      // Primeiro, tentar carregar usuários do arquivo users.json
-      try {
-        const fs = await import('fs/promises');
-        const path = await import('path');
-        const usersJsonPath = path.join(__dirname, 'users.json');
-        const usersData = await fs.readFile(usersJsonPath, 'utf-8');
-        const usersFromFile = JSON.parse(usersData) as User[];
-        
-        if (usersFromFile.length > 0) {
-          const insertUser = this.db.prepare(`
-            INSERT INTO users (id, email, senha, nome, plano, is_admin, data_criacao, data_expiracao_trial, data_expiracao_plano, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `);
+    // SEMPRE tentar carregar o usuário admin do users.json
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const usersJsonPath = path.join(__dirname, 'users.json');
+      const usersData = await fs.readFile(usersJsonPath, 'utf-8');
+      const usersFromFile = JSON.parse(usersData) as User[];
+      
+      if (usersFromFile.length > 0) {
+        for (const user of usersFromFile) {
+          // Verificar se o usuário já existe
+          const existingUser = this.db.prepare('SELECT * FROM users WHERE email = ?').get(user.email);
           
-          for (const user of usersFromFile) {
+          if (existingUser) {
+            // Atualizar usuário existente
+            const updateStmt = this.db.prepare(`
+              UPDATE users SET 
+                senha = ?,
+                nome = ?,
+                plano = ?,
+                is_admin = ?,
+                data_criacao = ?,
+                data_expiracao_trial = ?,
+                data_expiracao_plano = ?,
+                status = ?
+              WHERE email = ?
+            `);
+            updateStmt.run(
+              user.senha,
+              user.nome,
+              user.plano || 'free',
+              user.is_admin || 'false',
+              user.data_criacao || new Date().toISOString(),
+              user.data_expiracao_trial || null,
+              user.data_expiracao_plano || null,
+              user.status || 'ativo',
+              user.email
+            );
+            console.log(`✅ Usuário atualizado: ${user.email}`);
+          } else {
+            // Inserir novo usuário
+            const insertUser = this.db.prepare(`
+              INSERT INTO users (id, email, senha, nome, plano, is_admin, data_criacao, data_expiracao_trial, data_expiracao_plano, status)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `);
             insertUser.run(
               user.id,
               user.email,
@@ -299,14 +326,19 @@ export class SQLiteStorage implements IStorage {
               user.data_expiracao_plano || null,
               user.status || 'ativo'
             );
-            this.users.set(user.id, user);
+            console.log(`✅ Usuário criado: ${user.email}`);
           }
-          console.log(`✅ ${usersFromFile.length} usuário(s) carregado(s) do arquivo users.json`);
-          return;
+          this.users.set(user.id, user);
         }
-      } catch (error) {
-        console.warn('Arquivo users.json não encontrado ou vazio, usando dados padrão');
+        console.log(`✅ ${usersFromFile.length} usuário(s) processado(s) do arquivo users.json`);
       }
+    } catch (error) {
+      console.warn('⚠️ Erro ao carregar users.json:', error);
+    }
+
+    const userCount = this.db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
+
+    if (userCount.count === 0) {
 
       // Se não encontrou arquivo ou está vazio, usar dados padrão
       const users: InsertUser[] = [

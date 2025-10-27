@@ -80,7 +80,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (user) {
         console.log(`🔑 Comparando senhas - Recebida: "${senha}" | Armazenada: "${user.senha}"`);
+        console.log(`🔑 Tipo da senha recebida: ${typeof senha} | Tipo da senha armazenada: ${typeof user.senha}`);
         console.log(`🔑 Senhas são iguais? ${user.senha === senha}`);
+        console.log(`🔑 Dados completos do usuário:`, JSON.stringify(user, null, 2));
+      } else {
+        console.log(`❌ Email não encontrado no banco: ${email}`);
       }
 
       if (user && user.senha === senha) {

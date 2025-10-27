@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import {
@@ -11,6 +11,18 @@ import { nfceSchema } from "@shared/nfce-schema";
 import { FocusNFeService } from "./focusnfe";
 import { z } from "zod";
 import nodemailer from "nodemailer";
+
+// Middleware para verificar se o usuário é admin
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const userId = req.headers['x-user-id'] as string;
+  const isAdmin = req.headers['x-is-admin'] as string;
+  
+  if (!userId || isAdmin !== "true") {
+    return res.status(403).json({ error: "Acesso negado. Apenas administradores podem acessar este recurso." });
+  }
+  
+  next();
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
 

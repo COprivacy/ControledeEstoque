@@ -183,9 +183,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/users/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      console.log(`🗑️ [DELETE USER] Tentando deletar usuário ID: ${id}`);
       await storage.deleteUser(id);
+      console.log(`✅ [DELETE USER] Usuário ${id} deletado com sucesso do banco de dados`);
       res.json({ success: true });
     } catch (error) {
+      console.log(`❌ [DELETE USER] Erro ao deletar usuário ${id}:`, error);
       res.status(500).json({ error: "Erro ao deletar usuário" });
     }
   });
@@ -833,12 +836,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/clientes/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      console.log(`🗑️ [DELETE CLIENTE] Tentando deletar cliente ID: ${id}`);
       const deleted = await storage.deleteCliente(id);
       if (!deleted) {
+        console.log(`⚠️ [DELETE CLIENTE] Cliente ${id} não encontrado`);
         return res.status(404).json({ error: "Cliente não encontrado" });
       }
+      console.log(`✅ [DELETE CLIENTE] Cliente ${id} deletado com sucesso`);
       res.json({ success: true });
     } catch (error) {
+      console.log(`❌ [DELETE CLIENTE] Erro ao deletar cliente ${id}:`, error);
       res.status(500).json({ error: "Erro ao deletar cliente" });
     }
   });

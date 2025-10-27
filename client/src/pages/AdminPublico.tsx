@@ -15,7 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, RefreshCw, ArrowLeft, Users, DollarSign, CreditCard, TrendingUp, Edit2, Save, X, Mail, Phone, MapPin, User } from "lucide-react";
+import { Loader2, RefreshCw, ArrowLeft, Users, DollarSign, CreditCard, TrendingUp, Edit2, Save, X, Mail, Phone, MapPin, User, Plus, Trash2, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { format } from "date-fns";

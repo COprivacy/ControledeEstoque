@@ -1,23 +1,15 @@
 
 [
   {
-    "email": "loja1@gmail.com",
-    "senha": "loja123",
-    "nome": "Loja 1",
-    "id": "48c51ac3-1ea4-4c26-bd6b-5f980a64616d",
-    "plano": "free",
-    "is_admin": "false",
+    "email": "pavisoft.suporte@gmail.com",
+    "senha": "Pavisoft@140319",
+    "nome": "Pavisoft",
+    "id": "pavisoft-admin-001",
+    "plano": "premium",
+    "is_admin": "true",
     "data_criacao": "2025-01-01T00:00:00.000Z",
-    "data_expiracao_trial": "2025-01-11T00:00:00.000Z"
-  },
-  {
-    "email": "loja2@gmail.com",
-    "senha": "loja456",
-    "nome": "Loja 2",
-    "id": "f83d0ebb-293c-4ec9-98e9-d8da00d57545",
-    "plano": "free",
-    "is_admin": "false",
-    "data_criacao": "2025-01-01T00:00:00.000Z",
-    "data_expiracao_trial": "2025-01-11T00:00:00.000Z"
+    "data_expiracao_trial": null,
+    "data_expiracao_plano": "2026-12-31T23:59:59.000Z",
+    "status": "ativo"
   }
 ]

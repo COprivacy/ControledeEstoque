@@ -193,20 +193,45 @@ export class SQLiteStorage implements IStorage {
 
       CREATE TABLE IF NOT EXISTS funcionarios (
         id TEXT PRIMARY KEY,
+        conta_id TEXT NOT NULL,
         nome TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
+        email TEXT NOT NULL,
         senha TEXT NOT NULL,
-        cargo TEXT NOT NULL,
-        data_contratacao TEXT NOT NULL,
-        salario REAL NOT NULL,
-        ativo TEXT NOT NULL DEFAULT 'true'
+        cargo TEXT,
+        status TEXT DEFAULT 'ativo',
+        data_criacao TEXT NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS permissoes_funcionarios (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         funcionario_id TEXT NOT NULL,
-        permissao TEXT NOT NULL,
+        pdv TEXT DEFAULT 'false',
+        produtos TEXT DEFAULT 'false',
+        inventario TEXT DEFAULT 'false',
+        relatorios TEXT DEFAULT 'false',
+        clientes TEXT DEFAULT 'false',
+        fornecedores TEXT DEFAULT 'false',
+        financeiro TEXT DEFAULT 'false',
+        config_fiscal TEXT DEFAULT 'false',
         FOREIGN KEY (funcionario_id) REFERENCES funcionarios(id)
+      );
+
+      CREATE TABLE IF NOT EXISTS subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        plano TEXT NOT NULL,
+        status TEXT NOT NULL,
+        valor REAL NOT NULL,
+        data_inicio TEXT,
+        data_vencimento TEXT,
+        asaas_payment_id TEXT,
+        forma_pagamento TEXT,
+        status_pagamento TEXT,
+        invoice_url TEXT,
+        bank_slip_url TEXT,
+        pix_qrcode TEXT,
+        data_criacao TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id)
       );
     `);
   }
@@ -699,6 +724,53 @@ export class SQLiteStorage implements IStorage {
   async deleteContaReceber(id: number): Promise<void> {
     const stmt = this.db.prepare('DELETE FROM contas_receber WHERE id = ?');
     stmt.run(id);
+  }
+
+  // Subscriptions
+  async getSubscriptions(): Promise<any[]> {
+    const stmt = this.db.prepare('SELECT * FROM subscriptions ORDER BY data_criacao DESC');
+    return stmt.all() || [];
+  }
+
+  async getSubscription(id: number): Promise<any | null> {
+    const stmt = this.db.prepare('SELECT * FROM subscriptions WHERE id = ?');
+    return stmt.get(id) || null;
+  }
+
+  async getSubscriptionsByUser(userId: string): Promise<any[]> {
+    const stmt = this.db.prepare('SELECT * FROM subscriptions WHERE user_id = ? ORDER BY data_criacao DESC');
+    return stmt.all(userId) || [];
+  }
+
+  async createSubscription(data: any): Promise<any> {
+    const stmt = this.db.prepare(`
+      INSERT INTO subscriptions (user_id, plano, status, valor, data_inicio, data_vencimento, asaas_payment_id, forma_pagamento, status_pagamento, invoice_url, bank_slip_url, pix_qrcode, data_criacao)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      data.user_id,
+      data.plano,
+      data.status,
+      data.valor,
+      data.data_inicio || null,
+      data.data_vencimento || null,
+      data.asaas_payment_id || null,
+      data.forma_pagamento || null,
+      data.status_pagamento || null,
+      data.invoice_url || null,
+      data.bank_slip_url || null,
+      data.pix_qrcode || null,
+      data.data_criacao || new Date().toISOString()
+    );
+    return { ...data, id: Number(info.lastInsertRowid) };
+  }
+
+  async updateSubscription(id: number, updates: any): Promise<any> {
+    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+    const values = Object.values(updates);
+    const stmt = this.db.prepare(`UPDATE subscriptions SET ${fields} WHERE id = ?`);
+    stmt.run(...values, id);
+    return this.db.prepare('SELECT * FROM subscriptions WHERE id = ?').get(id);
   }
 
   // Planos

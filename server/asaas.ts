@@ -16,6 +16,17 @@ interface AsaasPayment {
   value: number;
   dueDate: string;
   description?: string;
+  externalReference?: string;
+}
+
+interface AsaasSubscription {
+  customer: string;
+  billingType: 'BOLETO' | 'CREDIT_CARD' | 'PIX';
+  value: number;
+  nextDueDate: string;
+  cycle: 'MONTHLY' | 'YEARLY';
+  description?: string;
+  externalReference?: string;
 }
 
 export class AsaasService {
@@ -84,4 +95,43 @@ export class AsaasService {
   async getAccountInfo() {
     return this.request('/myAccount');
   }
+
+  async createSubscription(subscription: AsaasSubscription) {
+    return this.request('/subscriptions', {
+      method: 'POST',
+      body: JSON.stringify(subscription),
+    });
+  }
+
+  async getSubscription(subscriptionId: string) {
+    return this.request(`/subscriptions/${subscriptionId}`);
+  }
+
+  async getPaymentsByCustomer(customerId: string) {
+    return this.request(`/payments?customer=${customerId}`);
+  }
+
+  async listPayments(params?: { offset?: number; limit?: number; status?: string }) {
+    const queryParams = new URLSearchParams();
+    if (params?.offset) queryParams.append('offset', params.offset.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.status) queryParams.append('status', params.status);
+    const query = queryParams.toString();
+    return this.request(`/payments${query ? `?${query}` : ''}`);
+  }
+
+  async updatePayment(paymentId: string, updates: Partial<AsaasPayment>) {
+    return this.request(`/payments/${paymentId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deletePayment(paymentId: string) {
+    return this.request(`/payments/${paymentId}`, {
+      method: 'DELETE',
+    });
+  }
 }
+
+export type { AsaasConfig, AsaasCustomer, AsaasPayment, AsaasSubscription };

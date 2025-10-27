@@ -1160,6 +1160,234 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/signup-free-trial", async (req, res) => {
+    try {
+      const { nome, email, senha } = req.body;
+
+      if (!nome || !email || !senha) {
+        return res.status(400).json({ error: "Todos os campos são obrigatórios" });
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ error: "Email já cadastrado" });
+      }
+
+      const dataCriacao = new Date().toISOString();
+      const dataExpiracao = new Date();
+      dataExpiracao.setDate(dataExpiracao.getDate() + 7);
+
+      const user = await storage.createUser({
+        nome,
+        email,
+        senha,
+        plano: "free_trial",
+        data_criacao: dataCriacao,
+        data_expiracao_trial: dataExpiracao.toISOString(),
+        status: "ativo",
+        is_admin: "false",
+      });
+
+      const subscription = await storage.createSubscription({
+        user_id: user.id,
+        plano: "free_trial",
+        status: "ativo",
+        valor: 0,
+        data_inicio: dataCriacao,
+        data_vencimento: dataExpiracao.toISOString(),
+      });
+
+      res.json({
+        user: {
+          id: user.id,
+          nome: user.nome,
+          email: user.email,
+          plano: user.plano,
+        },
+        subscription,
+        message: "Teste grátis de 7 dias iniciado com sucesso!"
+      });
+    } catch (error) {
+      console.error("Erro ao criar teste grátis:", error);
+      res.status(500).json({ error: "Erro ao criar conta" });
+    }
+  });
+
+  app.post("/api/checkout", async (req, res) => {
+    try {
+      const { nome, email, cpfCnpj, plano, formaPagamento } = req.body;
+
+      if (!nome || !email || !plano || !formaPagamento) {
+        return res.status(400).json({ error: "Dados incompletos" });
+      }
+
+      const planoValues = {
+        premium_mensal: 79.99,
+        premium_anual: 767.04
+      };
+
+      if (!planoValues[plano as keyof typeof planoValues]) {
+        return res.status(400).json({ error: "Plano inválido" });
+      }
+
+      const config = await storage.getConfigAsaas();
+      if (!config || !config.api_key) {
+        return res.status(500).json({ error: "Configuração da API de pagamento não encontrada" });
+      }
+
+      const { AsaasService } = await import('./asaas');
+      const asaas = new AsaasService({
+        apiKey: config.api_key,
+        ambiente: config.ambiente as 'sandbox' | 'production'
+      });
+
+      const asaasCustomer = await asaas.createCustomer({
+        name: nome,
+        email,
+        cpfCnpj
+      });
+
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 3);
+
+      const payment = await asaas.createPayment({
+        customer: asaasCustomer.id,
+        billingType: formaPagamento,
+        value: planoValues[plano as keyof typeof planoValues],
+        dueDate: dueDate.toISOString().split('T')[0],
+        description: `Assinatura ${plano === 'premium_mensal' ? 'Premium Mensal' : 'Premium Anual'}`,
+        externalReference: `${plano}_${Date.now()}`
+      });
+
+      let user = await storage.getUserByEmail(email);
+      if (!user) {
+        user = await storage.createUser({
+          nome,
+          email,
+          senha: Math.random().toString(36).slice(-8),
+          plano: "free",
+          is_admin: "false",
+          status: "ativo",
+          asaas_customer_id: asaasCustomer.id,
+        });
+      } else {
+        await storage.updateUser(user.id, {
+          asaas_customer_id: asaasCustomer.id
+        });
+      }
+
+      const dataVencimento = new Date();
+      if (plano === 'premium_mensal') {
+        dataVencimento.setMonth(dataVencimento.getMonth() + 1);
+      } else {
+        dataVencimento.setFullYear(dataVencimento.getFullYear() + 1);
+      }
+
+      const subscription = await storage.createSubscription({
+        user_id: user.id,
+        plano,
+        status: "pendente",
+        valor: planoValues[plano as keyof typeof planoValues],
+        data_vencimento: dataVencimento.toISOString(),
+        asaas_payment_id: payment.id,
+        forma_pagamento: formaPagamento,
+        status_pagamento: payment.status,
+        invoice_url: payment.invoiceUrl,
+        bank_slip_url: payment.bankSlipUrl,
+        pix_qrcode: payment.encodedImage,
+      });
+
+      res.json({
+        success: true,
+        subscription,
+        payment: {
+          id: payment.id,
+          status: payment.status,
+          invoiceUrl: payment.invoiceUrl,
+          bankSlipUrl: payment.bankSlipUrl,
+          pixQrCode: payment.encodedImage,
+        },
+        message: "Cobrança criada com sucesso!"
+      });
+    } catch (error: any) {
+      console.error("Erro ao criar checkout:", error);
+      res.status(500).json({ error: error.message || "Erro ao processar pagamento" });
+    }
+  });
+
+  app.post("/api/webhook/asaas", async (req, res) => {
+    try {
+      const { event, payment } = req.body;
+
+      console.log("Webhook Asaas recebido:", event, payment);
+
+      if (!payment || !payment.id) {
+        return res.status(400).json({ error: "Dados do webhook inválidos" });
+      }
+
+      const subscriptions = await storage.getSubscriptions();
+      const subscription = subscriptions?.find(s => s.asaas_payment_id === payment.id);
+
+      if (!subscription) {
+        console.log("Assinatura não encontrada para pagamento:", payment.id);
+        return res.status(404).json({ error: "Assinatura não encontrada" });
+      }
+
+      if (event === "PAYMENT_RECEIVED" || event === "PAYMENT_CONFIRMED") {
+        await storage.updateSubscription(subscription.id, {
+          status: "ativo",
+          status_pagamento: "RECEIVED",
+          data_inicio: new Date().toISOString(),
+        });
+
+        await storage.updateUser(subscription.user_id, {
+          plano: subscription.plano,
+          data_expiracao_plano: subscription.data_vencimento,
+          status: "ativo",
+        });
+
+        console.log(`Pagamento confirmado para assinatura ${subscription.id}`);
+      } else if (event === "PAYMENT_OVERDUE") {
+        await storage.updateSubscription(subscription.id, {
+          status: "expirado",
+          status_pagamento: "OVERDUE",
+        });
+
+        await storage.updateUser(subscription.user_id, {
+          status: "inativo",
+        });
+
+        console.log(`Pagamento vencido para assinatura ${subscription.id}`);
+      }
+
+      res.json({ success: true, message: "Webhook processado com sucesso" });
+    } catch (error) {
+      console.error("Erro ao processar webhook:", error);
+      res.status(500).json({ error: "Erro ao processar webhook" });
+    }
+  });
+
+  app.get("/api/subscriptions", async (req, res) => {
+    try {
+      const subscriptions = await storage.getSubscriptions();
+      res.json(subscriptions || []);
+    } catch (error) {
+      console.error("Erro ao buscar assinaturas:", error);
+      res.status(500).json({ error: "Erro ao buscar assinaturas" });
+    }
+  });
+
+  app.get("/api/subscriptions/user/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const subscriptions = await storage.getSubscriptionsByUser(userId);
+      res.json(subscriptions || []);
+    } catch (error) {
+      console.error("Erro ao buscar assinaturas do usuário:", error);
+      res.status(500).json({ error: "Erro ao buscar assinaturas" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

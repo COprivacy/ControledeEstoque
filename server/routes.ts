@@ -67,12 +67,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, senha } = req.body;
 
+      console.log(`🔐 Tentativa de login - Email: ${email}`);
+
       if (!email || !senha) {
         return res.status(400).json({ error: "Email e senha são obrigatórios" });
       }
 
       // Primeiro tenta autenticar como usuário principal
       const user = await storage.getUserByEmail(email);
+      
+      console.log(`📋 Usuário encontrado:`, user ? `Sim (${user.email})` : 'Não');
+      
+      if (user) {
+        console.log(`🔑 Comparando senhas - Recebida: "${senha}" | Armazenada: "${user.senha}"`);
+        console.log(`🔑 Senhas são iguais? ${user.senha === senha}`);
+      }
+
       if (user && user.senha === senha) {
         console.log(`✅ Login bem-sucedido para usuário: ${user.email}`);
         return res.json({

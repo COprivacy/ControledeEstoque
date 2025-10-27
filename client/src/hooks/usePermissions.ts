@@ -32,6 +32,11 @@ export function usePermissions() {
 
   const isPremium = (): boolean => {
     if (!user) return false;
+    
+    // Admin sempre tem acesso
+    if (user.is_admin === "true") return true;
+    
+    // Plano premium tem acesso
     if (user.plano === 'premium') return true;
 
     // Trial de 7 dias tem acesso completo
@@ -46,14 +51,19 @@ export function usePermissions() {
 
   const hasPermission = (permission: string): boolean => {
     if (!user) return false;
-    if (user.tipo_usuario === 'admin') return true;
+    
+    // Admin sempre tem permissão total
+    if (user.is_admin === "true") return true;
 
     // Usuários em trial ou premium têm acesso completo
     if (isPremium()) return true;
 
+    // Funcionários verificam permissões específicas
     const userPermissions = user.permissoes || [];
     return userPermissions.includes(permission);
   };
 
-  return { hasPermission, isPremium };
+  const isLoading = !user;
+
+  return { hasPermission, isPremium, isLoading };
 }

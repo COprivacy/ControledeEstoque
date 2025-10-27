@@ -70,6 +70,38 @@ export class SQLiteStorage implements IStorage {
         status TEXT NOT NULL DEFAULT 'ativo',
         asaas_customer_id TEXT
       );
+    `);
+
+    // Migração: Adicionar colunas faltantes se não existirem
+    const columns = this.db.prepare("PRAGMA table_info(users)").all() as Array<{ name: string }>;
+    const columnNames = columns.map(c => c.name);
+    
+    if (!columnNames.includes('plano')) {
+      this.db.exec(`ALTER TABLE users ADD COLUMN plano TEXT NOT NULL DEFAULT 'free'`);
+    }
+    if (!columnNames.includes('is_admin')) {
+      this.db.exec(`ALTER TABLE users ADD COLUMN is_admin TEXT NOT NULL DEFAULT 'false'`);
+    }
+    if (!columnNames.includes('data_criacao')) {
+      this.db.exec(`ALTER TABLE users ADD COLUMN data_criacao TEXT`);
+    }
+    if (!columnNames.includes('data_expiracao_trial')) {
+      this.db.exec(`ALTER TABLE users ADD COLUMN data_expiracao_trial TEXT`);
+    }
+    if (!columnNames.includes('data_expiracao_plano')) {
+      this.db.exec(`ALTER TABLE users ADD COLUMN data_expiracao_plano TEXT`);
+    }
+    if (!columnNames.includes('ultimo_acesso')) {
+      this.db.exec(`ALTER TABLE users ADD COLUMN ultimo_acesso TEXT`);
+    }
+    if (!columnNames.includes('status')) {
+      this.db.exec(`ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'ativo'`);
+    }
+    if (!columnNames.includes('asaas_customer_id')) {
+      this.db.exec(`ALTER TABLE users ADD COLUMN asaas_customer_id TEXT`);
+    }
+
+    this.db.exec(`
 
       CREATE TABLE IF NOT EXISTS produtos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

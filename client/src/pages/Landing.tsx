@@ -147,18 +147,15 @@ export default function Landing() {
               <Link href="/privacy" className="text-gray-300 hover:text-blue-400 transition-colors duration-300">
                 Privacidade
               </Link>
-              <Link href="/admin-publico" className="text-gray-300 hover:text-blue-400 transition-colors duration-300">
-                Admin
-              </Link>
               <Link href="/login">
-                <Button variant="outline" className="border-blue-400/30 hover:border-blue-400 hover:bg-blue-500/10">
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                   Entrar
                 </Button>
               </Link>
             </div>
             <div className="md:hidden">
               <Link href="/login">
-                <Button variant="outline" size="sm" className="border-blue-400/30">
+                <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg">
                   Entrar
                 </Button>
               </Link>

@@ -1,9 +1,9 @@
+
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { Home, Package, ClipboardList, FileText, Settings, CreditCard, Users, Building2, DollarSign, TrendingUp, BarChart3, ShieldCheck, Maximize2, FileKey, UserCog, Crown } from "lucide-react";
+import { Home, Package, ClipboardList, FileText, Settings, CreditCard, Users, DollarSign, TrendingUp, BarChart3, Crown, Lock, LineChart, Scan } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { cn } from "@/lib/utils";
-import { useUser } from "@/hooks/use-user";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useUser } from "@/hooks/use-user";
 
 type MenuItem = {
   title: string;
@@ -36,7 +36,6 @@ const financeMenuItems: MenuItem[] = [
 const configMenuItems: MenuItem[] = [
   { title: "Configurações", url: "/configuracoes", icon: Settings, permission: "configuracoes" },
   { title: "Config. Fiscal", url: "/config-fiscal", icon: FileText, permission: "config_fiscal" },
-  { title: "Painel Admin", url: "/admin", icon: Shield, adminOnly: true },
 ];
 
 export default function DashboardSidebar() {
@@ -57,11 +56,20 @@ export default function DashboardSidebar() {
 
     return (
       <SidebarMenuItem key={item.title}>
-        <SidebarMenuButton asChild isActive={location === item.url}>
+        <SidebarMenuButton 
+          asChild 
+          isActive={location === item.url}
+          className="group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5 data-[active=true]:shadow-sm"
+        >
           <Link href={item.url} data-testid={`link-${item.title.toLowerCase()}`}>
-            <item.icon className="h-4 w-4" />
-            <span className="flex-1">{item.title}</span>
-            {!hasAccess && <Lock className="h-3 w-3 text-muted-foreground" data-testid={`lock-${item.title.toLowerCase()}`} />}
+            <item.icon className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+            <span className="flex-1 font-medium">{item.title}</span>
+            {!hasAccess && (
+              <Lock 
+                className="h-3 w-3 text-muted-foreground/60 animate-pulse" 
+                data-testid={`lock-${item.title.toLowerCase()}`} 
+              />
+            )}
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -69,45 +77,69 @@ export default function DashboardSidebar() {
   };
 
   return (
-    <Sidebar>
-      <SidebarContent>
+    <Sidebar className="border-r border-sidebar-border/50 bg-gradient-to-b from-sidebar to-sidebar/95">
+      <SidebarContent className="py-4">
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {generalMenuItems.map(renderMenuItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Estoque</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-3 text-xs font-semibold tracking-wider text-muted-foreground/80 uppercase">
+            Estoque
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {inventoryMenuItems.map(renderMenuItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Gestão Financeira</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-3 text-xs font-semibold tracking-wider text-muted-foreground/80 uppercase">
+            Gestão Financeira
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {financeMenuItems.map(renderMenuItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Sistema</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-3 text-xs font-semibold tracking-wider text-muted-foreground/80 uppercase">
+            Sistema
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {configMenuItems.map(renderMenuItem)}
+              {isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild
+                    className="group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5"
+                  >
+                    <Link href="/admin">
+                      <Crown className="h-4 w-4 text-yellow-500 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
+                      <span className="flex-1 font-medium">Painel Admin</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               {user?.is_admin === "true" && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton 
+                    asChild
+                    className="group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5"
+                  >
                     <Link href="/admin-master">
-                      <Crown className="h-4 w-4" />
-                      <span>Admin Master</span>
+                      <Crown className="h-4 w-4 text-amber-500 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
+                      <span className="flex-1 font-medium bg-gradient-to-r from-amber-500 to-yellow-500 bg-clip-text text-transparent">
+                        Admin Master
+                      </span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

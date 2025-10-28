@@ -22,6 +22,7 @@ export const users = pgTable("users", {
 
 export const produtos = pgTable("produtos", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  user_id: text("user_id").notNull(),
   nome: text("nome").notNull(),
   categoria: text("categoria").notNull(),
   preco: real("preco").notNull(),
@@ -33,6 +34,7 @@ export const produtos = pgTable("produtos", {
 
 export const vendas = pgTable("vendas", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  user_id: text("user_id").notNull(),
   produto: text("produto").notNull(),
   quantidade_vendida: integer("quantidade_vendida").notNull().default(0),
   valor_total: real("valor_total").notNull().default(0),
@@ -44,6 +46,7 @@ export const vendas = pgTable("vendas", {
 
 export const fornecedores = pgTable("fornecedores", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  user_id: text("user_id").notNull(),
   nome: text("nome").notNull(),
   cnpj: text("cnpj"),
   telefone: text("telefone"),
@@ -55,6 +58,7 @@ export const fornecedores = pgTable("fornecedores", {
 
 export const clientes = pgTable("clientes", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  user_id: text("user_id").notNull(),
   nome: text("nome").notNull(),
   cpf_cnpj: text("cpf_cnpj"),
   telefone: text("telefone"),
@@ -67,6 +71,7 @@ export const clientes = pgTable("clientes", {
 
 export const compras = pgTable("compras", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  user_id: text("user_id").notNull(),
   fornecedor_id: integer("fornecedor_id").notNull(),
   produto_id: integer("produto_id").notNull(),
   quantidade: integer("quantidade").notNull(),
@@ -78,6 +83,7 @@ export const compras = pgTable("compras", {
 
 export const configFiscal = pgTable("config_fiscal", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  user_id: text("user_id").notNull(),
   cnpj: text("cnpj").notNull(),
   razao_social: text("razao_social").notNull(),
   focus_nfe_api_key: text("focus_nfe_api_key").notNull(),
@@ -87,6 +93,7 @@ export const configFiscal = pgTable("config_fiscal", {
 
 export const contasPagar = pgTable("contas_pagar", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  user_id: text("user_id").notNull(),
   descricao: text("descricao").notNull(),
   valor: real("valor").notNull(),
   data_vencimento: text("data_vencimento").notNull(),
@@ -98,6 +105,7 @@ export const contasPagar = pgTable("contas_pagar", {
 
 export const contasReceber = pgTable("contas_receber", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  user_id: text("user_id").notNull(),
   descricao: text("descricao").notNull(),
   valor: real("valor").notNull(),
   data_vencimento: text("data_vencimento").notNull(),

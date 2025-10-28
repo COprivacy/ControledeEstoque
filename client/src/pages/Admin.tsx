@@ -423,7 +423,7 @@ export default function Admin() {
                     </div>
                   </div>
                   <div className="flex items-baseline gap-2 mt-4">
-                    <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">R$ 49,90</span>
+                    <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">R$ 79,99</span>
                     <span className="text-gray-600 dark:text-gray-400">/mês</span>
                   </div>
                 </CardHeader>

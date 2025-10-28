@@ -32,7 +32,7 @@ export default function Register() {
     onSuccess: (data) => {
       toast({
         title: "Conta criada com sucesso!",
-        description: `Você ganhou 10 dias de teste grátis. Faça login para começar!`,
+        description: `Você ganhou 7 dias de teste grátis. Faça login para começar!`,
       });
       setLocation("/");
     },

@@ -566,7 +566,7 @@ export default function Admin() {
                                 <span className="text-gray-500 dark:text-gray-400">/mês</span>
                               </div>
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                R$ 815,90/ano (12x sem juros)
+                                R$ 815,88/ano (12x sem juros)
                               </p>
                             </CardHeader>
                             <CardContent className="space-y-4">

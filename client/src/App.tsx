@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/Login";
+import Register from "@/pages/Register";
 import Admin from "@/pages/Admin";
 import Dashboard from "@/pages/Dashboard";
 import Products from "@/pages/Products";
@@ -31,6 +32,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Login} />
       <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
       <Route path="/dashboard">
         {() => (
           <DashboardLayout>

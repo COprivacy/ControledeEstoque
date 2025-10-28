@@ -365,50 +365,82 @@ export default function Admin() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Painel de Administração da Conta
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Gerencie funcionários e permissões da sua empresa
-        </p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/20 dark:from-gray-950 dark:via-blue-950/20 dark:to-purple-950/10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Header Moderno com Gradiente */}
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 dark:from-blue-500/5 dark:via-purple-500/5 dark:to-pink-500/5 rounded-3xl blur-3xl"></div>
+          <div className="relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-8 border border-gray-200/50 dark:border-gray-800/50 shadow-xl">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="p-3 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl shadow-lg">
+                <Shield className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-900 dark:from-white dark:via-blue-200 dark:to-purple-200 bg-clip-text text-transparent">
+                  Painel de Administração
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1 text-lg">
+                  Gerencie sua equipe e personalize seu plano
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
       <Tabs defaultValue="info" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="info" data-testid="tab-account-info">Informações da Conta</TabsTrigger>
-          <TabsTrigger value="funcionarios" data-testid="tab-employees">Funcionários</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-800/50 p-1 rounded-xl shadow-sm">
+          <TabsTrigger 
+            value="info" 
+            data-testid="tab-account-info"
+            className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
+          >
+            Informações da Conta
+          </TabsTrigger>
+          <TabsTrigger 
+            value="funcionarios" 
+            data-testid="tab-employees"
+            className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
+          >
+            Funcionários
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="info" className="space-y-6">
+        <TabsContent value="info" className="space-y-8 mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Informações da Empresa</CardTitle>
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">Nome</p>
-                  <p className="text-base font-medium">{currentUser.nome}</p>
+            <Card className="bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-900 dark:to-blue-950/20 border-blue-200/50 dark:border-blue-800/30 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <CardTitle className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Informações da Empresa
+                </CardTitle>
+                <div className="p-2 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg">
+                  <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Email</p>
-                  <p className="text-base font-medium">{currentUser.email}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Nome</p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">{currentUser.nome}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Email</p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">{currentUser.email}</p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Plano Atual</CardTitle>
-                <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <Card className="bg-gradient-to-br from-white to-purple-50/30 dark:from-gray-900 dark:to-purple-950/20 border-purple-200/50 dark:border-purple-800/30 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <CardTitle className="text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  Plano Atual
+                </CardTitle>
+                <div className="p-2 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg">
+                  <CreditCard className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">Plano</p>
-                  <Badge variant={currentUser.plano === "premium" || currentUser.plano === "mensal" || currentUser.plano === "anual" ? "default" : "secondary"} className="mt-1">
+              <CardContent className="space-y-4">
+                <div className="p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Plano</p>
+                  <Badge variant={currentUser.plano === "premium" || currentUser.plano === "mensal" || currentUser.plano === "anual" ? "default" : "secondary"} className="text-sm px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 border-0">
                     {currentUser.plano === "trial" && "7 Dias Free Trial"}
                     {currentUser.plano === "mensal" && "Mensal"}
                     {currentUser.plano === "anual" && "Anual"}
@@ -417,18 +449,18 @@ export default function Admin() {
                   </Badge>
                 </div>
                 {currentUser.data_expiracao_plano && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Expira em</p>
-                    <p className="text-base font-medium">
-                      {calculateDaysRemaining(currentUser.data_expiracao_plano)} dias
+                  <div className="p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Expira em</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {calculateDaysRemaining(currentUser.data_expiracao_plano)} <span className="text-base font-normal text-gray-600 dark:text-gray-400">dias</span>
                     </p>
                   </div>
                 )}
                 {currentUser.data_expiracao_trial && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Trial</p>
-                    <p className="text-base font-medium">
-                      {calculateDaysRemaining(currentUser.data_expiracao_trial)} dias restantes
+                  <div className="p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Trial</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {calculateDaysRemaining(currentUser.data_expiracao_trial)} <span className="text-base font-normal text-gray-600 dark:text-gray-400">dias restantes</span>
                     </p>
                   </div>
                 )}
@@ -437,31 +469,50 @@ export default function Admin() {
           </div>
 
           {(currentUser.plano === "trial" || currentUser.plano === "free") && (
-            <Card className="border-gray-200 dark:border-gray-800">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between gap-4">
+            <Card className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 border-0 shadow-2xl">
+              <div className="absolute inset-0 bg-black/10 backdrop-blur-sm"></div>
+              <CardContent className="relative p-8">
+                <div className="flex items-start justify-between gap-6">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                      Upgrade para Premium
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      Acesso completo ao sistema com pagamento 100% seguro via Asaas
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                        <Check className="h-4 w-4 text-blue-600" />
-                        <span>Mensal: <strong>R$ 79,99/mês</strong></span>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                        <Crown className="h-8 w-8 text-white" />
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                        <Check className="h-4 w-4 text-purple-600" />
-                        <span>Anual: <strong>R$ 67,99/mês</strong> (15% off)</span>
+                      <div>
+                        <h3 className="text-2xl font-bold text-white mb-1">
+                          Desbloqueie Todo o Potencial
+                        </h3>
+                        <p className="text-blue-100">
+                          Upgrade para Premium e transforme seu negócio
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                      <div className="flex items-center gap-3 p-3 bg-white/10 backdrop-blur-sm rounded-lg">
+                        <div className="p-2 bg-blue-500/30 rounded-lg">
+                          <Check className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-white font-semibold">Plano Mensal</p>
+                          <p className="text-blue-100 text-sm">R$ 79,99/mês</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-white/10 backdrop-blur-sm rounded-lg border-2 border-white/30">
+                        <div className="p-2 bg-purple-500/30 rounded-lg">
+                          <Check className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-white font-semibold">Plano Anual</p>
+                          <p className="text-blue-100 text-sm">R$ 67,99/mês • Economize 15%</p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                        <Button size="lg" className="bg-white text-purple-700 hover:bg-gray-100 shadow-xl font-semibold">
+                          <Crown className="h-5 w-5 mr-2" />
                           Ver Planos
                         </Button>
                       </DialogTrigger>
@@ -590,22 +641,30 @@ export default function Admin() {
             </Card>
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Resumo da Equipe
+          <Card className="bg-gradient-to-br from-white to-green-50/30 dark:from-gray-900 dark:to-green-950/20 border-green-200/50 dark:border-green-800/30 shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-lg">
+                  <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent font-bold">
+                  Resumo da Equipe
+                </span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-8">
-                <div>
-                  <p className="text-2xl font-bold">{accountUsers.length}</p>
-                  <p className="text-sm text-muted-foreground">Funcionários cadastrados</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/30">
+                  <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                    {accountUsers.length}
+                  </p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mt-1">Funcionários cadastrados</p>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{accountUsers.filter(u => u.status === "ativo").length}</p>
-                  <p className="text-sm text-muted-foreground">Funcionários ativos</p>
+                <div className="p-4 rounded-xl bg-gradient-to-br from-green-50 to-emerald-100/50 dark:from-green-950/30 dark:to-emerald-900/20 border border-green-200/50 dark:border-green-800/30">
+                  <p className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-800 bg-clip-text text-transparent">
+                    {accountUsers.filter(u => u.status === "ativo").length}
+                  </p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mt-1">Funcionários ativos</p>
                 </div>
               </div>
             </CardContent>
@@ -613,7 +672,7 @@ export default function Admin() {
 
           </TabsContent>
 
-        <TabsContent value="funcionarios" className="space-y-6">
+        <TabsContent value="funcionarios" className="space-y-8 mt-6">
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold">Funcionários</h2>
@@ -922,6 +981,7 @@ export default function Admin() {
           </Dialog>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }

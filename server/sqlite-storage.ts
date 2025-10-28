@@ -105,6 +105,7 @@ export class SQLiteStorage implements IStorage {
 
       CREATE TABLE IF NOT EXISTS produtos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
         nome TEXT NOT NULL,
         categoria TEXT NOT NULL,
         preco REAL NOT NULL,
@@ -116,16 +117,19 @@ export class SQLiteStorage implements IStorage {
 
       CREATE TABLE IF NOT EXISTS vendas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
         produto TEXT NOT NULL,
         quantidade_vendida INTEGER NOT NULL,
         valor_total REAL NOT NULL,
         data TEXT NOT NULL,
         itens TEXT,
-        cliente_id INTEGER
+        cliente_id INTEGER,
+        forma_pagamento TEXT
       );
 
       CREATE TABLE IF NOT EXISTS fornecedores (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
         nome TEXT NOT NULL,
         cnpj TEXT,
         telefone TEXT,
@@ -137,6 +141,7 @@ export class SQLiteStorage implements IStorage {
 
       CREATE TABLE IF NOT EXISTS clientes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
         nome TEXT NOT NULL,
         cpf_cnpj TEXT,
         telefone TEXT,
@@ -149,6 +154,7 @@ export class SQLiteStorage implements IStorage {
 
       CREATE TABLE IF NOT EXISTS compras (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
         fornecedor_id INTEGER NOT NULL,
         produto_id INTEGER NOT NULL,
         quantidade INTEGER NOT NULL,
@@ -160,6 +166,7 @@ export class SQLiteStorage implements IStorage {
 
       CREATE TABLE IF NOT EXISTS config_fiscal (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
         cnpj TEXT NOT NULL,
         razao_social TEXT NOT NULL,
         focus_nfe_api_key TEXT NOT NULL,
@@ -169,6 +176,7 @@ export class SQLiteStorage implements IStorage {
 
       CREATE TABLE IF NOT EXISTS contas_pagar (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
         descricao TEXT NOT NULL,
         valor REAL NOT NULL,
         data_vencimento TEXT NOT NULL,
@@ -180,6 +188,7 @@ export class SQLiteStorage implements IStorage {
 
       CREATE TABLE IF NOT EXISTS contas_receber (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
         descricao TEXT NOT NULL,
         valor REAL NOT NULL,
         data_vencimento TEXT NOT NULL,

@@ -467,7 +467,7 @@ export default function Admin() {
               <Card className="relative overflow-hidden border-2 border-purple-200 dark:border-purple-900 hover:shadow-lg transition-all">
                 <div className="absolute top-0 right-0 bg-purple-500 text-white px-3 py-1 text-xs font-semibold rounded-bl-lg flex items-center gap-1">
                   <Crown className="h-3 w-3" />
-                  ECONOMIZE 20%
+                  ECONOMIZE 15%
                 </div>
                 <CardHeader>
                   <div className="flex items-center gap-3 mb-2">
@@ -480,11 +480,11 @@ export default function Admin() {
                     </div>
                   </div>
                   <div className="flex items-baseline gap-2 mt-4">
-                    <span className="text-4xl font-bold text-purple-600 dark:text-purple-400">R$ 39,90</span>
+                    <span className="text-4xl font-bold text-purple-600 dark:text-purple-400">R$ 67,99</span>
                     <span className="text-gray-600 dark:text-gray-400">/mês</span>
                   </div>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    R$ 478,80 cobrado anualmente
+                    R$ 815,90 cobrado anualmente
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -495,7 +495,7 @@ export default function Admin() {
                     </div>
                     <div className="flex items-start gap-2">
                       <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Economia de R$ 120,00/ano</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Economia de R$ 143,98/ano</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />

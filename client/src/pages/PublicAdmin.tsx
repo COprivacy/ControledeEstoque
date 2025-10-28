@@ -260,13 +260,41 @@ export default function PublicAdmin() {
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof newUser) => {
       const response = await apiRequest("POST", "/api/auth/register", userData);
-      return response.json();
+      const result = await response.json();
+      
+      // Se o plano selecionado não for trial, atualiza imediatamente
+      if (userData.plano !== "trial" && result.id) {
+        const hoje = new Date();
+        const updates: any = { plano: userData.plano };
+        
+        if (userData.plano === "mensal") {
+          hoje.setMonth(hoje.getMonth() + 1);
+          updates.data_expiracao_plano = hoje.toISOString();
+          updates.data_expiracao_trial = null;
+        } else if (userData.plano === "anual") {
+          hoje.setFullYear(hoje.getFullYear() + 1);
+          updates.data_expiracao_plano = hoje.toISOString();
+          updates.data_expiracao_trial = null;
+        } else if (userData.plano === "premium") {
+          hoje.setFullYear(hoje.getFullYear() + 10);
+          updates.data_expiracao_plano = hoje.toISOString();
+          updates.data_expiracao_trial = null;
+        } else if (userData.plano === "free") {
+          updates.data_expiracao_plano = null;
+          updates.data_expiracao_trial = null;
+        }
+        
+        // Atualiza o plano e data de expiração
+        await apiRequest("PATCH", `/api/users/${result.id}`, updates);
+      }
+      
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
-        title: "Usuário criado",
-        description: "Novo usuário criado com sucesso!",
+        title: "Usuário criado com sucesso! ✅",
+        description: "O plano e data de expiração foram configurados corretamente.",
       });
       setCreateUserOpen(false);
       setNewUser({ nome: "", email: "", senha: "", plano: "free", is_admin: "false" });

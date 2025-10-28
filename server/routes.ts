@@ -105,6 +105,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           nome: user.nome,
           plano: user.plano,
           is_admin: user.is_admin,
+          data_expiracao_trial: user.data_expiracao_trial,
+          data_expiracao_plano: user.data_expiracao_plano,
+          permissoes: user.permissoes,
           tipo: "usuario"
         });
       }

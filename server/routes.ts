@@ -23,6 +23,27 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+// Middleware para extrair e validar user_id (lida com funcionários)
+function getUserId(req: Request, res: Response, next: NextFunction) {
+  const userId = req.headers['x-user-id'] as string;
+  const userType = req.headers['x-user-type'] as string;
+  const contaId = req.headers['x-conta-id'] as string;
+
+  if (!userId) {
+    return res.status(401).json({ error: "Autenticação necessária. Header x-user-id não fornecido." });
+  }
+
+  // Se for funcionário, usa o conta_id (ID do dono da conta) como user_id efetivo
+  // Caso contrário, usa o próprio userId
+  if (userType === "funcionario" && contaId) {
+    req.headers['effective-user-id'] = contaId;
+  } else {
+    req.headers['effective-user-id'] = userId;
+  }
+
+  next();
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
 
   // Middleware para desabilitar cache em todas as rotas da API
@@ -513,9 +534,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/produtos", async (req, res) => {
+  app.get("/api/produtos", getUserId, async (req, res) => {
     try {
-      const produtos = await storage.getProdutos();
+      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const allProdutos = await storage.getProdutos();
+      const produtos = allProdutos.filter(p => p.user_id === effectiveUserId);
       const expiring = req.query.expiring;
 
       if (expiring === 'soon') {
@@ -538,8 +561,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/produtos/:id", async (req, res) => {
+  app.get("/api/produtos/:id", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const id = parseInt(req.params.id);
       const produto = await storage.getProduto(id);
 
@@ -547,19 +571,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Produto não encontrado" });
       }
 
-      res.json(produto);
-    } catch (error) {
-      res.status(500).json({ error: "Erro ao buscar produto" });
-    }
-  });
-
-  app.get("/api/produtos/codigo/:codigo", async (req, res) => {
-    try {
-      const codigo = req.params.codigo;
-      const produto = await storage.getProdutoByCodigoBarras(codigo);
-
-      if (!produto) {
-        return res.status(404).json({ error: "Produto não encontrado" });
+      if (produto.user_id !== effectiveUserId) {
+        return res.status(403).json({ error: "Acesso negado. Este produto não pertence a você." });
       }
 
       res.json(produto);
@@ -568,9 +581,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/produtos", async (req, res) => {
+  app.get("/api/produtos/codigo/:codigo", getUserId, async (req, res) => {
     try {
-      const produtoData = insertProdutoSchema.parse(req.body);
+      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const codigo = req.params.codigo;
+      const produto = await storage.getProdutoByCodigoBarras(codigo);
+
+      if (!produto) {
+        return res.status(404).json({ error: "Produto não encontrado" });
+      }
+
+      if (produto.user_id !== effectiveUserId) {
+        return res.status(403).json({ error: "Acesso negado. Este produto não pertence a você." });
+      }
+
+      res.json(produto);
+    } catch (error) {
+      res.status(500).json({ error: "Erro ao buscar produto" });
+    }
+  });
+
+  app.post("/api/produtos", getUserId, async (req, res) => {
+    try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const produtoData = insertProdutoSchema.parse({
+        ...req.body,
+        user_id: effectiveUserId
+      });
 
       if (produtoData.preco <= 0) {
         return res.status(400).json({ error: "Preço deve ser positivo" });
@@ -590,10 +627,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/produtos/:id", async (req, res) => {
+  app.put("/api/produtos/:id", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const id = parseInt(req.params.id);
       const updates = req.body;
+
+      const produtoExistente = await storage.getProduto(id);
+      if (!produtoExistente) {
+        return res.status(404).json({ error: "Produto não encontrado" });
+      }
+
+      if (produtoExistente.user_id !== effectiveUserId) {
+        return res.status(403).json({ error: "Acesso negado. Este produto não pertence a você." });
+      }
 
       if (updates.preco !== undefined && updates.preco <= 0) {
         return res.status(400).json({ error: "Preço deve ser positivo" });
@@ -604,26 +651,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const produto = await storage.updateProduto(id, updates);
-
-      if (!produto) {
-        return res.status(404).json({ error: "Produto não encontrado" });
-      }
-
       res.json(produto);
     } catch (error) {
       res.status(500).json({ error: "Erro ao atualizar produto" });
     }
   });
 
-  app.delete("/api/produtos/:id", async (req, res) => {
+  app.delete("/api/produtos/:id", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const id = parseInt(req.params.id);
-      const deleted = await storage.deleteProduto(id);
 
-      if (!deleted) {
+      const produtoExistente = await storage.getProduto(id);
+      if (!produtoExistente) {
         return res.status(404).json({ error: "Produto não encontrado" });
       }
 
+      if (produtoExistente.user_id !== effectiveUserId) {
+        return res.status(403).json({ error: "Acesso negado. Este produto não pertence a você." });
+      }
+
+      const deleted = await storage.deleteProduto(id);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Erro ao deletar produto" });

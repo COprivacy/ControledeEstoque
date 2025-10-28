@@ -43,6 +43,7 @@ import {
   AlertTitle,
 } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
+import { CheckoutForm } from "@/components/CheckoutForm";
 
 interface User {
   id: string;
@@ -79,6 +80,8 @@ export default function Admin() {
   const [editEmployeeOpen, setEditEmployeeOpen] = useState(false);
   const [editPermissionsUser, setEditPermissionsUser] = useState<string | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<User | null>(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{ plano: 'premium_mensal' | 'premium_anual'; nome: string; preco: string } | null>(null);
 
   const [newEmployee, setNewEmployee] = useState<EmployeeFormData>({
     nome: "",
@@ -309,40 +312,14 @@ export default function Admin() {
     savePermissionsMutation.mutate({ userId, perms });
   };
 
-  const handleSubscribe = async (plano: 'mensal' | 'anual', formaPagamento: 'CREDIT_CARD' | 'BOLETO' | 'PIX') => {
-    try {
-      const planoMap = {
-        'mensal': 'premium_mensal',
-        'anual': 'premium_anual'
-      };
-
-      const response = await apiRequest("POST", "/api/checkout", {
-        plano: planoMap[plano],
-        forma_pagamento: formaPagamento,
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast({
-          title: "Assinatura criada!",
-          description: `Sua assinatura ${plano} foi criada. Complete o pagamento para ativar.`,
-        });
-
-        // Redirecionar para URL de pagamento se disponível
-        if (data.payment?.invoiceUrl) {
-          window.open(data.payment.invoiceUrl, '_blank');
-        }
-      } else {
-        throw new Error(data.error || "Erro ao criar assinatura");
-      }
-    } catch (error: any) {
-      toast({
-        title: "Erro ao processar assinatura",
-        description: error.message || "Tente novamente ou entre em contato com o suporte",
-        variant: "destructive",
-      });
-    }
+  const handleSubscribe = (plano: 'mensal' | 'anual') => {
+    const planoMap = {
+      'mensal': { plano: 'premium_mensal' as const, nome: 'Plano Mensal', preco: 'R$ 79,99/mês' },
+      'anual': { plano: 'premium_anual' as const, nome: 'Plano Anual', preco: 'R$ 67,99/mês' }
+    };
+    
+    setSelectedPlan(planoMap[plano]);
+    setCheckoutOpen(true);
   };
 
   const calculateDaysRemaining = (expirationDate?: string) => {
@@ -559,7 +536,7 @@ export default function Admin() {
                               </div>
                               <Button 
                                 className="w-full bg-blue-600 hover:bg-blue-700" 
-                                onClick={() => handleSubscribe('mensal', 'CREDIT_CARD')}
+                                onClick={() => handleSubscribe('mensal')}
                                 data-testid="button-plan-mensal"
                               >
                                 Assinar Agora
@@ -613,7 +590,7 @@ export default function Admin() {
                               </div>
                               <Button 
                                 className="w-full bg-purple-600 hover:bg-purple-700" 
-                                onClick={() => handleSubscribe('anual', 'CREDIT_CARD')}
+                                onClick={() => handleSubscribe('anual')}
                                 data-testid="button-plan-anual"
                               >
                                 Assinar Agora
@@ -982,6 +959,16 @@ export default function Admin() {
         </TabsContent>
       </Tabs>
       </div>
+
+      {selectedPlan && (
+        <CheckoutForm
+          open={checkoutOpen}
+          onOpenChange={setCheckoutOpen}
+          plano={selectedPlan.plano}
+          planoNome={selectedPlan.nome}
+          planoPreco={selectedPlan.preco}
+        />
+      )}
     </div>
   );
 }

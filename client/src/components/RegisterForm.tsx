@@ -9,19 +9,20 @@ import { Link } from "wouter";
 interface RegisterFormProps {
   onRegister?: (name: string, email: string, password: string) => void;
   onLoginClick?: () => void;
+  isLoading?: boolean;
 }
 
-export default function RegisterForm({ onRegister, onLoginClick }: RegisterFormProps) {
+export default function RegisterForm({ onRegister, onLoginClick, isLoading }: RegisterFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (onRegister) {
+    if (onRegister && name && email && password) {
+      console.log("Registro tentado:", { name, email, password });
       onRegister(name, email, password);
     }
-    console.log("Registro tentado:", { name, email, password });
   };
 
   return (
@@ -90,8 +91,8 @@ export default function RegisterForm({ onRegister, onLoginClick }: RegisterFormP
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-3">
-            <Button type="submit" className="w-full" data-testid="button-register">
-              Criar Conta
+            <Button type="submit" className="w-full" data-testid="button-register" disabled={isLoading}>
+              {isLoading ? "Criando conta..." : "Criar Conta"}
             </Button>
             <Button 
               type="button" 

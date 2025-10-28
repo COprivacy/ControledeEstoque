@@ -28,6 +28,7 @@ export default function Register() {
 
       return response.json();
     },
+    retry: false,
     onSuccess: (data) => {
       toast({
         title: "Conta criada com sucesso!",
@@ -45,12 +46,14 @@ export default function Register() {
   });
 
   const handleRegister = (name: string, email: string, password: string) => {
-    registerMutation.mutate({ name, email, password });
+    if (!registerMutation.isPending) {
+      registerMutation.mutate({ name, email, password });
+    }
   };
 
   const handleLoginClick = () => {
     setLocation("/");
   };
 
-  return <RegisterForm onRegister={handleRegister} onLoginClick={handleLoginClick} />;
+  return <RegisterForm onRegister={handleRegister} onLoginClick={handleLoginClick} isLoading={registerMutation.isPending} />;
 }

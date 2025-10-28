@@ -49,8 +49,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const userWithTrial = {
         ...userData,
+        plano: "trial",
         data_criacao: dataCriacao,
         data_expiracao_trial: dataExpiracao.toISOString(),
+        data_expiracao_plano: dataExpiracao.toISOString(),
         status: "ativo"
       };
 
@@ -198,6 +200,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.log(`❌ [DELETE USER] Erro ao deletar usuário ${id}:`, error);
       res.status(500).json({ error: "Erro ao deletar usuário" });
+    }
+  });
+
+  app.post("/api/admin/fix-trial-users", requireAdmin, async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      let fixedCount = 0;
+
+      for (const user of users) {
+        if (user.data_expiracao_trial && user.plano === 'free') {
+          const expirationDate = new Date(user.data_expiracao_trial);
+          const now = new Date();
+          
+          if (now < expirationDate) {
+            await storage.updateUser(user.id, {
+              plano: "trial",
+              data_expiracao_plano: user.data_expiracao_trial
+            });
+            fixedCount++;
+            console.log(`✅ Usuário ${user.email} corrigido para plano trial`);
+          }
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        message: `${fixedCount} usuário(s) trial corrigido(s)`,
+        fixedCount 
+      });
+    } catch (error) {
+      console.error("Erro ao corrigir usuários trial:", error);
+      res.status(500).json({ error: "Erro ao corrigir usuários trial" });
     }
   });
 

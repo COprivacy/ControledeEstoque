@@ -9,6 +9,9 @@ interface User {
   tipo?: "usuario" | "funcionario";
   conta_id?: string;
   cargo?: string;
+  data_expiracao_trial?: string | null;
+  data_expiracao_plano?: string | null;
+  permissoes?: string[];
 }
 
 export function useUser() {

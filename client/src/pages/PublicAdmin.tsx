@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
@@ -106,7 +105,7 @@ export default function PublicAdmin() {
   useEffect(() => {
     const adminAuth = sessionStorage.getItem("admin_auth");
     const authTime = sessionStorage.getItem("admin_auth_time");
-    
+
     if (adminAuth === "authenticated" && authTime) {
       const elapsed = Date.now() - parseInt(authTime);
       if (elapsed < SESSION_TIMEOUT) {
@@ -128,7 +127,7 @@ export default function PublicAdmin() {
     if (!isAuthenticated) return;
 
     let timer: NodeJS.Timeout;
-    
+
     const resetTimer = () => {
       clearTimeout(timer);
       timer = setTimeout(() => {
@@ -354,7 +353,7 @@ export default function PublicAdmin() {
         ambiente: asaasConfig.ambiente,
       });
       const result = await response.json();
-      
+
       if (result.success) {
         toast({
           title: "Conexão bem-sucedida!",
@@ -379,8 +378,55 @@ export default function PublicAdmin() {
     }
   };
 
+  const updateUserPlanMutation = useMutation({
+    mutationFn: async ({ userId, plano }: { userId: string; plano: string }) => {
+      const updates: any = { plano };
+
+      // Calcular nova data de expiração baseada no plano
+      const hoje = new Date();
+      if (plano === "trial") {
+        hoje.setDate(hoje.getDate() + 7);
+        updates.data_expiracao_trial = hoje.toISOString();
+        updates.data_expiracao_plano = null;
+      } else if (plano === "mensal") {
+        hoje.setMonth(hoje.getMonth() + 1);
+        updates.data_expiracao_plano = hoje.toISOString();
+        updates.data_expiracao_trial = null;
+      } else if (plano === "anual") {
+        hoje.setFullYear(hoje.getFullYear() + 1);
+        updates.data_expiracao_plano = hoje.toISOString();
+        updates.data_expiracao_trial = null;
+      } else if (plano === "premium") {
+        // Premium sem expiração ou com expiração muito longa
+        hoje.setFullYear(hoje.getFullYear() + 10);
+        updates.data_expiracao_plano = hoje.toISOString();
+        updates.data_expiracao_trial = null;
+      } else if (plano === "free") {
+        updates.data_expiracao_plano = null;
+        updates.data_expiracao_trial = null;
+      }
+
+      const response = await apiRequest("PATCH", `/api/users/${userId}`, updates);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Plano atualizado",
+        description: "O plano do usuário foi atualizado com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao atualizar plano",
+        description: error.message || "Ocorreu um erro",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handlePlanChange = (userId: string, newPlan: string) => {
-    updateUserMutation.mutate({ id: userId, updates: { plano: newPlan } });
+    updateUserPlanMutation.mutate({ userId, plano: newPlan });
   };
 
   const handleAdminToggle = (userId: string, currentStatus: string) => {
@@ -400,7 +446,9 @@ export default function PublicAdmin() {
   };
 
   const getPlanBadgeVariant = (plan: string) => {
-    return plan === "premium" ? "default" : "secondary";
+    if (plan === "premium") return "default";
+    if (plan === "trial") return "outline";
+    return "secondary";
   };
 
   const getStatusBadgeVariant = (status: string) => {
@@ -412,8 +460,10 @@ export default function PublicAdmin() {
     const now = new Date();
     const expiry = new Date(expirationDate);
     const diff = expiry.getTime() - now.getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    return days < 0 ? 0 : days; // Retorna 0 se já expirou
   };
+
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -786,6 +836,9 @@ export default function PublicAdmin() {
                         <SelectItem value="todos">Todos</SelectItem>
                         <SelectItem value="free">Free</SelectItem>
                         <SelectItem value="premium">Premium</SelectItem>
+                        <SelectItem value="trial">Trial</SelectItem>
+                        <SelectItem value="mensal">Mensal</SelectItem>
+                        <SelectItem value="anual">Anual</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -855,6 +908,9 @@ export default function PublicAdmin() {
                             <SelectContent>
                               <SelectItem value="free">Free</SelectItem>
                               <SelectItem value="premium">Premium</SelectItem>
+                              <SelectItem value="trial">Trial</SelectItem>
+                              <SelectItem value="mensal">Mensal</SelectItem>
+                              <SelectItem value="anual">Anual</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -894,16 +950,16 @@ export default function PublicAdmin() {
                     <TableBody>
                       {filteredUsers.length > 0 ? (
                         filteredUsers.map((user) => {
-                          const daysRemaining = user.plano === "free" 
+                          const daysRemaining = user.plano === "trial"
                             ? calculateDaysRemaining(user.data_expiracao_trial)
                             : calculateDaysRemaining(user.data_expiracao_plano);
-                          
+
                           return (
                             <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
                               <TableCell className="font-medium">{user.nome}</TableCell>
                               <TableCell>{user.email}</TableCell>
                               <TableCell>
-                                {user.data_criacao 
+                                {user.data_criacao
                                   ? new Date(user.data_criacao).toLocaleDateString('pt-BR')
                                   : '-'}
                               </TableCell>
@@ -919,6 +975,9 @@ export default function PublicAdmin() {
                                     <SelectContent>
                                       <SelectItem value="free">Free</SelectItem>
                                       <SelectItem value="premium">Premium</SelectItem>
+                                      <SelectItem value="trial">Trial</SelectItem>
+                                      <SelectItem value="mensal">Mensal</SelectItem>
+                                      <SelectItem value="anual">Anual</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 ) : (
@@ -928,14 +987,11 @@ export default function PublicAdmin() {
                                     onClick={() => setEditingUser(user.id)}
                                     data-testid={`badge-plan-${user.id}`}
                                   >
-                                    {user.plano === "premium" ? (
-                                      <>
-                                        <Crown className="h-3 w-3 mr-1" />
-                                        Premium
-                                      </>
-                                    ) : (
-                                      "Free"
-                                    )}
+                                    {user.plano === "trial" && "Trial (7 dias)"}
+                                    {user.plano === "mensal" && "Mensal"}
+                                    {user.plano === "anual" && "Anual"}
+                                    {user.plano === "premium" && "Premium"}
+                                    {user.plano === "free" && "Free"}
                                   </Badge>
                                 )}
                               </TableCell>

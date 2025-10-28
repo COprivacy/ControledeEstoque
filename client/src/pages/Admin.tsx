@@ -425,19 +425,15 @@ export default function Admin() {
                     {!["trial", "mensal", "anual", "premium"].includes(currentUser.plano) && "Free"}
                   </Badge>
                 </div>
-                {currentUser.data_expiracao_plano && currentUser.plano !== "trial" && (
+                {(currentUser.data_expiracao_plano || currentUser.data_expiracao_trial) && (
                   <div className="p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Expira em</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {calculateDaysRemaining(currentUser.data_expiracao_plano)} <span className="text-base font-normal text-gray-600 dark:text-gray-400">dias</span>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                      {currentUser.plano === "trial" ? "Trial" : "Expira em"}
                     </p>
-                  </div>
-                )}
-                {currentUser.data_expiracao_trial && currentUser.plano === "trial" && (
-                  <div className="p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Trial</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {calculateDaysRemaining(currentUser.data_expiracao_trial)} <span className="text-base font-normal text-gray-600 dark:text-gray-400">dias restantes</span>
+                      {calculateDaysRemaining(
+                        currentUser.data_expiracao_plano || currentUser.data_expiracao_trial
+                      )} <span className="text-base font-normal text-gray-600 dark:text-gray-400">dias restantes</span>
                     </p>
                   </div>
                 )}

@@ -309,6 +309,42 @@ export default function Admin() {
     savePermissionsMutation.mutate({ userId, perms });
   };
 
+  const handleSubscribe = async (plano: 'mensal' | 'anual', formaPagamento: 'CREDIT_CARD' | 'BOLETO' | 'PIX') => {
+    try {
+      const planoMap = {
+        'mensal': 'premium_mensal',
+        'anual': 'premium_anual'
+      };
+
+      const response = await apiRequest("POST", "/api/checkout", {
+        plano: planoMap[plano],
+        forma_pagamento: formaPagamento,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "Assinatura criada!",
+          description: `Sua assinatura ${plano} foi criada. Complete o pagamento para ativar.`,
+        });
+
+        // Redirecionar para URL de pagamento se disponível
+        if (data.payment?.invoiceUrl) {
+          window.open(data.payment.invoiceUrl, '_blank');
+        }
+      } else {
+        throw new Error(data.error || "Erro ao criar assinatura");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao processar assinatura",
+        description: error.message || "Tente novamente ou entre em contato com o suporte",
+        variant: "destructive",
+      });
+    }
+  };
+
   const calculateDaysRemaining = (expirationDate?: string) => {
     if (!expirationDate) return null;
     const now = new Date();
@@ -400,130 +436,150 @@ export default function Admin() {
             </Card>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Planos Disponíveis</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Escolha o plano ideal para sua empresa</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Plano Mensal */}
-              <Card className="relative overflow-hidden border-2 border-blue-200 dark:border-blue-900 hover:shadow-lg transition-all">
-                <div className="absolute top-0 right-0 bg-blue-500 text-white px-3 py-1 text-xs font-semibold rounded-bl-lg">
-                  POPULAR
-                </div>
-                <CardHeader>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                      <Zap className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-2xl">Plano Mensal</CardTitle>
-                      <CardDescription>Flexibilidade mês a mês</CardDescription>
-                    </div>
-                  </div>
-                  <div className="flex items-baseline gap-2 mt-4">
-                    <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">R$ 79,99</span>
-                    <span className="text-gray-600 dark:text-gray-400">/mês</span>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Acesso completo ao sistema</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">PDV, Produtos e Estoque</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Gestão Financeira completa</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Emissão de NF-e/NFC-e</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Relatórios e Dashboard</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Suporte prioritário</span>
+          {(currentUser.plano === "trial" || currentUser.plano === "free") && (
+            <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 border-blue-200 dark:border-gray-700">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      Aproveite recursos premium
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Desbloqueie todo o potencial do sistema com nossos planos de assinatura
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                        <span>Mensal: <strong>R$ 79,99/mês</strong></span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <div className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+                        <span>Anual: <strong>R$ 67,99/mês</strong> (economize 15%)</span>
+                      </div>
                     </div>
                   </div>
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" size="lg" data-testid="button-plan-mensal">
-                    Assinar Plano Mensal
-                  </Button>
-                  <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-                    Cancele quando quiser, sem multas
-                  </p>
-                </CardContent>
-              </Card>
+                  <div className="flex gap-2">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          Ver Planos
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>Escolha seu plano</DialogTitle>
+                          <DialogDescription>
+                            Selecione o plano ideal para sua empresa
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                          {/* Plano Mensal */}
+                          <Card className="border-2 hover:border-blue-300 dark:hover:border-blue-700 transition-all">
+                            <CardHeader>
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                  <CardTitle className="text-xl">Mensal</CardTitle>
+                                </div>
+                                <Badge variant="secondary" className="text-xs">Popular</Badge>
+                              </div>
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-3xl font-bold">R$ 79,99</span>
+                                <span className="text-gray-500 dark:text-gray-400 text-sm">/mês</span>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Check className="h-4 w-4 text-green-600" />
+                                  <span>Sistema completo</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Check className="h-4 w-4 text-green-600" />
+                                  <span>PDV e Estoque</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Check className="h-4 w-4 text-green-600" />
+                                  <span>Emissão de NF-e</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Check className="h-4 w-4 text-green-600" />
+                                  <span>Suporte prioritário</span>
+                                </div>
+                              </div>
+                              <Button 
+                                className="w-full" 
+                                onClick={() => handleSubscribe('mensal', 'CREDIT_CARD')}
+                                data-testid="button-plan-mensal"
+                              >
+                                Assinar Mensal
+                              </Button>
+                            </CardContent>
+                          </Card>
 
-              {/* Plano Anual */}
-              <Card className="relative overflow-hidden border-2 border-purple-200 dark:border-purple-900 hover:shadow-lg transition-all">
-                <div className="absolute top-0 right-0 bg-purple-500 text-white px-3 py-1 text-xs font-semibold rounded-bl-lg flex items-center gap-1">
-                  <Crown className="h-3 w-3" />
-                  ECONOMIZE 15%
+                          {/* Plano Anual */}
+                          <Card className="border-2 border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50/50 to-white dark:from-purple-950/20 dark:to-gray-900">
+                            <CardHeader>
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Crown className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                  <CardTitle className="text-xl">Anual</CardTitle>
+                                </div>
+                                <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs">
+                                  -15%
+                                </Badge>
+                              </div>
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-3xl font-bold text-purple-600 dark:text-purple-400">R$ 67,99</span>
+                                <span className="text-gray-500 dark:text-gray-400 text-sm">/mês</span>
+                              </div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                R$ 815,90 cobrado anualmente
+                              </p>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm font-medium text-purple-700 dark:text-purple-300">
+                                  <Check className="h-4 w-4" />
+                                  <span>Tudo do plano mensal +</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Check className="h-4 w-4 text-green-600" />
+                                  <span>Economia de R$ 143,98/ano</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Check className="h-4 w-4 text-green-600" />
+                                  <span>Suporte VIP</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Check className="h-4 w-4 text-green-600" />
+                                  <span>Backup automático</span>
+                                </div>
+                              </div>
+                              <Button 
+                                className="w-full bg-purple-600 hover:bg-purple-700" 
+                                onClick={() => handleSubscribe('anual', 'CREDIT_CARD')}
+                                data-testid="button-plan-anual"
+                              >
+                                Assinar Anual
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        </div>
+
+                        <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
+                            Formas de pagamento: Cartão de Crédito, Boleto ou PIX • Cancele quando quiser
+                          </p>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
-                <CardHeader>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                      <Crown className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-2xl">Plano Anual</CardTitle>
-                      <CardDescription>Melhor custo-benefício</CardDescription>
-                    </div>
-                  </div>
-                  <div className="flex items-baseline gap-2 mt-4">
-                    <span className="text-4xl font-bold text-purple-600 dark:text-purple-400">R$ 67,99</span>
-                    <span className="text-gray-600 dark:text-gray-400">/mês</span>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    R$ 815,90 cobrado anualmente
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">Tudo do plano mensal, mais:</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Economia de R$ 143,98/ano</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Suporte VIP exclusivo</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Atualizações prioritárias</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Backup automático diário</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Consultoria mensal inclusa</span>
-                    </div>
-                  </div>
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white" size="lg" data-testid="button-plan-anual">
-                    Assinar Plano Anual
-                  </Button>
-                  <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-                    Pagamento único anual • Garantia de 7 dias
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

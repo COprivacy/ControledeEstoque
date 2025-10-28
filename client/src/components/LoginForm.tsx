@@ -10,8 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Mail, Lock, ArrowLeft } from "lucide-react";
-import { Link } from "wouter";
+import { Mail, Lock, UserPlus } from "lucide-react";
 import backgroundImage from "@assets/generated_images/Pavisoft_Sistemas_tech_background_61320ac2.png";
 
 interface LoginFormProps {
@@ -47,16 +46,7 @@ export default function LoginForm({
       }}
     >
       <div className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"></div>
-      <div className="w-full max-w-md relative z-10 space-y-4">
-        <Link href="/">
-          <Button
-            variant="outline"
-            className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 text-white hover:text-white"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar ao Site
-          </Button>
-        </Link>
+      <div className="w-full max-w-md relative z-10">
         <Card className="bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-white/20 dark:border-gray-800/50">
         <CardHeader className="space-y-2">
           <CardTitle className="text-2xl font-bold text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -105,6 +95,30 @@ export default function LoginForm({
             <Button type="submit" className="w-full" data-testid="button-login" disabled={isLoading}>
               {isLoading ? "Entrando..." : "Entrar"}
             </Button>
+            {onRegisterClick && (
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-gray-300 dark:border-gray-700" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white dark:bg-gray-950 px-2 text-gray-500 dark:text-gray-400">
+                    ou
+                  </span>
+                </div>
+              </div>
+            )}
+            {onRegisterClick && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={onRegisterClick}
+                data-testid="button-register"
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                Criar nova conta
+              </Button>
+            )}
           </CardFooter>
         </form>
       </Card>

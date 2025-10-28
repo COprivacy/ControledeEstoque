@@ -61,5 +61,9 @@ export default function Login() {
     }
   };
 
-  return <LoginForm onLogin={handleLogin} onRegisterClick={() => {}} isLoading={isLoading} />;
+  const handleRegisterClick = () => {
+    setLocation("/register");
+  };
+
+  return <LoginForm onLogin={handleLogin} onRegisterClick={handleRegisterClick} isLoading={isLoading} />;
 }

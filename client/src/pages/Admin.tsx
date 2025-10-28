@@ -425,7 +425,7 @@ export default function Admin() {
                     {!["trial", "mensal", "anual", "premium"].includes(currentUser.plano) && "Free"}
                   </Badge>
                 </div>
-                {currentUser.data_expiracao_plano && (
+                {currentUser.data_expiracao_plano && currentUser.plano !== "trial" && (
                   <div className="p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
                     <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Expira em</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -433,7 +433,7 @@ export default function Admin() {
                     </p>
                   </div>
                 )}
-                {currentUser.data_expiracao_trial && (
+                {currentUser.data_expiracao_trial && currentUser.plano === "trial" && (
                   <div className="p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
                     <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Trial</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">

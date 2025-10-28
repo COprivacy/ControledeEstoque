@@ -387,7 +387,7 @@ export default function PublicAdmin() {
       if (plano === "trial") {
         hoje.setDate(hoje.getDate() + 7);
         updates.data_expiracao_trial = hoje.toISOString();
-        updates.data_expiracao_plano = null;
+        updates.data_expiracao_plano = hoje.toISOString();
       } else if (plano === "mensal") {
         hoje.setMonth(hoje.getMonth() + 1);
         updates.data_expiracao_plano = hoje.toISOString();
@@ -409,11 +409,12 @@ export default function PublicAdmin() {
       const response = await apiRequest("PATCH", `/api/users/${userId}`, updates);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setEditingUser(null);
       toast({
-        title: "Plano atualizado",
-        description: "O plano do usuário foi atualizado com sucesso!",
+        title: "Plano atualizado com sucesso! ✅",
+        description: `Plano alterado para ${variables.plano.toUpperCase()} e data de expiração atualizada.`,
       });
     },
     onError: (error: any) => {
@@ -966,18 +967,20 @@ export default function PublicAdmin() {
                               <TableCell>
                                 {editingUser === user.id ? (
                                   <Select
-                                    defaultValue={user.plano}
-                                    onValueChange={(value) => handlePlanChange(user.id, value)}
+                                    value={user.plano}
+                                    onValueChange={(value) => {
+                                      handlePlanChange(user.id, value);
+                                    }}
                                   >
                                     <SelectTrigger className="w-32">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="free">Free</SelectItem>
-                                      <SelectItem value="premium">Premium</SelectItem>
                                       <SelectItem value="trial">Trial</SelectItem>
                                       <SelectItem value="mensal">Mensal</SelectItem>
                                       <SelectItem value="anual">Anual</SelectItem>
+                                      <SelectItem value="premium">Premium</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 ) : (
@@ -997,11 +1000,18 @@ export default function PublicAdmin() {
                               </TableCell>
                               <TableCell>
                                 {daysRemaining !== null ? (
-                                  <Badge variant={daysRemaining <= 3 ? "destructive" : "secondary"}>
-                                    {daysRemaining} dias
-                                  </Badge>
+                                  <div className="flex flex-col gap-1">
+                                    <Badge variant={daysRemaining <= 3 ? "destructive" : daysRemaining <= 7 ? "default" : "secondary"}>
+                                      {daysRemaining} dias
+                                    </Badge>
+                                    {user.data_expiracao_plano && (
+                                      <span className="text-xs text-gray-500">
+                                        {new Date(user.data_expiracao_plano).toLocaleDateString('pt-BR')}
+                                      </span>
+                                    )}
+                                  </div>
                                 ) : (
-                                  '-'
+                                  <span className="text-gray-400">Sem limite</span>
                                 )}
                               </TableCell>
                               <TableCell>

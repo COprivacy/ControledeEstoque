@@ -916,12 +916,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/clientes/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      console.log(`🔄 [UPDATE CLIENTE] ID: ${id}`);
+      console.log(`📝 [UPDATE CLIENTE] Dados recebidos:`, JSON.stringify(req.body, null, 2));
+      
       const cliente = await storage.updateCliente(id, req.body);
+      
       if (!cliente) {
+        console.log(`❌ [UPDATE CLIENTE] Cliente não encontrado com ID: ${id}`);
         return res.status(404).json({ error: "Cliente não encontrado" });
       }
+      
+      console.log(`✅ [UPDATE CLIENTE] Cliente atualizado com sucesso:`, JSON.stringify(cliente, null, 2));
       res.json(cliente);
     } catch (error) {
+      console.error(`❌ [UPDATE CLIENTE] Erro ao atualizar cliente:`, error);
       res.status(500).json({ error: "Erro ao atualizar cliente" });
     }
   });

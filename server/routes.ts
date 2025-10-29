@@ -1480,6 +1480,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/subscriptions/:id/cancel", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+      const subscriptionId = parseInt(id);
+
+      const subscriptions = await storage.getSubscriptions();
+      const subscription = subscriptions?.find(s => s.id === subscriptionId);
+
+      if (!subscription) {
+        return res.status(404).json({ error: "Assinatura não encontrada" });
+      }
+
+      // Atualizar assinatura para cancelado
+      await storage.updateSubscription(subscriptionId, {
+        status: "cancelado",
+        data_cancelamento: new Date().toISOString(),
+        motivo_cancelamento: reason || null,
+      });
+
+      // Atualizar usuário para free
+      await storage.updateUser(subscription.user_id, {
+        plano: "free",
+        status: "ativo",
+      });
+
+      console.log(`✅ Assinatura ${subscriptionId} cancelada. Motivo: ${reason || "Não informado"}`);
+
+      res.json({
+        success: true,
+        message: "Assinatura cancelada com sucesso"
+      });
+    } catch (error: any) {
+      console.error("Erro ao cancelar assinatura:", error);
+      res.status(500).json({ error: error.message || "Erro ao cancelar assinatura" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

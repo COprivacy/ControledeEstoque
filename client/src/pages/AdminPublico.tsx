@@ -1,41 +1,43 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, RefreshCw, ArrowLeft, Users, DollarSign, CreditCard, TrendingUp, Edit2, Save, X, Mail, Phone, MapPin, User, Plus, Trash2, UserPlus, BarChart3, Activity, Calendar, Percent, AlertCircle, CheckCircle } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Users,
+  DollarSign,
+  CreditCard,
+  TrendingUp,
+  Loader2,
+  RefreshCw,
+  ArrowLeft,
+  Shield,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Settings,
+  Database,
+  Search,
+  Filter,
+  UserPlus,
+  FileText,
+  Eye,
+  Trash2,
+  ExternalLink,
+  Ban
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { format, subDays, isAfter, isBefore } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 type Subscription = {
   id: number;
@@ -49,6 +51,7 @@ type Subscription = {
   forma_pagamento: string | null;
   status_pagamento: string | null;
   data_criacao: string;
+  invoice_url?: string;
 };
 
 type User = {
@@ -80,22 +83,31 @@ type Cliente = {
 
 export default function AdminPublico() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [editingClient, setEditingClient] = useState<Cliente | null>(null);
-  const [editedClientData, setEditedClientData] = useState<Cliente | null>(null);
-  const [configAsaasOpen, setConfigAsaasOpen] = useState(false);
-  const [testingAsaas, setTestingAsaas] = useState(false);
-  const [createUserOpen, setCreateUserOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [newUserForm, setNewUserData] = useState({
+  const queryClient = useQueryClient();
+  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [ambiente, setAmbiente] = useState<"sandbox" | "production">("sandbox");
+
+  // Estados de busca e filtros
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [planoFilter, setPlanoFilter] = useState<string>("all");
+
+  // Estados de diálogos
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedSubscription, setSelectedSubscription] = useState<any>(null);
+  const [isViewUserDialogOpen, setIsViewUserDialogOpen] = useState(false);
+  const [isCreateClientDialogOpen, setIsCreateClientDialogOpen] = useState(false);
+  const [isCancelSubscriptionDialogOpen, setIsCancelSubscriptionDialogOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+
+  // Estados do formulário de criação de cliente
+  const [newClientForm, setNewClientForm] = useState({
     nome: "",
     email: "",
-    senha: "",
-    plano: "trial",
-    is_admin: "false",
-    cpf_cnpj: "",
-    telefone: "",
-    endereco: "",
+    cpfCnpj: "",
+    plano: "premium_mensal" as "premium_mensal" | "premium_anual",
+    formaPagamento: "CREDIT_CARD" as "BOLETO" | "CREDIT_CARD" | "PIX"
   });
 
 
@@ -218,6 +230,97 @@ export default function AdminPublico() {
     }
   };
 
+  const testAsaasMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/config-asaas/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ api_key: apiKey, ambiente }),
+      });
+      if (!response.ok) throw new Error("Erro ao testar conexão");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({ title: "Conexão bem-sucedida!", description: data.message });
+      } else {
+        toast({ title: "Erro na conexão", description: data.message, variant: "destructive" });
+      }
+    },
+    onError: () => {
+      toast({ title: "Erro", description: "Falha ao testar conexão", variant: "destructive" });
+    },
+  });
+
+  const createClientWithAsaasMutation = useMutation({
+    mutationFn: async (clientData: typeof newClientForm) => {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(clientData),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao criar cliente");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/subscriptions"] });
+      toast({
+        title: "Cliente criado com sucesso!",
+        description: "O cliente foi criado e a cobrança foi gerada no Asaas.",
+      });
+      setIsCreateClientDialogOpen(false);
+      setNewClientForm({
+        nome: "",
+        email: "",
+        cpfCnpj: "",
+        plano: "premium_mensal",
+        formaPagamento: "CREDIT_CARD"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar cliente",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const cancelSubscriptionMutation = useMutation({
+    mutationFn: async ({ subscriptionId, reason }: { subscriptionId: number; reason: string }) => {
+      const response = await fetch(`/api/subscriptions/${subscriptionId}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      if (!response.ok) throw new Error("Erro ao cancelar assinatura");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/subscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Assinatura cancelada",
+        description: "A assinatura foi cancelada com sucesso.",
+      });
+      setIsCancelSubscriptionDialogOpen(false);
+      setCancelReason("");
+      setSelectedSubscription(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao cancelar",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+
   const getUserInfo = (userId: string) => {
     return users.find(u => u.id === userId);
   };
@@ -287,9 +390,39 @@ export default function AdminPublico() {
     .reduce((sum, s) => sum + s.valor, 0);
 
   // Clientes com planos pagos
-  const clientesComPlanos = users.filter(u =>
-    subscriptions.some(s => s.user_id === u.id && s.status === "ativo")
-  );
+  const clientesComPlanos = clientes.filter((c: any) => {
+    const user = users.find((u: any) => u.email === c.email);
+    return user && (user.plano === "premium" || user.plano === "mensal" || user.plano === "anual");
+  });
+
+  // Filtrar usuários com busca e filtros
+  const filteredUsers = useMemo(() => {
+    return users.filter((user: any) => {
+      const matchSearch = searchTerm === "" ||
+        user.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchStatus = statusFilter === "all" || user.status === statusFilter;
+
+      const matchPlano = planoFilter === "all" || user.plano === planoFilter;
+
+      return matchSearch && matchStatus && matchPlano;
+    });
+  }, [users, searchTerm, statusFilter, planoFilter]);
+
+  // Filtrar assinaturas
+  const filteredSubscriptions = useMemo(() => {
+    return subscriptions.filter((sub: any) => {
+      const user = users.find((u: any) => u.id === sub.user_id);
+      if (!user) return false;
+
+      const matchSearch = searchTerm === "" ||
+        user.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      return matchSearch;
+    });
+  }, [subscriptions, users, searchTerm]);
 
   // Mutations para gerenciamento de usuários
   const createUserMutation = useMutation({
@@ -402,7 +535,7 @@ export default function AdminPublico() {
     setNewUserData({
       nome: user.nome,
       email: user.email,
-      senha: "", 
+      senha: "",
       plano: user.plano,
       is_admin: isAdmin ? "true" : "false",
       cpf_cnpj: (user as any).cpf_cnpj || "",
@@ -422,7 +555,7 @@ export default function AdminPublico() {
       // Calcula a data de expiração baseada no plano
       const dataExpiracao = calcularDataExpiracao(updates.plano);
       updates.data_expiracao_plano = dataExpiracao;
-      
+
       updateUserMutation.mutate({ id: editingUser.id, updates });
     }
   };
@@ -432,7 +565,6 @@ export default function AdminPublico() {
       deleteUserMutation.mutate(userId);
     }
   };
-
 
   if (isLoadingSubscriptions || isLoadingUsers || isLoadingClientes) {
     return (
@@ -530,23 +662,61 @@ export default function AdminPublico() {
           </Card>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-gray-900 border border-gray-800 grid grid-cols-5 w-full">
-            <TabsTrigger value="dashboard" className="data-[state=active]:bg-cyan-600" data-testid="tab-dashboard">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Dashboard
+        {/* Barra de Busca e Filtros */}
+        <Card className="bg-gray-900 border-gray-800 mt-6">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-span-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Buscar por nome ou email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={planoFilter} onValueChange={setPlanoFilter}>
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                  <SelectValue placeholder="Plano" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os planos</SelectItem>
+                  <SelectItem value="trial">Trial</SelectItem>
+                  <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="premium_mensal">Premium Mensal</SelectItem>
+                  <SelectItem value="premium_anual">Premium Anual</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Tabs defaultValue="usuarios" className="mt-8">
+          <TabsList className="grid w-full grid-cols-3 bg-gray-800 p-1 rounded-lg">
+            <TabsTrigger value="usuarios" className="data-[state=active]:bg-cyan-600" data-testid="tab-dashboard">
+              <Users className="h-4 w-4 mr-2" />
+              Usuários ({filteredUsers.length})
             </TabsTrigger>
             <TabsTrigger value="planos-assinaturas" className="data-[state=active]:bg-blue-600" data-testid="tab-planos">
-              Planos & Assinaturas
+              <CreditCard className="h-4 w-4 mr-2" />
+              Assinaturas ({filteredSubscriptions.length})
             </TabsTrigger>
-            <TabsTrigger value="clientes-usuarios" className="data-[state=active]:bg-green-600" data-testid="tab-usuarios">
-              Clientes & Usuários
-            </TabsTrigger>
-            <TabsTrigger value="base-clientes" className="data-[state=active]:bg-purple-600" data-testid="tab-clientes">
-              Base de Clientes
-            </TabsTrigger>
-            <TabsTrigger value="integracao-asaas" className="data-[state=active]:bg-orange-600" data-testid="tab-asaas">
-              Integração Asaas
+            <TabsTrigger value="configuracao" className="data-[state=active]:bg-orange-600" data-testid="tab-asaas">
+              <Settings className="h-4 w-4 mr-2" />
+              Configuração
             </TabsTrigger>
           </TabsList>
 
@@ -672,7 +842,7 @@ export default function AdminPublico() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                         <XAxis dataKey="name" stroke="#9ca3af" />
                         <YAxis stroke="#9ca3af" />
-                        <Tooltip 
+                        <Tooltip
                           contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
                           labelStyle={{ color: '#f3f4f6' }}
                         />
@@ -719,10 +889,10 @@ export default function AdminPublico() {
                             <TableCell className="text-white font-medium">{user.nome}</TableCell>
                             <TableCell className="text-gray-300">{user.email}</TableCell>
                             <TableCell>
-                              <Badge 
+                              <Badge
                                 variant={
-                                  user.plano === 'premium' ? 'default' : 
-                                  user.plano === 'anual' ? 'secondary' : 
+                                  user.plano === 'premium' ? 'default' :
+                                  user.plano === 'anual' ? 'secondary' :
                                   'outline'
                                 }
                                 className={
@@ -845,50 +1015,83 @@ export default function AdminPublico() {
                       <TableHead className="text-gray-400">Forma</TableHead>
                       <TableHead className="text-gray-400">Vencimento</TableHead>
                       <TableHead className="text-gray-400">ID Asaas</TableHead>
-                      <TableHead className="text-gray-400">Ações</TableHead>
+                      <TableHead className="text-gray-400 text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {subscriptions.map((sub) => {
-                      const user = getUserInfo(sub.user_id);
-                      return (
-                        <TableRow key={sub.id} className="border-gray-800">
-                          <TableCell className="text-white">{user?.nome || "-"}</TableCell>
-                          <TableCell className="text-gray-300">{user?.email || "-"}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-blue-400 border-blue-600">
-                              {sub.plano.replace("_", " ").toUpperCase()}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-green-400 font-semibold">{formatCurrency(sub.valor)}</TableCell>
-                          <TableCell>{getStatusBadge(sub.status)}</TableCell>
-                          <TableCell>
-                            {sub.status_pagamento ? (
-                              <Badge variant={sub.status_pagamento === "RECEIVED" ? "default" : "secondary"}>
-                                {sub.status_pagamento}
+                    {filteredSubscriptions.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={10} className="text-center text-gray-400 py-8">
+                          Nenhuma assinatura encontrada
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredSubscriptions.map((sub: any) => {
+                        const user = users.find((u: any) => u.id === sub.user_id);
+                        return (
+                          <TableRow key={sub.id} className="border-gray-800">
+                            <TableCell className="text-white font-medium">{user?.nome || "-"}</TableCell>
+                            <TableCell className="text-gray-300">{user?.email || "-"}</TableCell>
+                            <TableCell>
+                              <Badge variant="default">{sub.plano}</Badge>
+                            </TableCell>
+                            <TableCell className="text-white font-semibold">{formatCurrency(sub.valor)}</TableCell>
+                            <TableCell>
+                              <Badge variant={
+                                sub.status === "ativo" ? "default" :
+                                sub.status === "cancelado" ? "destructive" :
+                                "secondary"
+                              }>
+                                {sub.status}
                               </Badge>
-                            ) : "-"}
-                          </TableCell>
-                          <TableCell>{getPaymentMethodBadge(sub.forma_pagamento)}</TableCell>
-                          <TableCell className="text-gray-300">{formatDate(sub.data_vencimento)}</TableCell>
-                          <TableCell className="text-xs text-gray-400 font-mono">
-                            {sub.asaas_payment_id ? sub.asaas_payment_id.substring(0, 8) + "..." : "-"}
-                          </TableCell>
-                          <TableCell>
-                            {sub.status === "pendente" && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => reenviarCobranca.mutate(sub.id)}
-                                className="bg-gray-800 border-gray-700"
-                              >
-                                Reenviar
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={
+                                sub.status_pagamento === "RECEIVED" || sub.status_pagamento === "CONFIRMED" ? "default" :
+                                sub.status_pagamento === "PENDING" ? "secondary" :
+                                "destructive"
+                              }>
+                                {sub.status_pagamento || "N/A"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-gray-300">{sub.forma_pagamento || "-"}</TableCell>
+                            <TableCell className="text-gray-400">
+                              {sub.data_vencimento ? formatDate(sub.data_vencimento) : "-"}
+                            </TableCell>
+                            <TableCell className="text-gray-400 font-mono text-xs">
+                              {sub.asaas_payment_id ? sub.asaas_payment_id.slice(0, 12) + "..." : "-"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {sub.invoice_url && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => window.open(sub.invoice_url, '_blank')}
+                                    className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
+                                  >
+                                    <ExternalLink className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {sub.status === "ativo" && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setSelectedSubscription(sub);
+                                      setIsCancelSubscriptionDialogOpen(true);
+                                    }}
+                                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                                  >
+                                    <Ban className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -896,114 +1099,113 @@ export default function AdminPublico() {
           </TabsContent>
 
           {/* Tab Clientes & Usuários */}
-          <TabsContent value="clientes-usuarios" className="mt-6">
+          <TabsContent value="usuarios" className="mt-6">
             <Card className="bg-gray-900 border-gray-800">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Users className="h-6 w-6" />
-                  Clientes com Planos Ativos
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Usuários que possuem assinaturas ativas ({clientesComPlanos.length} de {users.length} usuários)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-end mb-4">
-                  <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Users className="h-6 w-6" />
+                      Gestão de Usuários
+                    </CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Todos os usuários cadastrados no sistema
+                    </CardDescription>
+                  </div>
+                  <Dialog open={isCreateClientDialogOpen} onOpenChange={setIsCreateClientDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button className="bg-green-600 hover:bg-green-700">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Novo Usuário
+                      <Button className="bg-blue-600 hover:bg-blue-700">
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Criar Cliente com Asaas
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-xl">
+                    <DialogContent className="bg-gray-900 border-gray-800 text-white">
                       <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                          <UserPlus className="h-5 w-5" />
-                          Criar Novo Usuário
-                        </DialogTitle>
+                        <DialogTitle>Criar Novo Cliente com Assinatura</DialogTitle>
                         <DialogDescription className="text-gray-400">
-                          Preencha os campos abaixo para criar um novo usuário
+                          Crie um cliente e gere automaticamente a cobrança no Asaas
                         </DialogDescription>
                       </DialogHeader>
-                      <form onSubmit={handleCreateUser} className="space-y-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="nome" className="text-gray-300">Nome Completo</Label>
-                            <Input
-                              id="nome"
-                              value={newUserForm.nome}
-                              onChange={(e) => setNewUserData({ ...newUserForm, nome: e.target.value })}
-                              className="bg-gray-800 border-gray-700 text-white"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="email" className="text-gray-300">Email</Label>
-                            <Input
-                              id="email"
-                              type="email"
-                              value={newUserForm.email}
-                              onChange={(e) => setNewUserData({ ...newUserForm, email: e.target.value })}
-                              className="bg-gray-800 border-gray-700 text-white"
-                              required
-                            />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="senha" className="text-gray-300">Senha</Label>
-                            <Input
-                              id="senha"
-                              type="password"
-                              value={newUserForm.senha}
-                              onChange={(e) => setNewUserData({ ...newUserForm, senha: e.target.value })}
-                              className="bg-gray-800 border-gray-700 text-white"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="plano" className="text-gray-300">Plano</Label>
-                            <Select
-                              name="plano"
-                              value={newUserForm.plano}
-                              onValueChange={(value) => setNewUserData({ ...newUserForm, plano: value })}
-                            >
-                              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                                <SelectValue placeholder="Selecione o plano" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                                <SelectItem value="trial">7 dias free trial</SelectItem>
-                                <SelectItem value="mensal">Mensal</SelectItem>
-                                <SelectItem value="anual">Anual</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Nome Completo</Label>
                           <Input
-                            type="checkbox"
-                            id="is_admin"
-                            checked={newUserForm.is_admin === "true"}
-                            onChange={(e) => setNewUserData({ ...newUserForm, is_admin: e.target.checked ? "true" : "false" })}
-                            className="w-auto h-4 text-green-600 focus:ring-green-500 border-gray-700 bg-gray-800"
+                            value={newClientForm.nome}
+                            onChange={(e) => setNewClientForm({ ...newClientForm, nome: e.target.value })}
+                            className="bg-gray-800 border-gray-700"
+                            placeholder="Nome do cliente"
                           />
-                          <Label htmlFor="is_admin" className="text-gray-300">Administrador</Label>
                         </div>
-                        <div className="flex justify-end gap-2 pt-4">
-                          <Button variant="outline" onClick={() => setCreateUserOpen(false)} className="bg-gray-800 border-gray-700">
-                            <X className="h-4 w-4 mr-1" />
-                            Cancelar
-                          </Button>
-                          <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                            <Save className="h-4 w-4 mr-1" />
-                            Criar Usuário
-                          </Button>
+                        <div>
+                          <Label>Email</Label>
+                          <Input
+                            type="email"
+                            value={newClientForm.email}
+                            onChange={(e) => setNewClientForm({ ...newClientForm, email: e.target.value })}
+                            className="bg-gray-800 border-gray-700"
+                            placeholder="email@exemplo.com"
+                          />
                         </div>
-                      </form>
+                        <div>
+                          <Label>CPF/CNPJ</Label>
+                          <Input
+                            value={newClientForm.cpfCnpj}
+                            onChange={(e) => setNewClientForm({ ...newClientForm, cpfCnpj: e.target.value })}
+                            className="bg-gray-800 border-gray-700"
+                            placeholder="000.000.000-00"
+                          />
+                        </div>
+                        <div>
+                          <Label>Plano</Label>
+                          <Select
+                            value={newClientForm.plano}
+                            onValueChange={(value: any) => setNewClientForm({ ...newClientForm, plano: value })}
+                          >
+                            <SelectTrigger className="bg-gray-800 border-gray-700">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="premium_mensal">Premium Mensal - R$ 79,99</SelectItem>
+                              <SelectItem value="premium_anual">Premium Anual - R$ 67,99/mês</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Forma de Pagamento</Label>
+                          <Select
+                            value={newClientForm.formaPagamento}
+                            onValueChange={(value: any) => setNewClientForm({ ...newClientForm, formaPagamento: value })}
+                          >
+                            <SelectTrigger className="bg-gray-800 border-gray-700">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="CREDIT_CARD">Cartão de Crédito</SelectItem>
+                              <SelectItem value="BOLETO">Boleto</SelectItem>
+                              <SelectItem value="PIX">PIX</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button
+                          onClick={() => createClientWithAsaasMutation.mutate(newClientForm)}
+                          disabled={createClientWithAsaasMutation.isPending}
+                          className="w-full bg-blue-600 hover:bg-blue-700"
+                        >
+                          {createClientWithAsaasMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Criando...
+                            </>
+                          ) : (
+                            "Criar Cliente e Gerar Cobrança"
+                          )}
+                        </Button>
+                      </div>
                     </DialogContent>
                   </Dialog>
                 </div>
+              </CardHeader>
+              <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow className="border-gray-800">
@@ -1011,183 +1213,56 @@ export default function AdminPublico() {
                       <TableHead className="text-gray-400">Email</TableHead>
                       <TableHead className="text-gray-400">Plano</TableHead>
                       <TableHead className="text-gray-400">Status</TableHead>
-                      <TableHead className="text-gray-400">Administrador</TableHead>
-                      <TableHead className="text-gray-400">ID Cliente Asaas</TableHead>
-                      <TableHead className="text-gray-400">Data Cadastro</TableHead>
-                      <TableHead className="text-gray-400">Expira Em</TableHead>
-                      <TableHead className="text-gray-400">Ações</TableHead>
+                      <TableHead className="text-gray-400">Cadastro</TableHead>
+                      <TableHead className="text-gray-400 text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.map((user) => (
-                      <TableRow key={user.id} className="border-gray-800">
-                        <TableCell className="text-white font-semibold">{user.nome}</TableCell>
-                        <TableCell className="text-gray-300">{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant="default" className="bg-blue-600">
-                            {user.plano.toUpperCase()}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{getStatusBadge(user.status)}</TableCell>
-                        <TableCell>
-                          {user.is_admin ? (
-                            <Badge variant="default" className="bg-purple-600">Sim</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-gray-400">Não</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs text-gray-400 font-mono">
-                          {user.asaas_customer_id || "-"}
-                        </TableCell>
-                        <TableCell className="text-gray-300">{formatDate(user.data_criacao)}</TableCell>
-                        <TableCell className="text-gray-300">
-                          {formatDate(user.data_expiracao_plano || user.data_expiracao_trial)}
-                        </TableCell>
-                        <TableCell className="flex gap-2">
-                          <Dialog open={editingUser?.id === user.id} onOpenChange={(open) => !open && setEditingUser(null)}>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditUser(user)}
-                                className="bg-gray-800 border-gray-700"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-xl">
-                              <DialogHeader>
-                                <DialogTitle className="flex items-center gap-2">
-                                  <User className="h-5 w-5" />
-                                  Editar Usuário
-                                </DialogTitle>
-                                <DialogDescription className="text-gray-400">
-                                  Atualize as informações do usuário
-                                </DialogDescription>
-                              </DialogHeader>
-                              <form onSubmit={handleUpdateUser} className="space-y-4 py-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <Label htmlFor="edit-nome" className="text-gray-300">Nome Completo</Label>
-                                    <Input
-                                      id="edit-nome"
-                                      value={newUserForm.nome}
-                                      onChange={(e) => setNewUserData({ ...newUserForm, nome: e.target.value })}
-                                      className="bg-gray-800 border-gray-700 text-white"
-                                      required
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-email" className="text-gray-300">Email</Label>
-                                    <Input
-                                      id="edit-email"
-                                      type="email"
-                                      value={newUserForm.email}
-                                      onChange={(e) => setNewUserData({ ...newUserForm, email: e.target.value })}
-                                      className="bg-gray-800 border-gray-700 text-white"
-                                      required
-                                    />
-                                  </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <Label htmlFor="edit-cpf_cnpj" className="text-gray-300">CPF/CNPJ</Label>
-                                    <Input
-                                      id="edit-cpf_cnpj"
-                                      value={newUserForm.cpf_cnpj}
-                                      onChange={(e) => setNewUserData({ ...newUserForm, cpf_cnpj: e.target.value })}
-                                      className="bg-gray-800 border-gray-700 text-white"
-                                      placeholder="000.000.000-00"
-                                      data-testid="input-cpf-cnpj"
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-telefone" className="text-gray-300">Telefone</Label>
-                                    <Input
-                                      id="edit-telefone"
-                                      value={newUserForm.telefone}
-                                      onChange={(e) => setNewUserData({ ...newUserForm, telefone: e.target.value })}
-                                      className="bg-gray-800 border-gray-700 text-white"
-                                      placeholder="(00) 00000-0000"
-                                      data-testid="input-telefone"
-                                    />
-                                  </div>
-                                </div>
-                                <div>
-                                  <Label htmlFor="edit-endereco" className="text-gray-300">Endereço</Label>
-                                  <Input
-                                    id="edit-endereco"
-                                    value={newUserForm.endereco}
-                                    onChange={(e) => setNewUserData({ ...newUserForm, endereco: e.target.value })}
-                                    className="bg-gray-800 border-gray-700 text-white"
-                                    placeholder="Rua, Número, Bairro, Cidade - Estado"
-                                    data-testid="input-endereco"
-                                  />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <Label htmlFor="edit-senha" className="text-gray-300">Nova Senha (Opcional)</Label>
-                                    <Input
-                                      id="edit-senha"
-                                      type="password"
-                                      value={newUserForm.senha}
-                                      onChange={(e) => setNewUserData({ ...newUserForm, senha: e.target.value })}
-                                      className="bg-gray-800 border-gray-700 text-white"
-                                      data-testid="input-senha"
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-plano" className="text-gray-300">Plano</Label>
-                                    <Select
-                                      name="plano"
-                                      value={newUserForm.plano}
-                                      onValueChange={(value) => setNewUserData({ ...newUserForm, plano: value })}
-                                    >
-                                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white" data-testid="select-plano">
-                                        <SelectValue placeholder="Selecione o plano" />
-                                      </SelectTrigger>
-                                      <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                                        <SelectItem value="trial">7 dias free trial</SelectItem>
-                                        <SelectItem value="mensal">Mensal</SelectItem>
-                                        <SelectItem value="anual">Anual</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Input
-                                    type="checkbox"
-                                    id="edit-is_admin"
-                                    checked={newUserForm.is_admin === "true"}
-                                    onChange={(e) => setNewUserData({ ...newUserForm, is_admin: e.target.checked ? "true" : "false" })}
-                                    className="w-auto h-4 text-green-600 focus:ring-green-500 border-gray-700 bg-gray-800"
-                                  />
-                                  <Label htmlFor="edit-is_admin" className="text-gray-300">Administrador</Label>
-                                </div>
-                                <div className="flex justify-end gap-2 pt-4">
-                                  <Button variant="outline" onClick={() => setEditingUser(null)} className="bg-gray-800 border-gray-700">
-                                    <X className="h-4 w-4 mr-1" />
-                                    Cancelar
-                                  </Button>
-                                  <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                                    <Save className="h-4 w-4 mr-1" />
-                                    Salvar Alterações
-                                  </Button>
-                                </div>
-                              </form>
-                            </DialogContent>
-                          </Dialog>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="bg-red-700 hover:bg-red-800"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                    {filteredUsers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-gray-400 py-8">
+                          Nenhum usuário encontrado
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      filteredUsers.map((user: any) => (
+                        <TableRow key={user.id} className="border-gray-800">
+                          <TableCell className="text-white font-medium">{user.nome}</TableCell>
+                          <TableCell className="text-gray-300">{user.email}</TableCell>
+                          <TableCell>
+                            <Badge variant={user.plano === "premium" || user.plano === "mensal" || user.plano === "anual" ? "default" : "secondary"}>
+                              {user.plano === "trial" && "Trial"}
+                              {user.plano === "free" && "Free"}
+                              {user.plano === "mensal" && "Premium Mensal"}
+                              {user.plano === "anual" && "Premium Anual"}
+                              {user.plano === "premium" && "Premium"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={user.status === "ativo" ? "default" : "destructive"}>
+                              {user.status === "ativo" ? "Ativo" : "Inativo"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-gray-400">
+                            {user.data_criacao ? formatDate(user.data_criacao) : "-"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setIsViewUserDialogOpen(true);
+                              }}
+                              className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Ver Detalhes
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -1352,7 +1427,7 @@ export default function AdminPublico() {
           </TabsContent>
 
           {/* Tab Integração Asaas */}
-          <TabsContent value="integracao-asaas" className="mt-6">
+          <TabsContent value="configuracao" className="mt-6">
             <div className="grid gap-6">
               {/* Status da Conexão */}
               <Card className="bg-gray-900 border-gray-800">
@@ -1398,7 +1473,7 @@ export default function AdminPublico() {
                     </div>
                   )}
 
-                  <Dialog open={configAsaasOpen} onOpenChange={setConfigAsaasOpen}>
+                  <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
                     <DialogTrigger asChild>
                       <Button className="w-full bg-orange-600 hover:bg-orange-700">
                         <Edit2 className="h-4 w-4 mr-2" />
@@ -1468,10 +1543,10 @@ export default function AdminPublico() {
                             type="button"
                             variant="outline"
                             onClick={() => {
-                              const apiKey = (document.getElementById("api_key") as HTMLInputElement)?.value;
-                              const ambiente = (document.querySelector('[name="ambiente"]') as HTMLInputElement)?.value;
-                              if (apiKey) {
-                                testAsaasConnection(apiKey, ambiente || "sandbox");
+                              const apiKeyInput = document.getElementById("api_key") as HTMLInputElement;
+                              const ambienteSelect = document.querySelector('[name="ambiente"]') as HTMLSelectElement;
+                              if (apiKeyInput && ambienteSelect) {
+                                testAsaasConnection(apiKeyInput.value, ambienteSelect.value);
                               }
                             }}
                             disabled={testingAsaas}
@@ -1484,7 +1559,6 @@ export default function AdminPublico() {
                             className="flex-1 bg-green-600 hover:bg-green-700"
                             disabled={saveConfigAsaasMutation.isPending}
                           >
-                            <Save className="h-4 w-4 mr-2" />
                             {saveConfigAsaasMutation.isPending ? "Salvando..." : "Salvar Configuração"}
                           </Button>
                         </div>
@@ -1522,6 +1596,111 @@ export default function AdminPublico() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Dialog para visualizar detalhes do usuário */}
+        <Dialog open={isViewUserDialogOpen} onOpenChange={setIsViewUserDialogOpen}>
+          <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Detalhes do Usuário</DialogTitle>
+              <DialogDescription className="text-gray-400">Informações completas do usuário selecionado</DialogDescription>
+            </DialogHeader>
+            {selectedUser && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-300">Nome:</Label>
+                    <p className="text-white">{selectedUser.nome}</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Email:</Label>
+                    <p className="text-white">{selectedUser.email}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-300">Plano:</Label>
+                    <p className="text-white">{selectedUser.plano}</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Status:</Label>
+                    <p className="text-white">{selectedUser.status}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-300">Administrador:</Label>
+                    <p className="text-white">{selectedUser.is_admin ? "Sim" : "Não"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">ID Cliente Asaas:</Label>
+                    <p className="text-white font-mono text-sm">{selectedUser.asaas_customer_id || "-"}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-300">CPF/CNPJ:</Label>
+                    <p className="text-white">{selectedUser.cpf_cnpj || "-"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Telefone:</Label>
+                    <p className="text-white">{selectedUser.telefone || "-"}</p>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-gray-300">Endereço:</Label>
+                  <p className="text-white">{selectedUser.endereco || "-"}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-300">Data de Cadastro:</Label>
+                    <p className="text-white">{formatDate(selectedUser.data_criacao)}</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Expira em:</Label>
+                    <p className="text-white">{formatDate(selectedUser.data_expiracao_plano || selectedUser.data_expiracao_trial)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsViewUserDialogOpen(false)}>
+                Fechar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog para cancelar assinatura */}
+        <Dialog open={isCancelSubscriptionDialogOpen} onOpenChange={setIsCancelSubscriptionDialogOpen}>
+          <DialogContent className="bg-gray-900 border-gray-800 text-white">
+            <DialogHeader>
+              <DialogTitle>Cancelar Assinatura</DialogTitle>
+              <DialogDescription className="text-gray-400">
+                Você tem certeza que deseja cancelar esta assinatura? Por favor, informe o motivo.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <Textarea
+                placeholder="Motivo do cancelamento..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="bg-gray-800 border-gray-700 min-h-[100px]"
+              />
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setIsCancelSubscriptionDialogOpen(false)} className="bg-gray-800 border-gray-700">
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => selectedSubscription && cancelSubscriptionMutation.mutate({ subscriptionId: selectedSubscription.id, reason: cancelReason })}
+                  disabled={cancelSubscriptionMutation.isPending}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {cancelSubscriptionMutation.isPending ? "Cancelando..." : "Confirmar Cancelamento"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

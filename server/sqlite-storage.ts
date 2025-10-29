@@ -75,7 +75,7 @@ export class SQLiteStorage implements IStorage {
     // Migração: Adicionar colunas faltantes se não existirem
     const columns = this.db.prepare("PRAGMA table_info(users)").all() as Array<{ name: string }>;
     const columnNames = columns.map(c => c.name);
-    
+
     if (!columnNames.includes('plano')) {
       this.db.exec(`ALTER TABLE users ADD COLUMN plano TEXT NOT NULL DEFAULT 'free'`);
     }
@@ -271,6 +271,8 @@ export class SQLiteStorage implements IStorage {
         invoice_url TEXT,
         bank_slip_url TEXT,
         pix_qrcode TEXT,
+        data_cancelamento TEXT,
+        motivo_cancelamento TEXT,
         data_criacao TEXT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id)
       );
@@ -285,12 +287,12 @@ export class SQLiteStorage implements IStorage {
       const usersJsonPath = path.join(__dirname, 'users.json');
       const usersData = await fs.readFile(usersJsonPath, 'utf-8');
       const usersFromFile = JSON.parse(usersData) as User[];
-      
+
       if (usersFromFile.length > 0) {
         for (const user of usersFromFile) {
           // Verificar se o usuário já existe
           const existingUser = this.db.prepare('SELECT * FROM users WHERE email = ?').get(user.email);
-          
+
           if (existingUser) {
             // Atualizar usuário existente
             const updateStmt = this.db.prepare(`
@@ -498,18 +500,18 @@ export class SQLiteStorage implements IStorage {
     // Primeiro tenta buscar no banco de dados SQLite
     const stmt = this.db.prepare('SELECT * FROM users WHERE email = ?');
     const userFromDb = stmt.get(email) as User | undefined;
-    
+
     if (userFromDb) {
       return userFromDb;
     }
-    
+
     // Se não encontrar, busca no Map em memória
     for (const user of this.users.values()) {
       if (user.email === email) {
         return user;
       }
     }
-    
+
     return undefined;
   }
 

@@ -43,7 +43,8 @@ import {
   Save,
   X,
   User,
-  LineChart
+  LineChart,
+  Percent
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";

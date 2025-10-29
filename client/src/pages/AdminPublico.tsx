@@ -32,7 +32,8 @@ import {
   Eye,
   Trash2,
   ExternalLink,
-  Ban
+  Ban,
+  Percent
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";

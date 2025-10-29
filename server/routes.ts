@@ -188,14 +188,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const updates = req.body;
 
+      console.log(`🔄 [UPDATE USER] ID: ${id}`);
+      console.log(`📝 [UPDATE USER] Dados recebidos:`, JSON.stringify(updates, null, 2));
+
       delete updates.senha;
       delete updates.id;
+
+      console.log(`📝 [UPDATE USER] Dados após limpeza:`, JSON.stringify(updates, null, 2));
 
       const updatedUser = await storage.updateUser(id, updates);
 
       if (!updatedUser) {
+        console.log(`❌ [UPDATE USER] Usuário não encontrado com ID: ${id}`);
         return res.status(404).json({ error: "Usuário não encontrado" });
       }
+
+      console.log(`✅ [UPDATE USER] Usuário atualizado:`, JSON.stringify(updatedUser, null, 2));
 
       res.json({
         id: updatedUser.id,
@@ -210,6 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ultimo_acesso: updatedUser.ultimo_acesso
       });
     } catch (error) {
+      console.error(`❌ [UPDATE USER] Erro ao atualizar usuário:`, error);
       res.status(500).json({ error: "Erro ao atualizar usuário" });
     }
   });

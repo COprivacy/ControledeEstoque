@@ -614,6 +614,8 @@ export default function AdminPublico() {
       // Calcula a data de expiração baseada no plano
       const dataExpiracao = calcularDataExpiracao(updates.plano);
       updates.data_expiracao_plano = dataExpiracao;
+      // Quando o plano é atualizado, marca o status como ativo
+      updates.status = "ativo";
 
       updateUserMutation.mutate({ id: editingUser.id, updates });
     }

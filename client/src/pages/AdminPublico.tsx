@@ -606,7 +606,7 @@ export default function AdminPublico() {
   const handleUpdateUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingUser) {
-      const updates = { ...newUserForm };
+      const updates = { ...newUserData };
       // Remove password if it's empty to avoid sending empty password
       if (!updates.senha) {
         delete updates.senha;

@@ -714,64 +714,6 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          {/* Cache e Dados Locais */}
-          <Card className="backdrop-blur-sm bg-card/80 border-2 border-yellow-500/10 shadow-xl hover:shadow-2xl transition-all duration-500 hover:border-yellow-500/30 animate-in slide-in-from-bottom duration-700 delay-350">
-            <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 rounded-t-lg">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <RotateCcw className="h-5 w-5 text-yellow-600 animate-pulse" />
-                Cache e Dados Locais
-              </CardTitle>
-              <CardDescription>
-                Gerencie os dados armazenados localmente no navegador
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-6">
-              <div className="space-y-3">
-                <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                    ⚠️ Limpar o cache irá remover todas as configurações personalizadas, dados temporários e preferências salvas localmente. Esta ação não pode ser desfeita.
-                  </p>
-                </div>
-
-                <Button 
-                  variant="destructive" 
-                  className="w-full"
-                  onClick={() => {
-                    if (confirm("Tem certeza que deseja limpar todo o cache? Todas as configurações personalizadas serão perdidas.")) {
-                      // Limpar localStorage
-                      localStorage.clear();
-                      
-                      // Limpar sessionStorage
-                      sessionStorage.clear();
-                      
-                      // Limpar cache do Service Worker se existir
-                      if ('serviceWorker' in navigator && 'caches' in window) {
-                        caches.keys().then(names => {
-                          names.forEach(name => {
-                            caches.delete(name);
-                          });
-                        });
-                      }
-                      
-                      toast({
-                        title: "Cache limpo com sucesso!",
-                        description: "A página será recarregada em 2 segundos...",
-                      });
-                      
-                      // Recarregar a página após 2 segundos
-                      setTimeout(() => {
-                        window.location.reload();
-                      }, 2000);
-                    }
-                  }}
-                >
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Limpar Todo o Cache
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
           <div className="flex justify-end gap-3 animate-in slide-in-from-bottom duration-700 delay-350">
             <Button onClick={handleReset} variant="outline" size="lg" className="hover:scale-105 transition-all duration-300 hover:shadow-lg">
               <RotateCcw className="h-4 w-4 mr-2" />

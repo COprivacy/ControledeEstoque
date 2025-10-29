@@ -565,7 +565,14 @@ export class SQLiteStorage implements IStorage {
       id
     );
 
-    return this.getUserById(id);
+    const updatedUser = await this.getUserById(id);
+    
+    // Atualiza também o Map em memória
+    if (updatedUser) {
+      this.users.set(id, updatedUser);
+    }
+    
+    return updatedUser;
   }
 
   async deleteUser(id: string): Promise<void> {

@@ -174,7 +174,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         plano: user.plano || "free",
         is_admin: user.is_admin || "false",
         data_criacao: user.data_criacao || null,
-        data_expiracao_trial: user.data_expiracao_trial || null
+        data_expiracao_trial: user.data_expiracao_trial || null,
+        data_expiracao_plano: user.data_expiracao_plano || null,
+        status: user.status || "ativo",
+        cpf_cnpj: user.cpf_cnpj || null,
+        telefone: user.telefone || null,
+        endereco: user.endereco || null,
+        asaas_customer_id: user.asaas_customer_id || null
       }));
       res.json(sanitizedUsers);
     } catch (error) {

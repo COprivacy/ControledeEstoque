@@ -42,7 +42,9 @@ import {
   Phone,
   MapPin,
   Save,
-  X
+  X,
+  User,
+  LineChart
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -96,6 +98,7 @@ export default function AdminPublico() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
+  const [configAsaasOpen, setConfigAsaasOpen] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [ambiente, setAmbiente] = useState<"sandbox" | "production">("sandbox");
   const [testingAsaas, setTestingAsaas] = useState(false);
@@ -116,7 +119,17 @@ export default function AdminPublico() {
   const [editingClient, setEditingClient] = useState<Cliente | null>(null);
   const [editedClientData, setEditedClientData] = useState<Cliente | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [newUserData, setNewUserData] = useState({
+  const [newUserData, setNewUserData] = useState<{
+    nome: string;
+    email: string;
+    senha: string;
+    plano: string;
+    is_admin: string;
+    cpf_cnpj: string;
+    telefone: string;
+    endereco: string;
+    data_expiracao_plano: string | null;
+  }>({
     nome: "",
     email: "",
     senha: "",
@@ -125,7 +138,7 @@ export default function AdminPublico() {
     cpf_cnpj: "",
     telefone: "",
     endereco: "",
-    data_expiracao_plano: null as string | null,
+    data_expiracao_plano: null,
   });
   const [newUserForm, setNewUserForm] = useState({
     nome: "",
@@ -204,9 +217,7 @@ export default function AdminPublico() {
       if (!subscription || !subscription.asaas_payment_id) {
         throw new Error("Assinatura ou pagamento não encontrado");
       }
-      return apiRequest(`/api/payments/${subscription.asaas_payment_id}/resend`, {
-        method: "POST",
-      });
+      return apiRequest("POST", `/api/payments/${subscription.asaas_payment_id}/resend`);
     },
     onSuccess: () => {
       toast({

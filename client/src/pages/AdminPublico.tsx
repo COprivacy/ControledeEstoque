@@ -33,12 +33,22 @@ import {
   Trash2,
   ExternalLink,
   Ban,
-  Percent
+  Percent,
+  Activity,
+  BarChart3,
+  Calendar,
+  Edit2,
+  Mail,
+  Phone,
+  MapPin,
+  Save,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 
 type Subscription = {
   id: number;
@@ -101,6 +111,32 @@ export default function AdminPublico() {
   const [isCreateClientDialogOpen, setIsCreateClientDialogOpen] = useState(false);
   const [isCancelSubscriptionDialogOpen, setIsCancelSubscriptionDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [editingClient, setEditingClient] = useState<Cliente | null>(null);
+  const [editedClientData, setEditedClientData] = useState<Cliente | null>(null);
+  const [configAsaasOpen, setConfigAsaasOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [newUserData, setNewUserData] = useState({
+    nome: "",
+    email: "",
+    senha: "",
+    plano: "trial",
+    is_admin: "false",
+    cpf_cnpj: "",
+    telefone: "",
+    endereco: "",
+    data_expiracao_plano: null as string | null,
+  });
+  const [newUserForm, setNewUserForm] = useState({
+    nome: "",
+    email: "",
+    senha: "",
+    plano: "trial",
+    is_admin: "false",
+    cpf_cnpj: "",
+    telefone: "",
+    endereco: "",
+    data_expiracao_plano: null as string | null,
+  });
 
   // Estados do formulário de criação de cliente
   const [newClientForm, setNewClientForm] = useState({
@@ -127,6 +163,16 @@ export default function AdminPublico() {
   const { data: configAsaas } = useQuery({
     queryKey: ["/api/config-asaas"],
   });
+
+  const apiRequest = async (method: string, url: string, body?: any) => {
+    const response = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!response.ok) throw new Error("Erro na requisição");
+    return response;
+  };
 
   const updateClienteMutation = useMutation({
     mutationFn: async (cliente: Cliente) => {

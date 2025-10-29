@@ -100,7 +100,6 @@ export default function AdminPublico() {
   const [ambiente, setAmbiente] = useState<"sandbox" | "production">("sandbox");
   const [testingAsaas, setTestingAsaas] = useState(false);
   const [createUserOpen, setCreateUserOpen] = useState(false);
-  const [configAsaasOpen, setConfigAsaasOpen] = useState(false);
 
   // Estados de busca e filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -116,7 +115,6 @@ export default function AdminPublico() {
   const [cancelReason, setCancelReason] = useState("");
   const [editingClient, setEditingClient] = useState<Cliente | null>(null);
   const [editedClientData, setEditedClientData] = useState<Cliente | null>(null);
-  const [configAsaasOpen, setConfigAsaasOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [newUserData, setNewUserData] = useState({
     nome: "",

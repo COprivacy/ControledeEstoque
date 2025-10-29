@@ -42,7 +42,8 @@ import {
   Phone,
   MapPin,
   Save,
-  X
+  X,
+  User
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -1366,7 +1367,7 @@ export default function AdminPublico() {
                             <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-2xl">
                               <DialogHeader>
                                 <DialogTitle className="flex items-center gap-2">
-                                  <User className="h-5 w-5" />
+                                  <Edit2 className="h-5 w-5" />
                                   Editar Cliente
                                 </DialogTitle>
                                 <DialogDescription className="text-gray-400">

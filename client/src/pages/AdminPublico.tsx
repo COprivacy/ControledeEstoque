@@ -33,7 +33,6 @@ import {
   Trash2,
   ExternalLink,
   Ban,
-  Percent,
   Activity,
   BarChart3,
   Calendar,
@@ -1306,18 +1305,37 @@ export default function AdminPublico() {
                             {user.data_criacao ? formatDate(user.data_criacao) : "-"}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setIsViewUserDialogOpen(true);
-                              }}
-                              className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Ver Detalhes
-                            </Button>
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setIsViewUserDialogOpen(true);
+                                }}
+                                className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Ver Detalhes
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEditUser(user)}
+                                className="text-green-400 hover:text-green-300 hover:bg-green-900/20"
+                              >
+                                <Edit2 className="h-4 w-4 mr-1" />
+                                Editar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDeleteUser(user.id)}
+                                className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -1726,6 +1744,134 @@ export default function AdminPublico() {
                 Fechar
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog para editar usuário */}
+        <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+          <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-3xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Edit2 className="h-5 w-5" />
+                Editar Usuário
+              </DialogTitle>
+              <DialogDescription className="text-gray-400">
+                Atualize as informações do usuário
+              </DialogDescription>
+            </DialogHeader>
+            {editingUser && (
+              <form onSubmit={handleUpdateUser} className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-nome" className="text-gray-300">Nome Completo</Label>
+                    <Input
+                      id="edit-nome"
+                      value={newUserData.nome}
+                      onChange={(e) => setNewUserData({ ...newUserData, nome: e.target.value })}
+                      className="bg-gray-800 border-gray-700 text-white"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-email" className="text-gray-300">Email</Label>
+                    <Input
+                      id="edit-email"
+                      type="email"
+                      value={newUserData.email}
+                      onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                      className="bg-gray-800 border-gray-700 text-white"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-plano" className="text-gray-300">Plano</Label>
+                    <Select value={newUserData.plano} onValueChange={(value) => setNewUserData({ ...newUserData, plano: value })}>
+                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                        <SelectItem value="free">Free</SelectItem>
+                        <SelectItem value="trial">Trial</SelectItem>
+                        <SelectItem value="mensal">Mensal</SelectItem>
+                        <SelectItem value="anual">Anual</SelectItem>
+                        <SelectItem value="premium">Premium</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-cpf_cnpj" className="text-gray-300">CPF/CNPJ</Label>
+                    <Input
+                      id="edit-cpf_cnpj"
+                      value={newUserData.cpf_cnpj}
+                      onChange={(e) => setNewUserData({ ...newUserData, cpf_cnpj: e.target.value })}
+                      className="bg-gray-800 border-gray-700 text-white"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-telefone" className="text-gray-300">Telefone</Label>
+                    <Input
+                      id="edit-telefone"
+                      value={newUserData.telefone}
+                      onChange={(e) => setNewUserData({ ...newUserData, telefone: e.target.value })}
+                      className="bg-gray-800 border-gray-700 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-senha" className="text-gray-300">Nova Senha (deixe em branco para não alterar)</Label>
+                    <Input
+                      id="edit-senha"
+                      type="password"
+                      value={newUserData.senha}
+                      onChange={(e) => setNewUserData({ ...newUserData, senha: e.target.value })}
+                      className="bg-gray-800 border-gray-700 text-white"
+                      placeholder="Nova senha (opcional)"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="edit-endereco" className="text-gray-300">Endereço Completo</Label>
+                  <Input
+                    id="edit-endereco"
+                    value={newUserData.endereco}
+                    onChange={(e) => setNewUserData({ ...newUserData, endereco: e.target.value })}
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="edit-is_admin"
+                    checked={newUserData.is_admin === "true"}
+                    onChange={(e) => setNewUserData({ ...newUserData, is_admin: e.target.checked ? "true" : "false" })}
+                    className="h-4 w-4"
+                  />
+                  <Label htmlFor="edit-is_admin" className="text-gray-300">Administrador</Label>
+                </div>
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditingUser(null)}
+                    className="bg-gray-800 border-gray-700"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-green-600 hover:bg-green-700"
+                    disabled={updateUserMutation.isPending}
+                  >
+                    <Save className="h-4 w-4 mr-1" />
+                    {updateUserMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
+                </div>
+              </form>
+            )}
           </DialogContent>
         </Dialog>
 

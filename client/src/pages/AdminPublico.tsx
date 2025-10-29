@@ -379,6 +379,70 @@ export default function AdminPublico() {
     },
   });
 
+  const updateUserPlanMutation = useMutation({
+    mutationFn: async ({ userId, plano }: { userId: string; plano: string }) => {
+      const updates: any = { plano };
+
+      // Calcular nova data de expiração baseada no plano
+      const hoje = new Date();
+      if (plano === "trial") {
+        hoje.setDate(hoje.getDate() + 7);
+        updates.data_expiracao_trial = hoje.toISOString();
+        updates.data_expiracao_plano = hoje.toISOString();
+      } else if (plano === "mensal" || plano === "premium_mensal") {
+        hoje.setMonth(hoje.getMonth() + 1);
+        updates.data_expiracao_plano = hoje.toISOString();
+        updates.data_expiracao_trial = null;
+      } else if (plano === "anual" || plano === "premium_anual") {
+        hoje.setFullYear(hoje.getFullYear() + 1);
+        updates.data_expiracao_plano = hoje.toISOString();
+        updates.data_expiracao_trial = null;
+      } else if (plano === "premium") {
+        // Premium sem expiração ou com expiração muito longa
+        hoje.setFullYear(hoje.getFullYear() + 10);
+        updates.data_expiracao_plano = hoje.toISOString();
+        updates.data_expiracao_trial = null;
+      } else if (plano === "free") {
+        updates.data_expiracao_plano = null;
+        updates.da
+      }
+      // Ensure status is active when plan is changed, unless it's explicitly 'free'
+      if (plano !== "free") {
+        updates.status = "ativo";
+      }
+
+      const response = await apiRequest("PATCH", `/api/users/${userId}`, updates);
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidar todas as queries relacionadas ao usuário
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/subscriptions"] });
+
+      // Atualizar também o localStorage se o usuário logado for o que foi atualizado
+      const currentUserStr = localStorage.getItem("user");
+      if (currentUserStr) {
+        const currentUser = JSON.parse(currentUserStr);
+        if (currentUser.id === userId) {
+          // Recarregar dados do usuário atualizado
+          queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+        }
+      }
+
+      toast({
+        title: "Plano atualizado",
+        description: "O plano do usuário foi atualizado com sucesso",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao atualizar plano",
+        description: error.message || "Ocorreu um erro",
+        variant: "destructive",
+      });
+    },
+  });
+
 
   const getUserInfo = (userId: string) => {
     return users.find(u => u.id === userId);

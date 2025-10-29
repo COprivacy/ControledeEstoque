@@ -42,8 +42,7 @@ import {
   Phone,
   MapPin,
   Save,
-  X,
-  User
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -99,6 +98,9 @@ export default function AdminPublico() {
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [ambiente, setAmbiente] = useState<"sandbox" | "production">("sandbox");
+  const [testingAsaas, setTestingAsaas] = useState(false);
+  const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [configAsaasOpen, setConfigAsaasOpen] = useState(false);
 
   // Estados de busca e filtros
   const [searchTerm, setSearchTerm] = useState("");

@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 
@@ -74,7 +75,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("user", JSON.stringify(mergedUser));
       }
     }
-  }, [updatedUser]);
+  }, [updatedUser, user]);
 
   const setUser = (newUser: User | null) => {
     setUserState(newUser);

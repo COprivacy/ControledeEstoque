@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Lock, User, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
+import backgroundImage from "@assets/generated_images/Pavisoft_Sistemas_tech_background_61320ac2.png";
 
 interface RegisterFormProps {
   onRegister?: (name: string, email: string, password: string) => void;
@@ -26,18 +27,31 @@ export default function RegisterForm({ onRegister, onLoginClick, isLoading }: Re
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-4">
+    <div
+      className="min-h-screen flex items-center justify-center p-4 relative"
+      style={{
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      <div className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"></div>
+      <div className="w-full max-w-md space-y-4 relative z-10">
         <Link href="/">
-          <Button variant="outline">
+          <Button variant="outline" className="bg-white/90 dark:bg-gray-950/90 backdrop-blur-md">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar ao Site
           </Button>
         </Link>
-        <Card className="w-full">
+        <Card className="w-full bg-white/95 dark:bg-gray-950/95 backdrop-blur-md border-white/20 dark:border-gray-800/50">
         <CardHeader className="space-y-2">
-          <CardTitle className="text-2xl font-bold text-center">Criar Conta</CardTitle>
-          <CardDescription className="text-center">Preencha os dados para criar sua conta</CardDescription>
+          <CardTitle className="text-2xl font-bold text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Criar Conta
+          </CardTitle>
+          <CardDescription className="text-center text-gray-600 dark:text-gray-300">
+            Preencha os dados para criar sua conta
+          </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">

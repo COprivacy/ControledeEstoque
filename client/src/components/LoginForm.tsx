@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Mail, Lock, UserPlus } from "lucide-react";
+import { Mail, Lock, UserPlus, Eye, EyeOff } from "lucide-react";
 import backgroundImage from "@assets/generated_images/Pavisoft_Sistemas_tech_background_61320ac2.png";
 
 interface LoginFormProps {
@@ -26,6 +26,7 @@ export default function LoginForm({
 }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,14 +81,26 @@ export default function LoginForm({
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="pl-10"
+                  className="pl-10 pr-10" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   data-testid="input-password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-3 flex items-center text-muted-foreground"
+                  data-testid="password-toggle-button"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
               </div>
             </div>
           </CardContent>

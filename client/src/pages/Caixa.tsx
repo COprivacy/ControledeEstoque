@@ -407,21 +407,31 @@ export default function Caixa() {
                 </div>
 
                 <div className="flex gap-2">
+                  {/* Botão para ir ao PDV */}
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setLocation("/pdv")}
+                  >
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Ir para PDV
+                  </Button>
+
+                  {/* Botão para fechar caixa */}
                   <Dialog open={isFecharDialogOpen} onOpenChange={setIsFecharDialogOpen}>
                     <DialogTrigger asChild>
-                      {/* Button to navigate to PDV */}
                       <Button
-                        variant="outline"
+                        variant="destructive"
                         className="flex-1"
-                        onClick={() => setLocation("/pdv")}
+                        data-testid="button-fechar-caixa"
                       >
-                        <ShoppingCart className="mr-2 h-4 w-4" />
-                        Ir para PDV
+                        <Lock className="mr-2 h-4 w-4" />
+                        Fechar Caixa
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle> Fechar Caixa</DialogTitle>
+                        <DialogTitle>Fechar Caixa</DialogTitle>
                       </DialogHeader>
                       <form onSubmit={handleFecharCaixa} className="space-y-4">
                         <div className="space-y-2">
@@ -453,7 +463,7 @@ export default function Caixa() {
                           type="submit"
                           className="w-full"
                           data-testid="button-confirmar-fechamento"
-                          disabled={!saldoFinal || parseFloat(saldoFinal) < 0} // Disable if saldoFinal is empty or negative
+                          disabled={!saldoFinal || parseFloat(saldoFinal) < 0}
                         >
                           Confirmar Fechamento
                         </Button>

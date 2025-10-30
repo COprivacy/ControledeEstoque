@@ -662,7 +662,7 @@ export default function Caixa() {
         )}
       </div>
 
-      {hasPermission("ver_historico_caixas") && (
+      {hasPermission("historico_caixas") && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

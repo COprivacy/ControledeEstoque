@@ -30,11 +30,19 @@ const defaultPermissions: Permissions = {
 export function usePermissions() {
   const { user } = useUser();
 
+  const { data: permissoes, isLoading: isLoadingPermissoes } = useQuery({
+    queryKey: [`/api/funcionarios/${user?.id}/permissoes`],
+    enabled: !!user && user.tipo === "funcionario",
+  });
+
   const isPremium = (): boolean => {
     if (!user) return false;
     
     // Admin sempre tem acesso
     if (user.is_admin === "true") return true;
+    
+    // Funcionários têm acesso via permissões individuais
+    if (user.tipo === "funcionario") return true;
     
     // Verifica se tem plano ativo (trial, mensal ou anual)
     if (user.plano === 'trial' || user.plano === 'mensal' || user.plano === 'anual') {
@@ -66,14 +74,17 @@ export function usePermissions() {
     if (user.is_admin === "true") return true;
 
     // Usuários em trial ou premium têm acesso completo
-    if (isPremium()) return true;
+    if (user.tipo !== "funcionario" && isPremium()) return true;
 
     // Funcionários verificam permissões específicas
-    const userPermissions = user.permissoes || [];
-    return userPermissions.includes(permission);
+    if (user.tipo === "funcionario" && permissoes) {
+      return permissoes[permission] === "true";
+    }
+
+    return false;
   };
 
-  const isLoading = !user;
+  const isLoading = !user || (user.tipo === "funcionario" && isLoadingPermissoes);
 
   return { hasPermission, isPremium, isLoading };
 }

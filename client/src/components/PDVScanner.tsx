@@ -226,10 +226,13 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
       return;
     }
 
-    const valorPagoNum = parseFloat(valorPago || "0");
-    if (valorPagoNum < valorTotal) {
-      alert("Valor pago insuficiente!");
-      return;
+    // Para pagamentos eletrônicos, não precisa validar valor pago
+    if (formaPagamento === 'dinheiro') {
+      const valorPagoNum = parseFloat(valorPago || "0");
+      if (valorPagoNum < valorTotal) {
+        alert("Valor pago insuficiente!");
+        return;
+      }
     }
 
     const itens = cart.map(item => ({
@@ -596,28 +599,30 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="valor-pago" className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      Valor Pago
-                    </Label>
-                    <Input
-                      ref={valorPagoRef}
-                      id="valor-pago"
-                      type="number"
-                      step="0.01"
-                      value={valorPago}
-                      onChange={(e) => setValorPago(e.target.value)}
-                      onKeyDown={handleValorPagoKeyDown}
-                      placeholder="0,00"
-                      className="text-lg"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Pressione Enter para finalizar
-                    </p>
-                  </div>
+                  {formaPagamento === 'dinheiro' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="valor-pago" className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4" />
+                        Valor Pago
+                      </Label>
+                      <Input
+                        ref={valorPagoRef}
+                        id="valor-pago"
+                        type="number"
+                        step="0.01"
+                        value={valorPago}
+                        onChange={(e) => setValorPago(e.target.value)}
+                        onKeyDown={handleValorPagoKeyDown}
+                        placeholder="0,00"
+                        className="text-lg"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Pressione Enter para finalizar
+                      </p>
+                    </div>
+                  )}
 
-                  {valorPago && parseFloat(valorPago) >= valorTotal && (
+                  {formaPagamento === 'dinheiro' && valorPago && parseFloat(valorPago) >= valorTotal && (
                     <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-green-800 dark:text-green-200">
@@ -641,7 +646,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                     <Button
                       className="flex-1"
                       onClick={handleCompleteSale}
-                      disabled={!valorPago || parseFloat(valorPago) < valorTotal}
+                      disabled={formaPagamento === 'dinheiro' && (!valorPago || parseFloat(valorPago) < valorTotal)}
                     >
                       Finalizar
                     </Button>

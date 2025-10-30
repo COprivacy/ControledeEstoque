@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Lock, Unlock, Plus, Minus, History, DollarSign, TrendingUp, TrendingDown } from "lucide-react";
+import { Wallet, Lock, Unlock, Plus, Minus, History, DollarSign, TrendingUp, TrendingDown, ShoppingCart } from "lucide-react"; // Added ShoppingCart icon
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -28,6 +28,11 @@ export default function Caixa() {
   const [observacoesFechamento, setObservacoesFechamento] = useState("");
   const [valorMovimentacao, setValorMovimentacao] = useState("");
   const [descricaoMovimentacao, setDescricaoMovimentacao] = useState("");
+
+  // Function to navigate to PDV
+  const setLocation = (path: string) => {
+    window.location.href = path;
+  };
 
   // Functions to fetch data
   const fetchCaixaAberto = async () => {
@@ -295,6 +300,22 @@ export default function Caixa() {
     );
   };
 
+  // Function to check if "Finalizar" button should be enabled
+  const isFinalizarCompraEnabled = () => {
+    if (!caixaAberto) return false;
+
+    // Logic to determine if "Finalizar" button should be enabled
+    // For now, let's assume it depends on having some payment method selected and a valid amount
+    // This logic might need to be more sophisticated based on actual payment types and requirements.
+
+    // Example: Enable if any payment method has been added and the total amount is not zero (or if it's a payment type that doesn't require payment, like "a prazo")
+    // This is a placeholder and should be replaced with actual logic.
+
+    // Placeholder logic: enable if saldo atual is greater than 0 or if there are sales recorded
+    // A more robust solution would involve checking the state of the sales/payment form.
+    return calcularSaldoAtual() > 0 || (caixaAberto.total_vendas || 0) > 0;
+  };
+
   // Effect to fetch initial data
   useEffect(() => {
     // Data fetching is now handled by useQuery, so no explicit calls here
@@ -379,9 +400,14 @@ export default function Caixa() {
                 <div className="flex gap-2">
                   <Dialog open={isFecharDialogOpen} onOpenChange={setIsFecharDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="destructive" className="flex-1" data-testid="button-fechar-caixa">
-                        <Lock className="mr-2 h-4 w-4" />
-                        Fechar Caixa
+                      {/* Button to navigate to PDV */}
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => setLocation("/pdv")}
+                      >
+                        <ShoppingCart className="mr-2 h-4 w-4" />
+                        Ir para PDV
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
@@ -414,7 +440,12 @@ export default function Caixa() {
                             onChange={(e) => setObservacoesFechamento(e.target.value)}
                           />
                         </div>
-                        <Button type="submit" className="w-full" data-testid="button-confirmar-fechamento">
+                        <Button
+                          type="submit"
+                          className="w-full"
+                          data-testid="button-confirmar-fechamento"
+                          disabled={!saldoFinal || parseFloat(saldoFinal) < 0} // Disable if saldoFinal is empty or negative
+                        >
                           Confirmar Fechamento
                         </Button>
                       </form>

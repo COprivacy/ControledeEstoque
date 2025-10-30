@@ -1535,7 +1535,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/caixas", getUserId, async (req, res) => {
     try {
       const userId = req.headers['effective-user-id'] as string;
-      const caixas = await storage.getCaixas?.(userId);
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Usuário não autenticado" });
+      }
+
+      if (!storage.getCaixas) {
+        return res.status(501).json({ error: "Método getCaixas não implementado" });
+      }
+
+      const caixas = await storage.getCaixas(userId);
       res.json(caixas || []);
     } catch (error) {
       console.error("Erro ao buscar caixas:", error);
@@ -1546,7 +1555,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/caixas/aberto", getUserId, async (req, res) => {
     try {
       const userId = req.headers['effective-user-id'] as string;
-      const caixaAberto = await storage.getCaixaAberto?.(userId);
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Usuário não autenticado" });
+      }
+
+      if (!storage.getCaixaAberto) {
+        return res.status(501).json({ error: "Método getCaixaAberto não implementado" });
+      }
+
+      const caixaAberto = await storage.getCaixaAberto(userId);
       res.json(caixaAberto || null);
     } catch (error) {
       console.error("Erro ao buscar caixa aberto:", error);
@@ -1556,11 +1574,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/caixas/:id", getUserId, async (req, res) => {
     try {
+      const userId = req.headers['effective-user-id'] as string;
       const { id } = req.params;
-      const caixa = await storage.getCaixa?.(parseInt(id));
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Usuário não autenticado" });
+      }
+
+      if (!storage.getCaixa) {
+        return res.status(501).json({ error: "Método getCaixa não implementado" });
+      }
+
+      const caixa = await storage.getCaixa(parseInt(id));
       
       if (!caixa) {
         return res.status(404).json({ error: "Caixa não encontrado" });
+      }
+
+      if (caixa.user_id !== userId) {
+        return res.status(403).json({ error: "Acesso negado" });
       }
       
       res.json(caixa);
@@ -1575,16 +1607,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers['effective-user-id'] as string;
       const funcionarioId = req.headers['x-user-id'] as string;
       
-      const caixaAberto = await storage.getCaixaAberto?.(userId);
+      if (!userId) {
+        return res.status(401).json({ error: "Usuário não autenticado" });
+      }
+
+      if (!storage.getCaixaAberto || !storage.abrirCaixa) {
+        return res.status(501).json({ error: "Métodos de caixa não implementados" });
+      }
+
+      const caixaAberto = await storage.getCaixaAberto(userId);
       if (caixaAberto) {
         return res.status(400).json({ error: "Já existe um caixa aberto" });
+      }
+
+      const saldoInicial = parseFloat(req.body.saldo_inicial);
+      if (isNaN(saldoInicial) || saldoInicial < 0) {
+        return res.status(400).json({ error: "Saldo inicial inválido" });
       }
 
       const caixaData = {
         user_id: userId,
         funcionario_id: funcionarioId,
         data_abertura: new Date().toISOString(),
-        saldo_inicial: parseFloat(req.body.saldo_inicial) || 0,
+        saldo_inicial: saldoInicial,
         observacoes_abertura: req.body.observacoes_abertura || null,
         status: "aberto",
         total_vendas: 0,
@@ -1592,7 +1637,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         total_suprimentos: 0,
       };
 
-      const caixa = await storage.abrirCaixa?.(caixaData);
+      const caixa = await storage.abrirCaixa(caixaData);
+      console.log(`✅ Caixa aberto - ID: ${caixa.id}, User: ${userId}, Saldo Inicial: R$ ${saldoInicial.toFixed(2)}`);
       res.json(caixa);
     } catch (error) {
       console.error("Erro ao abrir caixa:", error);
@@ -1602,26 +1648,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/caixas/:id/fechar", getUserId, async (req, res) => {
     try {
+      const userId = req.headers['effective-user-id'] as string;
       const { id } = req.params;
       const caixaId = parseInt(id);
       
-      const caixa = await storage.getCaixa?.(caixaId);
+      if (!userId) {
+        return res.status(401).json({ error: "Usuário não autenticado" });
+      }
+
+      if (!storage.getCaixa || !storage.fecharCaixa) {
+        return res.status(501).json({ error: "Métodos de caixa não implementados" });
+      }
+
+      const caixa = await storage.getCaixa(caixaId);
       if (!caixa) {
         return res.status(404).json({ error: "Caixa não encontrado" });
+      }
+
+      if (caixa.user_id !== userId) {
+        return res.status(403).json({ error: "Acesso negado" });
       }
       
       if (caixa.status === "fechado") {
         return res.status(400).json({ error: "Caixa já está fechado" });
       }
 
+      const saldoFinal = parseFloat(req.body.saldo_final);
+      if (isNaN(saldoFinal)) {
+        return res.status(400).json({ error: "Saldo final inválido" });
+      }
+
       const dadosFechamento = {
         data_fechamento: new Date().toISOString(),
-        saldo_final: parseFloat(req.body.saldo_final),
+        saldo_final: saldoFinal,
         observacoes_fechamento: req.body.observacoes_fechamento || null,
         status: "fechado",
       };
 
-      const caixaFechado = await storage.fecharCaixa?.(caixaId, dadosFechamento);
+      const caixaFechado = await storage.fecharCaixa(caixaId, dadosFechamento);
+      console.log(`✅ Caixa fechado - ID: ${caixaId}, Saldo Final: R$ ${saldoFinal.toFixed(2)}`);
       res.json(caixaFechado);
     } catch (error) {
       console.error("Erro ao fechar caixa:", error);
@@ -1631,8 +1696,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/caixas/:id/movimentacoes", getUserId, async (req, res) => {
     try {
+      const userId = req.headers['effective-user-id'] as string;
       const { id } = req.params;
-      const movimentacoes = await storage.getMovimentacoesCaixa?.(parseInt(id));
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Usuário não autenticado" });
+      }
+
+      if (!storage.getMovimentacoesCaixa) {
+        return res.status(501).json({ error: "Método getMovimentacoesCaixa não implementado" });
+      }
+
+      const movimentacoes = await storage.getMovimentacoesCaixa(parseInt(id));
       res.json(movimentacoes || []);
     } catch (error) {
       console.error("Erro ao buscar movimentações:", error);
@@ -1642,29 +1717,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/caixas/:id/movimentacoes", getUserId, async (req, res) => {
     try {
-      const { id } = req.params;
       const userId = req.headers['effective-user-id'] as string;
+      const { id } = req.params;
       const caixaId = parseInt(id);
       
-      const caixa = await storage.getCaixa?.(caixaId);
+      if (!userId) {
+        return res.status(401).json({ error: "Usuário não autenticado" });
+      }
+
+      if (!storage.getCaixa || !storage.createMovimentacaoCaixa || !storage.atualizarTotaisCaixa) {
+        return res.status(501).json({ error: "Métodos de movimentação não implementados" });
+      }
+
+      const caixa = await storage.getCaixa(caixaId);
       if (!caixa) {
         return res.status(404).json({ error: "Caixa não encontrado" });
+      }
+
+      if (caixa.user_id !== userId) {
+        return res.status(403).json({ error: "Acesso negado" });
       }
       
       if (caixa.status === "fechado") {
         return res.status(400).json({ error: "Não é possível adicionar movimentações em caixa fechado" });
       }
 
+      const valor = parseFloat(req.body.valor);
+      if (isNaN(valor) || valor <= 0) {
+        return res.status(400).json({ error: "Valor inválido" });
+      }
+
+      const tipo = req.body.tipo;
+      if (!['suprimento', 'retirada'].includes(tipo)) {
+        return res.status(400).json({ error: "Tipo de movimentação inválido" });
+      }
+
       const movimentacaoData = {
         caixa_id: caixaId,
         user_id: userId,
-        tipo: req.body.tipo,
-        valor: parseFloat(req.body.valor),
+        tipo: tipo,
+        valor: valor,
         descricao: req.body.descricao || null,
         data: new Date().toISOString(),
       };
 
-      const movimentacao = await storage.createMovimentacaoCaixa?.(movimentacaoData);
+      const movimentacao = await storage.createMovimentacaoCaixa(movimentacaoData);
+      
+      // Atualizar totais do caixa
+      const campo = tipo === 'suprimento' ? 'total_suprimentos' : 'total_retiradas';
+      await storage.atualizarTotaisCaixa(caixaId, campo, valor);
+
+      console.log(`✅ Movimentação registrada - Caixa: ${caixaId}, Tipo: ${tipo}, Valor: R$ ${valor.toFixed(2)}`);
       res.json(movimentacao);
     } catch (error) {
       console.error("Erro ao criar movimentação:", error);

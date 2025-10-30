@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, DollarSign, Calendar, TrendingDown } from "lucide-react";
 import { formatDateTime } from "@/lib/dateUtils";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function ContasPagar() {
   const { toast } = useToast();
@@ -24,12 +25,7 @@ export default function ContasPagar() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await fetch("/api/contas-pagar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Erro ao criar conta");
+      const response = await apiRequest("POST", "/api/contas-pagar", data);
       return response.json();
     },
     onSuccess: () => {
@@ -41,12 +37,7 @@ export default function ContasPagar() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const response = await fetch(`/api/contas-pagar/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Erro ao atualizar conta");
+      const response = await apiRequest("PUT", `/api/contas-pagar/${id}`, data);
       return response.json();
     },
     onSuccess: () => {
@@ -58,10 +49,7 @@ export default function ContasPagar() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`/api/contas-pagar/${id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) throw new Error("Erro ao excluir conta");
+      const response = await apiRequest("DELETE", `/api/contas-pagar/${id}`);
       return response.json();
     },
     onSuccess: () => {
@@ -72,10 +60,7 @@ export default function ContasPagar() {
 
   const pagarMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`/api/contas-pagar/${id}/pagar`, {
-        method: "POST",
-      });
-      if (!response.ok) throw new Error("Erro ao marcar como paga");
+      const response = await apiRequest("POST", `/api/contas-pagar/${id}/pagar`);
       return response.json();
     },
     onSuccess: () => {

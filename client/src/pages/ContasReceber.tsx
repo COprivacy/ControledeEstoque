@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, DollarSign, Calendar, TrendingUp } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function ContasReceber() {
   const { toast } = useToast();
@@ -23,12 +24,7 @@ export default function ContasReceber() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await fetch("/api/contas-receber", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Erro ao criar conta");
+      const response = await apiRequest("POST", "/api/contas-receber", data);
       return response.json();
     },
     onSuccess: () => {
@@ -40,12 +36,7 @@ export default function ContasReceber() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const response = await fetch(`/api/contas-receber/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Erro ao atualizar conta");
+      const response = await apiRequest("PUT", `/api/contas-receber/${id}`, data);
       return response.json();
     },
     onSuccess: () => {
@@ -57,10 +48,7 @@ export default function ContasReceber() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`/api/contas-receber/${id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) throw new Error("Erro ao excluir conta");
+      const response = await apiRequest("DELETE", `/api/contas-receber/${id}`);
       return response.json();
     },
     onSuccess: () => {
@@ -71,10 +59,7 @@ export default function ContasReceber() {
 
   const receberMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`/api/contas-receber/${id}/receber`, {
-        method: "POST",
-      });
-      if (!response.ok) throw new Error("Erro ao marcar como recebida");
+      const response = await apiRequest("POST", `/api/contas-receber/${id}/receber`);
       return response.json();
     },
     onSuccess: () => {

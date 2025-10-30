@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Crown } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function AddProduct() {
   const [, setLocation] = useLocation();
@@ -19,12 +20,7 @@ export default function AddProduct() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await fetch("/api/produtos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Erro ao criar produto");
+      const response = await apiRequest("POST", "/api/produtos", data);
       return response.json();
     },
     onSuccess: (data) => {
@@ -39,12 +35,7 @@ export default function AddProduct() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await fetch(`/api/produtos/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Erro ao atualizar produto");
+      const response = await apiRequest("PUT", `/api/produtos/${id}`, data);
       return response.json();
     },
     onSuccess: (data) => {

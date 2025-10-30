@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Added useEffect import
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,24 +21,108 @@ export default function Caixa() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // State variables to manage form inputs
+  const [saldoInicial, setSaldoInicial] = useState("");
+  const [observacoesAbertura, setObservacoesAbertura] = useState("");
+  const [saldoFinal, setSaldoFinal] = useState("");
+  const [observacoesFechamento, setObservacoesFechamento] = useState("");
+  const [valorMovimentacao, setValorMovimentacao] = useState("");
+  const [descricaoMovimentacao, setDescricaoMovimentacao] = useState("");
+
+  // Functions to fetch data
+  const fetchCaixaAberto = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const response = await fetch("/api/caixas/aberto", {
+        headers: {
+          "x-user-id": user.id || "",
+          "x-user-type": user.tipo || "usuario",
+          "x-conta-id": user.conta_id || user.id || "",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Directly use the fetched data, no need for setCaixaAberto if using useQuery
+        return data;
+      }
+      return null;
+    } catch (error) {
+      console.error("Erro ao buscar caixa aberto:", error);
+      return null;
+    }
+  };
+
+  const fetchHistoricoCaixas = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const response = await fetch("/api/caixas", {
+        headers: {
+          "x-user-id": user.id || "",
+          "x-user-type": user.tipo || "usuario",
+          "x-conta-id": user.conta_id || user.id || "",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+      return [];
+    } catch (error) {
+      console.error("Erro ao buscar histórico de caixas:", error);
+      return [];
+    }
+  };
+
+  const fetchMovimentacoes = async (caixaId: number) => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const response = await fetch(`/api/caixas/${caixaId}/movimentacoes`, {
+        headers: {
+          "x-user-id": user.id || "",
+          "x-user-type": user.tipo || "usuario",
+          "x-conta-id": user.conta_id || user.id || "",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+      return [];
+    } catch (error) {
+      console.error("Erro ao buscar movimentações:", error);
+      return [];
+    }
+  };
+
+  // UseQuery hooks
   const { data: caixaAberto, isLoading: isLoadingCaixa } = useQuery({
     queryKey: ["/api/caixas/aberto"],
+    queryFn: fetchCaixaAberto,
   });
 
   const { data: caixas = [] } = useQuery({
     queryKey: ["/api/caixas"],
+    queryFn: fetchHistoricoCaixas,
   });
 
   const { data: movimentacoes = [] } = useQuery({
     queryKey: ["/api/caixas", caixaAberto?.id, "movimentacoes"],
+    queryFn: () => fetchMovimentacoes(caixaAberto!.id), // Assert non-null with '!'
     enabled: !!caixaAberto,
   });
 
+  // Mutate functions
   const abrirCaixaMutation = useMutation({
     mutationFn: async (data: { saldo_inicial: number; observacoes_abertura?: string }) => {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
       const response = await fetch("/api/caixas/abrir", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": user.id || "",
+          "x-user-type": user.tipo || "usuario",
+          "x-conta-id": user.conta_id || user.id || "",
+        },
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -51,22 +135,30 @@ export default function Caixa() {
       queryClient.invalidateQueries({ queryKey: ["/api/caixas/aberto"] });
       queryClient.invalidateQueries({ queryKey: ["/api/caixas"] });
       setIsAbrirDialogOpen(false);
+      setSaldoInicial(""); // Clear form
+      setObservacoesAbertura(""); // Clear form
       toast({ title: "Caixa aberto com sucesso!" });
     },
     onError: (error: Error) => {
-      toast({ 
-        title: "Erro ao abrir caixa", 
+      toast({
+        title: "Erro ao abrir caixa",
         description: error.message,
-        variant: "destructive" 
+        variant: "destructive",
       });
     },
   });
 
   const fecharCaixaMutation = useMutation({
     mutationFn: async ({ id, saldo_final, observacoes }: { id: number; saldo_final: number; observacoes?: string }) => {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
       const response = await fetch(`/api/caixas/${id}/fechar`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": user.id || "",
+          "x-user-type": user.tipo || "usuario",
+          "x-conta-id": user.conta_id || user.id || "",
+        },
         body: JSON.stringify({ saldo_final, observacoes_fechamento: observacoes }),
       });
       if (!response.ok) {
@@ -79,22 +171,30 @@ export default function Caixa() {
       queryClient.invalidateQueries({ queryKey: ["/api/caixas/aberto"] });
       queryClient.invalidateQueries({ queryKey: ["/api/caixas"] });
       setIsFecharDialogOpen(false);
+      setSaldoFinal(""); // Clear form
+      setObservacoesFechamento(""); // Clear form
       toast({ title: "Caixa fechado com sucesso!" });
     },
     onError: (error: Error) => {
-      toast({ 
-        title: "Erro ao fechar caixa", 
+      toast({
+        title: "Erro ao fechar caixa",
         description: error.message,
-        variant: "destructive" 
+        variant: "destructive",
       });
     },
   });
 
   const movimentacaoMutation = useMutation({
     mutationFn: async (data: { tipo: string; valor: number; descricao?: string }) => {
-      const response = await fetch(`/api/caixas/${caixaAberto.id}/movimentacoes`, {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const response = await fetch(`/api/caixas/${caixaAberto!.id}/movimentacoes`, { // Assert non-null with '!'
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": user.id || "",
+          "x-user-type": user.tipo || "usuario",
+          "x-conta-id": user.conta_id || user.id || "",
+        },
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -107,13 +207,15 @@ export default function Caixa() {
       queryClient.invalidateQueries({ queryKey: ["/api/caixas", caixaAberto?.id, "movimentacoes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/caixas/aberto"] });
       setIsMovimentacaoDialogOpen(false);
+      setValorMovimentacao(""); // Clear form
+      setDescricaoMovimentacao(""); // Clear form
       toast({ title: "Movimentação registrada com sucesso!" });
     },
     onError: (error: Error) => {
-      toast({ 
-        title: "Erro ao registrar movimentação", 
+      toast({
+        title: "Erro ao registrar movimentação",
         description: error.message,
-        variant: "destructive" 
+        variant: "destructive",
       });
     },
   });
@@ -121,30 +223,66 @@ export default function Caixa() {
   const handleAbrirCaixa = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    abrirCaixaMutation.mutate({
-      saldo_inicial: parseFloat(formData.get("saldo_inicial") as string),
-      observacoes_abertura: formData.get("observacoes") as string || undefined,
-    });
+    const saldo = parseFloat(formData.get("saldo_inicial") as string);
+    setSaldoInicial(formData.get("saldo_inicial") as string); // Update state
+    setObservacoesAbertura(formData.get("observacoes") as string); // Update state
+
+    if (!isNaN(saldo) && saldo >= 0) {
+      abrirCaixaMutation.mutate({
+        saldo_inicial: saldo,
+        observacoes_abertura: formData.get("observacoes") as string || undefined,
+      });
+    } else {
+      toast({
+        title: "Erro",
+        description: "Informe um saldo inicial válido",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleFecharCaixa = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    fecharCaixaMutation.mutate({
-      id: caixaAberto.id,
-      saldo_final: parseFloat(formData.get("saldo_final") as string),
-      observacoes: formData.get("observacoes") as string || undefined,
-    });
+    const saldo = parseFloat(formData.get("saldo_final") as string);
+    setSaldoFinal(formData.get("saldo_final") as string); // Update state
+    setObservacoesFechamento(formData.get("observacoes") as string); // Update state
+
+    if (caixaAberto && !isNaN(saldo) && saldo >= 0) {
+      fecharCaixaMutation.mutate({
+        id: caixaAberto.id,
+        saldo_final: saldo,
+        observacoes: formData.get("observacoes") as string || undefined,
+      });
+    } else {
+      toast({
+        title: "Erro",
+        description: "Informe o saldo final corretamente",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleMovimentacao = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    movimentacaoMutation.mutate({
-      tipo: tipoMovimentacao,
-      valor: parseFloat(formData.get("valor") as string),
-      descricao: formData.get("descricao") as string || undefined,
-    });
+    const valor = parseFloat(formData.get("valor") as string);
+    setValorMovimentacao(formData.get("valor") as string); // Update state
+    setDescricaoMovimentacao(formData.get("descricao") as string); // Update state
+
+    if (!isNaN(valor) && valor > 0) {
+      movimentacaoMutation.mutate({
+        tipo: tipoMovimentacao,
+        valor: valor,
+        descricao: formData.get("descricao") as string || undefined,
+      });
+    } else {
+      toast({
+        title: "Erro",
+        description: "Informe um valor válido para a movimentação",
+        variant: "destructive",
+      });
+    }
   };
 
   const calcularSaldoAtual = () => {
@@ -156,6 +294,11 @@ export default function Caixa() {
       (caixaAberto.total_retiradas || 0)
     );
   };
+
+  // Effect to fetch initial data
+  useEffect(() => {
+    // Data fetching is now handled by useQuery, so no explicit calls here
+  }, [queryClient]); // Re-run effect if queryClient changes
 
   if (isLoadingCaixa) {
     return <div className="p-6">Carregando...</div>;
@@ -243,7 +386,7 @@ export default function Caixa() {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Fechar Caixa</DialogTitle>
+                        <DialogTitle> Fechar Caixa</DialogTitle>
                       </DialogHeader>
                       <form onSubmit={handleFecharCaixa} className="space-y-4">
                         <div className="space-y-2">
@@ -256,15 +399,19 @@ export default function Caixa() {
                             required
                             placeholder="0.00"
                             data-testid="input-saldo-final"
+                            value={saldoFinal}
+                            onChange={(e) => setSaldoFinal(e.target.value)}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="observacoes">Observações</Label>
+                          <Label htmlFor="observacoes_fechamento">Observações</Label>
                           <Textarea
-                            id="observacoes"
+                            id="observacoes_fechamento"
                             name="observacoes"
                             placeholder="Observações sobre o fechamento"
                             data-testid="input-observacoes-fechamento"
+                            value={observacoesFechamento}
+                            onChange={(e) => setObservacoesFechamento(e.target.value)}
                           />
                         </div>
                         <Button type="submit" className="w-full" data-testid="button-confirmar-fechamento">
@@ -298,6 +445,8 @@ export default function Caixa() {
                         required
                         placeholder="0.00"
                         data-testid="input-saldo-inicial"
+                        value={saldoInicial}
+                        onChange={(e) => setSaldoInicial(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -307,6 +456,8 @@ export default function Caixa() {
                         name="observacoes"
                         placeholder="Observações sobre a abertura"
                         data-testid="input-observacoes-abertura"
+                        value={observacoesAbertura}
+                        onChange={(e) => setObservacoesAbertura(e.target.value)}
                       />
                     </div>
                     <Button type="submit" className="w-full" data-testid="button-confirmar-abertura">
@@ -360,6 +511,8 @@ export default function Caixa() {
                           required
                           placeholder="0.00"
                           data-testid="input-valor-suprimento"
+                          value={valorMovimentacao}
+                          onChange={(e) => setValorMovimentacao(e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
@@ -369,6 +522,8 @@ export default function Caixa() {
                           name="descricao"
                           placeholder="Motivo do suprimento"
                           data-testid="input-descricao-suprimento"
+                          value={descricaoMovimentacao}
+                          onChange={(e) => setDescricaoMovimentacao(e.target.value)}
                         />
                       </div>
                       <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" data-testid="button-confirmar-suprimento">
@@ -406,6 +561,8 @@ export default function Caixa() {
                           required
                           placeholder="0.00"
                           data-testid="input-valor-retirada"
+                          value={valorMovimentacao}
+                          onChange={(e) => setValorMovimentacao(e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
@@ -415,6 +572,8 @@ export default function Caixa() {
                           name="descricao"
                           placeholder="Motivo da retirada"
                           data-testid="input-descricao-retirada"
+                          value={descricaoMovimentacao}
+                          onChange={(e) => setDescricaoMovimentacao(e.target.value)}
                         />
                       </div>
                       <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" data-testid="button-confirmar-retirada">
@@ -479,7 +638,7 @@ export default function Caixa() {
                     <TableCell>{caixa.id}</TableCell>
                     <TableCell>{format(new Date(caixa.data_abertura), "dd/MM/yyyy HH:mm", { locale: ptBR })}</TableCell>
                     <TableCell>
-                      {caixa.data_fechamento 
+                      {caixa.data_fechamento
                         ? format(new Date(caixa.data_fechamento), "dd/MM/yyyy HH:mm", { locale: ptBR })
                         : "-"}
                     </TableCell>

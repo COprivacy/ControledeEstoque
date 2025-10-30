@@ -351,31 +351,39 @@ export default function PDV() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="space-y-6 animate-in fade-in duration-500">
-        {!caixaAberto && (
-          <div className="bg-yellow-50 dark:bg-yellow-950/20 border-2 border-yellow-200 dark:border-yellow-900 rounded-lg p-4 animate-in slide-in-from-top duration-500">
-            <div className="flex items-start gap-3">
-              <Wallet className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-yellow-800 dark:text-yellow-200">
-                  Atenção: Caixa Fechado
+      {/* Pop-up de Caixa Fechado - Centralizado e Chamativo */}
+      {!caixaAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="animate-shake bg-gradient-to-br from-red-600 via-red-700 to-red-800 rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4 border-4 border-red-400">
+            <div className="text-center space-y-6">
+              <div className="text-8xl animate-pulse">⚠️</div>
+              <div className="space-y-2">
+                <h2 className="text-4xl font-black text-white uppercase tracking-wider drop-shadow-lg">
+                  ATENÇÃO!
+                </h2>
+                <h3 className="text-3xl font-bold text-yellow-300 drop-shadow-lg">
+                  Caixa Fechado
                 </h3>
-                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                  Você precisa abrir o caixa antes de realizar vendas. Vá para a página de Caixa para abrir.
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-3 border-yellow-600 text-yellow-700 hover:bg-yellow-100 dark:border-yellow-500 dark:text-yellow-400 dark:hover:bg-yellow-950/40"
-                  onClick={() => setLocation("/caixa")}
-                >
-                  <Wallet className="h-4 w-4 mr-2" />
-                  Abrir Caixa
-                </Button>
               </div>
+              <p className="text-xl font-semibold text-white/95 leading-relaxed">
+                Você precisa abrir o caixa antes de realizar vendas!
+              </p>
+              <Button
+                size="lg"
+                className="w-full bg-white hover:bg-gray-100 text-red-700 font-bold text-lg py-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                onClick={() => setLocation("/caixa")}
+                data-testid="button-abrir-caixa"
+              >
+                <Wallet className="h-6 w-6 mr-2" />
+                Abrir Caixa Agora
+              </Button>
             </div>
           </div>
-        )}
+        </div>
+      )}
+
+      <div className="space-y-6 animate-in fade-in duration-500">
+        
 
         <div className="flex items-center gap-3">
           <div className="space-y-1">

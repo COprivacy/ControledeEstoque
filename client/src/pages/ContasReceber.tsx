@@ -76,6 +76,7 @@ export default function ContasReceber() {
       valor: parseFloat(formData.get("valor") as string),
       data_vencimento: formData.get("data_vencimento"),
       categoria: formData.get("categoria"),
+      data_cadastro: new Date().toISOString(),
     };
     createMutation.mutate(data);
   };

@@ -822,10 +822,11 @@ export class SQLiteStorage implements IStorage {
 
   async createContaPagar(data: any): Promise<any> {
     const stmt = this.db.prepare(`
-      INSERT INTO contas_pagar (descricao, valor, data_vencimento, categoria, status, data_cadastro)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO contas_pagar (user_id, descricao, valor, data_vencimento, categoria, status, data_cadastro)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     const info = stmt.run(
+      data.user_id,
       data.descricao,
       data.valor,
       data.data_vencimento,
@@ -857,10 +858,11 @@ export class SQLiteStorage implements IStorage {
 
   async createContaReceber(data: any): Promise<any> {
     const stmt = this.db.prepare(`
-      INSERT INTO contas_receber (descricao, valor, data_vencimento, categoria, status, data_cadastro)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO contas_receber (user_id, descricao, valor, data_vencimento, categoria, status, data_cadastro)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     const info = stmt.run(
+      data.user_id,
       data.descricao,
       data.valor,
       data.data_vencimento,

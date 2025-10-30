@@ -7,14 +7,39 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+function getAuthHeaders(): Record<string, string> {
+  const userStr = localStorage.getItem("user");
+  if (!userStr) return {};
+  
+  try {
+    const user = JSON.parse(userStr);
+    const headers: Record<string, string> = {
+      "x-user-id": user.id,
+      "x-user-type": user.tipo || "usuario",
+    };
+    
+    if (user.tipo === "funcionario" && user.conta_id) {
+      headers["x-conta-id"] = user.conta_id;
+    }
+    
+    return headers;
+  } catch (e) {
+    return {};
+  }
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const authHeaders = getAuthHeaders();
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: {
+      ...(data ? { "Content-Type": "application/json" } : {}),
+      ...authHeaders,
+    },
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -29,8 +54,10 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const authHeaders = getAuthHeaders();
     const res = await fetch(queryKey.join("/") as string, {
       credentials: "include",
+      headers: authHeaders,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

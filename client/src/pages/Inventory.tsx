@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { apiRequest } from "@/lib/api";
 
 export default function Inventory() {
   const [viewType, setViewType] = useState<"semanal" | "mensal">("mensal");
@@ -74,8 +74,29 @@ export default function Inventory() {
     },
   });
 
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/produtos/${id}`, undefined);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/produtos"] });
+      toast({
+        title: "Produto deletado!",
+        description: "Produto removido do inventário com sucesso.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao deletar produto",
+        description: "Verifique sua conexão ou permissões e tente novamente.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const categorias = Array.from(new Set(produtos.map(p => p.categoria)));
-  
+
   const produtosFiltrados = selectedCategory === "all" 
     ? produtos 
     : produtos.filter(p => p.categoria === selectedCategory);
@@ -112,10 +133,10 @@ export default function Inventory() {
 
   const handleDownloadRotativePDF = () => {
     const doc = new jsPDF();
-    
+
     const customization = localStorage.getItem("customization");
     let storeName = "Controle de Estoque Premium";
-    
+
     if (customization) {
       try {
         const config = JSON.parse(customization);
@@ -124,30 +145,30 @@ export default function Inventory() {
         console.error("Erro ao carregar configurações:", e);
       }
     }
-    
+
     let yPosition = 20;
-    
+
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
     doc.text(storeName, 15, yPosition);
     yPosition += 10;
-    
+
     doc.setFontSize(16);
     doc.text("Inventário Rotativo - Contagem Parcial", 15, yPosition);
     yPosition += 10;
-    
+
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 15, yPosition);
     yPosition += 5;
     doc.text(`Categoria: ${selectedCategory === "all" ? "Todas" : selectedCategory}`, 15, yPosition);
     yPosition += 15;
-    
+
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text("Produtos para Contagem:", 15, yPosition);
     yPosition += 5;
-    
+
     const tableData = produtosFiltrados.map((produto) => [
       produto.nome,
       produto.categoria,
@@ -157,7 +178,7 @@ export default function Inventory() {
       '', // Coluna para contagem
       '', // Coluna para diferença
     ]);
-    
+
     autoTable(doc, {
       startY: yPosition,
       head: [['Produto', 'Categoria', 'Qtd Sistema', 'Preço', 'Cód. Barras', 'Contagem', 'Diferença']],
@@ -182,14 +203,14 @@ export default function Inventory() {
         6: { cellWidth: 22, halign: 'center', fillColor: [255, 250, 205] },
       },
     });
-    
+
     const finalY = (doc as any).lastAutoTable.finalY || yPosition + 100;
     doc.setFontSize(8);
     doc.setFont("helvetica", "italic");
     doc.text("Instruções: Conte fisicamente os produtos e anote na coluna 'Contagem'. Calcule a diferença e ajuste no sistema.", 15, finalY + 10);
-    
+
     doc.save(`Inventario_Rotativo_${selectedCategory}_${new Date().toISOString().split('T')[0]}.pdf`);
-    
+
     toast({
       title: "Relatório gerado!",
       description: "Relatório de inventário rotativo baixado com sucesso",
@@ -198,10 +219,10 @@ export default function Inventory() {
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
-    
+
     const customization = localStorage.getItem("customization");
     let storeName = "Controle de Estoque Premium";
-    
+
     if (customization) {
       try {
         const config = JSON.parse(customization);
@@ -210,30 +231,30 @@ export default function Inventory() {
         console.error("Erro ao carregar configurações:", e);
       }
     }
-    
+
     let yPosition = 20;
-    
+
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
     doc.text(storeName, 15, yPosition);
     yPosition += 10;
-    
+
     doc.setFontSize(16);
     doc.text(`Relatório de Inventário - ${viewType === "semanal" ? "Semanal" : "Mensal"}`, 15, yPosition);
     yPosition += 10;
-    
+
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 15, yPosition);
     yPosition += 5;
     doc.text(`Período: ${new Date(startDate).toLocaleDateString('pt-BR')} até ${new Date(endDate).toLocaleDateString('pt-BR')}`, 15, yPosition);
     yPosition += 15;
-    
+
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text("Resumo do Estoque:", 15, yPosition);
     yPosition += 7;
-    
+
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.text(`Total de Produtos: ${totalProdutos}`, 15, yPosition);
@@ -242,12 +263,12 @@ export default function Inventory() {
     yPosition += 6;
     doc.text(`Saídas no Período: ${totalSaidas} unidades`, 15, yPosition);
     yPosition += 10;
-    
+
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text("Inventário Completo - Para Contagem:", 15, yPosition);
     yPosition += 5;
-    
+
     const tableData = produtos.map((produto) => [
       produto.nome,
       produto.categoria,
@@ -257,7 +278,7 @@ export default function Inventory() {
       produto.codigo_barras || 'N/A',
       '', // Coluna para contagem manual
     ]);
-    
+
     autoTable(doc, {
       startY: yPosition,
       head: [['Produto', 'Categoria', 'Qtd Sistema', 'Preço Unit.', 'Valor Total', 'Cód. Barras', 'Contagem Real']],
@@ -282,14 +303,14 @@ export default function Inventory() {
         6: { cellWidth: 25, halign: 'center', fillColor: [240, 240, 240] },
       },
     });
-    
+
     const finalY = (doc as any).lastAutoTable.finalY || yPosition + 100;
     doc.setFontSize(8);
     doc.setFont("helvetica", "italic");
     doc.text("Nota: Use a coluna 'Contagem Real' para registrar a quantidade física durante o inventário.", 15, finalY + 10);
-    
+
     doc.save(`Inventario_${viewType}_${new Date().toISOString().split('T')[0]}.pdf`);
-    
+
     toast({
       title: "Relatório gerado!",
       description: `Relatório ${viewType} baixado com sucesso`,
@@ -492,6 +513,17 @@ export default function Inventory() {
                                 </span>
                               )}
                             </TableCell>
+                            <TableCell className="text-right">
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => deleteProductMutation.mutate(produto.id)}
+                                  disabled={deleteProductMutation.isPending}
+                                  data-testid={`button-delete-${produto.id}`}
+                                >
+                                  Deletar
+                                </Button>
+                              </TableCell>
                           </TableRow>
                         );
                       })
@@ -602,7 +634,7 @@ export default function Inventory() {
                         const contagemValue = contagemRotativa[produto.id] || "";
                         const contagem = parseInt(contagemValue) || 0;
                         const diferenca = contagem - produto.quantidade;
-                        
+
                         return (
                           <TableRow key={produto.id} data-testid={`row-rotativo-${produto.id}`}>
                             <TableCell className="font-medium">{produto.nome}</TableCell>

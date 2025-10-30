@@ -8,6 +8,45 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 
+// Assuming apiRequest is defined elsewhere and handles authentication headers
+// import { apiRequest } from "@/lib/api"; // Example import
+
+// Mock apiRequest for demonstration if not provided
+const apiRequest = async (method, url, body) => {
+  const token = localStorage.getItem('authToken'); // Example of getting a token
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const options = {
+    method,
+    headers,
+  };
+
+  if (body) {
+    options.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(url, options);
+  
+  // Handle potential 401 Unauthorized errors specifically
+  if (response.status === 401) {
+      throw new Error("Unauthorized: Please log in again.");
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({})); // Try to get JSON error, fallback to empty object
+    const errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
+    throw new Error(errorMessage);
+  }
+
+  return response;
+};
+
+
 export default function Products() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -29,9 +68,7 @@ export default function Products() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`/api/produtos/${id}`, {
-        method: "DELETE",
-      });
+      const response = await apiRequest("DELETE", `/api/produtos/${id}`, undefined);
       if (!response.ok) throw new Error("Erro ao deletar produto");
       return response.json();
     },
@@ -42,10 +79,10 @@ export default function Products() {
         description: "O produto foi removido do estoque",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Erro",
-        description: "Não foi possível excluir o produto",
+        description: error.message || "Não foi possível excluir o produto",
         variant: "destructive",
       });
     },

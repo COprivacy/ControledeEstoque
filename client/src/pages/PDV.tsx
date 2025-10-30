@@ -96,10 +96,27 @@ export default function PDV() {
     setIsEmittingNF(true);
     try {
       // Buscar dados completos dos produtos
+      const userStr = localStorage.getItem("user");
+      if (!userStr) {
+        throw new Error("Usuário não autenticado");
+      }
+
+      const user = JSON.parse(userStr);
+      const authHeaders: Record<string, string> = {
+        "x-user-id": user.id,
+        "x-user-type": user.tipo || "usuario",
+      };
+
+      if (user.tipo === "funcionario" && user.conta_id) {
+        authHeaders["x-conta-id"] = user.conta_id;
+      }
+
       const produtos = await Promise.all(
         sale.itens.map(async (item: any) => {
           const barcode = item.codigo_barras || item.nome;
-          const response = await fetch(`/api/produtos/codigo/${barcode}`);
+          const response = await fetch(`/api/produtos/codigo/${barcode}`, { 
+            headers: authHeaders 
+          });
           return response.ok ? await response.json() : null;
         })
       );
@@ -171,9 +188,30 @@ export default function PDV() {
 
   const handleSaleComplete = async (sale: any) => {
     try {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) {
+        toast({
+          variant: "destructive",
+          title: "Erro de autenticação",
+          description: "Usuário não autenticado. Faça login novamente.",
+        });
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "x-user-id": user.id,
+        "x-user-type": user.tipo || "usuario",
+      };
+
+      if (user.tipo === "funcionario" && user.conta_id) {
+        headers["x-conta-id"] = user.conta_id;
+      }
+
       const response = await fetch('/api/vendas', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           ...sale,
           forma_pagamento: sale.forma_pagamento || 'dinheiro'

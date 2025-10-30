@@ -103,6 +103,18 @@ export default function DashboardSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/caixa"}
+                  className="group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5 data-[active=true]:shadow-sm"
+                >
+                  <Link href="/caixa" data-testid="link-caixa">
+                    <Wallet className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+                    <span className="flex-1 font-medium">Caixa</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               {financeMenuItems.map(renderMenuItem)}
             </SidebarMenu>
           </SidebarGroupContent>

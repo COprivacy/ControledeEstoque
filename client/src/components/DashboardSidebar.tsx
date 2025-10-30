@@ -14,7 +14,6 @@ type MenuItem = {
 
 const generalMenuItems: MenuItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: Home, permission: "dashboard" },
-  { title: "PDV", url: "/pdv", icon: Scan, permission: "pdv" },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3, permission: "relatorios" },
 ];
 
@@ -42,7 +41,7 @@ export default function DashboardSidebar() {
   const { hasPermission } = usePermissions();
   const { user } = useUser();
 
-  const isAdmin = user?.is_admin === "true" || user?.tipo === "usuario";
+  const isAdmin = user?.is_admin === "true";
 
   const renderMenuItem = (item: MenuItem) => {
     // Se é admin only e não é admin, não mostrar

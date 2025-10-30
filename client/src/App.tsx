@@ -173,7 +173,7 @@ function Router() {
       <Route path="/caixa">
         {() => (
           <DashboardLayout>
-            <ProtectedRoute requiredPermission="pdv">
+            <ProtectedRoute requiredPermission="caixa">
               <Caixa />
             </ProtectedRoute>
           </DashboardLayout>

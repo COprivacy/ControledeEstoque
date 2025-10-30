@@ -4,6 +4,7 @@ import { useUser } from "@/hooks/use-user";
 interface Permissions {
   dashboard: string;
   pdv: string;
+  caixa: string;
   produtos: string;
   inventario: string;
   relatorios: string;
@@ -17,6 +18,7 @@ interface Permissions {
 const defaultPermissions: Permissions = {
   dashboard: "false",
   pdv: "false",
+  caixa: "false",
   produtos: "false",
   inventario: "false",
   relatorios: "false",

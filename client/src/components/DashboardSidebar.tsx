@@ -1,5 +1,5 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { Home, Package, ClipboardList, FileText, Settings, CreditCard, Users, DollarSign, TrendingUp, BarChart3, Crown, Lock, LineChart, Scan, Wallet } from "lucide-react";
+import { Home, Package, ClipboardList, FileText, Settings, CreditCard, Users, DollarSign, TrendingUp, BarChart3, Crown, Lock, LineChart, Scan, Wallet, ShoppingCart } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useUser } from "@/hooks/use-user";
@@ -8,7 +8,7 @@ type MenuItem = {
   title: string;
   url: string;
   icon: any;
-  permission?: "dashboard" | "pdv" | "produtos" | "inventario" | "relatorios" | "clientes" | "fornecedores" | "financeiro" | "config_fiscal" | "configuracoes";
+  permission?: "dashboard" | "pdv" | "produtos" | "inventario" | "relatorios" | "clientes" | "fornecedores" | "financeiro" | "config_fiscal" | "configuracoes" | "caixa";
   adminOnly?: boolean;
 };
 
@@ -103,18 +103,26 @@ export default function DashboardSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location === "/caixa"}
-                  className="group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5 data-[active=true]:shadow-sm"
-                >
-                  <Link href="/caixa" data-testid="link-caixa">
-                    <Wallet className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
-                    <span className="flex-1 font-medium">Caixa</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {hasPermission("pdv") && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location === "/pdv"}>
+                    <Link href="/pdv">
+                      <ShoppingCart className="h-4 w-4" />
+                      <span>PDV</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+              {hasPermission("caixa") && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location === "/caixa"}>
+                    <Link href="/caixa">
+                      <Wallet className="h-4 w-4" />
+                      <span>Caixa</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               {financeMenuItems.map(renderMenuItem)}
             </SidebarMenu>
           </SidebarGroupContent>

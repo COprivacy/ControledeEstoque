@@ -463,6 +463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Criar permissões padrão (todas desabilitadas)
       await storage.savePermissoesFuncionario(funcionario.id, {
         pdv: "false",
+        caixa: "false",
         produtos: "false",
         inventario: "false",
         relatorios: "false",
@@ -523,6 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!permissoes) {
         return res.json({
           pdv: "false",
+          caixa: "false",
           produtos: "false",
           inventario: "false",
           relatorios: "false",

@@ -65,6 +65,9 @@ interface Permission {
   fornecedores: string;
   financeiro: string;
   config_fiscal: string;
+  dashboard: string;
+  caixa: string;
+  configuracoes: string;
 }
 
 interface EmployeeFormData {
@@ -259,6 +262,9 @@ export default function Admin() {
     fornecedores: "false",
     financeiro: "false",
     config_fiscal: "false",
+    dashboard: "false",
+    caixa: "false",
+    configuracoes: "false",
   });
 
   const togglePermission = (userId: string, permission: keyof Permission) => {
@@ -317,7 +323,7 @@ export default function Admin() {
       'mensal': { plano: 'premium_mensal' as const, nome: 'Plano Mensal', preco: 'R$ 79,99/mês' },
       'anual': { plano: 'premium_anual' as const, nome: 'Plano Anual', preco: 'R$ 67,99/mês' }
     };
-    
+
     setSelectedPlan(planoMap[plano]);
     setCheckoutOpen(true);
   };
@@ -496,7 +502,7 @@ export default function Admin() {
                             Selecione o plano ideal para sua empresa
                           </DialogDescription>
                         </DialogHeader>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                           {/* Plano Mensal */}
                           <Card className="border hover:shadow-md transition-all">
@@ -902,6 +908,7 @@ export default function Admin() {
                     {[
                       { key: 'dashboard', label: 'Dashboard', description: 'Acessar página principal do sistema' },
                       { key: 'pdv', label: 'PDV / Caixa', description: 'Realizar vendas e gerenciar caixa' },
+                      { key: 'caixa', label: 'Caixa', description: 'Visualizar histórico de caixas' },
                       { key: 'produtos', label: 'Produtos', description: 'Cadastrar e editar produtos' },
                       { key: 'inventario', label: 'Inventário', description: 'Gerenciar estoque' },
                       { key: 'relatorios', label: 'Relatórios', description: 'Visualizar relatórios de vendas' },

@@ -479,12 +479,13 @@ export default function Inventory() {
                       <TableHead className="text-right">Valor Total</TableHead>
                       <TableHead>Código de Barras</TableHead>
                       <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="text-center">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {produtos.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center text-muted-foreground">
+                        <TableCell colSpan={8} className="text-center text-muted-foreground">
                           Nenhum produto cadastrado
                         </TableCell>
                       </TableRow>
@@ -515,16 +516,16 @@ export default function Inventory() {
                               )}
                             </TableCell>
                             <TableCell className="text-right">
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => deleteProductMutation.mutate(produto.id)}
-                                  disabled={deleteProductMutation.isPending}
-                                  data-testid={`button-delete-${produto.id}`}
-                                >
-                                  Deletar
-                                </Button>
-                              </TableCell>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => deleteProductMutation.mutate(produto.id)}
+                                disabled={deleteProductMutation.isPending}
+                                data-testid={`button-delete-${produto.id}`}
+                              >
+                                Deletar
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         );
                       })

@@ -363,6 +363,12 @@ export default function Caixa() {
                     <Badge className="bg-green-600" data-testid="badge-status">Aberto</Badge>
                   </div>
                   <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Operador:</span>
+                    <span className="font-medium" data-testid="text-operador">
+                      {caixaAberto.operador_nome || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Abertura:</span>
                     <span className="font-medium" data-testid="text-abertura">
                       {format(new Date(caixaAberto.data_abertura), "dd/MM/yyyy HH:mm", { locale: ptBR })}
@@ -658,6 +664,7 @@ export default function Caixa() {
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
+                  <TableHead>Operador</TableHead>
                   <TableHead>Abertura</TableHead>
                   <TableHead>Fechamento</TableHead>
                   <TableHead>Saldo Inicial</TableHead>
@@ -670,6 +677,11 @@ export default function Caixa() {
                 {caixas.map((caixa: any) => (
                   <TableRow key={caixa.id} data-testid={`row-caixa-${caixa.id}`}>
                     <TableCell>{caixa.id}</TableCell>
+                    <TableCell>
+                      <span className="font-medium text-sm">
+                        {caixa.operador_nome || "N/A"}
+                      </span>
+                    </TableCell>
                     <TableCell>{format(new Date(caixa.data_abertura), "dd/MM/yyyy HH:mm", { locale: ptBR })}</TableCell>
                     <TableCell>
                       {caixa.data_fechamento

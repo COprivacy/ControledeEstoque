@@ -1553,7 +1553,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const caixas = await storage.getCaixas(userId);
-      res.json(caixas || []);
+      
+      // Adicionar nome do operador a cada caixa
+      const caixasComOperador = await Promise.all(caixas.map(async (caixa: any) => {
+        let operadorNome = "Sistema";
+        
+        if (caixa.funcionario_id) {
+          // Se foi aberto por funcionário
+          const funcionario = await storage.getFuncionario(caixa.funcionario_id);
+          if (funcionario) {
+            operadorNome = funcionario.nome;
+          }
+        } else {
+          // Se foi aberto pelo dono da conta
+          const usuario = await storage.getUserByEmail(
+            (await storage.getUsers()).find((u: any) => u.id === caixa.user_id)?.email || ""
+          );
+          if (usuario) {
+            operadorNome = usuario.nome;
+          }
+        }
+        
+        return {
+          ...caixa,
+          operador_nome: operadorNome
+        };
+      }));
+      
+      res.json(caixasComOperador || []);
     } catch (error) {
       console.error("Erro ao buscar caixas:", error);
       res.status(500).json({ error: "Erro ao buscar caixas" });
@@ -1573,7 +1600,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const caixaAberto = await storage.getCaixaAberto(userId);
-      res.json(caixaAberto || null);
+      
+      if (caixaAberto) {
+        let operadorNome = "Sistema";
+        
+        if (caixaAberto.funcionario_id) {
+          // Se foi aberto por funcionário
+          const funcionario = await storage.getFuncionario(caixaAberto.funcionario_id);
+          if (funcionario) {
+            operadorNome = funcionario.nome;
+          }
+        } else {
+          // Se foi aberto pelo dono da conta
+          const usuario = await storage.getUserByEmail(
+            (await storage.getUsers()).find((u: any) => u.id === caixaAberto.user_id)?.email || ""
+          );
+          if (usuario) {
+            operadorNome = usuario.nome;
+          }
+        }
+        
+        res.json({
+          ...caixaAberto,
+          operador_nome: operadorNome
+        });
+      } else {
+        res.json(null);
+      }
     } catch (error) {
       console.error("Erro ao buscar caixa aberto:", error);
       res.status(500).json({ error: "Erro ao buscar caixa aberto" });

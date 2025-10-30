@@ -106,9 +106,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Primeiro tenta autenticar como usuário principal
       const user = await storage.getUserByEmail(email);
-      
+
       console.log(`📋 Usuário encontrado:`, user ? `Sim (${user.email})` : 'Não');
-      
+
       if (user) {
         console.log(`🔑 Comparando senhas - Recebida: "${senha}" | Armazenada: "${user.senha}"`);
         console.log(`🔑 Tipo da senha recebida: ${typeof senha} | Tipo da senha armazenada: ${typeof user.senha}`);
@@ -251,7 +251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (user.data_expiracao_trial && user.plano === 'free') {
           const expirationDate = new Date(user.data_expiracao_trial);
           const now = new Date();
-          
+
           if (now < expirationDate) {
             await storage.updateUser(user.id, {
               plano: "trial",
@@ -263,10 +263,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: `${fixedCount} usuário(s) trial corrigido(s)`,
-        fixedCount 
+        fixedCount
       });
     } catch (error) {
       console.error("Erro ao corrigir usuários trial:", error);
@@ -471,6 +471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fornecedores: "false",
         financeiro: "false",
         config_fiscal: "false",
+        historico_caixas: "false", // Nova permissão adicionada
       });
 
       res.json(funcionario);
@@ -519,12 +520,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/funcionarios/:id/permissoes", async (req, res) => {
     try {
       const { id } = req.params;
-      const permissoes = await storage.getPermissoesFuncionario(id);
+      const permissoes = await storage.getPermissoesFuncionario?.(id);
 
       if (!permissoes) {
         return res.json({
           pdv: "false",
-          caixa: "false",
           produtos: "false",
           inventario: "false",
           relatorios: "false",
@@ -532,11 +532,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fornecedores: "false",
           financeiro: "false",
           config_fiscal: "false",
+          dashboard: "false",
+          caixa: "false",
+          historico_caixas: "false", // Nova permissão adicionada
+          configuracoes: "false",
         });
       }
 
       res.json(permissoes);
     } catch (error) {
+      console.error("Erro ao buscar permissões:", error);
       res.status(500).json({ error: "Erro ao buscar permissões" });
     }
   });
@@ -943,14 +948,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       console.log(`🔄 [UPDATE CLIENTE] ID: ${id}`);
       console.log(`📝 [UPDATE CLIENTE] Dados recebidos:`, JSON.stringify(req.body, null, 2));
-      
+
       const cliente = await storage.updateCliente(id, req.body);
-      
+
       if (!cliente) {
         console.log(`❌ [UPDATE CLIENTE] Cliente não encontrado com ID: ${id}`);
         return res.status(404).json({ error: "Cliente não encontrado" });
       }
-      
+
       console.log(`✅ [UPDATE CLIENTE] Cliente atualizado com sucesso:`, JSON.stringify(cliente, null, 2));
       res.json(cliente);
     } catch (error) {
@@ -1545,7 +1550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/caixas", getUserId, async (req, res) => {
     try {
       const userId = req.headers['effective-user-id'] as string;
-      
+
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
       }
@@ -1555,11 +1560,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const caixas = await storage.getCaixas(userId);
-      
+
       // Adicionar nome do operador a cada caixa
       const caixasComOperador = await Promise.all(caixas.map(async (caixa: any) => {
         let operadorNome = "Sistema";
-        
+
         if (caixa.funcionario_id) {
           // Se foi aberto por funcionário
           const funcionario = await storage.getFuncionario(caixa.funcionario_id);
@@ -1575,13 +1580,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             operadorNome = usuario.nome;
           }
         }
-        
+
         return {
           ...caixa,
           operador_nome: operadorNome
         };
       }));
-      
+
       res.json(caixasComOperador || []);
     } catch (error) {
       console.error("Erro ao buscar caixas:", error);
@@ -1592,7 +1597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/caixas/aberto", getUserId, async (req, res) => {
     try {
       const userId = req.headers['effective-user-id'] as string;
-      
+
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
       }
@@ -1602,10 +1607,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const caixaAberto = await storage.getCaixaAberto(userId);
-      
+
       if (caixaAberto) {
         let operadorNome = "Sistema";
-        
+
         if (caixaAberto.funcionario_id) {
           // Se foi aberto por funcionário
           const funcionario = await storage.getFuncionario(caixaAberto.funcionario_id);
@@ -1621,7 +1626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             operadorNome = usuario.nome;
           }
         }
-        
+
         res.json({
           ...caixaAberto,
           operador_nome: operadorNome
@@ -1639,7 +1644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.headers['effective-user-id'] as string;
       const { id } = req.params;
-      
+
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
       }
@@ -1649,7 +1654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const caixa = await storage.getCaixa(parseInt(id));
-      
+
       if (!caixa) {
         return res.status(404).json({ error: "Caixa não encontrado" });
       }
@@ -1657,7 +1662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (caixa.user_id !== userId) {
         return res.status(403).json({ error: "Acesso negado" });
       }
-      
+
       res.json(caixa);
     } catch (error) {
       console.error("Erro ao buscar caixa:", error);
@@ -1669,7 +1674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.headers['effective-user-id'] as string;
       const funcionarioId = req.headers['x-user-id'] as string;
-      
+
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
       }
@@ -1714,7 +1719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers['effective-user-id'] as string;
       const { id } = req.params;
       const caixaId = parseInt(id);
-      
+
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
       }
@@ -1731,7 +1736,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (caixa.user_id !== userId) {
         return res.status(403).json({ error: "Acesso negado" });
       }
-      
+
       if (caixa.status === "fechado") {
         return res.status(400).json({ error: "Caixa já está fechado" });
       }
@@ -1761,7 +1766,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.headers['effective-user-id'] as string;
       const { id } = req.params;
-      
+
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
       }
@@ -1783,7 +1788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers['effective-user-id'] as string;
       const { id } = req.params;
       const caixaId = parseInt(id);
-      
+
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
       }
@@ -1800,7 +1805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (caixa.user_id !== userId) {
         return res.status(403).json({ error: "Acesso negado" });
       }
-      
+
       if (caixa.status === "fechado") {
         return res.status(400).json({ error: "Não é possível adicionar movimentações em caixa fechado" });
       }
@@ -1825,7 +1830,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const movimentacao = await storage.createMovimentacaoCaixa(movimentacaoData);
-      
+
       // Atualizar totais do caixa
       const campo = tipo === 'suprimento' ? 'total_suprimentos' : 'total_retiradas';
       await storage.atualizarTotaisCaixa(caixaId, campo, valor);

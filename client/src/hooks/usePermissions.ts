@@ -5,6 +5,7 @@ interface Permissions {
   dashboard: string;
   pdv: string;
   caixa: string;
+  historico_caixas: string;
   produtos: string;
   inventario: string;
   relatorios: string;
@@ -19,6 +20,7 @@ const defaultPermissions: Permissions = {
   dashboard: "false",
   pdv: "false",
   caixa: "false",
+  historico_caixas: "false",
   produtos: "false",
   inventario: "false",
   relatorios: "false",

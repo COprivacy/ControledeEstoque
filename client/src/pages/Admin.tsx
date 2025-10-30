@@ -908,7 +908,8 @@ export default function Admin() {
                     {[
                       { key: 'dashboard', label: 'Dashboard', description: 'Acessar página principal do sistema' },
                       { key: 'pdv', label: 'PDV / Caixa', description: 'Realizar vendas e gerenciar caixa' },
-                      { key: 'caixa', label: 'Caixa', description: 'Visualizar histórico de caixas' },
+                      { key: 'caixa', label: 'Caixa', description: 'Abrir e fechar caixa' },
+                      { key: 'historico_caixas', label: 'Histórico de Caixas', description: 'Visualizar histórico de caixas anteriores' },
                       { key: 'produtos', label: 'Produtos', description: 'Cadastrar e editar produtos' },
                       { key: 'inventario', label: 'Inventário', description: 'Gerenciar estoque' },
                       { key: 'relatorios', label: 'Relatórios', description: 'Visualizar relatórios de vendas' },

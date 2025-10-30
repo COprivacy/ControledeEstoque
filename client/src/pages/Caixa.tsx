@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Wallet, Lock, Unlock, Plus, Minus, History, DollarSign, TrendingUp, TrendingDown, ShoppingCart } from "lucide-react"; // Added ShoppingCart icon
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { usePermissions } from "@/hooks/usePermissions";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -19,6 +21,7 @@ export default function Caixa() {
   const [isMovimentacaoDialogOpen, setIsMovimentacaoDialogOpen] = useState(false);
   const [tipoMovimentacao, setTipoMovimentacao] = useState<"suprimento" | "retirada">("suprimento");
   const { toast } = useToast();
+  const { hasPermission } = usePermissions();
   const queryClient = useQueryClient();
 
   // State variables to manage form inputs
@@ -659,62 +662,64 @@ export default function Caixa() {
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="h-5 w-5" />
-            Histórico de Caixas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {caixas.length === 0 ? (
-            <p className="text-center text-muted-foreground py-4">Nenhum caixa encontrado</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Operador</TableHead>
-                  <TableHead>Abertura</TableHead>
-                  <TableHead>Fechamento</TableHead>
-                  <TableHead>Saldo Inicial</TableHead>
-                  <TableHead>Vendas</TableHead>
-                  <TableHead>Saldo Final</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {caixas.map((caixa: any) => (
-                  <TableRow key={caixa.id} data-testid={`row-caixa-${caixa.id}`}>
-                    <TableCell>{caixa.id}</TableCell>
-                    <TableCell>
-                      <span className="font-medium text-sm">
-                        {caixa.operador_nome || "N/A"}
-                      </span>
-                    </TableCell>
-                    <TableCell>{format(new Date(caixa.data_abertura), "dd/MM/yyyy HH:mm", { locale: ptBR })}</TableCell>
-                    <TableCell>
-                      {caixa.data_fechamento
-                        ? format(new Date(caixa.data_fechamento), "dd/MM/yyyy HH:mm", { locale: ptBR })
-                        : "-"}
-                    </TableCell>
-                    <TableCell>R$ {(caixa.saldo_inicial || 0).toFixed(2)}</TableCell>
-                    <TableCell className="text-green-600">R$ {(caixa.total_vendas || 0).toFixed(2)}</TableCell>
-                    <TableCell className="font-semibold">
-                      {caixa.saldo_final ? `R$ ${caixa.saldo_final.toFixed(2)}` : "-"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={caixa.status === "aberto" ? "default" : "secondary"}>
-                        {caixa.status === "aberto" ? "Aberto" : "Fechado"}
-                      </Badge>
-                    </TableCell>
+      {hasPermission("ver_historico_caixas") && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Histórico de Caixas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {caixas.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">Nenhum caixa encontrado</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Operador</TableHead>
+                    <TableHead>Abertura</TableHead>
+                    <TableHead>Fechamento</TableHead>
+                    <TableHead>Saldo Inicial</TableHead>
+                    <TableHead>Vendas</TableHead>
+                    <TableHead>Saldo Final</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {caixas.map((caixa: any) => (
+                    <TableRow key={caixa.id} data-testid={`row-caixa-${caixa.id}`}>
+                      <TableCell>{caixa.id}</TableCell>
+                      <TableCell>
+                        <span className="font-medium text-sm">
+                          {caixa.operador_nome || "N/A"}
+                        </span>
+                      </TableCell>
+                      <TableCell>{format(new Date(caixa.data_abertura), "dd/MM/yyyy HH:mm", { locale: ptBR })}</TableCell>
+                      <TableCell>
+                        {caixa.data_fechamento
+                          ? format(new Date(caixa.data_fechamento), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                          : "-"}
+                      </TableCell>
+                      <TableCell>R$ {(caixa.saldo_inicial || 0).toFixed(2)}</TableCell>
+                      <TableCell className="text-green-600">R$ {(caixa.total_vendas || 0).toFixed(2)}</TableCell>
+                      <TableCell className="font-semibold">
+                        {caixa.saldo_final ? `R$ ${caixa.saldo_final.toFixed(2)}` : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={caixa.status === "aberto" ? "default" : "secondary"}>
+                          {caixa.status === "aberto" ? "Aberto" : "Fechado"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredPermission: "pdv" | "caixa" | "produtos" | "inventario" | "relatorios" | "clientes" | "fornecedores" | "financeiro" | "config_fiscal";
+  requiredPermission: "pdv" | "caixa" | "historico_caixas" | "produtos" | "inventario" | "relatorios" | "clientes" | "fornecedores" | "financeiro" | "config_fiscal" | "configuracoes";
 }
 
 export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteProps) {

@@ -110,6 +110,36 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     oscillator.stop(audioContext.currentTime + 0.1);
   };
 
+  const fetchProduct = async (barcode: string) => {
+    try {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) {
+        console.error("Usuário não autenticado");
+        return null;
+      }
+
+      const user = JSON.parse(userStr);
+      const headers: Record<string, string> = {
+        "x-user-id": user.id,
+        "x-user-type": user.tipo || "usuario",
+      };
+
+      if (user.tipo === "funcionario" && user.conta_id) {
+        headers["x-conta-id"] = user.conta_id;
+      }
+
+      const response = await fetch(`/api/produtos/codigo/${barcode}`, { headers });
+      if (!response.ok) {
+        return null;
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Erro ao buscar produto:", error);
+      return null;
+    }
+  };
+
+
   const handleScan = async (scannedBarcode: string) => {
     if (!scannedBarcode.trim()) return;
 
@@ -122,7 +152,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     try {
       const produto = onFetchProduct
         ? await onFetchProduct(scannedBarcode)
-        : await mockFetchProduct(scannedBarcode);
+        : await fetchProduct(scannedBarcode); // Use a função fetchProduct aqui
 
       if (!produto) {
         playBeep(false);

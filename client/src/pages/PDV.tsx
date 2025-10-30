@@ -54,7 +54,23 @@ export default function PDV() {
 
   const fetchProduct = async (barcode: string) => {
     try {
-      const response = await fetch(`/api/produtos/codigo/${barcode}`);
+      const userStr = localStorage.getItem("user");
+      if (!userStr) {
+        console.error("Usuário não autenticado");
+        return null;
+      }
+
+      const user = JSON.parse(userStr);
+      const headers: Record<string, string> = {
+        "x-user-id": user.id,
+        "x-user-type": user.tipo || "usuario",
+      };
+
+      if (user.tipo === "funcionario" && user.conta_id) {
+        headers["x-conta-id"] = user.conta_id;
+      }
+
+      const response = await fetch(`/api/produtos/codigo/${barcode}`, { headers });
       if (!response.ok) {
         return null;
       }

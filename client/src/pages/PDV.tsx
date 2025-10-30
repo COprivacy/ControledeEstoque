@@ -44,32 +44,36 @@ export default function PDV() {
     queryKey: ["/api/config-fiscal"],
   });
 
+  // Helper function to fetch caixa aberto
+  const fetchCaixaAberto = async () => {
+    try {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) return null;
+
+      const user = JSON.parse(userStr);
+      const headers: Record<string, string> = {
+        "x-user-id": user.id,
+        "x-user-type": user.tipo || "usuario",
+      };
+
+      if (user.tipo === "funcionario" && user.conta_id) {
+        headers["x-conta-id"] = user.conta_id;
+      }
+
+      const response = await fetch("/api/caixas/aberto", { headers });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch (error) {
+      console.error("Erro ao verificar caixa:", error);
+      return null;
+    }
+  };
+
   // Verificar se há caixa aberto
   const { data: caixaAberto, isLoading: isLoadingCaixa } = useQuery({
     queryKey: ["/api/caixas/aberto"],
-    queryFn: async () => {
-      try {
-        const userStr = localStorage.getItem("user");
-        if (!userStr) return null;
-
-        const user = JSON.parse(userStr);
-        const headers: Record<string, string> = {
-          "x-user-id": user.id,
-          "x-user-type": user.tipo || "usuario",
-        };
-
-        if (user.tipo === "funcionario" && user.conta_id) {
-          headers["x-conta-id"] = user.conta_id;
-        }
-
-        const response = await fetch("/api/caixas/aberto", { headers });
-        if (!response.ok) return null;
-        return await response.json();
-      } catch (error) {
-        console.error("Erro ao verificar caixa:", error);
-        return null;
-      }
-    },
+    queryFn: fetchCaixaAberto,
+    refetchInterval: 5000, // Atualiza a cada 5 segundos para verificar se o caixa ainda está aberto
   });
 
   const copyToClipboard = (text: string, fieldName: string) => {
@@ -416,7 +420,7 @@ export default function PDV() {
                 </span>
               </div>
             </AlertDialogTitle>
-            
+
             {!configFiscal || !configFiscal.focus_nfe_api_key ? (
               <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 p-3">
                 <p className="text-sm text-red-600 dark:text-red-500 font-medium flex items-center gap-2">
@@ -433,7 +437,7 @@ export default function PDV() {
               </div>
             ) : null}
           </AlertDialogHeader>
-          
+
           <div className="grid gap-3 mt-4">
             <Button
               variant="outline"
@@ -450,7 +454,7 @@ export default function PDV() {
                 <span className="text-xs text-muted-foreground font-normal">Registrar venda sem emitir documento fiscal</span>
               </div>
             </Button>
-            
+
             <Button
               variant="outline"
               onClick={() => handleEmissaoNF('cupom')}
@@ -466,7 +470,7 @@ export default function PDV() {
                 <span className="text-xs text-muted-foreground font-normal">Gerar comprovante sem valor fiscal</span>
               </div>
             </Button>
-            
+
             <Button
               variant="outline"
               onClick={() => handleEmissaoNF('manual')}
@@ -482,7 +486,7 @@ export default function PDV() {
                 <span className="text-xs text-muted-foreground font-normal">Abrir dados para emitir no portal da Secretaria da Fazenda</span>
               </div>
             </Button>
-            
+
             <Button
               onClick={() => handleEmissaoNF('automatica')}
               className="w-full justify-start h-auto py-4 px-5 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all group shadow-lg hover:shadow-xl"

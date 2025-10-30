@@ -99,21 +99,24 @@ export default function Caixa() {
     }
   };
 
-  // UseQuery hooks
+  // UseQuery hooks com atualização automática
   const { data: caixaAberto, isLoading: isLoadingCaixa } = useQuery({
     queryKey: ["/api/caixas/aberto"],
     queryFn: fetchCaixaAberto,
+    refetchInterval: 3000, // Atualiza a cada 3 segundos
   });
 
   const { data: caixas = [] } = useQuery({
     queryKey: ["/api/caixas"],
     queryFn: fetchHistoricoCaixas,
+    refetchInterval: 5000, // Atualiza a cada 5 segundos
   });
 
   const { data: movimentacoes = [] } = useQuery({
     queryKey: ["/api/caixas", caixaAberto?.id, "movimentacoes"],
     queryFn: () => fetchMovimentacoes(caixaAberto!.id), // Assert non-null with '!'
     enabled: !!caixaAberto,
+    refetchInterval: 3000, // Atualiza a cada 3 segundos
   });
 
   // Mutate functions

@@ -4,7 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import PDVScanner from "@/components/PDVScanner";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Crown, FileText, Loader2, ExternalLink, Copy, CheckCircle, Receipt, Printer } from "lucide-react";
+import { Crown, FileText, Loader2, ExternalLink, Copy, CheckCircle, Receipt, Printer, Wallet } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,9 +38,38 @@ export default function PDV() {
   const [lastSale, setLastSale] = useState<any>(null);
   const [isEmittingNF, setIsEmittingNF] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [showCaixaAlert, setShowCaixaAlert] = useState(false);
 
   const { data: configFiscal } = useQuery<ConfigFiscal | null>({
     queryKey: ["/api/config-fiscal"],
+  });
+
+  // Verificar se há caixa aberto
+  const { data: caixaAberto, isLoading: isLoadingCaixa } = useQuery({
+    queryKey: ["/api/caixas/aberto"],
+    queryFn: async () => {
+      try {
+        const userStr = localStorage.getItem("user");
+        if (!userStr) return null;
+
+        const user = JSON.parse(userStr);
+        const headers: Record<string, string> = {
+          "x-user-id": user.id,
+          "x-user-type": user.tipo || "usuario",
+        };
+
+        if (user.tipo === "funcionario" && user.conta_id) {
+          headers["x-conta-id"] = user.conta_id;
+        }
+
+        const response = await fetch("/api/caixas/aberto", { headers });
+        if (!response.ok) return null;
+        return await response.json();
+      } catch (error) {
+        console.error("Erro ao verificar caixa:", error);
+        return null;
+      }
+    },
   });
 
   const copyToClipboard = (text: string, fieldName: string) => {
@@ -187,6 +217,12 @@ export default function PDV() {
   };
 
   const handleSaleComplete = async (sale: any) => {
+    // Verificar se há caixa aberto
+    if (!caixaAberto) {
+      setShowCaixaAlert(true);
+      return;
+    }
+
     try {
       const userStr = localStorage.getItem("user");
       if (!userStr) {
@@ -281,16 +317,71 @@ export default function PDV() {
     }
   };
 
+  if (isLoadingCaixa) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <>
+      <AlertDialog open={showCaixaAlert} onOpenChange={setShowCaixaAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-red-600" />
+              Caixa Fechado
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Não há caixa aberto no momento. É necessário abrir o caixa antes de realizar vendas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setLocation("/caixa")}>
+              Ir para Caixa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="space-y-6 animate-in fade-in duration-500">
+        {!caixaAberto && (
+          <div className="bg-yellow-50 dark:bg-yellow-950/20 border-2 border-yellow-200 dark:border-yellow-900 rounded-lg p-4 animate-in slide-in-from-top duration-500">
+            <div className="flex items-start gap-3">
+              <Wallet className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-yellow-800 dark:text-yellow-200">
+                  Atenção: Caixa Fechado
+                </h3>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                  Você precisa abrir o caixa antes de realizar vendas. Vá para a página de Caixa para abrir.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 border-yellow-600 text-yellow-700 hover:bg-yellow-100 dark:border-yellow-500 dark:text-yellow-400 dark:hover:bg-yellow-950/40"
+                  onClick={() => setLocation("/caixa")}
+                >
+                  <Wallet className="h-4 w-4 mr-2" />
+                  Abrir Caixa
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center gap-3">
           <div className="space-y-1">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent animate-in slide-in-from-left duration-700">
               PDV - Ponto de Venda
             </h1>
             <p className="text-sm text-muted-foreground animate-in slide-in-from-left duration-700 delay-100">
-              Escaneie os produtos para adicionar ao carrinho
+              {caixaAberto 
+                ? "Escaneie os produtos para adicionar ao carrinho"
+                : "Abra o caixa para começar a vender"}
             </p>
           </div>
           <Badge className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 animate-in zoom-in duration-500">
@@ -299,7 +390,10 @@ export default function PDV() {
           </Badge>
         </div>
 
-        <div className="backdrop-blur-sm bg-card/80 rounded-lg border-2 border-primary/10 shadow-xl hover:shadow-2xl transition-all duration-500 p-6 animate-in slide-in-from-bottom duration-700">
+        <div className={cn(
+          "backdrop-blur-sm bg-card/80 rounded-lg border-2 shadow-xl hover:shadow-2xl transition-all duration-500 p-6 animate-in slide-in-from-bottom duration-700",
+          !caixaAberto && "opacity-60 pointer-events-none border-yellow-200 dark:border-yellow-900"
+        )}>
           <PDVScanner
             onSaleComplete={handleSaleComplete}
             onProductNotFound={handleProductNotFound}

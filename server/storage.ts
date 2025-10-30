@@ -23,7 +23,11 @@ import {
   type InsertFuncionario,
   type PermissaoFuncionario,
   type Subscription,
-  type InsertSubscription
+  type InsertSubscription,
+  type Caixa,
+  type InsertCaixa,
+  type MovimentacaoCaixa,
+  type InsertMovimentacaoCaixa
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import * as fs from 'fs/promises';
@@ -99,6 +103,16 @@ export interface IStorage {
   createContaReceber?(conta: any): Promise<any>;
   updateContaReceber?(id: number, updates: any): Promise<any>;
   deleteContaReceber?(id: number): Promise<boolean>;
+  
+  // Métodos para Caixa
+  getCaixas?(userId: string): Promise<any[]>;
+  getCaixaAberto?(userId: string): Promise<any | undefined>;
+  getCaixa?(id: number): Promise<any | undefined>;
+  abrirCaixa?(caixa: any): Promise<any>;
+  fecharCaixa?(id: number, dados: any): Promise<any | undefined>;
+  atualizarTotaisCaixa?(id: number, campo: 'total_vendas' | 'total_suprimentos' | 'total_retiradas', valor: number): Promise<any | undefined>;
+  getMovimentacoesCaixa?(caixaId: number): Promise<any[]>;
+  createMovimentacaoCaixa?(movimentacao: any): Promise<any>;
 }
 
 export abstract class Storage {

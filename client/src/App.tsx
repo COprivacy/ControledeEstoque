@@ -25,6 +25,7 @@ import ContasPagar from "@/pages/ContasPagar";
 import ContasReceber from "@/pages/ContasReceber";
 import FluxoPDV from "@/pages/FluxoPDV";
 import DRE from "@/pages/DRE";
+import Caixa from "@/pages/Caixa";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import AdminPublico from "@/pages/AdminPublico"; // Assuming AdminPublico is the component for the master admin panel
 
@@ -165,6 +166,15 @@ function Router() {
           <DashboardLayout>
             <ProtectedRoute requiredPermission="financeiro">
               <DRE />
+            </ProtectedRoute>
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/caixa">
+        {() => (
+          <DashboardLayout>
+            <ProtectedRoute requiredPermission="pdv">
+              <Caixa />
             </ProtectedRoute>
           </DashboardLayout>
         )}

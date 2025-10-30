@@ -693,9 +693,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/vendas", async (req, res) => {
+  app.post("/api/vendas", getUserId, async (req, res) => {
     try {
+      const userId = req.headers['effective-user-id'] as string;
       const { itens, cliente_id, forma_pagamento } = req.body;
+
+      const caixaAberto = await storage.getCaixaAberto?.(userId);
+      if (!caixaAberto) {
+        return res.status(400).json({ error: "Não há caixa aberto. Abra o caixa antes de registrar vendas." });
+      }
 
       if (!itens || !Array.isArray(itens) || itens.length === 0) {
         return res.status(400).json({ error: "Itens da venda são obrigatórios" });
@@ -742,6 +748,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cliente_id: cliente_id || undefined,
         forma_pagamento: forma_pagamento || 'dinheiro'
       });
+
+      await storage.atualizarTotaisCaixa?.(caixaAberto.id, 'total_vendas', valorTotal);
 
       res.json({
         ...venda,
@@ -1521,6 +1529,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Erro ao cancelar assinatura:", error);
       res.status(500).json({ error: error.message || "Erro ao cancelar assinatura" });
+    }
+  });
+
+  app.get("/api/caixas", getUserId, async (req, res) => {
+    try {
+      const userId = req.headers['effective-user-id'] as string;
+      const caixas = await storage.getCaixas?.(userId);
+      res.json(caixas || []);
+    } catch (error) {
+      console.error("Erro ao buscar caixas:", error);
+      res.status(500).json({ error: "Erro ao buscar caixas" });
+    }
+  });
+
+  app.get("/api/caixas/aberto", getUserId, async (req, res) => {
+    try {
+      const userId = req.headers['effective-user-id'] as string;
+      const caixaAberto = await storage.getCaixaAberto?.(userId);
+      res.json(caixaAberto || null);
+    } catch (error) {
+      console.error("Erro ao buscar caixa aberto:", error);
+      res.status(500).json({ error: "Erro ao buscar caixa aberto" });
+    }
+  });
+
+  app.get("/api/caixas/:id", getUserId, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const caixa = await storage.getCaixa?.(parseInt(id));
+      
+      if (!caixa) {
+        return res.status(404).json({ error: "Caixa não encontrado" });
+      }
+      
+      res.json(caixa);
+    } catch (error) {
+      console.error("Erro ao buscar caixa:", error);
+      res.status(500).json({ error: "Erro ao buscar caixa" });
+    }
+  });
+
+  app.post("/api/caixas/abrir", getUserId, async (req, res) => {
+    try {
+      const userId = req.headers['effective-user-id'] as string;
+      const funcionarioId = req.headers['x-user-id'] as string;
+      
+      const caixaAberto = await storage.getCaixaAberto?.(userId);
+      if (caixaAberto) {
+        return res.status(400).json({ error: "Já existe um caixa aberto" });
+      }
+
+      const caixaData = {
+        user_id: userId,
+        funcionario_id: funcionarioId,
+        data_abertura: new Date().toISOString(),
+        saldo_inicial: parseFloat(req.body.saldo_inicial) || 0,
+        observacoes_abertura: req.body.observacoes_abertura || null,
+        status: "aberto",
+        total_vendas: 0,
+        total_retiradas: 0,
+        total_suprimentos: 0,
+      };
+
+      const caixa = await storage.abrirCaixa?.(caixaData);
+      res.json(caixa);
+    } catch (error) {
+      console.error("Erro ao abrir caixa:", error);
+      res.status(500).json({ error: "Erro ao abrir caixa" });
+    }
+  });
+
+  app.post("/api/caixas/:id/fechar", getUserId, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const caixaId = parseInt(id);
+      
+      const caixa = await storage.getCaixa?.(caixaId);
+      if (!caixa) {
+        return res.status(404).json({ error: "Caixa não encontrado" });
+      }
+      
+      if (caixa.status === "fechado") {
+        return res.status(400).json({ error: "Caixa já está fechado" });
+      }
+
+      const dadosFechamento = {
+        data_fechamento: new Date().toISOString(),
+        saldo_final: parseFloat(req.body.saldo_final),
+        observacoes_fechamento: req.body.observacoes_fechamento || null,
+        status: "fechado",
+      };
+
+      const caixaFechado = await storage.fecharCaixa?.(caixaId, dadosFechamento);
+      res.json(caixaFechado);
+    } catch (error) {
+      console.error("Erro ao fechar caixa:", error);
+      res.status(500).json({ error: "Erro ao fechar caixa" });
+    }
+  });
+
+  app.get("/api/caixas/:id/movimentacoes", getUserId, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const movimentacoes = await storage.getMovimentacoesCaixa?.(parseInt(id));
+      res.json(movimentacoes || []);
+    } catch (error) {
+      console.error("Erro ao buscar movimentações:", error);
+      res.status(500).json({ error: "Erro ao buscar movimentações" });
+    }
+  });
+
+  app.post("/api/caixas/:id/movimentacoes", getUserId, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.headers['effective-user-id'] as string;
+      const caixaId = parseInt(id);
+      
+      const caixa = await storage.getCaixa?.(caixaId);
+      if (!caixa) {
+        return res.status(404).json({ error: "Caixa não encontrado" });
+      }
+      
+      if (caixa.status === "fechado") {
+        return res.status(400).json({ error: "Não é possível adicionar movimentações em caixa fechado" });
+      }
+
+      const movimentacaoData = {
+        caixa_id: caixaId,
+        user_id: userId,
+        tipo: req.body.tipo,
+        valor: parseFloat(req.body.valor),
+        descricao: req.body.descricao || null,
+        data: new Date().toISOString(),
+      };
+
+      const movimentacao = await storage.createMovimentacaoCaixa?.(movimentacaoData);
+      res.json(movimentacao);
+    } catch (error) {
+      console.error("Erro ao criar movimentação:", error);
+      res.status(500).json({ error: "Erro ao criar movimentação" });
     }
   });
 

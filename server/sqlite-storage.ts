@@ -276,6 +276,33 @@ export class SQLiteStorage implements IStorage {
         data_criacao TEXT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id)
       );
+
+      CREATE TABLE IF NOT EXISTS caixas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        funcionario_id TEXT,
+        data_abertura TEXT NOT NULL,
+        data_fechamento TEXT,
+        saldo_inicial REAL NOT NULL DEFAULT 0,
+        saldo_final REAL,
+        total_vendas REAL NOT NULL DEFAULT 0,
+        total_retiradas REAL NOT NULL DEFAULT 0,
+        total_suprimentos REAL NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'aberto',
+        observacoes_abertura TEXT,
+        observacoes_fechamento TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS movimentacoes_caixa (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        caixa_id INTEGER NOT NULL,
+        user_id TEXT NOT NULL,
+        tipo TEXT NOT NULL,
+        valor REAL NOT NULL,
+        descricao TEXT,
+        data TEXT NOT NULL,
+        FOREIGN KEY (caixa_id) REFERENCES caixas(id)
+      );
     `);
   }
 
@@ -1121,5 +1148,94 @@ export class SQLiteStorage implements IStorage {
       return true;
     }
     return false;
+  }
+
+  async getCaixas(userId: string): Promise<any[]> {
+    const stmt = this.db.prepare('SELECT * FROM caixas WHERE user_id = ? ORDER BY data_abertura DESC');
+    return stmt.all(userId);
+  }
+
+  async getCaixaAberto(userId: string): Promise<any | undefined> {
+    const stmt = this.db.prepare('SELECT * FROM caixas WHERE user_id = ? AND status = ? ORDER BY data_abertura DESC LIMIT 1');
+    const result = stmt.get(userId, 'aberto');
+    return result as any;
+  }
+
+  async getCaixa(id: number): Promise<any | undefined> {
+    const stmt = this.db.prepare('SELECT * FROM caixas WHERE id = ?');
+    const result = stmt.get(id);
+    return result as any;
+  }
+
+  async abrirCaixa(caixaData: any): Promise<any> {
+    const stmt = this.db.prepare(`
+      INSERT INTO caixas (
+        user_id, funcionario_id, data_abertura, saldo_inicial,
+        observacoes_abertura, status, total_vendas, total_retiradas, total_suprimentos
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      caixaData.user_id,
+      caixaData.funcionario_id || null,
+      caixaData.data_abertura,
+      caixaData.saldo_inicial,
+      caixaData.observacoes_abertura || null,
+      caixaData.status,
+      caixaData.total_vendas,
+      caixaData.total_retiradas,
+      caixaData.total_suprimentos
+    );
+    return { ...caixaData, id: Number(info.lastInsertRowid) };
+  }
+
+  async fecharCaixa(id: number, dados: any): Promise<any | undefined> {
+    const stmt = this.db.prepare(`
+      UPDATE caixas 
+      SET data_fechamento = ?, saldo_final = ?, observacoes_fechamento = ?, status = ?
+      WHERE id = ?
+    `);
+    stmt.run(
+      dados.data_fechamento,
+      dados.saldo_final,
+      dados.observacoes_fechamento || null,
+      dados.status,
+      id
+    );
+    return this.getCaixa(id);
+  }
+
+  async atualizarTotaisCaixa(id: number, campo: 'total_vendas' | 'total_suprimentos' | 'total_retiradas', valor: number): Promise<any | undefined> {
+    const stmt = this.db.prepare(`
+      UPDATE caixas 
+      SET ${campo} = ${campo} + ?
+      WHERE id = ?
+    `);
+    stmt.run(valor, id);
+    return this.getCaixa(id);
+  }
+
+  async getMovimentacoesCaixa(caixaId: number): Promise<any[]> {
+    const stmt = this.db.prepare('SELECT * FROM movimentacoes_caixa WHERE caixa_id = ? ORDER BY data DESC');
+    return stmt.all(caixaId);
+  }
+
+  async createMovimentacaoCaixa(movimentacaoData: any): Promise<any> {
+    const stmt = this.db.prepare(`
+      INSERT INTO movimentacoes_caixa (caixa_id, user_id, tipo, valor, descricao, data)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      movimentacaoData.caixa_id,
+      movimentacaoData.user_id,
+      movimentacaoData.tipo,
+      movimentacaoData.valor,
+      movimentacaoData.descricao || null,
+      movimentacaoData.data
+    );
+
+    const campo = movimentacaoData.tipo === 'suprimento' ? 'total_suprimentos' : 'total_retiradas';
+    await this.atualizarTotaisCaixa(movimentacaoData.caixa_id, campo, movimentacaoData.valor);
+
+    return { ...movimentacaoData, id: Number(info.lastInsertRowid) };
   }
 }

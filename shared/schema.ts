@@ -281,6 +281,50 @@ export const insertPermissaoFuncionarioSchema = createInsertSchema(permissoesFun
 export type PermissaoFuncionario = typeof permissoesFuncionarios.$inferSelect;
 export type InsertPermissaoFuncionario = z.infer<typeof insertPermissaoFuncionarioSchema>;
 
+export const caixas = pgTable("caixas", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  user_id: text("user_id").notNull(),
+  funcionario_id: text("funcionario_id"),
+  data_abertura: text("data_abertura").notNull(),
+  data_fechamento: text("data_fechamento"),
+  saldo_inicial: real("saldo_inicial").notNull().default(0),
+  saldo_final: real("saldo_final"),
+  total_vendas: real("total_vendas").notNull().default(0),
+  total_retiradas: real("total_retiradas").notNull().default(0),
+  total_suprimentos: real("total_suprimentos").notNull().default(0),
+  status: text("status").notNull().default("aberto"),
+  observacoes_abertura: text("observacoes_abertura"),
+  observacoes_fechamento: text("observacoes_fechamento"),
+});
+
+export const movimentacoesCaixa = pgTable("movimentacoes_caixa", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  caixa_id: integer("caixa_id").notNull(),
+  user_id: text("user_id").notNull(),
+  tipo: text("tipo").notNull(),
+  valor: real("valor").notNull(),
+  descricao: text("descricao"),
+  data: text("data").notNull(),
+});
+
+export const insertCaixaSchema = createInsertSchema(caixas).omit({
+  id: true,
+}).extend({
+  saldo_inicial: z.coerce.number().min(0),
+});
+
+export const insertMovimentacaoCaixaSchema = createInsertSchema(movimentacoesCaixa).omit({
+  id: true,
+}).extend({
+  valor: z.coerce.number().positive(),
+  tipo: z.enum(["suprimento", "retirada"]),
+});
+
+export type Caixa = typeof caixas.$inferSelect;
+export type InsertCaixa = z.infer<typeof insertCaixaSchema>;
+export type MovimentacaoCaixa = typeof movimentacoesCaixa.$inferSelect;
+export type InsertMovimentacaoCaixa = z.infer<typeof insertMovimentacaoCaixaSchema>;
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertProduto = z.infer<typeof insertProdutoSchema>;

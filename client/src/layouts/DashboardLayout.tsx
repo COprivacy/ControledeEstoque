@@ -9,7 +9,7 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [userEmail, setUserEmail] = React.useState("usuario@email.com");
 
   React.useEffect(() => {
@@ -35,12 +35,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     "--sidebar-width-icon": "3rem",
   };
 
+  const isPDVPage = location === "/pdv";
+
   return (
     <SidebarProvider style={style as React.CSSProperties}>
       <div className="flex h-screen w-full">
         <DashboardSidebar />
         <div className="flex flex-col flex-1 overflow-hidden">
-          <DashboardHeader userEmail={userEmail} onLogout={handleLogout} />
+          {!isPDVPage && <DashboardHeader userEmail={userEmail} onLogout={handleLogout} />}
           <div className="flex items-center gap-2 px-6 py-3 border-b bg-background">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
           </div>

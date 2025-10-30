@@ -1067,19 +1067,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Contas a Pagar
-  app.get("/api/contas-pagar", async (req, res) => {
+  app.get("/api/contas-pagar", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const contas = await storage.getContasPagar();
-      res.json(contas);
+      const contasFiltered = contas.filter((c: any) => c.user_id === effectiveUserId);
+      res.json(contasFiltered);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.post("/api/contas-pagar", async (req, res) => {
+  app.post("/api/contas-pagar", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const conta = await storage.createContaPagar({
         ...req.body,
+        user_id: effectiveUserId,
         status: "pendente",
         data_cadastro: new Date().toISOString(),
       });
@@ -1124,19 +1128,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Contas a Receber
-  app.get("/api/contas-receber", async (req, res) => {
+  app.get("/api/contas-receber", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const contas = await storage.getContasReceber();
-      res.json(contas);
+      const contasFiltered = contas.filter((c: any) => c.user_id === effectiveUserId);
+      res.json(contasFiltered);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.post("/api/contas-receber", async (req, res) => {
+  app.post("/api/contas-receber", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const conta = await storage.createContaReceber({
         ...req.body,
+        user_id: effectiveUserId,
         status: "pendente",
         data_cadastro: new Date().toISOString(),
       });

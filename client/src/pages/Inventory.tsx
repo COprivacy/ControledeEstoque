@@ -77,6 +77,7 @@ export default function Inventory() {
   const deleteProductMutation = useMutation({
     mutationFn: async (id: number) => {
       const response = await apiRequest("DELETE", `/api/produtos/${id}`, undefined);
+      if (!response.ok) throw new Error("Erro ao deletar produto");
       return response.json();
     },
     onSuccess: () => {
@@ -86,10 +87,10 @@ export default function Inventory() {
         description: "Produto removido do inventário com sucesso.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Erro ao deletar produto",
-        description: "Verifique sua conexão ou permissões e tente novamente.",
+        description: error.message || "Verifique sua conexão ou permissões e tente novamente.",
         variant: "destructive",
       });
     },

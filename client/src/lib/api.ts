@@ -1,17 +1,36 @@
 
+function getAuthHeaders(): Record<string, string> {
+  const userStr = localStorage.getItem("user");
+  if (!userStr) return {};
+  
+  try {
+    const user = JSON.parse(userStr);
+    const headers: Record<string, string> = {
+      "x-user-id": user.id,
+      "x-user-type": user.tipo || "usuario",
+    };
+    
+    if (user.tipo === "funcionario" && user.conta_id) {
+      headers["x-conta-id"] = user.conta_id;
+    }
+    
+    return headers;
+  } catch (e) {
+    return {};
+  }
+}
+
 export const apiRequest = async (method: string, url: string, body?: any) => {
-  const token = localStorage.getItem('authToken');
+  const authHeaders = getAuthHeaders();
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
+    ...authHeaders,
   };
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
   const options: RequestInit = {
     method,
     headers,
+    credentials: "include",
   };
 
   if (body) {

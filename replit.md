@@ -22,12 +22,35 @@ Preferred communication style: Simple, everyday language.
 
 ### Backend
 
-- **Technology Stack:** Node.js, Express.js, TypeScript, Drizzle ORM, Neon Serverless PostgreSQL.
-- **Database:** Drizzle ORM with PostgreSQL, schema in `/shared/schema.ts`, Zod validation.
+- **Technology Stack:** Node.js, Express.js, TypeScript, better-sqlite3 (SQLite).
+- **Database:** SQLite with better-sqlite3, schema in `/shared/schema.ts`, Zod validation.
 - **API Design:** RESTful with JSON responses, authentication, CRUD for products, sales, and reports.
-- **Data Models:** Users, Products, Sales, Suppliers, Purchases, Clients, Fiscal Config.
+- **Data Models:** Users, Products, Sales, Suppliers, Purchases, Clients, Fiscal Config, Caixas (Cash Registers), Movimentações de Caixa.
 - **Architectural Decisions:** Monorepo structure, type safety via shared TypeScript schemas, progressive enhancement (barcode simulation), bilingual support (Brazilian Portuguese), mobile-first design, fiscal responsibility (user-provided NFe credentials), and invoice data validation with Zod.
 - **Security Note:** Multi-tenant infrastructure is not fully implemented. Backend endpoints require tenant scoping (`conta_id` validation) for robust security before enabling the `/admin` panel. Server-side session/token validation is a future enhancement.
+
+### Cash Register System (Caixa)
+
+**Implemented: October 30, 2025**
+
+Complete cash register management with opening/closing functionality integrated with sales operations:
+
+- **Schema:** Two tables - `caixas` (cash registers) and `movimentacoes_caixa` (cash movements)
+- **Features:**
+  - Opening/closing cash registers with initial and final balances
+  - Automatic tracking of sales, supplies (suprimentos), and withdrawals (sangrias)
+  - Real-time total updates using dedicated `atualizarTotaisCaixa` method
+  - Historical record of all cash register operations
+  - Sales require an open cash register to proceed
+- **API Endpoints:**
+  - GET `/api/caixas` - List all cash registers
+  - GET `/api/caixas/aberto` - Get currently open cash register
+  - POST `/api/caixas` - Open a new cash register
+  - PATCH `/api/caixas/:id/fechar` - Close a cash register
+  - POST `/api/caixas/:id/movimentacoes` - Create cash movement (supply/withdrawal)
+  - GET `/api/caixas/:id/movimentacoes` - Get all movements for a cash register
+- **Frontend:** Complete UI at `/caixa` route for managing all cash operations
+- **Integration:** Sales workflow checks for open cash register and updates totals automatically
 
 ## External Dependencies
 

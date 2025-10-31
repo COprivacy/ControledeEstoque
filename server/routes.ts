@@ -844,6 +844,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/vendas", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
+      
+      if (!effectiveUserId) {
+        return res.status(401).json({ error: "Usuário não autenticado" });
+      }
+      
       const startDate = req.query.start_date as string;
       const endDate = req.query.end_date as string;
 
@@ -851,6 +856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const vendas = allVendas.filter(v => v.user_id === effectiveUserId);
       res.json(vendas);
     } catch (error) {
+      console.error("Erro ao buscar vendas:", error);
       res.status(500).json({ error: "Erro ao buscar vendas" });
     }
   });

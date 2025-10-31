@@ -326,13 +326,8 @@ export default function Inventory() {
     );
   }
 
-  if (errorVendas) {
-    toast({
-      title: "Erro de conectividade",
-      description: "Não foi possível carregar os dados de vendas. Tente novamente.",
-      variant: "destructive",
-    });
-  }
+  // Remover toast do render direto para evitar loop infinito
+  // O erro será tratado pelo React Query automaticamente
 
   return (
     <div className="flex flex-col gap-6 p-6">

@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { UserProvider } from "@/hooks/use-user";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
+import { AdminMasterRoute } from "@/components/AdminMasterRoute";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -191,9 +192,9 @@ function Router() {
       <Route path="/admin-master">
         {() => (
           <DashboardLayout>
-            <AdminRoute>
+            <AdminMasterRoute>
               <AdminPublico />
-            </AdminRoute>
+            </AdminMasterRoute>
           </DashboardLayout>
         )}
       </Route>

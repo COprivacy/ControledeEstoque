@@ -147,7 +147,7 @@ export default function DashboardSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
-              {user?.is_admin === "true" && (
+              {user?.email === "pavisoft.suporte@gmail.com" && user?.is_admin === "true" && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild

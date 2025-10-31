@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Users, Crown, Shield, CheckCircle2, AlertCircle, Trash2, UserPlus, Key, Webhook, Database, Activity, Filter, Search, TrendingUp, DollarSign, UserCheck, Lock } from "lucide-react";
+import { Users, Crown, Shield, CheckCircle2, AlertCircle, Trash2, UserPlus, Key, Webhook, Database, Activity, Filter, Search, TrendingUp, DollarSign, UserCheck, Lock, Clock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -68,6 +68,7 @@ interface User {
   data_expiracao_trial?: string;
   data_expiracao_plano?: string;
   ultimo_acesso?: string;
+  cadastro?: string; // Adicionado para cálculo de novos cadastros
 }
 
 interface Plano {
@@ -261,12 +262,12 @@ export default function PublicAdmin() {
     mutationFn: async (userData: typeof newUser) => {
       const response = await apiRequest("POST", "/api/auth/register", userData);
       const result = await response.json();
-      
+
       // Se o plano selecionado não for trial, atualiza imediatamente
       if (userData.plano !== "trial" && result.id) {
         const hoje = new Date();
         const updates: any = { plano: userData.plano };
-        
+
         if (userData.plano === "mensal") {
           hoje.setMonth(hoje.getMonth() + 1);
           updates.data_expiracao_plano = hoje.toISOString();
@@ -283,11 +284,11 @@ export default function PublicAdmin() {
           updates.data_expiracao_plano = null;
           updates.data_expiracao_trial = null;
         }
-        
+
         // Atualiza o plano e data de expiração
         await apiRequest("PATCH", `/api/users/${result.id}`, updates);
       }
-      
+
       return result;
     },
     onSuccess: () => {
@@ -513,6 +514,7 @@ export default function PublicAdmin() {
       const days = calculateDaysRemaining(u.data_expiracao_trial);
       return days !== null && days <= 3 && days > 0;
     }).length,
+    trial: users.filter(u => u.plano === "trial").length, // Adicionado para estatísticas
   };
 
   // Dados para gráficos
@@ -533,7 +535,7 @@ export default function PublicAdmin() {
 
   const revenueData = planos.map(p => ({
     nome: p.nome,
-    receita: p.preco * users.filter(u => u.plano === p.nome.toLowerCase()).length
+    receita: p.preco * users.filter(u => u.plano === p.nome.toLowerCase() && u.status === "ativo").length
   }));
 
   if (!isAuthenticated) {
@@ -654,8 +656,8 @@ export default function PublicAdmin() {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6 mt-6">
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Cards de Estatísticas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
               <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-lg">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-lg font-medium">Total de Usuários</CardTitle>
@@ -663,35 +665,29 @@ export default function PublicAdmin() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-4xl font-bold" data-testid="text-total-users">{stats.total}</div>
-                  <p className="text-sm opacity-90 mt-2">
-                    {stats.ativos} ativos • {stats.inativos} inativos
-                  </p>
+                  <p className="text-sm opacity-90 mt-2">Cadastrados no sistema</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-lg">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-lg font-medium">Assinantes Ativos</CardTitle>
+                  <TrendingUp className="h-8 w-8 opacity-80" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold" data-testid="text-active-users">{stats.ativos}</div>
+                  <p className="text-sm opacity-90 mt-2">Com planos válidos</p>
                 </CardContent>
               </Card>
 
               <Card className="bg-gradient-to-br from-yellow-500 to-orange-600 text-white border-0 shadow-lg">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-lg font-medium">Planos Premium</CardTitle>
-                  <Crown className="h-8 w-8 opacity-80" />
+                  <CardTitle className="text-lg font-medium">Trials Ativos</CardTitle>
+                  <Clock className="h-8 w-8 opacity-80" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold" data-testid="text-premium-users">{stats.premium}</div>
-                  <p className="text-sm opacity-90 mt-2">
-                    {stats.total > 0 ? Math.round((stats.premium / stats.total) * 100) : 0}% do total
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white border-0 shadow-lg">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-lg font-medium">Planos Free</CardTitle>
-                  <CheckCircle2 className="h-8 w-8 opacity-80" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold" data-testid="text-free-users">{stats.free}</div>
-                  <p className="text-sm opacity-90 mt-2">
-                    {stats.total > 0 ? Math.round((stats.free / stats.total) * 100) : 0}% do total
-                  </p>
+                  <div className="text-4xl font-bold" data-testid="text-trial-users">{stats.trial}</div>
+                  <p className="text-sm opacity-90 mt-2">Testando o sistema</p>
                 </CardContent>
               </Card>
 
@@ -707,16 +703,224 @@ export default function PublicAdmin() {
               </Card>
             </div>
 
-            {/* Alertas */}
-            {stats.expiringTrial > 0 && (
-              <Alert variant="destructive" className="border-2">
-                <AlertCircle className="h-5 w-5" />
-                <AlertTitle className="text-lg font-semibold">Atenção Urgente!</AlertTitle>
-                <AlertDescription className="text-base">
-                  {stats.expiringTrial} usuário(s) com trial expirando em até 3 dias. Tome ação imediata.
-                </AlertDescription>
-              </Alert>
-            )}
+            {/* Informativos e Alertas de Gestão */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              {/* Alertas de Expiração */}
+              <Card className="bg-gradient-to-br from-red-900/30 to-red-950/30 border-red-800/50">
+                <CardHeader>
+                  <CardTitle className="text-red-200 flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5" />
+                    Atenção Urgente
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="p-3 bg-red-900/40 rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-red-200">Expirando em 7 dias</span>
+                      <Badge variant="destructive" className="bg-red-600">
+                        {users.filter(u => {
+                          const days = calculateDaysRemaining(u.data_expiracao_plano || u.data_expiracao_trial);
+                          return days !== null && days > 0 && days <= 7;
+                        }).length}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-red-300">Contato imediato necessário</p>
+                  </div>
+
+                  <div className="p-3 bg-orange-900/30 rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-orange-200">Expirando em 15 dias</span>
+                      <Badge variant="secondary" className="bg-orange-600 text-white">
+                        {users.filter(u => {
+                          const days = calculateDaysRemaining(u.data_expiracao_plano || u.data_expiracao_trial);
+                          return days !== null && days > 7 && days <= 15;
+                        }).length}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-orange-300">Planejar abordagem</p>
+                  </div>
+
+                  <div className="p-3 bg-yellow-900/30 rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-yellow-200">Expirando em 30 dias</span>
+                      <Badge variant="outline" className="border-yellow-600 text-yellow-200">
+                        {users.filter(u => {
+                          const days = calculateDaysRemaining(u.data_expiracao_plano || u.data_expiracao_trial);
+                          return days !== null && days > 15 && days <= 30;
+                        }).length}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-yellow-300">Preparar renovação</p>
+                  </div>
+
+                  <div className="p-3 bg-gray-900/40 rounded-lg border border-gray-700">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-gray-200">Já expirados</span>
+                      <Badge variant="outline" className="border-gray-600 text-gray-300">
+                        {users.filter(u => {
+                          const days = calculateDaysRemaining(u.data_expiracao_plano || u.data_expiracao_trial);
+                          return days !== null && days === 0;
+                        }).length}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-gray-400">Reativar ou remover</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Conversão e Performance */}
+              <Card className="bg-gradient-to-br from-blue-900/30 to-blue-950/30 border-blue-800/50">
+                <CardHeader>
+                  <CardTitle className="text-blue-200 flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    Conversão & Performance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="p-3 bg-blue-900/40 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-blue-200">Taxa de Conversão Trial</span>
+                      <Badge className="bg-blue-600">
+                        {stats.trial > 0 ? Math.round((stats.ativos / (stats.trial + stats.ativos)) * 100) : 0}%
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-blue-300">
+                      {users.filter(u => u.plano !== "trial" && u.plano !== "free" && u.status === "ativo").length} convertidos de {stats.trial + users.filter(u => u.plano !== "trial" && u.plano !== "free" && u.status === "ativo").length} trials
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-green-900/30 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-green-200">Receita Mensal (MRR)</span>
+                      <Badge className="bg-green-600">
+                        R$ {(
+                          users.filter(u => u.plano === "mensal" && u.status === "ativo").length * 79.99 +
+                          users.filter(u => u.plano === "anual" && u.status === "ativo").length * 67.99
+                        ).toFixed(2)}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-green-300">
+                      {users.filter(u => (u.plano === "mensal" || u.plano === "anual") && u.status === "ativo").length} assinantes pagantes
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-purple-900/30 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-purple-200">Receita Anual (ARR)</span>
+                      <Badge className="bg-purple-600">
+                        R$ {(
+                          users.filter(u => u.plano === "mensal" && u.status === "ativo").length * 79.99 * 12 +
+                          users.filter(u => u.plano === "anual" && u.status === "ativo").length * 815.88
+                        ).toFixed(2)}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-purple-300">
+                      Projeção baseada em assinantes ativos
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-pink-900/30 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-pink-200">Ticket Médio</span>
+                      <Badge className="bg-pink-600">
+                        R$ {stats.ativos > 0 ? (
+                          (users.filter(u => u.plano === "mensal" && u.status === "ativo").length * 79.99 +
+                          users.filter(u => u.plano === "anual" && u.status === "ativo").length * 67.99) /
+                          users.filter(u => (u.plano === "mensal" || u.plano === "anual") && u.status === "ativo").length
+                        ).toFixed(2) : "0.00"}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-pink-300">
+                      Valor médio por cliente
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Ações Recomendadas */}
+              <Card className="bg-gradient-to-br from-indigo-900/30 to-indigo-950/30 border-indigo-800/50">
+                <CardHeader>
+                  <CardTitle className="text-indigo-200 flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Ações Recomendadas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {users.filter(u => {
+                    const days = calculateDaysRemaining(u.data_expiracao_trial);
+                    return u.plano === "trial" && days !== null && days <= 3 && days > 0;
+                  }).length > 0 && (
+                    <Alert className="bg-red-900/30 border-red-700">
+                      <AlertCircle className="h-4 w-4 text-red-400" />
+                      <AlertTitle className="text-red-200">Trials Críticos</AlertTitle>
+                      <AlertDescription className="text-red-300 text-xs">
+                        {users.filter(u => {
+                          const days = calculateDaysRemaining(u.data_expiracao_trial);
+                          return u.plano === "trial" && days !== null && days <= 3 && days > 0;
+                        }).length} trial(s) expirando em até 3 dias
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {users.filter(u => u.status === "inativo").length > 0 && (
+                    <Alert className="bg-gray-900/30 border-gray-700">
+                      <Users className="h-4 w-4 text-gray-400" />
+                      <AlertTitle className="text-gray-200">Clientes Inativos</AlertTitle>
+                      <AlertDescription className="text-gray-300 text-xs">
+                        {users.filter(u => u.status === "inativo").length} cliente(s) inativos - considere reativação
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {users.filter(u => u.plano === "free").length > 3 && (
+                    <Alert className="bg-blue-900/30 border-blue-700">
+                      <TrendingUp className="h-4 w-4 text-blue-400" />
+                      <AlertTitle className="text-blue-200">Oportunidade de Upsell</AlertTitle>
+                      <AlertDescription className="text-blue-300 text-xs">
+                        {users.filter(u => u.plano === "free").length} usuários no plano free
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="p-3 bg-indigo-900/40 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-indigo-200">Renovações do Mês</span>
+                      <Badge className="bg-indigo-600">
+                        {users.filter(u => {
+                          const expDate = u.data_expiracao_plano;
+                          if (!expDate) return false;
+                          const exp = new Date(expDate);
+                          const now = new Date();
+                          return exp.getMonth() === now.getMonth() && exp.getFullYear() === now.getFullYear();
+                        }).length}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-indigo-300">
+                      Acompanhe as renovações previstas
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-cyan-900/30 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-cyan-200">Novos Cadastros (30d)</span>
+                      <Badge className="bg-cyan-600">
+                        {users.filter(u => {
+                          if (!u.cadastro) return false; // Garante que u.cadastro exista
+                          const cadastro = new Date(u.cadastro);
+                          const now = new Date();
+                          const diff = now.getTime() - cadastro.getTime();
+                          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                          return days <= 30 && days >= 0; // Adicionado >= 0 para evitar datas futuras
+                        }).length}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-cyan-300">
+                      Novos usuários no último mês
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Gráficos */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

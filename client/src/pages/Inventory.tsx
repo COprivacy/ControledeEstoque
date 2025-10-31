@@ -627,8 +627,13 @@ export default function Inventory() {
     );
   }
 
-  // Remover toast do render direto para evitar loop infinito
-  // O erro será tratado pelo React Query automaticamente
+  if (errorVendas) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg text-red-600">Erro ao carregar dados. Por favor, recarregue a página.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6 p-6">

@@ -418,12 +418,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Funcionários (multi-tenant)
-  app.get("/api/funcionarios", async (req, res) => {
+  app.get("/api/funcionarios", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const contaId = req.query.conta_id as string;
+      
       if (!contaId) {
         return res.status(400).json({ error: "conta_id é obrigatório" });
       }
+      
+      // Validate conta_id matches the authenticated user
+      if (contaId !== effectiveUserId) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+      
       const allFuncionarios = await storage.getFuncionarios();
       const funcionarios = allFuncionarios.filter(f => f.conta_id === contaId);
       res.json(funcionarios);
@@ -433,12 +441,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/funcionarios", async (req, res) => {
+  app.post("/api/funcionarios", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const { conta_id, nome, email, senha, cargo } = req.body;
 
       if (!conta_id || !nome || !email || !senha) {
         return res.status(400).json({ error: "Dados incompletos" });
+      }
+      
+      // Validate conta_id matches the authenticated user
+      if (conta_id !== effectiveUserId) {
+        return res.status(403).json({ error: "Acesso negado" });
       }
 
       // Verificar se já existe funcionário com este email na mesma conta
@@ -482,35 +496,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/funcionarios/:id", async (req, res) => {
+  app.patch("/api/funcionarios/:id", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const { id } = req.params;
       const updates = req.body;
 
       delete updates.id;
       delete updates.conta_id;
 
-      const funcionario = await storage.updateFuncionario(id, updates);
-
+      // Verify funcionario belongs to this user's account
+      const allFuncionarios = await storage.getFuncionarios();
+      const funcionario = allFuncionarios.find(f => f.id === id);
+      
       if (!funcionario) {
         return res.status(404).json({ error: "Funcionário não encontrado" });
       }
+      
+      if (funcionario.conta_id !== effectiveUserId) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
 
-      res.json(funcionario);
+      const updatedFuncionario = await storage.updateFuncionario(id, updates);
+      res.json(updatedFuncionario);
     } catch (error) {
       res.status(500).json({ error: "Erro ao atualizar funcionário" });
     }
   });
 
-  app.delete("/api/funcionarios/:id", async (req, res) => {
+  app.delete("/api/funcionarios/:id", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const { id } = req.params;
-      const deleted = await storage.deleteFuncionario(id);
-
-      if (!deleted) {
+      
+      // Verify funcionario belongs to this user's account
+      const allFuncionarios = await storage.getFuncionarios();
+      const funcionario = allFuncionarios.find(f => f.id === id);
+      
+      if (!funcionario) {
         return res.status(404).json({ error: "Funcionário não encontrado" });
       }
+      
+      if (funcionario.conta_id !== effectiveUserId) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
 
+      const deleted = await storage.deleteFuncionario(id);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Erro ao deletar funcionário" });
@@ -518,9 +549,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Permissões de Funcionários
-  app.get("/api/funcionarios/:id/permissoes", async (req, res) => {
+  app.get("/api/funcionarios/:id/permissoes", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const { id } = req.params;
+      
+      // Verify funcionario belongs to this user's account
+      const allFuncionarios = await storage.getFuncionarios();
+      const funcionario = allFuncionarios.find(f => f.id === id);
+      
+      if (!funcionario) {
+        return res.status(404).json({ error: "Funcionário não encontrado" });
+      }
+      
+      if (funcionario.conta_id !== effectiveUserId) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+      
       const permissoes = await storage.getPermissoesFuncionario?.(id);
 
       if (!permissoes) {
@@ -547,9 +592,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/funcionarios/:id/permissoes", async (req, res) => {
+  app.post("/api/funcionarios/:id/permissoes", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const { id } = req.params;
+      
+      // Verify funcionario belongs to this user's account
+      const allFuncionarios = await storage.getFuncionarios();
+      const funcionario = allFuncionarios.find(f => f.id === id);
+      
+      if (!funcionario) {
+        return res.status(404).json({ error: "Funcionário não encontrado" });
+      }
+      
+      if (funcionario.conta_id !== effectiveUserId) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+      
       const permissoes = await storage.savePermissoesFuncionario(id, req.body);
       res.json(permissoes);
     } catch (error) {
@@ -846,9 +905,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/vendas", async (req, res) => {
+  app.delete("/api/vendas", getUserId, async (req, res) => {
     try {
-      await storage.clearVendas();
+      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const allVendas = await storage.getVendas();
+      const vendasToDelete = allVendas.filter(v => v.user_id === effectiveUserId);
+      
+      // Delete only vendas belonging to this user
+      for (const venda of vendasToDelete) {
+        await storage.deleteVenda?.(venda.id);
+      }
+      
       res.json({ success: true, message: "Histórico de vendas limpo com sucesso" });
     } catch (error) {
       res.status(500).json({ error: "Erro ao limpar histórico de vendas" });

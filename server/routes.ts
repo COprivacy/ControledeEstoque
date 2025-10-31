@@ -71,6 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userWithTrial = {
         ...userData,
         plano: "trial",
+        is_admin: "true",
         data_criacao: dataCriacao,
         data_expiracao_trial: dataExpiracao.toISOString(),
         data_expiracao_plano: dataExpiracao.toISOString(),

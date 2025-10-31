@@ -345,13 +345,17 @@ export class MemStorage implements Storage { // Changed to implement Storage int
 
     if (this.produtos.size === 0) {
       console.log("Seeding initial product data...");
-      const produtos: InsertProduto[] = [
-        { nome: "Arroz 5kg", categoria: "Alimentos", preco: 25.50, quantidade: 50, estoque_minimo: 10, codigo_barras: "7891234567890", vencimento: "2025-12-01" },
-        { nome: "Feijão 1kg", categoria: "Alimentos", preco: 8.90, quantidade: 5, estoque_minimo: 10, codigo_barras: "7891234567891", vencimento: "2025-10-18" },
-        { nome: "Óleo de Soja 900ml", categoria: "Alimentos", preco: 7.50, quantidade: 30, estoque_minimo: 15, codigo_barras: "7891234567892", vencimento: "2026-03-15" },
-      ];
-      for (const produto of produtos) {
-        await this.createProduto(produto);
+      const userId1 = Array.from(this.users.values())[0]?.id;
+      
+      if (userId1) {
+        const produtos: InsertProduto[] = [
+          { user_id: userId1, nome: "Arroz 5kg", categoria: "Alimentos", preco: 25.50, quantidade: 50, estoque_minimo: 10, codigo_barras: "7891234567890", vencimento: "2025-12-01" },
+          { user_id: userId1, nome: "Feijão 1kg", categoria: "Alimentos", preco: 8.90, quantidade: 5, estoque_minimo: 10, codigo_barras: "7891234567891", vencimento: "2025-10-18" },
+          { user_id: userId1, nome: "Óleo de Soja 900ml", categoria: "Alimentos", preco: 7.50, quantidade: 30, estoque_minimo: 15, codigo_barras: "7891234567892", vencimento: "2026-03-15" },
+        ];
+        for (const produto of produtos) {
+          await this.createProduto(produto);
+        }
       }
     }
 
@@ -371,34 +375,46 @@ export class MemStorage implements Storage { // Changed to implement Storage int
     // Seed initial data for Fornecedores, Clientes, and Compras if they don't exist
     if (this.fornecedores.size === 0) {
       console.log("Seeding initial supplier data...");
-      const initialFornecedores: InsertFornecedor[] = [
-        { nome: "Fornecedor A", cnpj: "11.111.111/0001-11", email: "fornecedor.a@email.com", telefone: "(11) 1111-1111", endereco: null, observacoes: null, data_cadastro: new Date().toISOString() },
-        { nome: "Fornecedor B", cnpj: "22.222.222/0001-22", email: "fornecedor.b@email.com", telefone: "(22) 2222-2222", endereco: null, observacoes: null, data_cadastro: new Date().toISOString() },
-      ];
-      for (const fornecedor of initialFornecedores) {
-        await this.createFornecedor(fornecedor);
+      const userId1 = Array.from(this.users.values())[0]?.id;
+      
+      if (userId1) {
+        const initialFornecedores: InsertFornecedor[] = [
+          { user_id: userId1, nome: "Fornecedor A", cnpj: "11.111.111/0001-11", email: "fornecedor.a@email.com", telefone: "(11) 1111-1111", endereco: null, observacoes: null, data_cadastro: new Date().toISOString() },
+          { user_id: userId1, nome: "Fornecedor B", cnpj: "22.222.222/0001-22", email: "fornecedor.b@email.com", telefone: "(22) 2222-2222", endereco: null, observacoes: null, data_cadastro: new Date().toISOString() },
+        ];
+        for (const fornecedor of initialFornecedores) {
+          await this.createFornecedor(fornecedor);
+        }
       }
     }
 
     if (this.clientes.size === 0) {
       console.log("Seeding initial customer data...");
-      const initialClientes: InsertCliente[] = [
-        { nome: "Cliente X", cpf_cnpj: "111.111.111-11", email: "cliente.x@email.com", telefone: "(11) 1111-1111", endereco: null, observacoes: null, data_cadastro: new Date().toISOString() },
-        { nome: "Cliente Y", cpf_cnpj: "222.222.222-22", email: "cliente.y@email.com", telefone: "(22) 2222-2222", endereco: null, observacoes: null, data_cadastro: new Date().toISOString() },
-      ];
-      for (const cliente of initialClientes) {
-        await this.createCliente(cliente);
+      const userId1 = Array.from(this.users.values())[0]?.id;
+      
+      if (userId1) {
+        const initialClientes: InsertCliente[] = [
+          { user_id: userId1, nome: "Cliente X", cpf_cnpj: "111.111.111-11", email: "cliente.x@email.com", telefone: "(11) 1111-1111", endereco: null, observacoes: null, data_cadastro: new Date().toISOString() },
+          { user_id: userId1, nome: "Cliente Y", cpf_cnpj: "222.222.222-22", email: "cliente.y@email.com", telefone: "(22) 2222-2222", endereco: null, observacoes: null, data_cadastro: new Date().toISOString() },
+        ];
+        for (const cliente of initialClientes) {
+          await this.createCliente(cliente);
+        }
       }
     }
 
     if (this.compras.size === 0) {
       console.log("Seeding initial purchase data...");
-      const initialCompras: InsertCompra[] = [
-        { fornecedor_id: 1, produto_id: 1, quantidade: 10, valor_unitario: 20.00, valor_total: 200.00, data: "2023-10-20T09:00:00Z", observacoes: null },
-        { fornecedor_id: 2, produto_id: 3, quantidade: 5, valor_unitario: 6.00, valor_total: 30.00, data: "2023-10-21T14:00:00Z", observacoes: null }
-      ];
-      for (const compra of initialCompras) {
-        await this.createCompra(compra);
+      const userId1 = Array.from(this.users.values())[0]?.id;
+      
+      if (userId1) {
+        const initialCompras: InsertCompra[] = [
+          { user_id: userId1, fornecedor_id: 1, produto_id: 1, quantidade: 10, valor_unitario: 20.00, valor_total: 200.00, data: "2023-10-20T09:00:00Z", observacoes: null },
+          { user_id: userId1, fornecedor_id: 2, produto_id: 3, quantidade: 5, valor_unitario: 6.00, valor_total: 30.00, data: "2023-10-21T14:00:00Z", observacoes: null }
+        ];
+        for (const compra of initialCompras) {
+          await this.createCompra(compra);
+        }
       }
     }
 

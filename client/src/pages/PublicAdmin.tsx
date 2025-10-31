@@ -905,12 +905,13 @@ export default function PublicAdmin() {
                       <span className="text-sm text-cyan-200">Novos Cadastros (30d)</span>
                       <Badge className="bg-cyan-600">
                         {users.filter(u => {
-                          if (!u.cadastro) return false; // Garante que u.cadastro exista
-                          const cadastro = new Date(u.cadastro);
+                          const dataRef = u.data_criacao || u.cadastro;
+                          if (!dataRef) return false;
+                          const cadastro = new Date(dataRef);
                           const now = new Date();
                           const diff = now.getTime() - cadastro.getTime();
                           const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                          return days <= 30 && days >= 0; // Adicionado >= 0 para evitar datas futuras
+                          return days <= 30 && days >= 0;
                         }).length}
                       </Badge>
                     </div>

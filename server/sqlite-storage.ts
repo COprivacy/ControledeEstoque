@@ -581,9 +581,6 @@ export class SQLiteStorage implements IStorage {
       WHERE id = ?
     `);
 
-    console.log(`🔧 [UPDATE USER DB] ID: ${id}`);
-    console.log(`🔧 [UPDATE USER DB] Updates recebidos:`, JSON.stringify(updates, null, 2));
-
     stmt.run(
       updates.nome !== undefined ? updates.nome : null,
       updates.email !== undefined ? updates.email : null,
@@ -595,13 +592,8 @@ export class SQLiteStorage implements IStorage {
       id
     );
 
-    console.log(`🔧 [UPDATE USER DB] SQL executado com sucesso`);
-
     const updatedUser = await this.getUserById(id);
 
-    console.log(`🔧 [UPDATE USER DB] Usuário após atualização:`, JSON.stringify(updatedUser, null, 2));
-
-    // Atualiza também o Map em memória
     if (updatedUser) {
       this.users.set(id, updatedUser);
     }

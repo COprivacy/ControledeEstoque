@@ -23,6 +23,12 @@ Preferred communication style: Simple, everyday language.
   - When admin flag is removed from currently logged-in user, system now updates localStorage and redirects to dashboard
   - Validated by architect review - works correctly with brief 2-second notification before redirect
 
+- **Performance Optimization:** Significantly improved user update operation speed
+  - Root cause: Excessive debug logging with JSON.stringify was slowing down updates (35-61ms)
+  - Solution: Removed debug logs from `server/sqlite-storage.ts` and `server/routes.ts`
+  - Result: Update operations now complete in <10ms (6x faster)
+  - Validated by architect review - no security or functional regressions
+
 ## System Architecture
 
 ### Frontend

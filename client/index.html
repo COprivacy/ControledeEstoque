@@ -27,7 +27,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    
+    <!-- Garantir que o menu de contexto está habilitado -->
+    <script>
+      // Re-habilitar menu de contexto se foi desabilitado
+      document.addEventListener('DOMContentLoaded', function() {
+        document.oncontextmenu = null;
+        document.onselectstart = null;
+        document.ondragstart = null;
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

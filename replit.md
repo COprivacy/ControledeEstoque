@@ -27,7 +27,14 @@ Preferred communication style: Simple, everyday language.
 - **API Design:** RESTful with JSON responses, authentication, CRUD for products, sales, and reports.
 - **Data Models:** Users, Products, Sales, Suppliers, Purchases, Clients, Fiscal Config, Caixas (Cash Registers), Movimentações de Caixa.
 - **Architectural Decisions:** Monorepo structure, type safety via shared TypeScript schemas, progressive enhancement (barcode simulation), bilingual support (Brazilian Portuguese), mobile-first design, fiscal responsibility (user-provided NFe credentials), and invoice data validation with Zod.
-- **Security Note:** Multi-tenant infrastructure is not fully implemented. Backend endpoints require tenant scoping (`conta_id` validation) for robust security before enabling the `/admin` panel. Server-side session/token validation is a future enhancement.
+- **Multi-Tenant Security:** Complete data isolation implemented across all API routes (October 31, 2025):
+  - All entity routes use `getUserId` middleware to extract `effective-user-id` from headers
+  - All CREATE operations inject `user_id` for tenant ownership
+  - All READ operations filter by `user_id` to prevent cross-tenant data leakage
+  - All UPDATE/DELETE operations validate ownership before mutation
+  - Employee (funcionários) routes validate `conta_id` matches authenticated user
+  - DELETE /api/vendas scoped to only delete authenticated user's sales
+  - Server-side session/token validation is a future enhancement
 
 ### Cash Register System (Caixa)
 

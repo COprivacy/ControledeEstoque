@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <title>Pavisoft SmartEstoque - Gestão de Estoque Inteligente</title>
     <meta name="description" content="Sistema completo de gestão de estoque para pequenos negócios brasileiros. PDV, emissão de NFC-e, controle financeiro e muito mais." />
-    
+
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#10b981" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -13,19 +13,90 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="SmartEstoque" />
     <meta name="application-name" content="Pavisoft SmartEstoque" />
-    
+
     <!-- Manifest -->
     <link rel="manifest" href="/manifest.json" />
-    
+
     <!-- Icons -->
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
-    
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Proteção contra inspeção de código -->
+    <script>
+      // Desabilitar menu de contexto (botão direito)
+      document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+      });
+
+      // Desabilitar teclas de desenvolvedor
+      document.addEventListener('keydown', function(e) {
+        // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+Shift+C
+        if (
+          e.key === 'F12' ||
+          (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+          (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+          (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+          (e.ctrlKey && e.key === 'u') ||
+          (e.ctrlKey && e.key === 'U')
+        ) {
+          e.preventDefault();
+          return false;
+        }
+      });
+
+      // Detectar abertura do DevTools
+      (function() {
+        const devtools = /./;
+        devtools.toString = function() {
+          this.opened = true;
+        };
+
+        const checkDevTools = setInterval(function() {
+          console.log('%c', devtools);
+          if (devtools.opened) {
+            window.location.reload();
+          }
+          devtools.opened = false;
+        }, 1000);
+      })();
+
+      // Desabilitar seleção de texto
+      document.addEventListener('selectstart', function(e) {
+        e.preventDefault();
+        return false;
+      });
+
+      // Desabilitar arrastar texto/imagens
+      document.addEventListener('dragstart', function(e) {
+        e.preventDefault();
+        return false;
+      });
+    </script>
+
+    <style>
+      /* Desabilitar seleção de texto via CSS */
+      * {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      /* Permitir seleção de texto apenas em inputs e textareas */
+      input, textarea {
+        -webkit-user-select: text;
+        -moz-user-select: text;
+        -ms-user-select: text;
+        user-select: text;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

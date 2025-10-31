@@ -700,6 +700,14 @@ export default function Inventory() {
               <Download className="h-4 w-4 mr-2" />
               Baixar Relatório {viewType === "semanal" ? "Semanal" : "Mensal"}
             </Button>
+            <Button
+              variant="secondary"
+              onClick={handleDownloadDivergenciasPDF}
+              disabled={divergencias.length === 0}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Relatório de Divergências
+            </Button>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -788,29 +796,53 @@ export default function Inventory() {
                     <TableRow>
                       <TableHead>Produto</TableHead>
                       <TableHead>Categoria</TableHead>
-                      <TableHead className="text-center">Quantidade</TableHead>
+                      <TableHead className="text-center">Qtd Sistema</TableHead>
+                      <TableHead className="text-center">Contagem Real</TableHead>
+                      <TableHead className="text-center">Diferença</TableHead>
                       <TableHead className="text-right">Preço Unitário</TableHead>
                       <TableHead className="text-right">Valor Total</TableHead>
                       <TableHead>Código de Barras</TableHead>
                       <TableHead className="text-center">Status</TableHead>
-                      <TableHead className="text-center">Ações</TableHead>
+                      <TableHead className="text-center">Ação</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {produtos.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-muted-foreground">
+                        <TableCell colSpan={10} className="text-center text-muted-foreground">
                           Nenhum produto cadastrado
                         </TableCell>
                       </TableRow>
                     ) : (
                       produtos.map((produto) => {
                         const isBaixoEstoque = produto.quantidade <= produto.estoque_minimo;
+                        const contagemValue = contagemRotativa[produto.id] || "";
+                        const contagem = parseInt(contagemValue) || 0;
+                        const diferenca = contagem - produto.quantidade;
+                        
                         return (
                           <TableRow key={produto.id} data-testid={`row-produto-${produto.id}`}>
                             <TableCell className="font-medium">{produto.nome}</TableCell>
                             <TableCell>{produto.categoria}</TableCell>
                             <TableCell className="text-center font-semibold">{produto.quantidade}</TableCell>
+                            <TableCell className="text-center">
+                              <Input
+                                type="number"
+                                min="0"
+                                value={contagemValue}
+                                onChange={(e) => handleContagemRotativaChange(produto.id, e.target.value)}
+                                placeholder="0"
+                                className="w-20 mx-auto text-center"
+                                data-testid={`input-contagem-completo-${produto.id}`}
+                              />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {contagemValue && (
+                                <span className={`font-semibold ${diferenca > 0 ? 'text-green-600' : diferenca < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                                  {diferenca > 0 ? '+' : ''}{diferenca}
+                                </span>
+                              )}
+                            </TableCell>
                             <TableCell className="text-right">R$ {produto.preco.toFixed(2)}</TableCell>
                             <TableCell className="text-right font-medium">
                               R$ {(produto.preco * produto.quantidade).toFixed(2)}
@@ -829,15 +861,14 @@ export default function Inventory() {
                                 </span>
                               )}
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-center">
                               <Button
                                 size="sm"
-                                variant="destructive"
-                                onClick={() => deleteProductMutation.mutate(produto.id)}
-                                disabled={deleteProductMutation.isPending}
-                                data-testid={`button-delete-${produto.id}`}
+                                onClick={() => handleAjustarEstoque(produto.id)}
+                                disabled={!contagemValue || updateProductMutation.isPending}
+                                data-testid={`button-ajustar-completo-${produto.id}`}
                               >
-                                Deletar
+                                Ajustar
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -852,15 +883,16 @@ export default function Inventory() {
 
           <Card className="bg-blue-50 border-blue-200">
             <CardHeader>
-              <CardTitle className="text-blue-900">Como usar o relatório para contagem</CardTitle>
+              <CardTitle className="text-blue-900">Como usar a contagem completa</CardTitle>
             </CardHeader>
             <CardContent>
               <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
-                <li>Clique em "Baixar Relatório" para gerar o PDF com todos os produtos</li>
-                <li>Imprima o relatório ou use um dispositivo móvel</li>
-                <li>Durante a contagem física, anote a quantidade real na coluna "Contagem Real"</li>
-                <li>Compare os valores da "Qtd Sistema" com sua contagem manual</li>
-                <li>Corrija as divergências no sistema através da página de Produtos</li>
+                <li>Digite a quantidade contada fisicamente na coluna "Contagem Real"</li>
+                <li>A diferença será calculada automaticamente (verde = sobra, vermelho = falta)</li>
+                <li>Clique em "Ajustar" para atualizar o estoque no sistema</li>
+                <li>As divergências serão registradas automaticamente na aba "Análise de Contagem"</li>
+                <li>Use "Baixar Relatório" para gerar um PDF impresso para contagem física</li>
+                <li>Acesse "Relatório de Divergências" para ver o impacto financeiro das diferenças</li>
               </ol>
             </CardContent>
           </Card>

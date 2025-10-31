@@ -24,7 +24,7 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 // Middleware para extrair e validar user_id (lida com funcionários)
-function getUserId(req: Request, res: Response, next: NextFunction) {
+async function getUserId(req: Request, res: Response, next: NextFunction) {
   const userId = req.headers['x-user-id'] as string;
   const userType = req.headers['x-user-type'] as string;
   const contaId = req.headers['x-conta-id'] as string;
@@ -33,10 +33,23 @@ function getUserId(req: Request, res: Response, next: NextFunction) {
     return res.status(401).json({ error: "Autenticação necessária. Header x-user-id não fornecido." });
   }
 
-  // Se for funcionário, usa o conta_id (ID do dono da conta) como user_id efetivo
-  // Caso contrário, usa o próprio userId
+  // Se for funcionário, VALIDAR se o conta_id é legítimo
   if (userType === "funcionario" && contaId) {
-    req.headers['effective-user-id'] = contaId;
+    try {
+      const allFuncionarios = await storage.getFuncionarios();
+      const funcionario = allFuncionarios.find(f => f.id === userId);
+      
+      // VALIDAÇÃO CRÍTICA: Verificar se o funcionário existe e pertence à conta informada
+      if (!funcionario || funcionario.conta_id !== contaId) {
+        return res.status(403).json({ error: "Acesso negado. Funcionário não autorizado para esta conta." });
+      }
+      
+      req.headers['effective-user-id'] = contaId;
+      req.headers['funcionario-id'] = userId; // Armazena ID do funcionário para auditoria
+    } catch (error) {
+      console.error("Erro ao validar funcionário:", error);
+      return res.status(500).json({ error: "Erro ao validar autenticação" });
+    }
   } else {
     req.headers['effective-user-id'] = userId;
   }
@@ -1587,10 +1600,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Subscriptions routes - público para painel de admin
-  app.get("/api/subscriptions", async (req, res) => {
+  // Subscriptions routes - RESTRITO a admins
+  app.get("/api/subscriptions", requireAdmin, async (req, res) => {
     try {
-      // Permite acesso público para o painel de admin
       const subscriptions = await storage.getSubscriptions();
       res.json(subscriptions || []);
     } catch (error) {
@@ -1610,7 +1622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/subscriptions/:id/cancel", async (req, res) => {
+  app.post("/api/subscriptions/:id/cancel", requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const { reason } = req.body;
@@ -1651,9 +1663,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/caixas", getUserId, async (req, res) => {
     try {
       const userId = req.headers['effective-user-id'] as string;
+      const contaId = req.query.conta_id as string;
 
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
+      }
+
+      // VALIDAÇÃO: conta_id deve ser fornecido e deve ser igual ao userId efetivo
+      if (!contaId || contaId !== userId) {
+        return res.status(403).json({ error: "Acesso negado. Parâmetro conta_id inválido." });
       }
 
       if (!storage.getCaixas) {
@@ -1774,7 +1792,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/caixas/abrir", getUserId, async (req, res) => {
     try {
       const userId = req.headers['effective-user-id'] as string;
-      const funcionarioId = req.headers['x-user-id'] as string;
+      const funcionarioId = req.headers['funcionario-id'] as string; // Validado pelo middleware
+      const userType = req.headers['x-user-type'] as string;
 
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
@@ -1796,7 +1815,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const caixaData = {
         user_id: userId,
-        funcionario_id: funcionarioId,
+        funcionario_id: userType === "funcionario" ? funcionarioId : null,
         data_abertura: new Date().toISOString(),
         saldo_inicial: saldoInicial,
         observacoes_abertura: req.body.observacoes_abertura || null,

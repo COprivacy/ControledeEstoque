@@ -768,22 +768,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/vendas", async (req, res) => {
+  app.get("/api/vendas", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const startDate = req.query.start_date as string;
       const endDate = req.query.end_date as string;
 
-      const vendas = await storage.getVendas(startDate, endDate);
+      const allVendas = await storage.getVendas(startDate, endDate);
+      const vendas = allVendas.filter(v => v.user_id === effectiveUserId);
       res.json(vendas);
     } catch (error) {
       res.status(500).json({ error: "Erro ao buscar vendas" });
     }
   });
 
-  app.get("/api/reports/daily", async (req, res) => {
+  app.get("/api/reports/daily", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const today = new Date().toISOString().split('T')[0];
-      const vendas = await storage.getVendas(today, today);
+      const allVendas = await storage.getVendas(today, today);
+      const vendas = allVendas.filter(v => v.user_id === effectiveUserId);
       const total = vendas.reduce((sum, v) => sum + v.valor_total, 0);
 
       res.json({ date: today, total, vendas: vendas.length });
@@ -792,16 +796,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/reports/weekly", async (req, res) => {
+  app.get("/api/reports/weekly", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const today = new Date();
       const weekAgo = new Date();
       weekAgo.setDate(today.getDate() - 7);
 
-      const vendas = await storage.getVendas(
+      const allVendas = await storage.getVendas(
         weekAgo.toISOString().split('T')[0],
         today.toISOString().split('T')[0]
       );
+      const vendas = allVendas.filter(v => v.user_id === effectiveUserId);
       const total = vendas.reduce((sum, v) => sum + v.valor_total, 0);
 
       res.json({ total, vendas: vendas.length });
@@ -810,9 +816,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/reports/expiring", async (req, res) => {
+  app.get("/api/reports/expiring", getUserId, async (req, res) => {
     try {
-      const produtos = await storage.getProdutos();
+      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const allProdutos = await storage.getProdutos();
+      const produtos = allProdutos.filter(p => p.user_id === effectiveUserId);
       const today = new Date();
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(today.getDate() + 30);
@@ -847,20 +855,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rotas de Fornecedores
-  app.get("/api/fornecedores", async (req, res) => {
+  app.get("/api/fornecedores", getUserId, async (req, res) => {
     try {
-      const fornecedores = await storage.getFornecedores();
+      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const allFornecedores = await storage.getFornecedores();
+      const fornecedores = allFornecedores.filter(f => f.user_id === effectiveUserId);
       res.json(fornecedores);
     } catch (error) {
       res.status(500).json({ error: "Erro ao buscar fornecedores" });
     }
   });
 
-  app.get("/api/fornecedores/:id", async (req, res) => {
+  app.get("/api/fornecedores/:id", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const id = parseInt(req.params.id);
       const fornecedor = await storage.getFornecedor(id);
-      if (!fornecedor) {
+      if (!fornecedor || fornecedor.user_id !== effectiveUserId) {
         return res.status(404).json({ error: "Fornecedor não encontrado" });
       }
       res.json(fornecedor);
@@ -869,10 +880,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/fornecedores", async (req, res) => {
+  app.post("/api/fornecedores", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const fornecedorData = {
         ...req.body,
+        user_id: effectiveUserId,
         data_cadastro: new Date().toISOString(),
       };
       const fornecedor = await storage.createFornecedor(fornecedorData);
@@ -882,26 +895,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/fornecedores/:id", async (req, res) => {
+  app.put("/api/fornecedores/:id", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const id = parseInt(req.params.id);
-      const fornecedor = await storage.updateFornecedor(id, req.body);
-      if (!fornecedor) {
+      const fornecedorExistente = await storage.getFornecedor(id);
+      if (!fornecedorExistente || fornecedorExistente.user_id !== effectiveUserId) {
         return res.status(404).json({ error: "Fornecedor não encontrado" });
       }
+      const fornecedor = await storage.updateFornecedor(id, req.body);
       res.json(fornecedor);
     } catch (error) {
       res.status(500).json({ error: "Erro ao atualizar fornecedor" });
     }
   });
 
-  app.delete("/api/fornecedores/:id", async (req, res) => {
+  app.delete("/api/fornecedores/:id", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const id = parseInt(req.params.id);
-      const deleted = await storage.deleteFornecedor(id);
-      if (!deleted) {
+      const fornecedorExistente = await storage.getFornecedor(id);
+      if (!fornecedorExistente || fornecedorExistente.user_id !== effectiveUserId) {
         return res.status(404).json({ error: "Fornecedor não encontrado" });
       }
+      const deleted = await storage.deleteFornecedor(id);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Erro ao deletar fornecedor" });
@@ -909,20 +926,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rotas de Clientes
-  app.get("/api/clientes", async (req, res) => {
+  app.get("/api/clientes", getUserId, async (req, res) => {
     try {
-      const clientes = await storage.getClientes();
+      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const allClientes = await storage.getClientes();
+      const clientes = allClientes.filter(c => c.user_id === effectiveUserId);
       res.json(clientes);
     } catch (error) {
       res.status(500).json({ error: "Erro ao buscar clientes" });
     }
   });
 
-  app.get("/api/clientes/:id", async (req, res) => {
+  app.get("/api/clientes/:id", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const id = parseInt(req.params.id);
       const cliente = await storage.getCliente(id);
-      if (!cliente) {
+      if (!cliente || cliente.user_id !== effectiveUserId) {
         return res.status(404).json({ error: "Cliente não encontrado" });
       }
       res.json(cliente);
@@ -931,10 +951,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/clientes", async (req, res) => {
+  app.post("/api/clientes", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const clienteData = {
         ...req.body,
+        user_id: effectiveUserId,
         data_cadastro: new Date().toISOString(),
       };
       const cliente = await storage.createCliente(clienteData);
@@ -944,19 +966,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/clientes/:id", async (req, res) => {
+  app.put("/api/clientes/:id", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const id = parseInt(req.params.id);
       console.log(`🔄 [UPDATE CLIENTE] ID: ${id}`);
       console.log(`📝 [UPDATE CLIENTE] Dados recebidos:`, JSON.stringify(req.body, null, 2));
 
-      const cliente = await storage.updateCliente(id, req.body);
-
-      if (!cliente) {
+      const clienteExistente = await storage.getCliente(id);
+      if (!clienteExistente || clienteExistente.user_id !== effectiveUserId) {
         console.log(`❌ [UPDATE CLIENTE] Cliente não encontrado com ID: ${id}`);
         return res.status(404).json({ error: "Cliente não encontrado" });
       }
 
+      const cliente = await storage.updateCliente(id, req.body);
       console.log(`✅ [UPDATE CLIENTE] Cliente atualizado com sucesso:`, JSON.stringify(cliente, null, 2));
       res.json(cliente);
     } catch (error) {
@@ -965,48 +988,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/clientes/:id", async (req, res) => {
+  app.delete("/api/clientes/:id", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const id = parseInt(req.params.id);
       console.log(`🗑️ [DELETE CLIENTE] Tentando deletar cliente ID: ${id}`);
-      const deleted = await storage.deleteCliente(id);
-      if (!deleted) {
+      
+      const clienteExistente = await storage.getCliente(id);
+      if (!clienteExistente || clienteExistente.user_id !== effectiveUserId) {
         console.log(`⚠️ [DELETE CLIENTE] Cliente ${id} não encontrado`);
         return res.status(404).json({ error: "Cliente não encontrado" });
       }
+      
+      const deleted = await storage.deleteCliente(id);
       console.log(`✅ [DELETE CLIENTE] Cliente ${id} deletado com sucesso`);
       res.json({ success: true });
     } catch (error) {
-      console.log(`❌ [DELETE CLIENTE] Erro ao deletar cliente ${id}:`, error);
+      console.log(`❌ [DELETE CLIENTE] Erro ao deletar cliente:`, error);
       res.status(500).json({ error: "Erro ao deletar cliente" });
     }
   });
 
   // Rotas de Compras
-  app.get("/api/compras", async (req, res) => {
+  app.get("/api/compras", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const fornecedorId = req.query.fornecedor_id ? parseInt(req.query.fornecedor_id as string) : undefined;
       const startDate = req.query.start_date as string;
       const endDate = req.query.end_date as string;
 
-      const compras = await storage.getCompras(fornecedorId, startDate, endDate);
+      const allCompras = await storage.getCompras(fornecedorId, startDate, endDate);
+      const compras = allCompras.filter(c => c.user_id === effectiveUserId);
       res.json(compras);
     } catch (error) {
       res.status(500).json({ error: "Erro ao buscar compras" });
     }
   });
 
-  app.post("/api/compras", async (req, res) => {
+  app.post("/api/compras", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const { fornecedor_id, produto_id, quantidade, valor_unitario, observacoes } = req.body;
 
       const produto = await storage.getProduto(produto_id);
-      if (!produto) {
+      if (!produto || produto.user_id !== effectiveUserId) {
         return res.status(404).json({ error: "Produto não encontrado" });
       }
 
       const fornecedor = await storage.getFornecedor(fornecedor_id);
-      if (!fornecedor) {
+      if (!fornecedor || fornecedor.user_id !== effectiveUserId) {
         return res.status(404).json({ error: "Fornecedor não encontrado" });
       }
 
@@ -1017,6 +1047,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const compra = await storage.createCompra({
+        user_id: effectiveUserId,
         fornecedor_id,
         produto_id,
         quantidade,
@@ -1032,13 +1063,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/compras/:id", async (req, res) => {
+  app.put("/api/compras/:id", getUserId, async (req, res) => {
     try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
       const id = parseInt(req.params.id);
       const { quantidade: novaQuantidade, valor_unitario, observacoes, produto_id } = req.body;
 
       const compraExistente = await storage.getCompras();
-      const compra = compraExistente.find(c => c.id === id);
+      const compra = compraExistente.find(c => c.id === id && c.user_id === effectiveUserId);
 
       if (!compra) {
         return res.status(404).json({ error: "Compra não encontrada" });

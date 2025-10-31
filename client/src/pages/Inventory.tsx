@@ -51,7 +51,12 @@ export default function Inventory() {
   const { data: vendas = [], isLoading: loadingVendas, error: errorVendas } = useQuery<Venda[]>({
     queryKey: ["/api/vendas", { start_date: startDate, end_date: endDate }],
     queryFn: async () => {
-      const response = await fetch(`/api/vendas?start_date=${startDate}&end_date=${endDate}`);
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const response = await fetch(`/api/vendas?start_date=${startDate}&end_date=${endDate}`, {
+        headers: {
+          "x-user-id": user.id || "",
+        },
+      });
       if (!response.ok) throw new Error("Erro ao buscar vendas");
       const data = await response.json();
       return data;

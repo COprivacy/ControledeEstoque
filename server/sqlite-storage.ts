@@ -593,12 +593,12 @@ export class SQLiteStorage implements IStorage {
     );
 
     const updatedUser = await this.getUserById(id);
-    
+
     // Atualiza também o Map em memória
     if (updatedUser) {
       this.users.set(id, updatedUser);
     }
-    
+
     return updatedUser;
   }
 

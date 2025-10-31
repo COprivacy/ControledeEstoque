@@ -1089,6 +1089,30 @@ export default function PublicAdmin() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <Button 
+                    onClick={async () => {
+                      try {
+                        const response = await apiRequest("POST", "/api/asaas/sync");
+                        const result = await response.json();
+                        toast({
+                          title: "Sincronização concluída",
+                          description: result.message,
+                        });
+                        queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+                      } catch (error: any) {
+                        toast({
+                          title: "Erro na sincronização",
+                          description: error.message,
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    variant="outline"
+                    className="h-12"
+                  >
+                    <Activity className="h-5 w-5 mr-2" />
+                    Sincronizar Asaas
+                  </Button>
                   <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
                     <DialogTrigger asChild>
                       <Button className="h-12" data-testid="button-create-user">

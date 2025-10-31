@@ -38,12 +38,12 @@ async function getUserId(req: Request, res: Response, next: NextFunction) {
     try {
       const allFuncionarios = await storage.getFuncionarios();
       const funcionario = allFuncionarios.find(f => f.id === userId);
-      
+
       // VALIDAÇÃO CRÍTICA: Verificar se o funcionário existe e pertence à conta informada
       if (!funcionario || funcionario.conta_id !== contaId) {
         return res.status(403).json({ error: "Acesso negado. Funcionário não autorizado para esta conta." });
       }
-      
+
       req.headers['effective-user-id'] = contaId;
       req.headers['funcionario-id'] = userId; // Armazena ID do funcionário para auditoria
     } catch (error) {
@@ -381,18 +381,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/config-asaas", async (req, res) => {
     try {
-      const configData = {
-        ...req.body,
-        updated_at: new Date().toISOString()
-      };
-      const config = await storage.saveConfigAsaas(configData);
-      res.json({
+      const config = req.body;
+
+      await storage.saveConfigAsaas({
         ...config,
-        api_key: '***'
+        updated_at: new Date().toISOString(),
       });
-    } catch (error) {
-      console.error("Erro ao salvar config Asaas:", error);
-      res.status(500).json({ error: "Erro ao salvar configuração Asaas" });
+
+      // Se webhook_url foi fornecido, tentar registrar no Asaas
+      if (config.webhook_url && config.api_key) {
+        try {
+          const { AsaasService } = await import('./asaas');
+          const asaas = new AsaasService({
+            apiKey: config.api_key,
+            ambiente: config.ambiente as 'sandbox' | 'production'
+          });
+
+          // Nota: Asaas não tem endpoint direto para registrar webhook via API
+          // O webhook deve ser configurado manualmente no painel Asaas
+          console.log("⚠️ Lembre-se de configurar o webhook manualmente no painel Asaas:", config.webhook_url);
+        } catch (error) {
+          console.error("Erro ao validar configuração:", error);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: "Configuração salva com sucesso. Configure o webhook manualmente no painel Asaas.",
+        webhook_info: config.webhook_url ? {
+          url: config.webhook_url,
+          events: ["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED", "PAYMENT_OVERDUE"]
+        } : null
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 
@@ -445,16 +467,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
       const contaId = req.query.conta_id as string;
-      
+
       if (!contaId) {
         return res.status(400).json({ error: "conta_id é obrigatório" });
       }
-      
+
       // Validate conta_id matches the authenticated user
       if (contaId !== effectiveUserId) {
         return res.status(403).json({ error: "Acesso negado" });
       }
-      
+
       const allFuncionarios = await storage.getFuncionarios();
       const funcionarios = allFuncionarios.filter(f => f.conta_id === contaId);
       res.json(funcionarios);
@@ -472,7 +494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!conta_id || !nome || !email || !senha) {
         return res.status(400).json({ error: "Dados incompletos" });
       }
-      
+
       // Validate conta_id matches the authenticated user
       if (conta_id !== effectiveUserId) {
         return res.status(403).json({ error: "Acesso negado" });
@@ -531,11 +553,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verify funcionario belongs to this user's account
       const allFuncionarios = await storage.getFuncionarios();
       const funcionario = allFuncionarios.find(f => f.id === id);
-      
+
       if (!funcionario) {
         return res.status(404).json({ error: "Funcionário não encontrado" });
       }
-      
+
       if (funcionario.conta_id !== effectiveUserId) {
         return res.status(403).json({ error: "Acesso negado" });
       }
@@ -551,15 +573,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
       const { id } = req.params;
-      
+
       // Verify funcionario belongs to this user's account
       const allFuncionarios = await storage.getFuncionarios();
       const funcionario = allFuncionarios.find(f => f.id === id);
-      
+
       if (!funcionario) {
         return res.status(404).json({ error: "Funcionário não encontrado" });
       }
-      
+
       if (funcionario.conta_id !== effectiveUserId) {
         return res.status(403).json({ error: "Acesso negado" });
       }
@@ -576,19 +598,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
       const { id } = req.params;
-      
+
       // Verify funcionario belongs to this user's account
       const allFuncionarios = await storage.getFuncionarios();
       const funcionario = allFuncionarios.find(f => f.id === id);
-      
+
       if (!funcionario) {
         return res.status(404).json({ error: "Funcionário não encontrado" });
       }
-      
+
       if (funcionario.conta_id !== effectiveUserId) {
         return res.status(403).json({ error: "Acesso negado" });
       }
-      
+
       const permissoes = await storage.getPermissoesFuncionario?.(id);
 
       if (!permissoes) {
@@ -619,19 +641,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
       const { id } = req.params;
-      
+
       // Verify funcionario belongs to this user's account
       const allFuncionarios = await storage.getFuncionarios();
       const funcionario = allFuncionarios.find(f => f.id === id);
-      
+
       if (!funcionario) {
         return res.status(404).json({ error: "Funcionário não encontrado" });
       }
-      
+
       if (funcionario.conta_id !== effectiveUserId) {
         return res.status(403).json({ error: "Acesso negado" });
       }
-      
+
       const permissoes = await storage.savePermissoesFuncionario(id, req.body);
       res.json(permissoes);
     } catch (error) {
@@ -854,11 +876,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/vendas", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
-      
+
       if (!effectiveUserId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
       }
-      
+
       const startDate = req.query.start_date as string;
       const endDate = req.query.end_date as string;
 
@@ -939,12 +961,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const effectiveUserId = req.headers['effective-user-id'] as string;
       const allVendas = await storage.getVendas();
       const vendasToDelete = allVendas.filter(v => v.user_id === effectiveUserId);
-      
+
       // Delete only vendas belonging to this user
       for (const venda of vendasToDelete) {
         await storage.deleteVenda?.(venda.id);
       }
-      
+
       res.json({ success: true, message: "Histórico de vendas limpo com sucesso" });
     } catch (error) {
       res.status(500).json({ error: "Erro ao limpar histórico de vendas" });
@@ -1066,7 +1088,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/clientes/:id", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
-      const id = parseInt(req.params.id);
+      const { id } = req.params;
       console.log(`🔄 [UPDATE CLIENTE] ID: ${id}`);
       console.log(`📝 [UPDATE CLIENTE] Dados recebidos:`, JSON.stringify(req.body, null, 2));
 
@@ -1090,13 +1112,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const effectiveUserId = req.headers['effective-user-id'] as string;
       const id = parseInt(req.params.id);
       console.log(`🗑️ [DELETE CLIENTE] Tentando deletar cliente ID: ${id}`);
-      
+
       const clienteExistente = await storage.getCliente(id);
       if (!clienteExistente || clienteExistente.user_id !== effectiveUserId) {
         console.log(`⚠️ [DELETE CLIENTE] Cliente ${id} não encontrado`);
         return res.status(404).json({ error: "Cliente não encontrado" });
       }
-      
+
       const deleted = await storage.deleteCliente(id);
       console.log(`✅ [DELETE CLIENTE] Cliente ${id} deletado com sucesso`);
       res.json({ success: true });
@@ -1434,15 +1456,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { nome, email, cpfCnpj, plano, formaPagamento } = req.body;
 
-      // Validação de dados
       if (!nome || !email || !plano || !formaPagamento) {
-        return res.status(400).json({ error: "Dados incompletos. Por favor, preencha todos os campos." });
+        return res.status(400).json({
+          error: "Dados incompletos. Nome, email, plano e forma de pagamento são obrigatórios."
+        });
       }
 
-      // Validação de email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({ error: "Email inválido" });
+      // Validar CPF/CNPJ se fornecido
+      if (cpfCnpj) {
+        const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
+        if (cleanCpfCnpj.length !== 11 && cleanCpfCnpj.length !== 14) {
+          return res.status(400).json({
+            error: "CPF/CNPJ inválido. Digite apenas números."
+          });
+        }
       }
 
       const planoValues = {
@@ -1476,7 +1503,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const asaasCustomer = await asaas.createCustomer({
         name: nome,
         email,
-        cpfCnpj
+        cpfCnpj: cpfCnpj || undefined,
       });
 
       const dueDate = new Date();
@@ -1543,7 +1570,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: payment.status,
           invoiceUrl: payment.invoiceUrl,
           bankSlipUrl: payment.bankSlipUrl,
-          pixQrCode: payment.encodedImage,
+          pixQrCode: payment.pixQrCode,
         },
         message: `Assinatura ${planoNomes[plano as keyof typeof planoNomes]} criada com sucesso! Realize o pagamento para ativar.`
       });

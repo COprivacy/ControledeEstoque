@@ -73,12 +73,41 @@ export function validateCNPJ(cnpj: string): boolean {
 
 export function validateCpfOrCnpj(value: string): boolean {
   const cleanValue = value.replace(/\D/g, '');
-  
+
   if (cleanValue.length === 11) {
     return validateCPF(cleanValue);
   } else if (cleanValue.length === 14) {
     return validateCNPJ(cleanValue);
   }
-  
+
   return false;
+}
+
+// Sanitização contra XSS
+export function sanitizeInput(input: string): string {
+  if (!input) return '';
+
+  return input
+    .replace(/[<>]/g, '') // Remove < e >
+    .replace(/javascript:/gi, '') // Remove javascript:
+    .replace(/on\w+\s*=/gi, '') // Remove event handlers
+    .trim();
+}
+
+// Validação de email segura
+export function isValidEmail(email: string): boolean {
+  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return emailRegex.test(email) && email.length <= 254;
+}
+
+// Validação de senha forte
+export function isStrongPassword(password: string): boolean {
+  // Mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número
+  const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+  return strongRegex.test(password);
+}
+
+// Validação de CPF/CNPJ contra SQL injection
+export function sanitizeCpfCnpj(cpfCnpj: string): string {
+  return cpfCnpj.replace(/[^\d]/g, ''); // Apenas números
 }

@@ -110,12 +110,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { email, senha } = req.body;
+      let { email, senha } = req.body;
+
+      // Sanitização de entrada
+      email = email?.toString().trim().toLowerCase().substring(0, 254);
+      senha = senha?.toString();
 
       console.log(`🔐 Tentativa de login - Email: ${email}`);
 
       if (!email || !senha) {
         return res.status(400).json({ error: "Email e senha são obrigatórios" });
+      }
+
+      // Validação de formato de email
+      const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: "Email inválido" });
       }
 
       // Primeiro tenta autenticar como usuário principal

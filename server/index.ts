@@ -6,6 +6,9 @@ import rateLimit from "express-rate-limit";
 
 const app = express();
 
+// Configurar trust proxy para funcionar corretamente no Replit (que usa proxy reverso)
+app.set('trust proxy', 1);
+
 // Segurança: Helmet para headers HTTP seguros
 app.use(helmet({
   contentSecurityPolicy: {

@@ -604,8 +604,28 @@ export default function AdminPublico() {
       const response = await apiRequest("PATCH", `/api/users/${id}`, updates);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedUser, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      
+      const currentUserStr = localStorage.getItem("user");
+      if (currentUserStr) {
+        const currentUser = JSON.parse(currentUserStr);
+        if (currentUser.id === variables.id) {
+          console.log("🔄 Atualizando localStorage do usuário logado:", updatedUser);
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+          
+          if (updatedUser.is_admin === "false") {
+            toast({
+              title: "Permissões atualizadas",
+              description: "As permissões de administrador foram removidas. Você será redirecionado.",
+            });
+            setTimeout(() => {
+              window.location.href = "/dashboard";
+            }, 2000);
+          }
+        }
+      }
+      
       toast({
         title: "Usuário atualizado",
         description: "Dados atualizados com sucesso!",

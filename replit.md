@@ -16,6 +16,12 @@ Preferred communication style: Simple, everyday language.
   - Solution: Replaced `||` with explicit `!== undefined` checks in `server/sqlite-storage.ts`
   - Added comprehensive debug logging for update operations
   - Validated by architect review - no security concerns or side effects identified
+  
+- **Fixed Admin Permission Update Bug:** Resolved issue where removing admin permissions from a logged-in user didn't immediately take effect
+  - Root cause: localStorage was not being updated when user permissions changed via Admin Master panel
+  - Solution: Added localStorage update logic in `updateUserMutation.onSuccess` in `client/src/pages/AdminPublico.tsx`
+  - When admin flag is removed from currently logged-in user, system now updates localStorage and redirects to dashboard
+  - Validated by architect review - works correctly with brief 2-second notification before redirect
 
 ## System Architecture
 

@@ -8,6 +8,15 @@ A web application designed for Brazilian small businesses, offering inventory ma
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### Bug Fixes - October 31, 2025
+- **Fixed User Update Bug:** Corrected issue where plan changes and admin flag updates in Admin Master panel were not being saved to database
+  - Root cause: Use of `||` operator in `updateUser` method treated falsy values incorrectly
+  - Solution: Replaced `||` with explicit `!== undefined` checks in `server/sqlite-storage.ts`
+  - Added comprehensive debug logging for update operations
+  - Validated by architect review - no security concerns or side effects identified
+
 ## System Architecture
 
 ### Frontend

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,6 +69,7 @@ const DEFAULT_CONFIG = {
 export default function Settings() {
   const { toast } = useToast();
   const [isPremium] = useState(true);
+  const [checkoutOpen, setCheckoutOpen] = useState(false); // Estado para controlar a abertura do modal de checkout
 
   const [config, setConfig] = useState(DEFAULT_CONFIG);
 
@@ -87,7 +87,7 @@ export default function Settings() {
 
         // Aplicar as cores salvas imediatamente
         applyThemeColors(mergedConfig);
-        
+
         // Aplicar outras customizações
         applyFontSize(mergedConfig.fontSize);
         applyBorderRadius(mergedConfig.borderRadius);
@@ -308,6 +308,31 @@ export default function Settings() {
                 />
               </div>
             </CardContent>
+          </Card>
+
+          {/* Card de Upgrade para Premium */}
+          <Card className="bg-gradient-to-br from-blue-500 to-purple-600 text-white border-0 shadow-xl">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Crown className="h-12 w-12 mb-4" />
+                  <CardTitle className="text-3xl font-bold mb-2">
+                    Desbloqueie Todo o Potencial
+                  </CardTitle>
+                  <CardDescription className="text-white/90 text-lg">
+                    Upgrade para Premium e transforme seu negócio
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={() => setCheckoutOpen(true)}
+                  size="lg"
+                  className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8"
+                >
+                  <Crown className="h-5 w-5 mr-2" />
+                  Ver Planos
+                </Button>
+              </div>
+            </CardHeader>
           </Card>
 
           {/* Cores do Sistema */}
@@ -724,6 +749,9 @@ export default function Settings() {
               Salvar Configurações
             </Button>
           </div>
+
+          {/* Componente de Checkout (exemplo, precisa ser implementado) */}
+          {/* {checkoutOpen && <CheckoutForm onClose={() => setCheckoutOpen(false)} />} */}
         </>
       )}
     </div>

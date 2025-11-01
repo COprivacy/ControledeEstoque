@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, AlertTriangle, TrendingUp } from "lucide-react";
 
@@ -7,7 +8,7 @@ interface StatsCardsProps {
   vendasHoje?: number;
 }
 
-export default function StatsCards({ 
+function StatsCards({ 
   totalProdutos = 0, 
   produtosBaixoEstoque = 0, 
   vendasHoje = 0 
@@ -79,3 +80,5 @@ export default function StatsCards({
     </div>
   );
 }
+
+export default memo(StatsCards);

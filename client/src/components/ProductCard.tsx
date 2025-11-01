@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ interface ProductCardProps {
   onDelete?: (id: number) => void;
 }
 
-export default function ProductCard({ 
+function ProductCard({ 
   id, 
   nome, 
   categoria, 
@@ -126,3 +127,5 @@ export default function ProductCard({
     </Card>
   );
 }
+
+export default memo(ProductCard);

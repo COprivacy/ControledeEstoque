@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 
 import { apiRequest } from "@/lib/api";
 
@@ -52,11 +52,15 @@ export default function Products() {
     },
   });
 
-  const handleDelete = (id: number) => {
+  const handleDelete = useCallback((id: number) => {
     if (confirm("Tem certeza que deseja excluir este produto?")) {
       deleteMutation.mutate(id);
     }
-  };
+  }, [deleteMutation]);
+
+  const handleEdit = useCallback((id: number) => {
+    setLocation(`/produtos/editar/${id}`);
+  }, [setLocation]);
 
   if (isLoading) {
     return <div>Carregando...</div>;
@@ -122,7 +126,7 @@ export default function Products() {
               <ProductCard
                 key={product.id}
                 {...product}
-                onEdit={(id) => setLocation(`/produtos/editar/${id}`)}
+                onEdit={handleEdit}
                 onDelete={handleDelete}
               />
             ))

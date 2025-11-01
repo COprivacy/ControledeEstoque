@@ -46,10 +46,14 @@ export class SQLiteStorage implements IStorage {
   private nextCompraId = 1;
   private nextFuncionarioId = 1;
 
+  private persistTimeout: NodeJS.Timeout | null = null;
+  private readonly PERSIST_DEBOUNCE_MS = 500;
+
   constructor(dbPath?: string) {
     const defaultPath = path.join(__dirname, 'database.db');
     this.db = new Database(dbPath || defaultPath);
     this.initializeTables();
+    this.createIndexes();
     this.loadData();
     this.seedData().catch(err => console.error('Erro ao fazer seed de dados:', err));
   }
@@ -114,6 +118,20 @@ export class SQLiteStorage implements IStorage {
         codigo_barras TEXT,
         vencimento TEXT
       );
+    `);
+  }
+
+  private createIndexes() {
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+      CREATE INDEX IF NOT EXISTS idx_produtos_codigo_barras ON produtos(codigo_barras);
+      CREATE INDEX IF NOT EXISTS idx_produtos_user_id ON produtos(user_id);
+      CREATE INDEX IF NOT EXISTS idx_vendas_user_id ON vendas(user_id);
+      CREATE INDEX IF NOT EXISTS idx_fornecedores_user_id ON fornecedores(user_id);
+      CREATE INDEX IF NOT EXISTS idx_clientes_user_id ON clientes(user_id);
+      CREATE INDEX IF NOT EXISTS idx_compras_user_id ON compras(user_id);
+      CREATE INDEX IF NOT EXISTS idx_funcionarios_conta_id ON funcionarios(conta_id);
+      CREATE INDEX IF NOT EXISTS idx_funcionarios_email ON funcionarios(email);
 
       CREATE TABLE IF NOT EXISTS vendas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -487,7 +505,17 @@ export class SQLiteStorage implements IStorage {
     }
   }
 
-  private async persistData() {
+  private debouncedPersistData() {
+    if (this.persistTimeout) {
+      clearTimeout(this.persistTimeout);
+    }
+    
+    this.persistTimeout = setTimeout(() => {
+      this.persistDataNow();
+    }, this.PERSIST_DEBOUNCE_MS);
+  }
+
+  private persistDataNow() {
     const data = {
       nextUserId: this.nextUserId,
       nextProdutoId: this.nextProdutoId,
@@ -508,6 +536,18 @@ export class SQLiteStorage implements IStorage {
 
     this.db.exec('CREATE TABLE IF NOT EXISTS storage (key TEXT PRIMARY KEY, data TEXT)');
     this.db.prepare('INSERT OR REPLACE INTO storage (key, data) VALUES (?, ?)').run('storage', JSON.stringify(data));
+  }
+
+  private async persistData() {
+    this.debouncedPersistData();
+  }
+
+  close() {
+    if (this.persistTimeout) {
+      clearTimeout(this.persistTimeout);
+      this.persistDataNow();
+    }
+    this.db.close();
   }
 
   async getUsers(): Promise<User[]> {

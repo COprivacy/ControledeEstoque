@@ -22,6 +22,7 @@ export function AdminMasterRoute({ children }: AdminMasterRouteProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
     if (!user) {
@@ -40,6 +41,8 @@ export function AdminMasterRoute({ children }: AdminMasterRouteProps) {
     if (sessionAuth === "true") {
       setIsAuthenticated(true);
     }
+    
+    setIsCheckingAuth(false);
   }, [user, setLocation]);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -66,6 +69,12 @@ export function AdminMasterRoute({ children }: AdminMasterRouteProps) {
     }, 500);
   };
 
+  // Mostra loading enquanto verifica autenticação
+  if (isCheckingAuth) {
+    return null;
+  }
+
+  // Se não for o usuário autorizado, não renderiza nada (o useEffect já fez o redirect)
   if (!user || user.email !== AUTHORIZED_EMAIL || user.is_admin !== "true") {
     return null;
   }

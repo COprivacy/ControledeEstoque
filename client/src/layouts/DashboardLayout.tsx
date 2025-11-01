@@ -2,6 +2,7 @@ import React from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
+import { TrialExpiredModal } from "@/components/TrialExpiredModal";
 import { useLocation } from "wouter";
 
 interface DashboardLayoutProps {
@@ -39,6 +40,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
+      <TrialExpiredModal />
       <div className="flex h-screen w-full">
         <DashboardSidebar />
         <div className="flex flex-col flex-1 overflow-hidden">

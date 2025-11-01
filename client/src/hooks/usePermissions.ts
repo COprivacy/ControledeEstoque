@@ -49,7 +49,8 @@ export function usePermissions() {
     if (user.tipo === "funcionario") return true;
     
     // Verifica se tem plano ativo (trial, mensal ou anual)
-    if (user.plano === 'trial' || user.plano === 'mensal' || user.plano === 'anual') {
+    const activePlans = ['trial', 'mensal', 'anual', 'premium_mensal', 'premium_anual'];
+    if (activePlans.includes(user.plano)) {
       // Verifica se a data de expiração ainda é válida
       if (user.data_expiracao_plano) {
         const now = new Date();

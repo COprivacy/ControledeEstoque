@@ -28,7 +28,8 @@ import FluxoPDV from "@/pages/FluxoPDV";
 import DRE from "@/pages/DRE";
 import Caixa from "@/pages/Caixa";
 import DashboardLayout from "@/layouts/DashboardLayout";
-import AdminPublico from "@/pages/AdminPublico"; // Assuming AdminPublico is the component for the master admin panel
+import AdminPublico from "@/pages/AdminPublico";
+import Planos from "@/pages/Planos";
 
 function Router() {
   return (
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/" component={Login} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/planos" component={Planos} />
       <Route path="/dashboard">
         {() => (
           <DashboardLayout>

@@ -30,11 +30,12 @@ import Caixa from "@/pages/Caixa";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import AdminPublico from "@/pages/AdminPublico";
 import Planos from "@/pages/Planos";
+import Landing from "@/pages/Landing";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Login} />
+      <Route path="/" component={Landing} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/planos" component={Planos} />

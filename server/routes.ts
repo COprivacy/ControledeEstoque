@@ -10,6 +10,8 @@ import {
 import { nfceSchema } from "@shared/nfce-schema";
 import { FocusNFeService } from "./focusnfe";
 import { z } from "zod";
+import { logger, LogLevel } from "./logger";
+import { backupManager } from "./backup";
 
 // Middleware para verificar se o usuário é admin
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -433,13 +435,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Logs Admin
-  app.get("/api/logs-admin", async (req, res) => {
+  // Logs Admin - Sistema de logs estruturados
+  app.get("/api/logs-admin", requireAdmin, async (req, res) => {
     try {
-      const logs = await storage.getLogsAdmin();
+      const { date, level, limit } = req.query;
+      const logs = await logger.getLogs(
+        date as string,
+        level as LogLevel,
+        limit ? parseInt(limit as string) : 100
+      );
       res.json(logs);
     } catch (error) {
+      logger.error('Erro ao buscar logs', 'API', { error });
       res.status(500).json({ error: "Erro ao buscar logs" });
+    }
+  });
+
+  // Backups - Listar backups disponíveis
+  app.get("/api/backups", requireAdmin, async (req, res) => {
+    try {
+      const backups = await backupManager.listBackups();
+      res.json(backups);
+    } catch (error) {
+      logger.error('Erro ao listar backups', 'API', { error });
+      res.status(500).json({ error: "Erro ao listar backups" });
+    }
+  });
+
+  // Backups - Criar backup manual
+  app.post("/api/backups/create", requireAdmin, async (req, res) => {
+    try {
+      const backupPath = await backupManager.createBackup();
+      logger.info('Backup manual criado', 'API', { backupPath });
+      res.json({ success: true, backupPath });
+    } catch (error) {
+      logger.error('Erro ao criar backup', 'API', { error });
+      res.status(500).json({ error: "Erro ao criar backup" });
+    }
+  });
+
+  // Backups - Restaurar backup
+  app.post("/api/backups/restore", requireAdmin, async (req, res) => {
+    try {
+      const { backupFileName } = req.body;
+      
+      if (!backupFileName) {
+        return res.status(400).json({ error: "Nome do arquivo de backup é obrigatório" });
+      }
+
+      await backupManager.restoreBackup(backupFileName);
+      logger.warn('Backup restaurado', 'API', { backupFileName });
+      res.json({ success: true, message: "Backup restaurado com sucesso" });
+    } catch (error) {
+      logger.error('Erro ao restaurar backup', 'API', { error });
+      res.status(500).json({ error: "Erro ao restaurar backup" });
     }
   });
 

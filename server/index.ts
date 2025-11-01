@@ -4,6 +4,9 @@ import { setupVite, serveStatic, log } from "./vite";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import compression from "compression";
+import { logger } from "./logger";
+import { backupManager } from "./backup";
+import { storage } from "./storage";
 
 const app = express();
 
@@ -129,9 +132,22 @@ app.use((req, res, next) => {
     log(`serving on port ${port}`);
   });
 
+  // Iniciar sistema de backup automático
+  backupManager.startAutoBackup();
+  logger.info('Servidor iniciado', 'STARTUP', { port, env: app.get("env") });
+
+  // Limpar logs antigos a cada 24h
+  setInterval(() => {
+    logger.cleanOldLogs(30).catch(err => 
+      logger.error('Erro ao limpar logs antigos', 'CLEANUP', { error: err })
+    );
+  }, 24 * 60 * 60 * 1000);
+
   // Graceful shutdown
   process.on('SIGINT', () => {
     log('Shutting down gracefully...');
+    logger.info('Servidor encerrando', 'SHUTDOWN');
+    
     if ('close' in storage && typeof storage.close === 'function') {
       storage.close();
     }

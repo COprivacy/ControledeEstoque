@@ -140,6 +140,7 @@ export default function AdminPublico() {
     endereco: "",
     data_expiracao_plano: null,
   });
+  const [diasRestantes, setDiasRestantes] = useState<string>("");
   const [newUserForm, setNewUserForm] = useState({
     nome: "",
     email: "",
@@ -486,6 +487,15 @@ export default function AdminPublico() {
     }).format(value);
   };
 
+  const calculateDaysRemaining = (expirationDate?: string) => {
+    if (!expirationDate) return 0;
+    const now = new Date();
+    const expiration = new Date(expirationDate);
+    const diffTime = expiration.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   const handleEditClient = (cliente: Cliente) => {
     setEditingClient(cliente);
     setEditedClientData({ ...cliente });
@@ -684,7 +694,17 @@ export default function AdminPublico() {
       cpf_cnpj: (user as any).cpf_cnpj || "",
       telefone: (user as any).telefone || "",
       endereco: (user as any).endereco || "",
+      data_expiracao_plano: user.data_expiracao_plano || null,
     });
+    
+    // Calcula dias restantes
+    const expirationDate = user.data_expiracao_plano || user.data_expiracao_trial;
+    if (expirationDate) {
+      const dias = calculateDaysRemaining(expirationDate);
+      setDiasRestantes(Math.max(0, dias).toString());
+    } else {
+      setDiasRestantes("0");
+    }
   };
 
   const handleUpdateUser = (e: React.FormEvent) => {
@@ -695,9 +715,21 @@ export default function AdminPublico() {
       if (!updates.senha) {
         delete updates.senha;
       }
-      // Calcula a data de expiração baseada no plano
-      const dataExpiracao = calcularDataExpiracao(updates.plano);
-      updates.data_expiracao_plano = dataExpiracao;
+      
+      // Se dias restantes foi informado, calcula nova data de expiração
+      if (diasRestantes && diasRestantes !== "") {
+        const dias = parseInt(diasRestantes);
+        if (!isNaN(dias) && dias >= 0) {
+          const novaDataExpiracao = new Date();
+          novaDataExpiracao.setDate(novaDataExpiracao.getDate() + dias);
+          updates.data_expiracao_plano = novaDataExpiracao.toISOString();
+        }
+      } else {
+        // Se não foi informado dias, calcula baseado no plano
+        const dataExpiracao = calcularDataExpiracao(updates.plano);
+        updates.data_expiracao_plano = dataExpiracao;
+      }
+      
       // Quando o plano é atualizado, marca o status como ativo
       updates.status = "ativo";
 
@@ -1884,9 +1916,34 @@ export default function AdminPublico() {
                         <SelectItem value="mensal">Mensal</SelectItem>
                         <SelectItem value="anual">Anual</SelectItem>
                         <SelectItem value="premium">Premium</SelectItem>
+                        <SelectItem value="premium_mensal">Premium Mensal</SelectItem>
+                        <SelectItem value="premium_anual">Premium Anual</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+                  <div>
+                    <Label htmlFor="edit-dias-restantes" className="text-gray-300">
+                      Dias Restantes
+                      <span className="ml-1 text-xs text-gray-500">(define a validade do plano)</span>
+                    </Label>
+                    <Input
+                      id="edit-dias-restantes"
+                      type="number"
+                      min="0"
+                      value={diasRestantes}
+                      onChange={(e) => setDiasRestantes(e.target.value)}
+                      className="bg-gray-800 border-gray-700 text-white"
+                      placeholder="Ex: 30"
+                      data-testid="input-dias-restantes"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {diasRestantes && parseInt(diasRestantes) > 0 
+                        ? `Expira em: ${new Date(new Date().getTime() + parseInt(diasRestantes) * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}`
+                        : "Informe os dias para calcular a data"}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="edit-cpf_cnpj" className="text-gray-300">CPF/CNPJ</Label>
                     <Input
@@ -1896,8 +1953,6 @@ export default function AdminPublico() {
                       className="bg-gray-800 border-gray-700 text-white"
                     />
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="edit-telefone" className="text-gray-300">Telefone</Label>
                     <Input
@@ -1907,17 +1962,17 @@ export default function AdminPublico() {
                       className="bg-gray-800 border-gray-700 text-white"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="edit-senha" className="text-gray-300">Nova Senha (deixe em branco para não alterar)</Label>
-                    <Input
-                      id="edit-senha"
-                      type="password"
-                      value={newUserData.senha}
-                      onChange={(e) => setNewUserData({ ...newUserData, senha: e.target.value })}
-                      className="bg-gray-800 border-gray-700 text-white"
-                      placeholder="Nova senha (opcional)"
-                    />
-                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="edit-senha" className="text-gray-300">Nova Senha (deixe em branco para não alterar)</Label>
+                  <Input
+                    id="edit-senha"
+                    type="password"
+                    value={newUserData.senha}
+                    onChange={(e) => setNewUserData({ ...newUserData, senha: e.target.value })}
+                    className="bg-gray-800 border-gray-700 text-white"
+                    placeholder="Nova senha (opcional)"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="edit-endereco" className="text-gray-300">Endereço Completo</Label>

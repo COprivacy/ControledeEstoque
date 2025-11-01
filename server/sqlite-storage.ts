@@ -403,10 +403,12 @@ export class SQLiteStorage implements IStorage {
       ];
 
       const insertUser = this.db.prepare('INSERT INTO users (id, email, senha, nome) VALUES (?, ?, ?, ?)');
+      let firstUserId: string = '';
       for (const user of users) {
         const id = randomUUID();
         insertUser.run(id, user.email, user.senha, user.nome);
         this.users.set(id, { ...user, id });
+        if (!firstUserId) firstUserId = id;
       }
 
       const produtos: InsertProduto[] = [
@@ -440,10 +442,11 @@ export class SQLiteStorage implements IStorage {
       ];
 
       const insertProduto = this.db.prepare(
-        'INSERT INTO produtos (nome, categoria, preco, quantidade, estoque_minimo, codigo_barras, vencimento) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO produtos (user_id, nome, categoria, preco, quantidade, estoque_minimo, codigo_barras, vencimento) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
       );
       for (const produto of produtos) {
         const result = insertProduto.run(
+          firstUserId,
           produto.nome,
           produto.categoria,
           produto.preco,
@@ -452,7 +455,7 @@ export class SQLiteStorage implements IStorage {
           produto.codigo_barras || null,
           produto.vencimento || null
         );
-        this.produtos.set(result.lastInsertRowid as number, { ...produto, id: result.lastInsertRowid as number });
+        this.produtos.set(result.lastInsertRowid as number, { ...produto, id: result.lastInsertRowid as number, user_id: firstUserId });
       }
 
       this.persistData();

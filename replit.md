@@ -10,6 +10,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Comprehensive Performance Optimizations - November 1, 2025
+- **Implemented Multi-Layer Performance Improvements:** System-wide optimizations to reduce response time across all features
+  - **Backend Compression:** Added gzip compression (level 6) on all API responses with optional bypass via `x-no-compression` header
+  - **Database Indexing:** Created SQLite indexes on frequently queried fields (`users.email`, `produtos.codigo_barras`, `user_id` across all tables)
+  - **Debounced Persistence:** Implemented 500ms debounce buffer for SQLite writes to reduce file I/O operations
+  - **React Query Caching:** Configured intelligent cache with 5-minute `staleTime` and 10-minute `gcTime` to minimize redundant API calls
+  - **Component Memoization:** Applied `React.memo` to `ProductCard` and `StatsCards` components to prevent unnecessary re-renders
+  - **Event Handler Optimization:** Used `useCallback` for event handlers in Products page to maintain referential equality
+  - **Query Result Limiting:** Added support for optional `limit` parameter in `/api/produtos` endpoint for pagination
+  - Fixed critical bug where database indexes were created before tables existed, preventing fresh database initialization
+  - Validated by architect review - all optimizations approved, no security concerns identified
+
 ### Editable Plan Expiration Days - November 1, 2025
 - **Added Editable "Dias Restantes" Field:** Implemented manual plan/trial extension in Admin Master panel
   - New "Dias Restantes" (remaining days) input field in user edit form at `/admin-master`

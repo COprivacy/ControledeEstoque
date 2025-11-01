@@ -18,14 +18,18 @@ export default function Planos() {
       preco: "R$ 79,99",
       periodo: "/mês",
       descricao: "Ideal para começar",
+      valorTotal: null,
       recursos: [
-        "Acesso completo ao sistema",
-        "PDV e controle de caixa",
-        "Gestão de produtos e estoque",
-        "Emissão de NFC-e",
-        "Relatórios e dashboards",
-        "Gestão financeira completa",
-        "Suporte por email"
+        "✅ Acesso completo ao sistema",
+        "✅ PDV e controle de caixa",
+        "✅ Gestão de produtos e estoque ilimitados",
+        "✅ Emissão de NFC-e",
+        "✅ Relatórios e dashboards em tempo real",
+        "✅ Gestão financeira completa (Contas a Pagar/Receber)",
+        "✅ DRE (Demonstrativo de Resultados)",
+        "✅ Controle de fornecedores e clientes",
+        "✅ Suporte por email",
+        "✅ Backup automático diário"
       ],
       tipo: "mensal"
     },
@@ -33,13 +37,22 @@ export default function Planos() {
       nome: "Plano Anual",
       preco: "R$ 67,99",
       periodo: "/mês",
+      valorTotal: "R$ 815,88/ano",
       descricao: "Mais Popular - Economize 15%",
       destaque: true,
       recursos: [
-        "Tudo do plano mensal",
-        "Economize R$ 143,98 por ano",
-        "Suporte prioritário",
-        "Backups automáticos"
+        "✅ Todos os recursos do plano mensal",
+        "✅ Acesso completo ao sistema",
+        "✅ PDV e controle de caixa",
+        "✅ Gestão de produtos e estoque ilimitados",
+        "✅ Emissão de NFC-e",
+        "✅ Relatórios avançados e dashboards",
+        "✅ Gestão financeira completa",
+        "✅ DRE (Demonstrativo de Resultados)",
+        "💰 Economize R$ 143,88 por ano",
+        "⭐ Suporte prioritário",
+        "⭐ Backups automáticos em tempo real",
+        "⭐ Atualizações antecipadas"
       ],
       tipo: "anual"
     }
@@ -103,6 +116,13 @@ export default function Planos() {
                   <span className="text-gray-600 dark:text-gray-400 text-lg" data-testid={`text-periodo-${plano.tipo}`}>
                     {plano.periodo}
                   </span>
+                  {plano.valorTotal && (
+                    <div className="mt-2">
+                      <span className="text-lg font-semibold text-green-600 dark:text-green-400">
+                        {plano.valorTotal}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </CardHeader>
 

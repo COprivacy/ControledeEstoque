@@ -181,7 +181,7 @@ export function CheckoutForm({
                 </div>
                 {plano === "premium_anual" && (
                   <p className="text-sm opacity-90 mt-2">
-                    R$ 815,88/ano (12x sem juros)
+                    💰 Valor total: R$ 815,88/ano • Economize R$ 143,88
                   </p>
                 )}
               </div>

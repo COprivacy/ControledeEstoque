@@ -44,10 +44,11 @@ import {
   X,
   User,
   LineChart,
-  Percent
+  Percent,
+  Lock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
@@ -103,6 +104,9 @@ export default function AdminPublico() {
   const [ambiente, setAmbiente] = useState<"sandbox" | "production">("sandbox");
   const [testingAsaas, setTestingAsaas] = useState(false);
   const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true); // Assuming initial state is authenticated for admin
+  const setLocation = useLocation()[1];
+
 
   // Estados de busca e filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -247,7 +251,7 @@ export default function AdminPublico() {
         title: "Configuração salva",
         description: "Configuração Asaas atualizada com sucesso",
       });
-      setConfigAsaasOpen(false);
+      setIsConfigDialogOpen(false);
     },
     onError: () => {
       toast({
@@ -616,14 +620,14 @@ export default function AdminPublico() {
     },
     onSuccess: (updatedUser, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      
+
       const currentUserStr = localStorage.getItem("user");
       if (currentUserStr) {
         const currentUser = JSON.parse(currentUserStr);
         if (currentUser.id === variables.id) {
           console.log("🔄 Atualizando localStorage do usuário logado:", updatedUser);
           localStorage.setItem("user", JSON.stringify(updatedUser));
-          
+
           if (updatedUser.is_admin === "false") {
             toast({
               title: "Permissões atualizadas",
@@ -635,7 +639,7 @@ export default function AdminPublico() {
           }
         }
       }
-      
+
       toast({
         title: "Usuário atualizado",
         description: "Dados atualizados com sucesso!",
@@ -696,7 +700,7 @@ export default function AdminPublico() {
       endereco: (user as any).endereco || "",
       data_expiracao_plano: user.data_expiracao_plano || null,
     });
-    
+
     // Calcula dias restantes - deixa vazio se não há data
     const expirationDate = user.data_expiracao_plano || user.data_expiracao_trial;
     if (expirationDate) {
@@ -717,7 +721,7 @@ export default function AdminPublico() {
       if (!updates.senha) {
         delete updates.senha;
       }
-      
+
       // Só atualiza a data de expiração se dias restantes foi EXPLICITAMENTE preenchido com valor > 0
       if (diasRestantes && diasRestantes !== "") {
         const dias = parseInt(diasRestantes);
@@ -729,7 +733,7 @@ export default function AdminPublico() {
         // Se dias é 0 ou negativo, não atualiza (preserva o valor original)
       }
       // Se diasRestantes está vazio, preserva a data original do usuário
-      
+
       // Quando o plano é atualizado, marca o status como ativo
       updates.status = "ativo";
 
@@ -750,6 +754,29 @@ export default function AdminPublico() {
       </div>
     );
   }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4">
+        <h1 className="text-3xl font-bold text-white mb-4">Acesso Restrito</h1>
+        <p className="text-gray-400 mb-6">Você não tem permissão para acessar esta página.</p>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setIsAuthenticated(false); // Ensure this is set correctly if re-authentication is needed
+            sessionStorage.removeItem("admin_auth");
+            sessionStorage.removeItem("admin_auth_time");
+            setLocation("/dashboard"); // Redirect to dashboard after logout/unauthorized access
+          }}
+          className="gap-2"
+        >
+          <Lock className="h-4 w-4" />
+          Voltar para o Dashboard
+        </Button>
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen bg-gray-950 p-6">
@@ -1937,7 +1964,7 @@ export default function AdminPublico() {
                       data-testid="input-dias-restantes"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      {diasRestantes && parseInt(diasRestantes) > 0 
+                      {diasRestantes && parseInt(diasRestantes) > 0
                         ? `Expira em: ${new Date(new Date().getTime() + parseInt(diasRestantes) * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}`
                         : "Informe os dias para calcular a data"}
                     </p>
@@ -2008,7 +2035,6 @@ export default function AdminPublico() {
                     className="bg-green-600 hover:bg-green-700"
                     disabled={updateUserMutation.isPending}
                   >
-                    <Save className="h-4 w-4 mr-1" />
                     {updateUserMutation.isPending ? "Salvando..." : "Salvar Alterações"}
                   </Button>
                 </div>

@@ -3,7 +3,7 @@ import { Check, Shield, Lock, CheckCircle, Mail, Package, CreditCard, ArrowLeft 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckoutForm } from "@/components/CheckoutForm";
-import { Link } from "wouter";
+import { Link, navigate } from "wouter";
 
 export default function Planos() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -88,12 +88,14 @@ export default function Planos() {
               </span>
             </div>
           </Link>
-          <Link href="/">
-            <Button variant="outline" className="border-blue-400/30 hover:border-blue-400 hover:bg-blue-500/10">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar ao Site
-            </Button>
-          </Link>
+          <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => navigate("/dashboard")}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Voltar ao Sistema
+              </Button>
         </div>
       </nav>
 

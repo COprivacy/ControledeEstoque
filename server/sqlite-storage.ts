@@ -118,20 +118,6 @@ export class SQLiteStorage implements IStorage {
         codigo_barras TEXT,
         vencimento TEXT
       );
-    `);
-  }
-
-  private createIndexes() {
-    this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-      CREATE INDEX IF NOT EXISTS idx_produtos_codigo_barras ON produtos(codigo_barras);
-      CREATE INDEX IF NOT EXISTS idx_produtos_user_id ON produtos(user_id);
-      CREATE INDEX IF NOT EXISTS idx_vendas_user_id ON vendas(user_id);
-      CREATE INDEX IF NOT EXISTS idx_fornecedores_user_id ON fornecedores(user_id);
-      CREATE INDEX IF NOT EXISTS idx_clientes_user_id ON clientes(user_id);
-      CREATE INDEX IF NOT EXISTS idx_compras_user_id ON compras(user_id);
-      CREATE INDEX IF NOT EXISTS idx_funcionarios_conta_id ON funcionarios(conta_id);
-      CREATE INDEX IF NOT EXISTS idx_funcionarios_email ON funcionarios(email);
 
       CREATE TABLE IF NOT EXISTS vendas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -321,6 +307,20 @@ export class SQLiteStorage implements IStorage {
         data TEXT NOT NULL,
         FOREIGN KEY (caixa_id) REFERENCES caixas(id)
       );
+    `);
+  }
+
+  private createIndexes() {
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+      CREATE INDEX IF NOT EXISTS idx_produtos_codigo_barras ON produtos(codigo_barras);
+      CREATE INDEX IF NOT EXISTS idx_produtos_user_id ON produtos(user_id);
+      CREATE INDEX IF NOT EXISTS idx_vendas_user_id ON vendas(user_id);
+      CREATE INDEX IF NOT EXISTS idx_fornecedores_user_id ON fornecedores(user_id);
+      CREATE INDEX IF NOT EXISTS idx_clientes_user_id ON clientes(user_id);
+      CREATE INDEX IF NOT EXISTS idx_compras_user_id ON compras(user_id);
+      CREATE INDEX IF NOT EXISTS idx_funcionarios_conta_id ON funcionarios(conta_id);
+      CREATE INDEX IF NOT EXISTS idx_funcionarios_email ON funcionarios(email);
     `);
   }
 

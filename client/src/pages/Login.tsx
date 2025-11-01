@@ -34,18 +34,25 @@ export default function Login() {
           title: "Login realizado com sucesso!",
           description: `Bem-vindo, ${funcionario.nome}`,
         });
-        setLocation("/pdv"); // Redireciona funcionário para o PDV
+        
+        // Aguarda um pouco para garantir que o localStorage foi atualizado
+        await new Promise(resolve => setTimeout(resolve, 100));
+        setLocation("/pdv");
         return;
       }
 
       const user = await response.json();
       localStorage.setItem("user", JSON.stringify(user));
+      console.log("🔄 Atualizando localStorage do usuário logado:", user);
 
       toast({
         title: "Login realizado com sucesso!",
         description: `Bem-vindo, ${user.nome}`,
       });
 
+      // Aguarda um pouco para garantir que o localStorage foi atualizado
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Verifica se o usuário é admin master e redireciona
       const isAdminMaster = user.is_admin === "true";
       setLocation(isAdminMaster ? "/admin-master" : "/dashboard");

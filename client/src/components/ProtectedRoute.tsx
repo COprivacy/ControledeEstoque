@@ -3,6 +3,9 @@ import { useUser } from "@/hooks/use-user";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Lock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -11,8 +14,40 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteProps) {
   const { hasPermission, isLoading } = usePermissions();
+  const [, setLocation] = useLocation();
+  const [isChecking, setIsChecking] = useState(true);
+  const [hasUser, setHasUser] = useState(false);
 
-  if (isLoading) {
+  useEffect(() => {
+    const checkUser = () => {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) {
+        console.log("⚠️ ProtectedRoute: Usuário não encontrado, redirecionando para login");
+        setLocation("/login");
+        setHasUser(false);
+      } else {
+        console.log("✅ ProtectedRoute: Usuário autenticado encontrado");
+        setHasUser(true);
+      }
+      setIsChecking(false);
+    };
+
+    // Verifica imediatamente
+    checkUser();
+
+    // Adiciona listener para mudanças no localStorage
+    const handleStorageChange = () => {
+      checkUser();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [setLocation]);
+
+  if (isLoading || isChecking) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" data-testid="loading-permissions"></div>
@@ -42,6 +77,10 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
         </Card>
       </div>
     );
+  }
+
+  if (!hasUser) {
+    return null;
   }
 
   return <>{children}</>;

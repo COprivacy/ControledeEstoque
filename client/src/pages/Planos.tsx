@@ -3,7 +3,7 @@ import { Check, Shield, Lock, CheckCircle, Mail, Package, CreditCard, ArrowLeft 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckoutForm } from "@/components/CheckoutForm";
-import Link from "next/link";
+import { Link } from "wouter";
 
 export default function Planos() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);

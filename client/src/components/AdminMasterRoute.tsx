@@ -25,13 +25,22 @@ export function AdminMasterRoute({ children }: AdminMasterRouteProps) {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
+    // Verifica autenticação do usuário
     if (!user) {
+      console.log("❌ AdminMasterRoute: Nenhum usuário logado, redirecionando para login");
       setLocation("/login");
       return;
     }
 
-    // Apenas o usuário específico pode acessar
-    if (user.email !== AUTHORIZED_EMAIL || user.is_admin !== "true") {
+    // VALIDAÇÃO CRÍTICA: Apenas o usuário específico pode acessar
+    if (user.email !== AUTHORIZED_EMAIL) {
+      console.log(`❌ AdminMasterRoute: Email não autorizado (${user.email}), redirecionando para dashboard`);
+      setLocation("/dashboard");
+      return;
+    }
+
+    if (user.is_admin !== "true") {
+      console.log(`❌ AdminMasterRoute: Usuário não é admin (${user.email}), redirecionando para dashboard`);
       setLocation("/dashboard");
       return;
     }
@@ -39,6 +48,7 @@ export function AdminMasterRoute({ children }: AdminMasterRouteProps) {
     // Verificar se já está autenticado na sessão
     const sessionAuth = sessionStorage.getItem("admin_master_auth");
     if (sessionAuth === "true") {
+      console.log("✅ AdminMasterRoute: Sessão admin_master já autenticada");
       setIsAuthenticated(true);
     }
     

@@ -1,17 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Check, Shield, Lock, CheckCircle, Mail, Package, CreditCard, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckoutForm } from "@/components/CheckoutForm";
-import { Link, navigate } from "wouter";
+import { Link, navigate, useLocation } from "wouter";
+import { useUser } from "@/hooks/use-user";
 
 export default function Planos() {
+  const { user } = useUser();
+  const [, setLocation] = useLocation();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{
     plano: "premium_mensal" | "premium_anual";
     planoNome: string;
     planoPreco: string;
   } | null>(null);
+
+  const handleBackToSystem = () => {
+    // Verifica se há um usuário autenticado
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      // Se estiver autenticado, vai para o dashboard
+      setLocation("/dashboard");
+    } else {
+      // Se não estiver autenticado, vai para a página de login
+      setLocation("/login");
+    }
+  };
 
   const planos = [
     {
@@ -91,7 +106,7 @@ export default function Planos() {
           <Button
                 variant="outline"
                 className="gap-2"
-                onClick={() => navigate("/dashboard")}
+                onClick={handleBackToSystem}
               >
                 <ArrowLeft className="h-4 w-4" />
                 Voltar ao Sistema

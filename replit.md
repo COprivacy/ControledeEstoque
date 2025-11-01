@@ -10,6 +10,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Editable Plan Expiration Days - November 1, 2025
+- **Added Editable "Dias Restantes" Field:** Implemented manual plan/trial extension in Admin Master panel
+  - New "Dias Restantes" (remaining days) input field in user edit form at `/admin-master`
+  - Real-time preview showing calculated expiration date based on input days
+  - Smart preservation logic: only updates `data_expiracao_plano` when field is explicitly filled with positive value
+  - Empty or zero values preserve original expiration date (fixes data integrity issue)
+  - Field displays current remaining days for users with active expiration, blank for users without
+  - Allows manual extension/reduction of trial or plan duration without changing plan type
+  - Validated by architect review - no data integrity or security issues
+
 ### Trial Expiration & Plan Subscription System - November 1, 2025
 - **Implemented Trial Expiration Blocking:** Complete system to block access when 7-day trial expires
   - Created `/planos` page showing monthly (R$ 99,90/mês) and annual (R$ 959,90/ano) plan options

@@ -37,17 +37,26 @@ export const apiRequest = async (method: string, url: string, body?: any) => {
     options.body = JSON.stringify(body);
   }
 
-  const response = await fetch(url, options);
-  
-  if (response.status === 401) {
-    throw new Error("Unauthorized: Please log in again.");
-  }
+  try {
+    const response = await fetch(url, options);
+    
+    if (response.status === 401) {
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+      throw new Error("Unauthorized: Please log in again.");
+    }
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
-    throw new Error(errorMessage);
-  }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error || errorData.message || `HTTP error! status: ${response.status}`;
+      throw new Error(errorMessage);
+    }
 
-  return response;
+    return response;
+  } catch (error) {
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      throw new Error("Erro de conexão. Verifique sua internet.");
+    }
+    throw error;
+  }
 };

@@ -6,6 +6,8 @@ interface StatsCardsProps {
   totalProdutos?: number;
   produtosBaixoEstoque?: number;
   vendasHoje?: number;
+  valorVendasHoje?: number;
+  produtosVencimento?: number;
 }
 
 function StatsCards({ 

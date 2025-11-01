@@ -61,9 +61,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Middleware para desabilitar cache em todas as rotas da API
   app.use('/api', (req, res, next) => {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
     next();
   });
 
@@ -124,7 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validação de formato de email
       const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      if (!emailRegex.test(email)) {
+      if (!emailRegex.test(email) || email.length > 254) {
         return res.status(400).json({ error: "Email inválido" });
       }
 

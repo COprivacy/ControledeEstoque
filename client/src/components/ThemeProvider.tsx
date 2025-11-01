@@ -32,9 +32,9 @@ export function ThemeProvider({
     if (savedTheme) {
       return savedTheme;
     }
-    // Define dark como padrão na primeira vez
-    localStorage.setItem(storageKey, "dark");
-    return "dark";
+    // Usa o defaultTheme da prop
+    localStorage.setItem(storageKey, defaultTheme);
+    return defaultTheme;
   });
 
   useEffect(() => {

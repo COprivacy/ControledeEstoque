@@ -10,6 +10,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Trial Expiration & Plan Subscription System - November 1, 2025
+- **Implemented Trial Expiration Blocking:** Complete system to block access when 7-day trial expires
+  - Created `/planos` page showing monthly (R$ 99,90/mês) and annual (R$ 959,90/ano) plan options
+  - Implemented `TrialExpiredModal` component that displays full-screen blocking overlay when trial expires
+  - Modal shows message "Para continuar utilizando nossos serviços, contrate um plano" with link to plans page
+  - Integrated modal into `DashboardLayout` to block all protected routes when trial expires
+  - Fixed `usePermissions().isPremium()` to support both legacy plan names (mensal/anual) and current names (premium_mensal/premium_anual)
+  - Plans page integrates with existing `CheckoutForm` component for Asaas payment processing
+  - Blocking logic respects admin users, employees with permissions, and users with active paid plans
+  - Validated by architect review - no security issues, consistent with existing checkout workflow
+
 ### Bug Fixes - October 31, 2025
 - **Fixed User Update Bug:** Corrected issue where plan changes and admin flag updates in Admin Master panel were not being saved to database
   - Root cause: Use of `||` operator in `updateUser` method treated falsy values incorrectly

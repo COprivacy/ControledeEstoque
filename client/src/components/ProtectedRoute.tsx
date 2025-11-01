@@ -4,8 +4,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Lock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-
+import { useLocation } from 'wouter';
 
 interface ProtectedRouteProps {
   children: ReactNode;

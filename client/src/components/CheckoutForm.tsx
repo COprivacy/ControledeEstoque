@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -170,8 +169,8 @@ export function CheckoutForm({
             <div className="space-y-4">
               <div>
                 <Badge className="bg-white/20 text-white border-0 mb-3">
-                  {plano === "premium_anual" && "🎉 20% de Desconto"}
-                  {plano === "premium_mensal" && "⚡ Mais Popular"}
+                  {plano === "premium_anual" && "👑 Mais Popular - Economize 15%"}
+                  {plano === "premium_mensal" && "⚡ Flexibilidade total"}
                 </Badge>
                 <h3 className="text-2xl font-bold">{planoNome}</h3>
                 <div className="flex items-baseline gap-2 mt-2">

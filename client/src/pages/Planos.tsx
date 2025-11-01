@@ -15,7 +15,7 @@ export default function Planos() {
   const planos = [
     {
       nome: "Plano Mensal",
-      preco: "R$ 99,90",
+      preco: "R$ 79,99",
       periodo: "/mês",
       descricao: "Ideal para começar",
       recursos: [
@@ -31,19 +31,15 @@ export default function Planos() {
     },
     {
       nome: "Plano Anual",
-      preco: "R$ 959,90",
-      periodo: "/ano",
-      descricao: "Economize 20%",
+      preco: "R$ 67,99",
+      periodo: "/mês",
+      descricao: "Mais Popular - Economize 15%",
       destaque: true,
       recursos: [
-        "Acesso completo ao sistema",
-        "PDV e controle de caixa",
-        "Gestão de produtos e estoque",
-        "Emissão de NFC-e",
-        "Relatórios e dashboards",
-        "Gestão financeira completa",
+        "Tudo do plano mensal",
+        "Economize R$ 143,98 por ano",
         "Suporte prioritário",
-        "2 meses grátis"
+        "Backups automáticos"
       ],
       tipo: "anual"
     }
@@ -54,13 +50,13 @@ export default function Planos() {
       setSelectedPlan({
         plano: "premium_mensal",
         planoNome: "Plano Mensal",
-        planoPreco: "R$ 99,90"
+        planoPreco: "R$ 79,99"
       });
     } else {
       setSelectedPlan({
         plano: "premium_anual",
         planoNome: "Plano Anual",
-        planoPreco: "R$ 959,90"
+        planoPreco: "R$ 67,99"
       });
     }
     setCheckoutOpen(true);
@@ -92,7 +88,7 @@ export default function Planos() {
                   </span>
                 </div>
               )}
-              
+
               <CardHeader className="text-center pb-8 pt-10">
                 <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white" data-testid={`text-nome-${plano.tipo}`}>
                   {plano.nome}

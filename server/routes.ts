@@ -656,8 +656,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/produtos", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
       const allProdutos = await storage.getProdutos();
-      const produtos = allProdutos.filter(p => p.user_id === effectiveUserId);
+      let produtos = allProdutos.filter(p => p.user_id === effectiveUserId);
       const expiring = req.query.expiring;
 
       if (expiring === 'soon') {
@@ -665,13 +666,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(today.getDate() + 30);
 
-        const expiringProducts = produtos.filter(p => {
+        produtos = produtos.filter(p => {
           if (!p.vencimento) return false;
           const expiryDate = new Date(p.vencimento);
           return expiryDate <= thirtyDaysFromNow && expiryDate >= today;
         });
+      }
 
-        return res.json(expiringProducts);
+      if (limit && limit > 0) {
+        produtos = produtos.slice(0, limit);
       }
 
       res.json(produtos);

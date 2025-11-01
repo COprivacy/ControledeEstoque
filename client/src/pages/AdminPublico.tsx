@@ -697,13 +697,15 @@ export default function AdminPublico() {
       data_expiracao_plano: user.data_expiracao_plano || null,
     });
     
-    // Calcula dias restantes
+    // Calcula dias restantes - deixa vazio se não há data
     const expirationDate = user.data_expiracao_plano || user.data_expiracao_trial;
     if (expirationDate) {
       const dias = calculateDaysRemaining(expirationDate);
-      setDiasRestantes(Math.max(0, dias).toString());
+      // Só preenche se há dias positivos
+      setDiasRestantes(dias > 0 ? dias.toString() : "");
     } else {
-      setDiasRestantes("0");
+      // Deixa vazio para não forçar atualização
+      setDiasRestantes("");
     }
   };
 
@@ -716,19 +718,17 @@ export default function AdminPublico() {
         delete updates.senha;
       }
       
-      // Se dias restantes foi informado, calcula nova data de expiração
+      // Só atualiza a data de expiração se dias restantes foi EXPLICITAMENTE preenchido com valor > 0
       if (diasRestantes && diasRestantes !== "") {
         const dias = parseInt(diasRestantes);
-        if (!isNaN(dias) && dias >= 0) {
+        if (!isNaN(dias) && dias > 0) {
           const novaDataExpiracao = new Date();
           novaDataExpiracao.setDate(novaDataExpiracao.getDate() + dias);
           updates.data_expiracao_plano = novaDataExpiracao.toISOString();
         }
-      } else {
-        // Se não foi informado dias, calcula baseado no plano
-        const dataExpiracao = calcularDataExpiracao(updates.plano);
-        updates.data_expiracao_plano = dataExpiracao;
+        // Se dias é 0 ou negativo, não atualiza (preserva o valor original)
       }
+      // Se diasRestantes está vazio, preserva a data original do usuário
       
       // Quando o plano é atualizado, marca o status como ativo
       updates.status = "ativo";

@@ -178,32 +178,35 @@ export default function Planos() {
             <CardHeader>
               <CardTitle className="text-2xl text-white text-center flex items-center justify-center gap-2">
                 <Shield className="h-6 w-6 text-green-400" />
-                Segurança e Privacidade
+                Segurança no Pagamento
               </CardTitle>
+              <p className="text-center text-gray-400 mt-2">
+                Sua compra é 100% segura e protegida
+              </p>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="flex items-start gap-3 p-4 bg-slate-800/50 rounded-lg border border-blue-500/10">
                   <Lock className="h-5 w-5 text-blue-400 mt-1" />
                   <div>
                     <h3 className="text-white font-semibold mb-1">Criptografia SSL/TLS</h3>
-                    <p className="text-gray-400 text-sm">Todas as transações são protegidas com criptografia de ponta a ponta</p>
+                    <p className="text-gray-400 text-sm">Todos os dados do pagamento são criptografados e transmitidos com segurança de ponta a ponta</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3 p-4 bg-slate-800/50 rounded-lg border border-blue-500/10">
                   <Shield className="h-5 w-5 text-green-400 mt-1" />
                   <div>
-                    <h3 className="text-white font-semibold mb-1">Proteção de Dados</h3>
-                    <p className="text-gray-400 text-sm">Seus dados são armazenados com segurança e backups automáticos</p>
+                    <h3 className="text-white font-semibold mb-1">Dados Protegidos</h3>
+                    <p className="text-gray-400 text-sm">Suas informações pessoais e financeiras nunca são armazenadas em nossos servidores</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3 p-4 bg-slate-800/50 rounded-lg border border-blue-500/10">
                   <CreditCard className="h-5 w-5 text-purple-400 mt-1" />
                   <div>
-                    <h3 className="text-white font-semibold mb-1">Pagamento Seguro</h3>
-                    <p className="text-gray-400 text-sm">Processamento via Asaas com certificação PCI-DSS</p>
+                    <h3 className="text-white font-semibold mb-1">Gateway Seguro Asaas</h3>
+                    <p className="text-gray-400 text-sm">Pagamentos processados via Asaas, certificado PCI-DSS Nível 1 (máxima segurança)</p>
                   </div>
                 </div>
 
@@ -211,14 +214,29 @@ export default function Planos() {
                   <CheckCircle className="h-5 w-5 text-green-400 mt-1" />
                   <div>
                     <h3 className="text-white font-semibold mb-1">Conformidade LGPD</h3>
-                    <p className="text-gray-400 text-sm">100% em conformidade com a Lei Geral de Proteção de Dados</p>
+                    <p className="text-gray-400 text-sm">Totalmente em conformidade com a Lei Geral de Proteção de Dados Pessoais</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                <div className="flex items-start gap-3">
+                  <Shield className="h-5 w-5 text-green-400 mt-1 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-green-300 font-semibold mb-2">Garantia de Segurança</h3>
+                    <ul className="text-gray-300 text-sm space-y-1">
+                      <li>✓ Ambiente 100% seguro para transações financeiras</li>
+                      <li>✓ Não compartilhamos seus dados com terceiros</li>
+                      <li>✓ Você pode cancelar sua assinatura a qualquer momento</li>
+                      <li>✓ Suporte disponível para qualquer dúvida sobre pagamento</li>
+                    </ul>
                   </div>
                 </div>
               </div>
 
               <div className="text-center mt-6 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
                 <p className="text-gray-300 mb-2">
-                  Tem dúvidas? Entre em contato conosco
+                  Tem dúvidas sobre segurança ou pagamento?
                 </p>
                 <a 
                   href="mailto:pavisoft.suporte@gmail.com"

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -68,6 +69,7 @@ const DEFAULT_CONFIG = {
 
 export default function Settings() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [isPremium] = useState(true);
   const [checkoutOpen, setCheckoutOpen] = useState(false); // Estado para controlar a abertura do modal de checkout
 
@@ -324,7 +326,7 @@ export default function Settings() {
                   </CardDescription>
                 </div>
                 <Button
-                  onClick={() => setCheckoutOpen(true)}
+                  onClick={() => setLocation("/planos")}
                   size="lg"
                   className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8"
                 >

@@ -96,7 +96,7 @@ export default function PublicAdmin() {
   const [, setLocation] = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
-  const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPlano, setFilterPlano] = useState<string>("todos");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
@@ -468,12 +468,12 @@ export default function PublicAdmin() {
 
   const handleAdminToggle = (userId: string, currentStatus: string) => {
     const newStatus = currentStatus === "true" ? "false" : "true";
-    updateUserMutation.mutate({ id: userId, updates: { is_admin: newStatus } });
+    updateUserMutation.mutate({ userId, updates: { is_admin: newStatus } });
   };
 
   const handleStatusToggle = (userId: string, currentStatus: string) => {
     const newStatus = currentStatus === "ativo" ? "inativo" : "ativo";
-    updateUserMutation.mutate({ id: userId, updates: { status: newStatus } });
+    updateUserMutation.mutate({ userId, updates: { status: newStatus } });
   };
 
   const handleDeleteUser = (userId: string) => {
@@ -1025,7 +1025,7 @@ export default function PublicAdmin() {
             {configAsaasData && (
               <Card className="shadow-lg border-2">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-xl">
+                  <CardTitle className="flex items-center gap-2 text-2xl">
                     <Activity className="h-6 w-6" />
                     Status da Integração Asaas
                   </CardTitle>
@@ -1245,7 +1245,7 @@ export default function PublicAdmin() {
                                   : '-'}
                               </TableCell>
                               <TableCell>
-                                {editingUser === user.id ? (
+                                {editingUser?.id === user.id ? (
                                   <Select
                                     value={user.plano}
                                     onValueChange={(value) => {
@@ -1267,7 +1267,7 @@ export default function PublicAdmin() {
                                   <Badge
                                     variant={getPlanBadgeVariant(user.plano)}
                                     className="cursor-pointer"
-                                    onClick={() => setEditingUser(user.id)}
+                                    onClick={() => setEditingUser(user)}
                                     data-testid={`badge-plan-${user.id}`}
                                   >
                                     {user.plano === "trial" && "Trial (7 dias)"}

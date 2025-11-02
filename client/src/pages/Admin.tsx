@@ -141,7 +141,7 @@ export default function Admin() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios", { conta_id: currentUser.id }] });
       toast({
         title: "Funcionário adicionado",
         description: "Novo funcionário criado com sucesso!",
@@ -173,7 +173,7 @@ export default function Admin() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios", { conta_id: currentUser.id }] });
       toast({
         title: "Funcionário atualizado",
         description: "Dados do funcionário atualizados com sucesso!",
@@ -196,7 +196,7 @@ export default function Admin() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios", { conta_id: currentUser.id }] });
       toast({
         title: "Status atualizado",
         description: "Status do funcionário atualizado com sucesso!",
@@ -217,7 +217,7 @@ export default function Admin() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios", { conta_id: currentUser.id }] });
       toast({
         title: "Funcionário removido",
         description: "Funcionário removido com sucesso.",

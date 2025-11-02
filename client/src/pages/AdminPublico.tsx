@@ -83,6 +83,7 @@ type User = {
   cpf_cnpj?: string;
   telefone?: string;
   endereco?: string;
+  max_funcionarios?: number;
 };
 
 type Cliente = {
@@ -134,6 +135,7 @@ export default function AdminPublico() {
     telefone: string;
     endereco: string;
     data_expiracao_plano: string | null;
+    max_funcionarios: number;
   }>({
     nome: "",
     email: "",
@@ -144,6 +146,7 @@ export default function AdminPublico() {
     telefone: "",
     endereco: "",
     data_expiracao_plano: null,
+    max_funcionarios: 5,
   });
   const [diasRestantes, setDiasRestantes] = useState<string>("");
   const [newUserForm, setNewUserForm] = useState({
@@ -588,6 +591,8 @@ export default function AdminPublico() {
         cpf_cnpj: "",
         telefone: "",
         endereco: "",
+        data_expiracao_plano: null,
+        max_funcionarios: 5,
       });
     },
     onError: (error: any) => {
@@ -700,6 +705,7 @@ export default function AdminPublico() {
       telefone: (user as any).telefone || "",
       endereco: (user as any).endereco || "",
       data_expiracao_plano: user.data_expiracao_plano || null,
+      max_funcionarios: user.max_funcionarios || 5,
     });
 
     // Calcula dias restantes - deixa vazio se não há data
@@ -1972,6 +1978,35 @@ export default function AdminPublico() {
                         ? `Expira em: ${new Date(new Date().getTime() + parseInt(diasRestantes) * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}`
                         : "Informe os dias para calcular a data"}
                     </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-max-funcionarios" className="text-gray-300">
+                      Limite de Funcionários
+                      <span className="ml-1 text-xs text-gray-500">(máximo que o cliente pode cadastrar)</span>
+                    </Label>
+                    <Input
+                      id="edit-max-funcionarios"
+                      type="number"
+                      min="1"
+                      value={newUserData.max_funcionarios}
+                      onChange={(e) => setNewUserData({ ...newUserData, max_funcionarios: parseInt(e.target.value) || 5 })}
+                      className="bg-gray-800 border-gray-700 text-white"
+                      placeholder="Ex: 10"
+                      data-testid="input-max-funcionarios"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      O cliente poderá cadastrar até {newUserData.max_funcionarios} funcionários
+                    </p>
+                  </div>
+                  <div className="flex items-end">
+                    <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3 flex-1">
+                      <p className="text-xs text-blue-300 mb-1">Controle Administrativo</p>
+                      <p className="text-sm text-blue-200">
+                        Altere esse valor para dar mais ou menos capacidade ao cliente
+                      </p>
+                    </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

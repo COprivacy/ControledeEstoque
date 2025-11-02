@@ -536,6 +536,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/funcionarios/limite", getUserId, async (req, res) => {
+    try {
+      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const usuario = await storage.getUserByEmail(
+        (await storage.getUsers()).find((u: any) => u.id === effectiveUserId)?.email || ""
+      );
+
+      if (!usuario) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+
+      const allFuncionarios = await storage.getFuncionarios();
+      const funcionariosDaConta = allFuncionarios.filter(f => f.conta_id === effectiveUserId);
+
+      res.json({
+        max_funcionarios: usuario.max_funcionarios || 5,
+        funcionarios_cadastrados: funcionariosDaConta.length,
+        funcionarios_disponiveis: (usuario.max_funcionarios || 5) - funcionariosDaConta.length
+      });
+    } catch (error: any) {
+      console.error("Erro ao buscar limite de funcionários:", error);
+      res.status(500).json({ error: error.message || "Erro ao buscar limite" });
+    }
+  });
+
   app.post("/api/funcionarios", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
@@ -550,8 +575,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Acesso negado" });
       }
 
-      // Verificar se já existe funcionário com este email na mesma conta
+      // Verificar limite de funcionários
+      const usuario = await storage.getUserByEmail(
+        (await storage.getUsers()).find((u: any) => u.id === conta_id)?.email || ""
+      );
+      
+      if (!usuario) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+
       const allFuncionarios = await storage.getFuncionarios();
+      const funcionariosDaConta = allFuncionarios.filter(f => f.conta_id === conta_id);
+      const maxFuncionarios = usuario.max_funcionarios || 5;
+
+      if (funcionariosDaConta.length >= maxFuncionarios) {
+        return res.status(400).json({ 
+          error: `Limite de funcionários atingido. Você pode cadastrar até ${maxFuncionarios} funcionários. Entre em contato para aumentar o limite.` 
+        });
+      }
+
+      // Verificar se já existe funcionário com este email na mesma conta
       const existingFuncionario = allFuncionarios.find(
         f => f.email === email && f.conta_id === conta_id
       );

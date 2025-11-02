@@ -69,6 +69,7 @@ interface User {
   data_expiracao_plano?: string;
   ultimo_acesso?: string;
   cadastro?: string; // Adicionado para cálculo de novos cadastros
+  max_funcionarios?: number; // Adicionado para limite de funcionários
 }
 
 interface Plano {
@@ -237,22 +238,24 @@ export default function PublicAdmin() {
   }, [configAsaasData]);
 
   const updateUserMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<User> }) => {
-      const response = await apiRequest("PATCH", `/api/users/${id}`, updates);
+    mutationFn: async ({ userId, updates }: { userId: string; updates: any }) => {
+      const response = await apiRequest("PATCH", `/api/users/${userId}`, updates);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      const updateType = variables.updates.max_funcionarios !== undefined
+        ? "Limite de funcionários atualizado"
+        : "Usuário atualizado";
       toast({
-        title: "Usuário atualizado",
-        description: "As alterações foram salvas com sucesso.",
+        title: updateType,
+        description: "Informações atualizadas com sucesso!",
       });
-      setEditingUser(null);
     },
     onError: (error) => {
       toast({
-        title: "Erro ao atualizar",
-        description: error instanceof Error ? error.message : "Ocorreu um erro",
+        title: "Erro ao atualizar usuário",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive",
       });
     },
@@ -284,6 +287,9 @@ export default function PublicAdmin() {
           updates.data_expiracao_plano = null;
           updates.data_expiracao_trial = null;
         }
+
+        // Adiciona o limite padrão de funcionários para novos usuários
+        updates.max_funcionarios = 5;
 
         // Atualiza o plano e data de expiração
         await apiRequest("PATCH", `/api/users/${result.id}`, updates);
@@ -1089,7 +1095,7 @@ export default function PublicAdmin() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button 
+                  <Button
                     onClick={async () => {
                       try {
                         const response = await apiRequest("POST", "/api/asaas/sync");
@@ -1201,6 +1207,7 @@ export default function PublicAdmin() {
                         <TableHead className="font-semibold">Plano</TableHead>
                         <TableHead className="font-semibold">Dias Restantes</TableHead>
                         <TableHead className="font-semibold">Status</TableHead>
+                        <TableHead className="font-semibold">Limite Funcionários</TableHead>
                         <TableHead className="font-semibold">Admin</TableHead>
                         <TableHead className="font-semibold">Ações</TableHead>
                       </TableRow>
@@ -1282,8 +1289,26 @@ export default function PublicAdmin() {
                                 </Badge>
                               </TableCell>
                               <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    value={user.max_funcionarios || 5}
+                                    onChange={(e) => {
+                                      const newValue = parseInt(e.target.value) || 5;
+                                      updateUserMutation.mutate({
+                                        userId: user.id,
+                                        updates: { max_funcionarios: newValue }
+                                      });
+                                    }}
+                                    className="w-20 h-8 text-sm"
+                                  />
+                                </div>
+                              </TableCell>
+                              <TableCell>
                                 <Badge
-                                  variant={user.is_admin === "true" ? "default" : "outline"}
+                                  variant={user.is_admin === "true" ? "default" : "secondary"}
                                   className="cursor-pointer"
                                   onClick={() => handleAdminToggle(user.id, user.is_admin)}
                                   data-testid={`badge-admin-${user.id}`}
@@ -1313,7 +1338,7 @@ export default function PublicAdmin() {
                         })
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                          <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                             Nenhum usuário encontrado
                           </TableCell>
                         </TableRow>

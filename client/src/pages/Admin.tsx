@@ -466,6 +466,11 @@ export default function Admin() {
                         </p>
                       </div>
                     </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4">
+                      <p className="text-white text-sm">
+                        💡 <strong>Precisa de mais funcionários?</strong> Entre em contato para planos personalizados com limite expandido de funcionários.
+                      </p>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                       <div className="flex items-center gap-3 p-3 bg-white/10 backdrop-blur-sm rounded-lg">
                         <div className="p-2 bg-blue-500/30 rounded-lg">
@@ -632,7 +637,7 @@ export default function Admin() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200/50 dark:border-blue-800/30">
                   <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
                     {accountUsers.length}
@@ -645,7 +650,21 @@ export default function Admin() {
                   </p>
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mt-1">Funcionários ativos</p>
                 </div>
+                <div className="p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 border border-purple-200/50 dark:border-purple-800/30">
+                  <p className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
+                    {currentUser.max_funcionarios || 5}
+                  </p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mt-1">Limite de funcionários</p>
+                </div>
               </div>
+              {accountUsers.length >= (currentUser.max_funcionarios || 5) && (
+                <Alert className="mt-4 border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20">
+                  <AlertTitle className="text-orange-800 dark:text-orange-200">Limite atingido!</AlertTitle>
+                  <AlertDescription className="text-orange-700 dark:text-orange-300">
+                    Você atingiu o limite de {currentUser.max_funcionarios || 5} funcionários. Entre em contato para aumentar o limite.
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
 

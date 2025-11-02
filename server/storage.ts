@@ -84,7 +84,7 @@ export interface IStorage {
   getSubscriptionsByUser?(userId: string): Promise<Subscription[]>;
   createSubscription?(subscription: InsertSubscription): Promise<Subscription>;
   updateSubscription?(id: number, updates: Partial<Subscription>): Promise<Subscription | undefined>;
-  
+
   // Métodos para Funcionários e Permissões
   getFuncionarios(contaId: string): Promise<Funcionario[]>;
   getFuncionario(id: string): Promise<Funcionario | undefined>;
@@ -93,7 +93,7 @@ export interface IStorage {
   deleteFuncionario(id: string): Promise<boolean>;
   getPermissoesFuncionario(funcionarioId: string): Promise<PermissaoFuncionario | undefined>;
   savePermissoesFuncionario(funcionarioId: string, permissoes: Partial<PermissaoFuncionario>): Promise<PermissaoFuncionario>;
-  
+
   // Métodos para Contas a Pagar/Receber
   getContasPagar?(): Promise<any[]>;
   createContaPagar?(conta: any): Promise<any>;
@@ -103,7 +103,7 @@ export interface IStorage {
   createContaReceber?(conta: any): Promise<any>;
   updateContaReceber?(id: number, updates: any): Promise<any>;
   deleteContaReceber?(id: number): Promise<boolean>;
-  
+
   // Métodos para Caixa
   getCaixas?(userId: string): Promise<any[]>;
   getCaixaAberto?(userId: string): Promise<any | undefined>;
@@ -210,7 +210,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
     this.nextClienteId = 1;
     this.nextCompraId = 1;
     this.nextSubscriptionId = 1;
-    
+
     this.usersPath = path.join(dataDir, 'users.json');
     this.produtosPath = path.join(dataDir, 'produtos.json');
     this.vendasPath = path.join(dataDir, 'vendas.json');
@@ -334,11 +334,11 @@ export class MemStorage implements Storage { // Changed to implement Storage int
   private async seedDataIfNeeded() {
     if (this.users.size === 0) {
       console.log("Seeding initial user data...");
-      const users: InsertUser[] = [
-        { email: "loja1@gmail.com", senha: "loja123", nome: "Loja 1", plano: "free", is_admin: "true" },
-        { email: "loja2@gmail.com", senha: "loja456", nome: "Loja 2", plano: "premium", is_admin: "false" },
+      const initialUsers: InsertUser[] = [
+        { email: "demo@example.com", senha: "demo123", nome: "Loja Demo 1", plano: "free", is_admin: "true", data_criacao: new Date().toISOString(), status: "ativo", max_funcionarios: 5 },
+        { email: "demo2@example.com", senha: "demo123", nome: "Loja Demo 2", plano: "free", is_admin: "true", data_criacao: new Date().toISOString(), status: "ativo", max_funcionarios: 5 },
       ];
-      for (const user of users) {
+      for (const user of initialUsers) {
         await this.createUser(user);
       }
     }
@@ -346,7 +346,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
     if (this.produtos.size === 0) {
       console.log("Seeding initial product data...");
       const userId1 = Array.from(this.users.values())[0]?.id;
-      
+
       if (userId1) {
         const produtos: InsertProduto[] = [
           { user_id: userId1, nome: "Arroz 5kg", categoria: "Alimentos", preco: 25.50, quantidade: 50, estoque_minimo: 10, codigo_barras: "7891234567890", vencimento: "2025-12-01" },
@@ -376,7 +376,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
     if (this.fornecedores.size === 0) {
       console.log("Seeding initial supplier data...");
       const userId1 = Array.from(this.users.values())[0]?.id;
-      
+
       if (userId1) {
         const initialFornecedores: InsertFornecedor[] = [
           { user_id: userId1, nome: "Fornecedor A", cnpj: "11.111.111/0001-11", email: "fornecedor.a@email.com", telefone: "(11) 1111-1111", endereco: null, observacoes: null, data_cadastro: new Date().toISOString() },
@@ -391,7 +391,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
     if (this.clientes.size === 0) {
       console.log("Seeding initial customer data...");
       const userId1 = Array.from(this.users.values())[0]?.id;
-      
+
       if (userId1) {
         const initialClientes: InsertCliente[] = [
           { user_id: userId1, nome: "Cliente X", cpf_cnpj: "111.111.111-11", email: "cliente.x@email.com", telefone: "(11) 1111-1111", endereco: null, observacoes: null, data_cadastro: new Date().toISOString() },
@@ -406,7 +406,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
     if (this.compras.size === 0) {
       console.log("Seeding initial purchase data...");
       const userId1 = Array.from(this.users.values())[0]?.id;
-      
+
       if (userId1) {
         const initialCompras: InsertCompra[] = [
           { user_id: userId1, fornecedor_id: 1, produto_id: 1, quantidade: 10, valor_unitario: 20.00, valor_total: 200.00, data: "2023-10-20T09:00:00Z", observacoes: null },
@@ -483,7 +483,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id, plano: insertUser.plano || "free", is_admin: insertUser.is_admin || "false" };
+    const user: User = { ...insertUser, id, plano: insertUser.plano || "free", is_admin: insertUser.is_admin || "false", max_funcionarios: insertUser.max_funcionarios || 5 };
     this.users.set(id, user);
     await this.persistData();
     return user;
@@ -863,7 +863,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
   async updateContaPagar(id: number, updates: any): Promise<any> {
     const index = this.contasPagar.findIndex(c => c.id === id);
     if (index === -1) return null;
-    
+
     this.contasPagar[index] = { ...this.contasPagar[index], ...updates };
     await fs.writeFile(this.contasPagarPath, JSON.stringify(this.contasPagar, null, 2));
     return this.contasPagar[index];
@@ -872,7 +872,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
   async deleteContaPagar(id: number): Promise<boolean> {
     const index = this.contasPagar.findIndex(c => c.id === id);
     if (index === -1) return false;
-    
+
     this.contasPagar.splice(index, 1);
     await fs.writeFile(this.contasPagarPath, JSON.stringify(this.contasPagar, null, 2));
     return true;
@@ -905,7 +905,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
   async updateContaReceber(id: number, updates: any): Promise<any> {
     const index = this.contasReceber.findIndex(c => c.id === id);
     if (index === -1) return null;
-    
+
     this.contasReceber[index] = { ...this.contasReceber[index], ...updates };
     await fs.writeFile(this.contasReceberPath, JSON.stringify(this.contasReceber, null, 2));
     return this.contasReceber[index];
@@ -914,7 +914,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
   async deleteContaReceber(id: number): Promise<boolean> {
     const index = this.contasReceber.findIndex(c => c.id === id);
     if (index === -1) return false;
-    
+
     this.contasReceber.splice(index, 1);
     await fs.writeFile(this.contasReceberPath, JSON.stringify(this.contasReceber, null, 2));
     return true;

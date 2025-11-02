@@ -53,9 +53,8 @@ export default function Login() {
       // Aguarda um pouco para garantir que o localStorage foi atualizado
       await new Promise(resolve => setTimeout(resolve, 100));
       
-      // Verifica se o usuário é admin master específico e redireciona
-      const isAdminMaster = user.email === "pavisoft.suporte@gmail.com" && user.is_admin === "true";
-      setLocation(isAdminMaster ? "/admin-master" : "/dashboard");
+      // Todos os usuários vão para o dashboard após login
+      setLocation("/dashboard");
 
     } catch (error) {
       toast({

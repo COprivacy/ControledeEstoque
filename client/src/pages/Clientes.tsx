@@ -31,9 +31,23 @@ export default function Clientes() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) throw new Error("Usuário não autenticado");
+      
+      const user = JSON.parse(userStr);
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "x-user-id": user.id,
+        "x-user-type": user.tipo || "usuario",
+      };
+      
+      if (user.tipo === "funcionario" && user.conta_id) {
+        headers["x-conta-id"] = user.conta_id;
+      }
+      
       const response = await fetch("/api/clientes", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(data),
       });
       if (!response.ok) throw new Error("Erro ao criar cliente");
@@ -48,9 +62,23 @@ export default function Clientes() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) throw new Error("Usuário não autenticado");
+      
+      const user = JSON.parse(userStr);
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "x-user-id": user.id,
+        "x-user-type": user.tipo || "usuario",
+      };
+      
+      if (user.tipo === "funcionario" && user.conta_id) {
+        headers["x-conta-id"] = user.conta_id;
+      }
+      
       const response = await fetch(`/api/clientes/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(data),
       });
       if (!response.ok) throw new Error("Erro ao atualizar cliente");
@@ -66,7 +94,23 @@ export default function Clientes() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`/api/clientes/${id}`, { method: "DELETE" });
+      const userStr = localStorage.getItem("user");
+      if (!userStr) throw new Error("Usuário não autenticado");
+      
+      const user = JSON.parse(userStr);
+      const headers: Record<string, string> = {
+        "x-user-id": user.id,
+        "x-user-type": user.tipo || "usuario",
+      };
+      
+      if (user.tipo === "funcionario" && user.conta_id) {
+        headers["x-conta-id"] = user.conta_id;
+      }
+      
+      const response = await fetch(`/api/clientes/${id}`, { 
+        method: "DELETE",
+        headers
+      });
       if (!response.ok) throw new Error("Erro ao deletar cliente");
       return response.json();
     },

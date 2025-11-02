@@ -146,7 +146,7 @@ export default function AdminPublico() {
     telefone: "",
     endereco: "",
     data_expiracao_plano: null,
-    max_funcionarios: 5,
+    max_funcionarios: 1,
   });
   const [diasRestantes, setDiasRestantes] = useState<string>("");
   const [newUserForm, setNewUserForm] = useState({
@@ -592,7 +592,7 @@ export default function AdminPublico() {
         telefone: "",
         endereco: "",
         data_expiracao_plano: null,
-        max_funcionarios: 5,
+        max_funcionarios: 1,
       });
     },
     onError: (error: any) => {
@@ -705,7 +705,7 @@ export default function AdminPublico() {
       telefone: (user as any).telefone || "",
       endereco: (user as any).endereco || "",
       data_expiracao_plano: user.data_expiracao_plano || null,
-      max_funcionarios: user.max_funcionarios || 5,
+      max_funcionarios: user.max_funcionarios || 1,
     });
 
     // Calcula dias restantes - deixa vazio se não há data
@@ -1991,7 +1991,7 @@ export default function AdminPublico() {
                       type="number"
                       min="1"
                       value={newUserData.max_funcionarios}
-                      onChange={(e) => setNewUserData({ ...newUserData, max_funcionarios: parseInt(e.target.value) || 5 })}
+                      onChange={(e) => setNewUserData({ ...newUserData, max_funcionarios: parseInt(e.target.value) || 1 })}
                       className="bg-gray-800 border-gray-700 text-white"
                       placeholder="Ex: 10"
                       data-testid="input-max-funcionarios"

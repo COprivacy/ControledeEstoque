@@ -586,11 +586,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const allFuncionarios = await storage.getFuncionarios();
       const funcionariosDaConta = allFuncionarios.filter(f => f.conta_id === conta_id);
-      const maxFuncionarios = usuario.max_funcionarios || 5;
+      const maxFuncionarios = usuario.max_funcionarios || 1;
 
       if (funcionariosDaConta.length >= maxFuncionarios) {
         return res.status(400).json({ 
-          error: `Limite de funcionários atingido. Você pode cadastrar até ${maxFuncionarios} funcionários. Entre em contato para aumentar o limite.` 
+          error: `Limite de funcionários atingido. Você pode cadastrar até ${maxFuncionarios} funcionários.`,
+          limite_atingido: true,
+          max_funcionarios: maxFuncionarios,
+          funcionarios_cadastrados: funcionariosDaConta.length
         });
       }
 

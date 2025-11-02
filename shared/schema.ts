@@ -18,7 +18,7 @@ export const users = pgTable("users", {
   asaas_customer_id: text("asaas_customer_id"),
   conta_id: text("conta_id"),
   permissoes: text("permissoes"),
-  max_funcionarios: integer("max_funcionarios").notNull().default(5),
+  max_funcionarios: integer("max_funcionarios").notNull().default(1),
 });
 
 export const produtos = pgTable("produtos", {

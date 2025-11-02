@@ -85,6 +85,7 @@ export default function Admin() {
   const [selectedEmployee, setSelectedEmployee] = useState<User | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{ plano: 'premium_mensal' | 'premium_anual'; nome: string; preco: string } | null>(null);
+  const [showPricingDialog, setShowPricingDialog] = useState(false);
 
   const [newEmployee, setNewEmployee] = useState<EmployeeFormData>({
     nome: "",
@@ -133,6 +134,10 @@ export default function Admin() {
         ...userData,
         conta_id: currentUser.id,
       });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw errorData;
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -144,12 +149,17 @@ export default function Admin() {
       setCreateUserOpen(false);
       setNewEmployee({ nome: "", email: "", senha: "", cargo: "" });
     },
-    onError: (error) => {
-      toast({
-        title: "Erro ao criar funcionário",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      if (error.limite_atingido) {
+        setCreateUserOpen(false);
+        setShowPricingDialog(true);
+      } else {
+        toast({
+          title: "Erro ao criar funcionário",
+          description: error.error || (error instanceof Error ? error.message : "Erro desconhecido"),
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -982,6 +992,139 @@ export default function Admin() {
         </TabsContent>
       </Tabs>
       </div>
+
+      <Dialog open={showPricingDialog} onOpenChange={setShowPricingDialog}>
+        <DialogContent className="max-w-4xl bg-gradient-to-br from-gray-900 to-gray-950 border-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-white flex items-center gap-2">
+              <Users className="h-6 w-6 text-blue-400" />
+              Limite de Funcionários Atingido
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Você atingiu o limite do seu plano. Escolha uma opção abaixo para aumentar a capacidade:
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Plano 5 Funcionários */}
+              <Card className="bg-gradient-to-br from-blue-900/20 to-blue-950/20 border-blue-800/50 hover:border-blue-600 transition-all cursor-pointer">
+                <CardHeader>
+                  <div className="text-center">
+                    <Crown className="h-10 w-10 text-blue-400 mx-auto mb-2" />
+                    <CardTitle className="text-blue-200 text-xl">Até 5 Funcionários</CardTitle>
+                    <p className="text-gray-400 text-sm mt-1">Perfeito para pequenas equipes</p>
+                  </div>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <div className="mb-4">
+                    <p className="text-4xl font-bold text-blue-100">R$ 39,90</p>
+                    <p className="text-gray-400 text-sm mt-1">por mês</p>
+                  </div>
+                  <ul className="text-left space-y-2 mb-6 text-sm">
+                    <li className="flex items-center text-gray-300">
+                      <Check className="h-4 w-4 text-green-400 mr-2" />
+                      5 acessos simultâneos
+                    </li>
+                    <li className="flex items-center text-gray-300">
+                      <Check className="h-4 w-4 text-green-400 mr-2" />
+                      Todas as funcionalidades
+                    </li>
+                    <li className="flex items-center text-gray-300">
+                      <Check className="h-4 w-4 text-green-400 mr-2" />
+                      Suporte prioritário
+                    </li>
+                  </ul>
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700" data-testid="button-plan-5">
+                    Contratar Agora
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Plano 10 Funcionários */}
+              <Card className="bg-gradient-to-br from-purple-900/20 to-purple-950/20 border-purple-800/50 hover:border-purple-600 transition-all cursor-pointer relative">
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <Badge className="bg-gradient-to-r from-purple-600 to-purple-800 text-white px-3 py-1">
+                    🔥 Mais Popular
+                  </Badge>
+                </div>
+                <CardHeader>
+                  <div className="text-center mt-2">
+                    <Zap className="h-10 w-10 text-purple-400 mx-auto mb-2" />
+                    <CardTitle className="text-purple-200 text-xl">Até 10 Funcionários</CardTitle>
+                    <p className="text-gray-400 text-sm mt-1">Ideal para crescimento</p>
+                  </div>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <div className="mb-4">
+                    <p className="text-4xl font-bold text-purple-100">R$ 69,90</p>
+                    <p className="text-gray-400 text-sm mt-1">por mês</p>
+                    <p className="text-green-400 text-xs mt-1">💰 Economia de R$ 30/mês</p>
+                  </div>
+                  <ul className="text-left space-y-2 mb-6 text-sm">
+                    <li className="flex items-center text-gray-300">
+                      <Check className="h-4 w-4 text-green-400 mr-2" />
+                      10 acessos simultâneos
+                    </li>
+                    <li className="flex items-center text-gray-300">
+                      <Check className="h-4 w-4 text-green-400 mr-2" />
+                      Todas as funcionalidades
+                    </li>
+                    <li className="flex items-center text-gray-300">
+                      <Check className="h-4 w-4 text-green-400 mr-2" />
+                      Suporte prioritário 24/7
+                    </li>
+                  </ul>
+                  <Button className="w-full bg-purple-600 hover:bg-purple-700" data-testid="button-plan-10">
+                    Contratar Agora
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Plano 20 Funcionários */}
+              <Card className="bg-gradient-to-br from-orange-900/20 to-orange-950/20 border-orange-800/50 hover:border-orange-600 transition-all cursor-pointer">
+                <CardHeader>
+                  <div className="text-center">
+                    <Building2 className="h-10 w-10 text-orange-400 mx-auto mb-2" />
+                    <CardTitle className="text-orange-200 text-xl">Até 20 Funcionários</CardTitle>
+                    <p className="text-gray-400 text-sm mt-1">Para equipes grandes</p>
+                  </div>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <div className="mb-4">
+                    <p className="text-4xl font-bold text-orange-100">R$ 119,90</p>
+                    <p className="text-gray-400 text-sm mt-1">por mês</p>
+                    <p className="text-green-400 text-xs mt-1">💰 Economia de R$ 80/mês</p>
+                  </div>
+                  <ul className="text-left space-y-2 mb-6 text-sm">
+                    <li className="flex items-center text-gray-300">
+                      <Check className="h-4 w-4 text-green-400 mr-2" />
+                      20 acessos simultâneos
+                    </li>
+                    <li className="flex items-center text-gray-300">
+                      <Check className="h-4 w-4 text-green-400 mr-2" />
+                      Todas as funcionalidades
+                    </li>
+                    <li className="flex items-center text-gray-300">
+                      <Check className="h-4 w-4 text-green-400 mr-2" />
+                      Suporte dedicado VIP
+                    </li>
+                  </ul>
+                  <Button className="w-full bg-orange-600 hover:bg-orange-700" data-testid="button-plan-20">
+                    Contratar Agora
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="mt-6 p-4 bg-blue-900/10 border border-blue-800/30 rounded-lg">
+              <p className="text-center text-gray-400 text-sm">
+                💡 <strong className="text-white">Dica:</strong> Entre em contato conosco para planos customizados com mais de 20 funcionários
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {selectedPlan && (
         <CheckoutForm

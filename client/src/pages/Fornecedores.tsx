@@ -1,6 +1,7 @@
 
 import { useState, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,12 +42,7 @@ export default function Fornecedores() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await fetch("/api/fornecedores", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Erro ao criar fornecedor");
+      const response = await apiRequest("POST", "/api/fornecedores", data);
       return response.json();
     },
     onSuccess: () => {
@@ -58,12 +54,7 @@ export default function Fornecedores() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const response = await fetch(`/api/fornecedores/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Erro ao atualizar fornecedor");
+      const response = await apiRequest("PUT", `/api/fornecedores/${id}`, data);
       return response.json();
     },
     onSuccess: () => {
@@ -76,8 +67,7 @@ export default function Fornecedores() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`/api/fornecedores/${id}`, { method: "DELETE" });
-      if (!response.ok) throw new Error("Erro ao deletar fornecedor");
+      const response = await apiRequest("DELETE", `/api/fornecedores/${id}`);
       return response.json();
     },
     onSuccess: () => {
@@ -88,12 +78,7 @@ export default function Fornecedores() {
 
   const createCompraMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await fetch("/api/compras", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Erro ao registrar compra");
+      const response = await apiRequest("POST", "/api/compras", data);
       return response.json();
     },
     onSuccess: () => {
@@ -114,12 +99,7 @@ export default function Fornecedores() {
 
   const updateCompraMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const response = await fetch(`/api/compras/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Erro ao atualizar compra");
+      const response = await apiRequest("PUT", `/api/compras/${id}`, data);
       return response.json();
     },
     onSuccess: () => {

@@ -180,6 +180,7 @@ export default function PublicAdmin() {
     senha: "",
     plano: "free",
     is_admin: "false",
+    max_funcionarios: 5,
   });
 
   const [newPlano, setNewPlano] = useState({
@@ -304,7 +305,7 @@ export default function PublicAdmin() {
         description: "O plano e data de expiração foram configurados corretamente.",
       });
       setCreateUserOpen(false);
-      setNewUser({ nome: "", email: "", senha: "", plano: "free", is_admin: "false" });
+      setNewUser({ nome: "", email: "", senha: "", plano: "free", is_admin: "false", max_funcionarios: 5 });
     },
     onError: (error: Error) => {
       toast({
@@ -1177,6 +1178,21 @@ export default function PublicAdmin() {
                               <SelectItem value="anual">Anual</SelectItem>
                             </SelectContent>
                           </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="max_funcionarios">Limite de Funcionários</Label>
+                          <Input
+                            id="max_funcionarios"
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={newUser.max_funcionarios || 5}
+                            onChange={(e) => setNewUser({ ...newUser, max_funcionarios: parseInt(e.target.value) || 5 })}
+                            placeholder="5"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Número máximo de funcionários que este cliente pode cadastrar
+                          </p>
                         </div>
                         <div className="flex items-center space-x-2">
                           <input

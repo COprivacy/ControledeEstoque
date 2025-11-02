@@ -717,11 +717,15 @@ export default function AdminPublico() {
   const handleUpdateUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingUser) {
-      const updates = { ...newUserData };
+      const updates: any = { ...newUserData };
+      
       // Remove password if it's empty to avoid sending empty password
       if (!updates.senha) {
         delete updates.senha;
       }
+
+      // Garantir que is_admin seja sempre uma string "true" ou "false"
+      updates.is_admin = newUserData.is_admin === "true" ? "true" : "false";
 
       // Só atualiza a data de expiração se dias restantes foi EXPLICITAMENTE preenchido com valor > 0
       if (diasRestantes && diasRestantes !== "") {
@@ -731,13 +735,12 @@ export default function AdminPublico() {
           novaDataExpiracao.setDate(novaDataExpiracao.getDate() + dias);
           updates.data_expiracao_plano = novaDataExpiracao.toISOString();
         }
-        // Se dias é 0 ou negativo, não atualiza (preserva o valor original)
       }
-      // Se diasRestantes está vazio, preserva a data original do usuário
 
       // Quando o plano é atualizado, marca o status como ativo
       updates.status = "ativo";
 
+      console.log("📝 Atualizando usuário com:", updates);
       updateUserMutation.mutate({ id: editingUser.id, updates });
     }
   };

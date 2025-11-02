@@ -221,8 +221,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const updates = req.body;
 
-      delete updates.senha;
+      // Não permitir atualizar senha vazia e ID
+      if (updates.senha === "") {
+        delete updates.senha;
+      }
       delete updates.id;
+
+      // Garantir que is_admin seja sempre string "true" ou "false"
+      if (updates.is_admin !== undefined) {
+        updates.is_admin = updates.is_admin === "true" || updates.is_admin === true ? "true" : "false";
+      }
 
       const updatedUser = await storage.updateUser(id, updates);
 

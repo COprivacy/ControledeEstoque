@@ -10,6 +10,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### UX Improvements for Financial Module - November 3, 2025
+- **Added Loading States to Accounts Payable/Receivable:** Improved user experience during form submissions
+  - Added loading indicators on submit buttons ("Adicionando..." / "Salvando...")
+  - Disabled form inputs during pending operations to prevent duplicate submissions
+  - Disabled action buttons during mutations (create, update, delete, pay/receive)
+  - Clear visual feedback for all asynchronous operations
+- **Verified Financial Module Functionality:**
+  - Fluxo de Caixa Projetado: Working correctly - analyzes pending accounts within next 30 days
+  - DRE Simplificado: Working correctly - calculates revenue, expenses, and net income from sales and paid accounts
+  - Note: Fluxo de Caixa requires accounts with due dates within the next 30 days to display projected values
+
 ### Employee Package Purchase System - November 3, 2025
 - **Implemented Employee Package Add-on System:** Complete system allowing clients to purchase additional employee slots beyond the 1 free employee included in all plans
   - **EmployeePurchaseDialog Component:** Pop-up dialog with 4 package options:

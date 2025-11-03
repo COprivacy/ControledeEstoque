@@ -63,11 +63,12 @@ export default function Caixa() {
   const fetchHistoricoCaixas = async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
-      const response = await fetch("/api/caixas", {
+      const userId = user.id || "";
+      const response = await fetch(`/api/caixas?conta_id=${userId}`, {
         headers: {
-          "x-user-id": user.id || "",
+          "x-user-id": userId,
           "x-user-type": user.tipo || "usuario",
-          "x-conta-id": user.conta_id || user.id || "",
+          "x-conta-id": user.conta_id || userId,
         },
       });
       if (response.ok) {
@@ -109,10 +110,14 @@ export default function Caixa() {
     refetchInterval: 3000, // Atualiza a cada 3 segundos
   });
 
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userId = user.id || "";
+
   const { data: caixas = [] } = useQuery({
-    queryKey: ["/api/caixas"],
+    queryKey: ["/api/caixas", userId],
     queryFn: fetchHistoricoCaixas,
     refetchInterval: 5000, // Atualiza a cada 5 segundos
+    enabled: !!userId, // Só executa se tiver userId
   });
 
   const { data: movimentacoes = [] } = useQuery({

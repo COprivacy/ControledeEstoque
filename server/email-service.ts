@@ -68,13 +68,16 @@ export class EmailService {
           
           <!-- Banner -->
           <tr>
-            <td style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 40px 20px; text-align: center; border-radius: 12px 12px 0 0;">
-              ${this.logoBase64 ? `
-              <img src="${this.logoBase64}" alt="Pavisoft Sistemas" style="max-width: 200px; height: auto; display: block; margin: 0 auto;" />
-              ` : `
-              <h1 style="font-size: 36px; font-weight: bold; color: #ffffff; margin: 0 0 8px 0; letter-spacing: 1px;">PAVISOFT</h1>
-              <p style="font-size: 14px; color: #ffffff; margin: 0; opacity: 0.95; letter-spacing: 2px; text-transform: uppercase;">Sistemas de Gestão</p>
-              `}
+            <td style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 50px 20px; text-align: center; border-radius: 12px 12px 0 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <h1 style="font-size: 42px; font-weight: bold; color: #ffffff; margin: 0 0 10px 0; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">PAVISOFT</h1>
+                    <div style="width: 80px; height: 3px; background-color: rgba(255,255,255,0.8); margin: 10px auto;"></div>
+                    <p style="font-size: 15px; color: #ffffff; margin: 10px 0 0 0; opacity: 0.95; letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">Sistemas de Gestão</p>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
@@ -93,10 +96,10 @@ export class EmailService {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
                 <tr>
                   <td style="background-color: #eff6ff; border: 2px dashed #3b82f6; border-radius: 12px; padding: 30px; text-align: center;">
-                    <p style="color: #1e40af; font-size: 14px; font-weight: 600; margin: 0 0 15px 0;">
+                    <p style="color: #1e40af; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 1px;">
                       SEU CÓDIGO DE VERIFICAÇÃO
                     </p>
-                    <p style="font-size: 42px; font-weight: bold; color: #2563eb; letter-spacing: 8px; font-family: 'Courier New', Courier, monospace; margin: 0;">
+                    <p style="font-size: 46px; font-weight: bold; color: #2563eb; letter-spacing: 10px; font-family: 'Courier New', Courier, monospace; margin: 0; text-shadow: 1px 1px 2px rgba(37,99,235,0.2);">
                       ${config.code}
                     </p>
                   </td>
@@ -123,12 +126,12 @@ export class EmailService {
           <!-- Footer -->
           <tr>
             <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb; border-radius: 0 0 12px 12px;">
-              <p style="font-size: 20px; font-weight: bold; color: #3b82f6; margin: 0 0 15px 0;">
+              <p style="font-size: 22px; font-weight: bold; color: #3b82f6; margin: 0 0 15px 0; letter-spacing: 1px;">
                 PAVISOFT SISTEMAS
               </p>
-              <table role="presentation" width="50" cellpadding="0" cellspacing="0" border="0" style="margin: 15px auto;">
+              <table role="presentation" width="60" cellpadding="0" cellspacing="0" border="0" style="margin: 15px auto;">
                 <tr>
-                  <td style="height: 2px; background-color: #3b82f6;"></td>
+                  <td style="height: 3px; background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%); border-radius: 2px;"></td>
                 </tr>
               </table>
               <p style="color: #6b7280; font-size: 13px; line-height: 1.8; margin: 0;">

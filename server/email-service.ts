@@ -45,46 +45,112 @@ export class EmailService {
       <!DOCTYPE html>
       <html>
       <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-          .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-          .button { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-          .details { background: white; padding: 20px; border-radius: 6px; margin: 20px 0; }
-          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 12px; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f3f4f6; }
+          .email-wrapper { width: 100%; background-color: #f3f4f6; padding: 40px 20px; }
+          .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+          .banner { width: 100%; height: 180px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); position: relative; display: flex; align-items: center; justify-content: center; }
+          .banner-content { text-align: center; color: white; }
+          .logo-text { font-size: 36px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
+          .logo-subtitle { font-size: 14px; opacity: 0.95; letter-spacing: 2px; text-transform: uppercase; }
+          .content { padding: 40px 30px; }
+          .greeting { font-size: 18px; color: #374151; margin-bottom: 20px; }
+          .message { color: #4b5563; font-size: 15px; line-height: 1.8; margin-bottom: 20px; }
+          .highlight-box { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid #2563eb; padding: 20px; border-radius: 8px; margin: 25px 0; }
+          .highlight-box h3 { color: #1e40af; font-size: 16px; margin-bottom: 15px; display: flex; align-items: center; }
+          .highlight-box h3::before { content: "📦"; margin-right: 10px; font-size: 20px; }
+          .detail-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+          .detail-item:last-child { border-bottom: none; }
+          .detail-label { color: #6b7280; font-size: 14px; }
+          .detail-value { color: #111827; font-weight: 600; font-size: 14px; }
+          .cta-button { display: block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white !important; text-decoration: none; padding: 16px 32px; text-align: center; border-radius: 8px; font-weight: 600; font-size: 16px; margin: 30px 0; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3); transition: all 0.3s; }
+          .cta-button:hover { box-shadow: 0 6px 12px rgba(37, 99, 235, 0.4); transform: translateY(-2px); }
+          .info-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 6px; margin: 20px 0; }
+          .info-box p { color: #92400e; font-size: 14px; margin: 0; display: flex; align-items: flex-start; }
+          .info-box p::before { content: "⏰"; margin-right: 10px; font-size: 18px; flex-shrink: 0; }
+          .footer { background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb; }
+          .footer-logo { font-size: 20px; font-weight: bold; color: #2563eb; margin-bottom: 8px; }
+          .footer-text { color: #6b7280; font-size: 13px; line-height: 1.8; }
+          .footer-divider { width: 50px; height: 2px; background: #2563eb; margin: 15px auto; }
+          @media only screen and (max-width: 600px) {
+            .email-wrapper { padding: 20px 10px; }
+            .content { padding: 30px 20px; }
+            .logo-text { font-size: 28px; }
+          }
         </style>
       </head>
       <body>
-        <div class="container">
-          <div class="header">
-            <h1>🎉 Pacote de Funcionários Selecionado!</h1>
-          </div>
-          <div class="content">
-            <p>Olá <strong>${config.userName}</strong>,</p>
-            
-            <p>Você selecionou o pacote <strong>${config.packageName}</strong> para expandir sua equipe no Pavisoft!</p>
-            
-            <div class="details">
-              <h3>📋 Detalhes da Compra:</h3>
-              <ul>
-                <li><strong>Pacote:</strong> ${config.packageName}</li>
-                <li><strong>Funcionários adicionais:</strong> ${config.quantity}</li>
-                <li><strong>Valor:</strong> R$ ${config.price.toFixed(2)}</li>
-              </ul>
+        <div class="email-wrapper">
+          <div class="container">
+            <!-- Banner com Logo -->
+            <div class="banner">
+              <div class="banner-content">
+                <div class="logo-text">PAVISOFT</div>
+                <div class="logo-subtitle">Sistemas de Gestão</div>
+              </div>
             </div>
 
-            <p>Para completar sua compra, clique no botão abaixo:</p>
-            
-            <a href="${config.paymentUrl}" class="button">Realizar Pagamento</a>
+            <!-- Conteúdo -->
+            <div class="content">
+              <div class="greeting">Olá, <strong>${config.userName}</strong>! 👋</div>
+              
+              <p class="message">
+                Ficamos felizes em informar que você selecionou o <strong>${config.packageName}</strong> 
+                para expandir sua equipe no Pavisoft Sistemas!
+              </p>
 
-            <p><strong>⏰ Importante:</strong> Seu limite de funcionários será aumentado automaticamente assim que o pagamento for confirmado.</p>
+              <!-- Detalhes da Compra -->
+              <div class="highlight-box">
+                <h3>Resumo do Pedido</h3>
+                <div class="detail-item">
+                  <span class="detail-label">Pacote Selecionado</span>
+                  <span class="detail-value">${config.packageName}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Funcionários Adicionais</span>
+                  <span class="detail-value">+${config.quantity} colaboradores</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Valor Total</span>
+                  <span class="detail-value" style="color: #2563eb; font-size: 18px;">R$ ${config.price.toFixed(2)}</span>
+                </div>
+              </div>
 
-            <p>Você receberá outro email quando o pagamento for confirmado pela Asaas.</p>
+              <p class="message">
+                Para completar sua compra e ativar os novos funcionários, 
+                clique no botão abaixo para realizar o pagamento:
+              </p>
 
+              <a href="${config.paymentUrl}" class="cta-button">
+                🔒 Realizar Pagamento Seguro
+              </a>
+
+              <!-- Aviso Importante -->
+              <div class="info-box">
+                <p>
+                  <strong>Seu limite de funcionários será aumentado automaticamente</strong> 
+                  assim que o pagamento for confirmado pelo sistema Asaas. 
+                  Você receberá um email de confirmação quando isso acontecer.
+                </p>
+              </div>
+
+              <p class="message" style="margin-top: 30px;">
+                Se tiver alguma dúvida, nossa equipe está à disposição para ajudar!
+              </p>
+            </div>
+
+            <!-- Rodapé -->
             <div class="footer">
-              <p>Pavisoft - Sistema de Gestão Empresarial</p>
-              <p>Este é um email automático, não responda.</p>
+              <div class="footer-logo">PAVISOFT SISTEMAS</div>
+              <div class="footer-divider"></div>
+              <p class="footer-text">
+                Sistema Completo de Gestão Empresarial<br>
+                PDV | Estoque | Financeiro | NFCe<br><br>
+                <em>Este é um email automático. Por favor, não responda.</em>
+              </p>
             </div>
           </div>
         </div>
@@ -112,46 +178,129 @@ export class EmailService {
       <!DOCTYPE html>
       <html>
       <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #10b981; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-          .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-          .success-box { background: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 6px; }
-          .details { background: white; padding: 20px; border-radius: 6px; margin: 20px 0; }
-          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 12px; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f3f4f6; }
+          .email-wrapper { width: 100%; background-color: #f3f4f6; padding: 40px 20px; }
+          .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+          .banner { width: 100%; height: 180px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); position: relative; display: flex; align-items: center; justify-content: center; }
+          .banner-content { text-align: center; color: white; }
+          .logo-text { font-size: 36px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
+          .logo-subtitle { font-size: 14px; opacity: 0.95; letter-spacing: 2px; text-transform: uppercase; }
+          .content { padding: 40px 30px; }
+          .greeting { font-size: 18px; color: #374151; margin-bottom: 20px; }
+          .message { color: #4b5563; font-size: 15px; line-height: 1.8; margin-bottom: 20px; }
+          .success-banner { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-left: 4px solid #10b981; padding: 20px; border-radius: 8px; margin: 25px 0; text-align: center; }
+          .success-banner-icon { font-size: 48px; margin-bottom: 10px; }
+          .success-banner-text { color: #065f46; font-size: 18px; font-weight: 600; }
+          .receipt-box { background: #f9fafb; border: 2px solid #e5e7eb; padding: 25px; border-radius: 8px; margin: 25px 0; }
+          .receipt-title { color: #1f2937; font-size: 16px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; }
+          .receipt-title::before { content: "📋"; margin-right: 10px; font-size: 20px; }
+          .receipt-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb; }
+          .receipt-item:last-child { border-bottom: none; padding-bottom: 0; }
+          .receipt-label { color: #6b7280; font-size: 14px; }
+          .receipt-value { color: #111827; font-weight: 600; font-size: 14px; }
+          .highlight-value { color: #10b981; font-size: 18px; font-weight: bold; }
+          .action-box { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid #2563eb; padding: 20px; border-radius: 8px; margin: 25px 0; }
+          .action-box p { color: #1e40af; font-size: 15px; margin: 0; display: flex; align-items: center; }
+          .action-box p::before { content: "🚀"; margin-right: 10px; font-size: 20px; }
+          .footer { background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb; }
+          .footer-logo { font-size: 20px; font-weight: bold; color: #10b981; margin-bottom: 8px; }
+          .footer-text { color: #6b7280; font-size: 13px; line-height: 1.8; }
+          .footer-divider { width: 50px; height: 2px; background: #10b981; margin: 15px auto; }
+          .note { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 6px; margin: 20px 0; }
+          .note p { color: #92400e; font-size: 13px; margin: 0; display: flex; align-items: flex-start; }
+          .note p::before { content: "📌"; margin-right: 10px; font-size: 16px; flex-shrink: 0; }
+          @media only screen and (max-width: 600px) {
+            .email-wrapper { padding: 20px 10px; }
+            .content { padding: 30px 20px; }
+            .logo-text { font-size: 28px; }
+          }
         </style>
       </head>
       <body>
-        <div class="container">
-          <div class="header">
-            <h1>✅ Pagamento Confirmado!</h1>
-          </div>
-          <div class="content">
-            <p>Olá <strong>${config.userName}</strong>,</p>
-            
-            <div class="success-box">
-              <p><strong>🎉 Seu limite de funcionários foi aumentado com sucesso!</strong></p>
+        <div class="email-wrapper">
+          <div class="container">
+            <!-- Banner com Logo -->
+            <div class="banner">
+              <div class="banner-content">
+                <div class="logo-text">PAVISOFT</div>
+                <div class="logo-subtitle">Sistemas de Gestão</div>
+              </div>
             </div>
 
-            <div class="details">
-              <h3>📋 Recibo da Transação:</h3>
-              <ul>
-                <li><strong>Pacote:</strong> ${config.packageName}</li>
-                <li><strong>Funcionários adicionados:</strong> +${config.quantity}</li>
-                <li><strong>Novo limite total:</strong> ${config.newLimit} funcionários</li>
-                <li><strong>Valor pago:</strong> R$ ${config.price.toFixed(2)}</li>
-                <li><strong>Data:</strong> ${new Date().toLocaleDateString('pt-BR')}</li>
-              </ul>
+            <!-- Conteúdo -->
+            <div class="content">
+              <div class="greeting">Olá, <strong>${config.userName}</strong>! 👋</div>
+
+              <!-- Banner de Sucesso -->
+              <div class="success-banner">
+                <div class="success-banner-icon">✅</div>
+                <div class="success-banner-text">Pagamento Confirmado com Sucesso!</div>
+              </div>
+              
+              <p class="message">
+                Temos o prazer de informar que seu pagamento foi processado e confirmado. 
+                <strong>Seu limite de funcionários foi aumentado imediatamente!</strong>
+              </p>
+
+              <!-- Recibo da Transação -->
+              <div class="receipt-box">
+                <div class="receipt-title">Recibo da Transação</div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Pacote Adquirido</span>
+                  <span class="receipt-value">${config.packageName}</span>
+                </div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Funcionários Adicionados</span>
+                  <span class="receipt-value">+${config.quantity} colaboradores</span>
+                </div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Novo Limite Total</span>
+                  <span class="highlight-value">${config.newLimit} funcionários</span>
+                </div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Valor Pago</span>
+                  <span class="receipt-value">R$ ${config.price.toFixed(2)}</span>
+                </div>
+                <div class="receipt-item">
+                  <span class="receipt-label">Data da Ativação</span>
+                  <span class="receipt-value">${new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+                </div>
+              </div>
+
+              <!-- Call to Action -->
+              <div class="action-box">
+                <p>
+                  <strong>Você já pode cadastrar novos funcionários no sistema! Acesse o painel administrativo e comece agora mesmo.</strong>
+                </p>
+              </div>
+
+              <!-- Nota -->
+              <div class="note">
+                <p>
+                  Guarde este email como comprovante da sua transação. 
+                  Ele contém todas as informações importantes sobre sua compra.
+                </p>
+              </div>
+
+              <p class="message" style="margin-top: 30px;">
+                Obrigado por escolher o Pavisoft Sistemas! Estamos aqui para ajudar sua empresa a crescer.
+              </p>
             </div>
 
-            <p>Você já pode cadastrar novos funcionários no sistema! 🚀</p>
-
-            <p><em>Guarde este email como comprovante da sua transação.</em></p>
-
+            <!-- Rodapé -->
             <div class="footer">
-              <p>Pavisoft - Sistema de Gestão Empresarial</p>
-              <p>Este é um email automático, não responda.</p>
+              <div class="footer-logo">PAVISOFT SISTEMAS</div>
+              <div class="footer-divider"></div>
+              <p class="footer-text">
+                Sistema Completo de Gestão Empresarial<br>
+                PDV | Estoque | Financeiro | NFCe<br><br>
+                Dúvidas? Entre em contato: pavisoft.planos@gmail.com<br>
+                <em>Este é um email automático. Por favor, não responda.</em>
+              </p>
             </div>
           </div>
         </div>

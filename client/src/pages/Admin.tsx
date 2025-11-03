@@ -477,9 +477,19 @@ export default function Admin() {
                       </div>
                     </div>
                     <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4">
-                      <p className="text-white text-sm">
-                        💡 <strong>Precisa de mais funcionários?</strong> Entre em contato para planos personalizados com limite expandido de funcionários.
-                      </p>
+                      <div className="flex items-center justify-between gap-4">
+                        <p className="text-white text-sm flex-1">
+                          💡 <strong>Precisa de mais funcionários?</strong> Entre em contato para planos personalizados com limite expandido de funcionários.
+                        </p>
+                        <Button
+                          onClick={() => setLocation("/planos")}
+                          variant="outline"
+                          className="bg-white/20 text-white border-white/30 hover:bg-white/30 whitespace-nowrap"
+                          size="sm"
+                        >
+                          Ver Planos
+                        </Button>
+                      </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                       <div className="flex items-center gap-3 p-3 bg-white/10 backdrop-blur-sm rounded-lg">

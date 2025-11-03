@@ -33,6 +33,105 @@ export class EmailService {
     });
   }
 
+  async sendVerificationCode(config: {
+    to: string;
+    userName: string;
+    code: string;
+  }) {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f3f4f6; }
+          .email-wrapper { width: 100%; background-color: #f3f4f6; padding: 40px 20px; }
+          .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+          .banner { width: 100%; height: 180px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); position: relative; display: flex; align-items: center; justify-content: center; }
+          .banner-content { text-align: center; color: white; }
+          .logo-text { font-size: 36px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
+          .logo-subtitle { font-size: 14px; opacity: 0.95; letter-spacing: 2px; text-transform: uppercase; }
+          .content { padding: 40px 30px; }
+          .greeting { font-size: 18px; color: #374151; margin-bottom: 20px; }
+          .message { color: #4b5563; font-size: 15px; line-height: 1.8; margin-bottom: 20px; }
+          .code-box { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px dashed #3b82f6; padding: 30px; border-radius: 12px; margin: 30px 0; text-align: center; }
+          .code { font-size: 48px; font-weight: bold; color: #2563eb; letter-spacing: 8px; font-family: 'Courier New', monospace; }
+          .code-label { color: #1e40af; font-size: 14px; margin-bottom: 15px; font-weight: 600; }
+          .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 6px; margin: 20px 0; }
+          .warning p { color: #92400e; font-size: 14px; margin: 0; display: flex; align-items: flex-start; }
+          .warning p::before { content: "⚠️"; margin-right: 10px; font-size: 18px; flex-shrink: 0; }
+          .footer { background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb; }
+          .footer-logo { font-size: 20px; font-weight: bold; color: #3b82f6; margin-bottom: 8px; }
+          .footer-text { color: #6b7280; font-size: 13px; line-height: 1.8; }
+          .footer-divider { width: 50px; height: 2px; background: #3b82f6; margin: 15px auto; }
+          @media only screen and (max-width: 600px) {
+            .email-wrapper { padding: 20px 10px; }
+            .content { padding: 30px 20px; }
+            .logo-text { font-size: 28px; }
+            .code { font-size: 36px; letter-spacing: 4px; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="email-wrapper">
+          <div class="container">
+            <div class="banner">
+              <div class="banner-content">
+                <div class="logo-text">PAVISOFT</div>
+                <div class="logo-subtitle">Sistemas de Gestão</div>
+              </div>
+            </div>
+
+            <div class="content">
+              <div class="greeting">Olá, <strong>${config.userName}</strong>! 👋</div>
+              
+              <p class="message">
+                Você solicitou a redefinição de senha da sua conta. 
+                Use o código abaixo para confirmar que é realmente você:
+              </p>
+
+              <div class="code-box">
+                <div class="code-label">SEU CÓDIGO DE VERIFICAÇÃO</div>
+                <div class="code">${config.code}</div>
+              </div>
+
+              <div class="warning">
+                <p>
+                  <strong>Este código expira em 10 minutos.</strong> 
+                  Se você não solicitou esta alteração, ignore este email e sua senha permanecerá a mesma.
+                </p>
+              </div>
+
+              <p class="message">
+                Por segurança, nunca compartilhe este código com ninguém, nem mesmo com a equipe do Pavisoft.
+              </p>
+            </div>
+
+            <div class="footer">
+              <div class="footer-logo">PAVISOFT SISTEMAS</div>
+              <div class="footer-divider"></div>
+              <p class="footer-text">
+                Sistema Completo de Gestão Empresarial<br>
+                PDV | Estoque | Financeiro | NFCe<br><br>
+                <em>Este é um email automático de segurança. Por favor, não responda.</em>
+              </p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.transporter.sendMail({
+      from: process.env.SMTP_FROM || 'noreply@pavisoft.com',
+      to: config.to,
+      subject: '🔐 Código de Verificação - Pavisoft Sistemas',
+      html,
+    });
+  }
+
   async sendEmployeePackagePurchased(config: {
     to: string;
     userName: string;

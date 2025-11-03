@@ -190,6 +190,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para enviar código de verificação
+  app.post("/api/auth/send-verification-code", async (req, res) => {
+    try {
+      const { userId, email } = req.body;
+
+      if (!userId || !email) {
+        return res.status(400).json({ error: "userId e email são obrigatórios" });
+      }
+
+      const user = await storage.getUserById(userId);
+      if (!user || user.email !== email) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+
+      // Gerar código de 6 dígitos
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+      try {
+        const { EmailService } = await import('./email-service');
+        const emailService = new EmailService();
+
+        await emailService.sendVerificationCode({
+          to: email,
+          userName: user.nome,
+          code,
+        });
+
+        console.log(`📧 Código de verificação enviado para ${email}: ${code}`);
+
+        res.json({
+          success: true,
+          message: "Código enviado com sucesso",
+          code, // Em produção, NÃO retorne o código. Aqui é só para demonstração
+        });
+      } catch (emailError) {
+        console.error("❌ Erro ao enviar email:", emailError);
+        res.status(500).json({ error: "Erro ao enviar código de verificação por email" });
+      }
+    } catch (error) {
+      console.error("Erro ao processar solicitação:", error);
+      res.status(500).json({ error: "Erro ao processar solicitação" });
+    }
+  });
+
   // User routes
   app.get("/api/users", async (req, res) => {
     try {

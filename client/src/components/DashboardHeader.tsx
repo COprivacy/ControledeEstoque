@@ -71,6 +71,10 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [sentCode, setSentCode] = useState("");
+  const [isCodeSent, setIsCodeSent] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("customization");
@@ -120,11 +124,47 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
     return name.substring(0, 2).toUpperCase();
   };
 
+  const handleSendVerificationCode = async () => {
+    setIsSendingCode(true);
+    try {
+      const response = await apiRequest("POST", "/api/auth/send-verification-code", {
+        userId,
+        email: userEmail,
+      });
+
+      const data = await response.json();
+      setSentCode(data.code);
+      setIsCodeSent(true);
+
+      toast({
+        title: "Código enviado",
+        description: `Um código de verificação foi enviado para ${userEmail}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao enviar código de verificação. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
   const handleChangePassword = async () => {
-    if (!newPassword || !confirmPassword) {
+    if (!verificationCode || !newPassword || !confirmPassword) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (verificationCode !== sentCode) {
+      toast({
+        title: "Erro",
+        description: "Código de verificação inválido",
         variant: "destructive",
       });
       return;
@@ -161,6 +201,9 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
       setChangePasswordOpen(false);
       setNewPassword("");
       setConfirmPassword("");
+      setVerificationCode("");
+      setSentCode("");
+      setIsCodeSent(false);
     } catch (error) {
       toast({
         title: "Erro",
@@ -222,51 +265,98 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
         </div>
       </div>
 
-      <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
+      <Dialog open={changePasswordOpen} onOpenChange={(open) => {
+        setChangePasswordOpen(open);
+        if (!open) {
+          setNewPassword("");
+          setConfirmPassword("");
+          setVerificationCode("");
+          setSentCode("");
+          setIsCodeSent(false);
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Redefinir Senha</DialogTitle>
+            <DialogTitle>🔐 Redefinir Senha</DialogTitle>
             <DialogDescription>
-              Digite sua nova senha abaixo
+              Por segurança, enviaremos um código de verificação para seu email
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="new-password">Nova Senha</Label>
-              <Input
-                id="new-password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Digite a nova senha"
-              />
-            </div>
-            <div>
-              <Label htmlFor="confirm-password">Confirmar Senha</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirme a nova senha"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleChangePassword} className="flex-1">
-                Alterar Senha
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setChangePasswordOpen(false);
-                  setNewPassword("");
-                  setConfirmPassword("");
-                }} 
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-            </div>
+            {!isCodeSent ? (
+              <>
+                <Alert>
+                  <AlertDescription className="flex items-center gap-2">
+                    <span>📧</span>
+                    <span>
+                      Um código será enviado para <strong>{userEmail}</strong>
+                    </span>
+                  </AlertDescription>
+                </Alert>
+                <Button 
+                  onClick={handleSendVerificationCode} 
+                  className="w-full"
+                  disabled={isSendingCode}
+                >
+                  {isSendingCode ? "Enviando..." : "Enviar Código de Verificação"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                  <AlertDescription className="flex items-center gap-2 text-green-800 dark:text-green-200">
+                    <span>✅</span>
+                    <span>Código enviado para {userEmail}</span>
+                  </AlertDescription>
+                </Alert>
+                <div>
+                  <Label htmlFor="verification-code">Código de Verificação</Label>
+                  <Input
+                    id="verification-code"
+                    type="text"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    placeholder="Digite o código recebido por email"
+                    maxLength={6}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new-password">Nova Senha</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Digite a nova senha"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="confirm-password">Confirmar Senha</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirme a nova senha"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleChangePassword} className="flex-1">
+                    Alterar Senha
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setIsCodeSent(false);
+                      setVerificationCode("");
+                    }} 
+                    className="flex-1"
+                  >
+                    Reenviar Código
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>

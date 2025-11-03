@@ -676,7 +676,7 @@ export default function Admin() {
                 </div>
                 <div className="p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 border border-purple-200/50 dark:border-purple-800/30">
                   <p className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
-                    {currentUser.max_funcionarios || 5}
+                    {currentUser.max_funcionarios || 1}
                   </p>
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mt-1">Limite de funcionários</p>
                 </div>

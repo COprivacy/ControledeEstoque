@@ -636,7 +636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (funcionariosDaConta.length >= maxFuncionarios) {
         return res.status(400).json({ 
-          error: `📊 Limite de funcionários atingido!\n\nVocê já cadastrou ${funcionariosDaConta.length} de ${maxFuncionarios} funcionários permitidos no seu plano.\n\nPara cadastrar mais funcionários, você pode:\n• Fazer upgrade do seu plano\n• Comprar pacotes adicionais de funcionários`,
+          error: "Limite de funcionários atingido, verifique os planos e aumente a capacidade de novos cadastros.",
           limite_atingido: true,
           max_funcionarios: maxFuncionarios,
           funcionarios_cadastrados: funcionariosDaConta.length

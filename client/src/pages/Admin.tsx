@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { CheckoutForm } from "@/components/CheckoutForm";
+import { EmployeePurchaseDialog } from "@/components/EmployeePurchaseDialog";
 
 interface User {
   id: string;
@@ -88,6 +89,7 @@ export default function Admin() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{ plano: 'premium_mensal' | 'premium_anual'; nome: string; preco: string } | null>(null);
   const [showPricingDialog, setShowPricingDialog] = useState(false);
+  const [employeePurchaseOpen, setEmployeePurchaseOpen] = useState(false);
 
   const [newEmployee, setNewEmployee] = useState<EmployeeFormData>({
     nome: "",
@@ -679,19 +681,19 @@ export default function Admin() {
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mt-1">Limite de funcionários</p>
                 </div>
               </div>
-              {accountUsers.length >= (currentUser.max_funcionarios || 5) && (
+              {accountUsers.length >= (currentUser.max_funcionarios || 1) && (
                 <Alert className="mt-4 border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20">
                   <AlertTitle className="text-orange-800 dark:text-orange-200">Limite atingido!</AlertTitle>
                   <AlertDescription className="text-orange-700 dark:text-orange-300 flex flex-col gap-3">
-                    <p>Você atingiu o limite de {currentUser.max_funcionarios || 5} funcionários.</p>
+                    <p>Você atingiu o limite de {currentUser.max_funcionarios || 1} funcionário(s).</p>
                     <Button 
                       variant="default" 
                       size="sm" 
-                      onClick={() => setLocation("/planos")}
+                      onClick={() => setEmployeePurchaseOpen(true)}
                       className="w-fit"
                       data-testid="button-upgrade-plan"
                     >
-                      Ver Planos e Aumentar Limite
+                      Comprar Mais Funcionários
                     </Button>
                   </AlertDescription>
                 </Alert>
@@ -1146,6 +1148,12 @@ export default function Admin() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <EmployeePurchaseDialog
+        open={employeePurchaseOpen}
+        onOpenChange={setEmployeePurchaseOpen}
+        currentLimit={currentUser.max_funcionarios || 1}
+      />
 
       {selectedPlan && (
         <CheckoutForm

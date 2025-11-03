@@ -1,5 +1,7 @@
 
 import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
 
 interface EmailConfig {
   from: string;
@@ -10,8 +12,19 @@ interface EmailConfig {
 
 export class EmailService {
   private transporter: nodemailer.Transporter;
+  private logoBase64: string;
 
   constructor() {
+    // Carregar logo em base64
+    const logoPath = path.join(process.cwd(), 'attached_assets', 'generated_images', 'Pavisoft_Sistemas_email_header_logo_bee66462.png');
+    try {
+      const logoBuffer = fs.readFileSync(logoPath);
+      this.logoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
+    } catch (error) {
+      console.warn('⚠️ Logo não encontrado, usando banner padrão');
+      this.logoBase64 = '';
+    }
+    
     // Configurar com variáveis de ambiente
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -49,7 +62,8 @@ export class EmailService {
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f3f4f6; }
           .email-wrapper { width: 100%; background-color: #f3f4f6; padding: 40px 20px; }
           .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-          .banner { width: 100%; height: 180px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); position: relative; display: flex; align-items: center; justify-content: center; }
+          .banner { width: 100%; height: 180px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+          .banner img { width: 100%; height: 100%; object-fit: cover; }
           .banner-content { text-align: center; color: white; }
           .logo-text { font-size: 36px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
           .logo-subtitle { font-size: 14px; opacity: 0.95; letter-spacing: 2px; text-transform: uppercase; }
@@ -78,10 +92,12 @@ export class EmailService {
         <div class="email-wrapper">
           <div class="container">
             <div class="banner">
+              ${this.logoBase64 ? `<img src="${this.logoBase64}" alt="Pavisoft Sistemas" />` : `
               <div class="banner-content">
                 <div class="logo-text">PAVISOFT</div>
                 <div class="logo-subtitle">Sistemas de Gestão</div>
               </div>
+              `}
             </div>
 
             <div class="content">
@@ -151,7 +167,8 @@ export class EmailService {
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f3f4f6; }
           .email-wrapper { width: 100%; background-color: #f3f4f6; padding: 40px 20px; }
           .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-          .banner { width: 100%; height: 180px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); position: relative; display: flex; align-items: center; justify-content: center; }
+          .banner { width: 100%; height: 180px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+          .banner img { width: 100%; height: 100%; object-fit: cover; }
           .banner-content { text-align: center; color: white; }
           .logo-text { font-size: 36px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
           .logo-subtitle { font-size: 14px; opacity: 0.95; letter-spacing: 2px; text-transform: uppercase; }
@@ -186,10 +203,12 @@ export class EmailService {
           <div class="container">
             <!-- Banner com Logo -->
             <div class="banner">
+              ${this.logoBase64 ? `<img src="${this.logoBase64}" alt="Pavisoft Sistemas" />` : `
               <div class="banner-content">
                 <div class="logo-text">PAVISOFT</div>
                 <div class="logo-subtitle">Sistemas de Gestão</div>
               </div>
+              `}
             </div>
 
             <!-- Conteúdo -->
@@ -282,7 +301,8 @@ export class EmailService {
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f3f4f6; }
           .email-wrapper { width: 100%; background-color: #f3f4f6; padding: 40px 20px; }
           .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-          .banner { width: 100%; height: 180px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); position: relative; display: flex; align-items: center; justify-content: center; }
+          .banner { width: 100%; height: 180px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+          .banner img { width: 100%; height: 100%; object-fit: cover; }
           .banner-content { text-align: center; color: white; }
           .logo-text { font-size: 36px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
           .logo-subtitle { font-size: 14px; opacity: 0.95; letter-spacing: 2px; text-transform: uppercase; }

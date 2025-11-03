@@ -620,7 +620,8 @@ export class SQLiteStorage implements IStorage {
         is_admin = COALESCE(?, is_admin),
         status = COALESCE(?, status),
         data_expiracao_plano = COALESCE(?, data_expiracao_plano),
-        ultimo_acesso = COALESCE(?, ultimo_acesso)
+        ultimo_acesso = COALESCE(?, ultimo_acesso),
+        max_funcionarios = COALESCE(?, max_funcionarios)
       WHERE id = ?
     `);
 
@@ -632,6 +633,7 @@ export class SQLiteStorage implements IStorage {
       updates.status !== undefined ? updates.status : null,
       updates.data_expiracao_plano !== undefined ? updates.data_expiracao_plano : null,
       updates.ultimo_acesso !== undefined ? updates.ultimo_acesso : null,
+      updates.max_funcionarios !== undefined ? updates.max_funcionarios : null,
       id
     );
 

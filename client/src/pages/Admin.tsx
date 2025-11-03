@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
+import { useLocation } from "wouter";
 import {
   Table,
   TableBody,
@@ -79,6 +80,7 @@ interface EmployeeFormData {
 
 export default function Admin() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [editEmployeeOpen, setEditEmployeeOpen] = useState(false);
   const [editPermissionsUser, setEditPermissionsUser] = useState<string | null>(null);

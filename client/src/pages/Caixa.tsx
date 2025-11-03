@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"; // Added useEffect import
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export default function Caixa() {
+  const [, setLocation] = useLocation();
   const [isAbrirDialogOpen, setIsAbrirDialogOpen] = useState(false);
   const [isFecharDialogOpen, setIsFecharDialogOpen] = useState(false);
   const [isMovimentacaoDialogOpen, setIsMovimentacaoDialogOpen] = useState(false);
@@ -31,11 +33,6 @@ export default function Caixa() {
   const [observacoesFechamento, setObservacoesFechamento] = useState("");
   const [valorMovimentacao, setValorMovimentacao] = useState("");
   const [descricaoMovimentacao, setDescricaoMovimentacao] = useState("");
-
-  // Function to navigate to PDV
-  const setLocation = (path: string) => {
-    window.location.href = path;
-  };
 
   // Functions to fetch data
   const fetchCaixaAberto = async () => {

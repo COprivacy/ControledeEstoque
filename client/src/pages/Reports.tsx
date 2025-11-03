@@ -152,18 +152,51 @@ export default function Reports() {
   const { data: vendas = [] } = useQuery({
     queryKey: ["/api/vendas", startDate, endDate],
     queryFn: async () => {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) throw new Error("Usuário não autenticado");
+      
+      const user = JSON.parse(userStr);
+      const headers: Record<string, string> = {
+        "x-user-id": user.id,
+        "x-user-type": user.tipo || "usuario",
+      };
+      
+      if (user.tipo === "funcionario" && user.conta_id) {
+        headers["x-conta-id"] = user.conta_id;
+      }
+      
       let url = "/api/vendas";
       if (startDate && endDate) {
         url += `?start_date=${startDate}&end_date=${endDate}`;
       }
-      const response = await fetch(url);
+      
+      const response = await fetch(url, { headers });
       if (!response.ok) throw new Error("Erro ao buscar vendas");
       return response.json();
     },
+    refetchInterval: 5000, // Atualiza a cada 5 segundos
   });
 
   const { data: expiringProducts = [] } = useQuery({
     queryKey: ["/api/reports/expiring"],
+    queryFn: async () => {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) return [];
+      
+      const user = JSON.parse(userStr);
+      const headers: Record<string, string> = {
+        "x-user-id": user.id,
+        "x-user-type": user.tipo || "usuario",
+      };
+      
+      if (user.tipo === "funcionario" && user.conta_id) {
+        headers["x-conta-id"] = user.conta_id;
+      }
+      
+      const response = await fetch("/api/reports/expiring", { headers });
+      if (!response.ok) return [];
+      return response.json();
+    },
   });
 
   const clearHistoryMutation = useMutation({

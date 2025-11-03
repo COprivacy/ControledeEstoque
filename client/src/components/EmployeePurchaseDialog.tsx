@@ -114,7 +114,7 @@ export function EmployeePurchaseDialog({
       });
 
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      
+
       onOpenChange(false);
     } catch (error: any) {
       toast({

@@ -107,7 +107,35 @@ export default function Admin() {
 
   const [permissions, setPermissions] = useState<Record<string, Permission>>({});
 
-  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem("user") || "{}"));
+
+  // Atualizar dados do usuário a cada 30 segundos para pegar atualizações do webhook
+  useQuery({
+    queryKey: ["/api/user-refresh", currentUser.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/users`, {
+        headers: {
+          'x-user-id': currentUser.id,
+        },
+      });
+      if (response.ok) {
+        const users = await response.json();
+        const updatedUser = users.find((u: any) => u.id === currentUser.id);
+        if (updatedUser && updatedUser.max_funcionarios !== currentUser.max_funcionarios) {
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+          setCurrentUser(updatedUser);
+          toast({
+            title: "✅ Limite atualizado",
+            description: `Seu limite de funcionários foi atualizado para ${updatedUser.max_funcionarios}!`,
+          });
+        }
+        return updatedUser;
+      }
+      return currentUser;
+    },
+    refetchInterval: 30000, // Atualizar a cada 30 segundos
+    enabled: !!currentUser.id,
+  });
 
   const { data: employees = [], isLoading } = useQuery<User[]>({
     queryKey: ["/api/funcionarios", { conta_id: currentUser.id }],

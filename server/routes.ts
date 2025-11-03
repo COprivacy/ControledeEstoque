@@ -1824,13 +1824,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const quantidadeAdicional = pacoteQuantidades[pacoteId];
 
         if (quantidadeAdicional && userId) {
-          const user = await storage.getUserById(userId);
+          const users = await storage.getUsers();
+          const user = users.find((u: any) => u.id === userId);
+          
           if (user) {
-            const novoLimite = (user.max_funcionarios || 1) + quantidadeAdicional;
+            const limiteAtual = user.max_funcionarios || 1;
+            const novoLimite = limiteAtual + quantidadeAdicional;
+            
             await storage.updateUser(userId, {
               max_funcionarios: novoLimite,
             });
-            console.log(`✅ Limite de funcionários aumentado para ${novoLimite} - User: ${user.email}`);
+            
+            console.log(`✅ [WEBHOOK] Pagamento confirmado - Pacote: ${pacoteId}`);
+            console.log(`✅ [WEBHOOK] User: ${user.email} | ${user.nome}`);
+            console.log(`✅ [WEBHOOK] Limite anterior: ${limiteAtual} → Novo limite: ${novoLimite}`);
+            
+            logger.info('Pacote de funcionários ativado', 'WEBHOOK', {
+              userId,
+              userEmail: user.email,
+              pacoteId,
+              quantidadeAdicional,
+              limiteAnterior: limiteAtual,
+              novoLimite
+            });
           }
         }
 

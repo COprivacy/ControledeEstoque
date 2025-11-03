@@ -287,20 +287,10 @@ export default function Admin() {
 
   const handleSaveEmployee = () => {
     if (selectedEmployee) {
-      // Se está redefinindo senha, solicitar confirmação
-      if (editEmployee.senha && editEmployee.senha.trim() !== "") {
-        if (confirm(`Você está redefinindo a senha para ${selectedEmployee.nome}. Um email será enviado para ${selectedEmployee.email} confirmando esta alteração. Deseja continuar?`)) {
-          updateEmployeeMutation.mutate({
-            id: selectedEmployee.id,
-            updates: editEmployee,
-          });
-        }
-      } else {
-        updateEmployeeMutation.mutate({
-          id: selectedEmployee.id,
-          updates: editEmployee,
-        });
-      }
+      updateEmployeeMutation.mutate({
+        id: selectedEmployee.id,
+        updates: editEmployee,
+      });
     }
   };
 
@@ -938,14 +928,8 @@ export default function Admin() {
                     data-testid="input-edit-employee-cargo"
                   />
                 </div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="edit-senha">Redefinir Senha</Label>
-                    <Badge variant="outline" className="text-xs">
-                      <Shield className="h-3 w-3 mr-1" />
-                      Apenas Admin
-                    </Badge>
-                  </div>
+                <div>
+                  <Label htmlFor="edit-senha">Nova Senha (Opcional)</Label>
                   <Input
                     id="edit-senha"
                     type="password"
@@ -954,11 +938,6 @@ export default function Admin() {
                     placeholder="Digite a nova senha (deixe em branco para não alterar)"
                     data-testid="input-edit-employee-password"
                   />
-                  <Alert className="border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20">
-                    <AlertDescription className="text-xs text-orange-800 dark:text-orange-300">
-                      ⚠️ Ao redefinir a senha, um email de confirmação será enviado automaticamente para <strong>{selectedEmployee?.email}</strong>
-                    </AlertDescription>
-                  </Alert>
                 </div>
                 <Alert>
                   <AlertDescription>

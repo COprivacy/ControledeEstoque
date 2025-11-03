@@ -658,44 +658,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Acesso negado" });
       }
 
-      // Verificar se está redefinindo senha
-      const isPasswordReset = updates.senha && updates.senha.trim() !== "";
-
       const updatedFuncionario = await storage.updateFuncionario(id, updates);
-
-      // Se redefiniu senha, enviar email de confirmação
-      if (isPasswordReset) {
-        try {
-          const { EmailService } = await import('./email-service');
-          const emailService = new EmailService();
-
-          // Buscar admin que está fazendo a alteração
-          const users = await storage.getUsers();
-          const admin = users.find((u: any) => u.id === effectiveUserId);
-
-          const resetDate = new Date().toLocaleString('pt-BR', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZone: 'America/Sao_Paulo'
-          });
-
-          await emailService.sendPasswordResetConfirmation({
-            to: funcionario.email,
-            userName: funcionario.nome,
-            resetByAdmin: admin?.nome || 'Administrador',
-            resetDate,
-          });
-
-          console.log(`📧 Email de redefinição de senha enviado para ${funcionario.email}`);
-        } catch (emailError) {
-          console.error("⚠️ Erro ao enviar email de redefinição de senha (não crítico):", emailError);
-          // Não bloqueia a operação se o email falhar
-        }
-      }
-
       res.json(updatedFuncionario);
     } catch (error) {
       res.status(500).json({ error: "Erro ao atualizar funcionário" });

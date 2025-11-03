@@ -1,14 +1,26 @@
 import { Button } from "@/components/ui/button";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, KeyRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 
 interface DashboardHeaderProps {
@@ -48,12 +60,17 @@ function hexToHSL(hex: string): string {
 }
 
 export default function DashboardHeader({ userEmail = "usuario@email.com", onLogout }: DashboardHeaderProps) {
+  const { toast } = useToast();
   const [config, setConfig] = useState({
     logoUrl: "",
     storeName: "Controle de Estoque Simples"
   });
   const [userName, setUserName] = useState("");
   const [userCargo, setUserCargo] = useState("");
+  const [userId, setUserId] = useState("");
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
     const saved = localStorage.getItem("customization");
@@ -86,9 +103,11 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
         const user = JSON.parse(userStr);
         setUserName(user.nome || "Usuário");
         setUserCargo(user.cargo || (user.tipo === "funcionario" ? "Funcionário" : "Administrador"));
+        setUserId(user.id || "");
       } catch (e) {
         setUserName("Usuário");
         setUserCargo("Usuário");
+        setUserId("");
       }
     }
   }, []);
@@ -99,6 +118,56 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
     return name.substring(0, 2).toUpperCase();
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Erro",
+        description: "A senha deve ter no mínimo 6 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await apiRequest("PATCH", `/api/users/${userId}`, {
+        senha: newPassword,
+      });
+
+      toast({
+        title: "Senha alterada",
+        description: "Sua senha foi alterada com sucesso!",
+      });
+
+      setChangePasswordOpen(false);
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao alterar senha. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -134,6 +203,11 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
                 <span className="text-xs text-muted-foreground">Email</span>
                 <span className="text-sm font-medium" data-testid="text-user-email">{userEmail}</span>
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setChangePasswordOpen(true)}>
+                <KeyRound className="h-4 w-4 mr-2" />
+                Redefinir Senha
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
@@ -147,6 +221,55 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
           </Button>
         </div>
       </div>
+
+      <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Redefinir Senha</DialogTitle>
+            <DialogDescription>
+              Digite sua nova senha abaixo
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="new-password">Nova Senha</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Digite a nova senha"
+              />
+            </div>
+            <div>
+              <Label htmlFor="confirm-password">Confirmar Senha</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirme a nova senha"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleChangePassword} className="flex-1">
+                Alterar Senha
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setChangePasswordOpen(false);
+                  setNewPassword("");
+                  setConfirmPassword("");
+                }} 
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

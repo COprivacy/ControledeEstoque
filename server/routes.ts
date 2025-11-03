@@ -251,7 +251,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cpf_cnpj: user.cpf_cnpj || null,
         telefone: user.telefone || null,
         endereco: user.endereco || null,
-        asaas_customer_id: user.asaas_customer_id || null
+        asaas_customer_id: user.asaas_customer_id || null,
+        max_funcionarios: user.max_funcionarios || 1
       }));
       res.json(sanitizedUsers);
     } catch (error) {
@@ -292,7 +293,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data_criacao: updatedUser.data_criacao,
         data_expiracao_trial: updatedUser.data_expiracao_trial,
         data_expiracao_plano: updatedUser.data_expiracao_plano,
-        ultimo_acesso: updatedUser.ultimo_acesso
+        ultimo_acesso: updatedUser.ultimo_acesso,
+        max_funcionarios: updatedUser.max_funcionarios
       });
     } catch (error) {
       console.error(`❌ [UPDATE USER] Erro ao atualizar usuário:`, error);

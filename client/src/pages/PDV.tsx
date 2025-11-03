@@ -74,7 +74,8 @@ export default function PDV() {
   const { data: caixaAberto, isLoading: isLoadingCaixa } = useQuery({
     queryKey: ["/api/caixas/aberto"],
     queryFn: fetchCaixaAberto,
-    refetchInterval: 5000, // Atualiza a cada 5 segundos para verificar se o caixa ainda está aberto
+    refetchInterval: 30000, // Atualiza a cada 30 segundos para verificar se o caixa ainda está aberto
+    staleTime: 20000, // Considera os dados válidos por 20 segundos
   });
 
   const copyToClipboard = (text: string, fieldName: string) => {

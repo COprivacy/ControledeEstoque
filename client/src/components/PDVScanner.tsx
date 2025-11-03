@@ -1,3 +1,4 @@
+replit_final_file>
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,9 +67,8 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
 
     if (barcode.length >= 8) {
-      scanTimeoutRef.current = setTimeout(() => {
-        handleScan(barcode);
-      }, 100);
+      // Removed setTimeout for immediate scan processing for better fluidity
+      handleScan(barcode);
     }
 
     return () => {
@@ -144,7 +144,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     if (!scannedBarcode.trim()) return;
 
     const now = Date.now();
-    if (now - lastScanTime < 100) {
+    if (now - lastScanTime < 100) { // Basic debounce for rapid scans
       return;
     }
     setLastScanTime(now);
@@ -152,7 +152,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     try {
       const produto = onFetchProduct
         ? await onFetchProduct(scannedBarcode)
-        : await fetchProduct(scannedBarcode); // Use a função fetchProduct aqui
+        : await fetchProduct(scannedBarcode);
 
       if (!produto) {
         playBeep(false);
@@ -645,7 +645,12 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
               </div>
             )}
 
-            <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+            <AlertDialog open={showConfirmDialog} onOpenChange={(isOpen) => {
+              setShowConfirmDialog(isOpen);
+              if (!isOpen && valorPagoRef.current) {
+                valorPagoRef.current.focus(); // Focus on valorPago input after dialog closes
+              }
+            }}>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Confirmar Finalização da Venda</AlertDialogTitle>
@@ -690,3 +695,4 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     </div>
   );
 }
+</replit_final_file>

@@ -124,21 +124,23 @@ export default function ContasReceber() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="descricao">Descrição</Label>
-                <Input id="descricao" name="descricao" required />
+                <Input id="descricao" name="descricao" required disabled={createMutation.isPending} />
               </div>
               <div>
                 <Label htmlFor="valor">Valor</Label>
-                <Input id="valor" name="valor" type="number" step="0.01" required />
+                <Input id="valor" name="valor" type="number" step="0.01" required disabled={createMutation.isPending} />
               </div>
               <div>
                 <Label htmlFor="data_vencimento">Data de Recebimento</Label>
-                <Input id="data_vencimento" name="data_vencimento" type="date" required />
+                <Input id="data_vencimento" name="data_vencimento" type="date" required disabled={createMutation.isPending} />
               </div>
               <div>
                 <Label htmlFor="categoria">Categoria</Label>
-                <Input id="categoria" name="categoria" placeholder="Ex: Cliente, Serviço, etc" />
+                <Input id="categoria" name="categoria" placeholder="Ex: Cliente, Serviço, etc" disabled={createMutation.isPending} />
               </div>
-              <Button type="submit" className="w-full">Adicionar</Button>
+              <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+                {createMutation.isPending ? "Adicionando..." : "Adicionar"}
+              </Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -221,14 +223,16 @@ export default function ContasReceber() {
                             size="sm"
                             variant="outline"
                             onClick={() => receberMutation.mutate(conta.id)}
+                            disabled={receberMutation.isPending}
                           >
-                            Receber
+                            {receberMutation.isPending ? "..." : "Receber"}
                           </Button>
                         )}
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => setEditingConta(conta)}
+                          disabled={deleteMutation.isPending || receberMutation.isPending}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -236,6 +240,7 @@ export default function ContasReceber() {
                           size="sm"
                           variant="ghost"
                           onClick={() => deleteMutation.mutate(conta.id)}
+                          disabled={deleteMutation.isPending}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -258,21 +263,23 @@ export default function ContasReceber() {
             <form onSubmit={handleEdit} className="space-y-4">
               <div>
                 <Label htmlFor="edit-descricao">Descrição</Label>
-                <Input id="edit-descricao" name="descricao" defaultValue={editingConta.descricao} required />
+                <Input id="edit-descricao" name="descricao" defaultValue={editingConta.descricao} required disabled={updateMutation.isPending} />
               </div>
               <div>
                 <Label htmlFor="edit-valor">Valor</Label>
-                <Input id="edit-valor" name="valor" type="number" step="0.01" defaultValue={editingConta.valor} required />
+                <Input id="edit-valor" name="valor" type="number" step="0.01" defaultValue={editingConta.valor} required disabled={updateMutation.isPending} />
               </div>
               <div>
                 <Label htmlFor="edit-data_vencimento">Data de Recebimento</Label>
-                <Input id="edit-data_vencimento" name="data_vencimento" type="date" defaultValue={editingConta.data_vencimento} required />
+                <Input id="edit-data_vencimento" name="data_vencimento" type="date" defaultValue={editingConta.data_vencimento} required disabled={updateMutation.isPending} />
               </div>
               <div>
                 <Label htmlFor="edit-categoria">Categoria</Label>
-                <Input id="edit-categoria" name="categoria" defaultValue={editingConta.categoria} />
+                <Input id="edit-categoria" name="categoria" defaultValue={editingConta.categoria} disabled={updateMutation.isPending} />
               </div>
-              <Button type="submit" className="w-full">Salvar</Button>
+              <Button type="submit" className="w-full" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? "Salvando..." : "Salvar"}
+              </Button>
             </form>
           </DialogContent>
         </Dialog>

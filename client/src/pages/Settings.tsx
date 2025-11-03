@@ -45,6 +45,7 @@ function hexToHSL(hex: string): string {
 
 const DEFAULT_CONFIG = {
   logoUrl: "",
+  pdvBackgroundUrl: "",
   primaryColor: "#3B82F6",
   secondaryColor: "#10B981",
   accentColor: "#F59E0B",
@@ -168,6 +169,21 @@ export default function Settings() {
         toast({
           title: "Logo carregada!",
           description: "A logo foi carregada com sucesso",
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePDVBackgroundUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setConfig({ ...config, pdvBackgroundUrl: reader.result as string });
+        toast({
+          title: "Plano de fundo carregado!",
+          description: "O plano de fundo do PDV foi carregado com sucesso",
         });
       };
       reader.readAsDataURL(file);
@@ -308,6 +324,39 @@ export default function Settings() {
                   onChange={(e) => setConfig({ ...config, storeName: e.target.value })}
                   placeholder="Nome da sua empresa"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pdv-background">Plano de Fundo do PDV</Label>
+                <Input
+                  id="pdv-background"
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePDVBackgroundUpload}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Personalize o fundo da tela de PDV com uma imagem
+                </p>
+                {config.pdvBackgroundUrl && (
+                  <div className="mt-4">
+                    <p className="text-sm text-muted-foreground mb-2">Prévia:</p>
+                    <div className="relative">
+                      <img 
+                        src={config.pdvBackgroundUrl} 
+                        alt="Plano de fundo PDV" 
+                        className="w-full h-32 object-cover border rounded-lg"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => setConfig({ ...config, pdvBackgroundUrl: "" })}
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

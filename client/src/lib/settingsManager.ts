@@ -1,6 +1,7 @@
 
 export interface AppSettings {
   logoUrl: string;
+  pdvBackgroundUrl: string;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
@@ -25,6 +26,7 @@ export interface AppSettings {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   logoUrl: "",
+  pdvBackgroundUrl: "",
   primaryColor: "#3B82F6",
   secondaryColor: "#10B981",
   accentColor: "#F59E0B",

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as React from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import PDVScanner from "@/components/PDVScanner";
@@ -329,6 +330,23 @@ export default function PDV() {
     );
   }
 
+  // Carregar plano de fundo personalizado
+  const [pdvBackground, setPdvBackground] = React.useState("");
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem("customization");
+    if (saved) {
+      try {
+        const config = JSON.parse(saved);
+        if (config.pdvBackgroundUrl) {
+          setPdvBackground(config.pdvBackgroundUrl);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar plano de fundo:", error);
+      }
+    }
+  }, []);
+
   return (
     <>
       <AlertDialog open={showCaixaAlert} onOpenChange={setShowCaixaAlert}>
@@ -382,33 +400,46 @@ export default function PDV() {
         </div>
       )}
 
-      <div className="space-y-3 animate-in fade-in duration-500 max-h-screen overflow-hidden">
-        <div className="flex items-center justify-between gap-2 py-2">
-          <div className="space-y-0">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent">
-              PDV - Ponto de Venda
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              {caixaAberto 
-                ? "Escaneie os produtos para adicionar ao carrinho"
-                : "Abra o caixa para começar a vender"}
-            </p>
-          </div>
-          <Badge className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white border-0 shadow-md h-6">
-            <Crown className="h-3 w-3 mr-1" />
-            Premium
-          </Badge>
-        </div>
+      <div 
+        className="space-y-3 animate-in fade-in duration-500 max-h-screen overflow-hidden relative"
+        style={{
+          backgroundImage: pdvBackground ? `url(${pdvBackground})` : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+        }}
+      >
+        {/* Overlay para melhor legibilidade */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/30 to-black/40 backdrop-blur-[2px]"></div>
 
-        <div className={cn(
-          "backdrop-blur-sm bg-card/80 rounded-lg border-2 shadow-lg transition-all duration-300 p-3",
-          !caixaAberto && "opacity-60 pointer-events-none border-yellow-200 dark:border-yellow-900"
-        )}>
-          <PDVScanner
-            onSaleComplete={handleSaleComplete}
-            onProductNotFound={handleProductNotFound}
-            onFetchProduct={fetchProduct}
-          />
+        <div className="relative z-10 space-y-3 p-4">
+          <div className="flex items-center justify-between gap-2 py-2 px-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-xl">
+            <div className="space-y-0">
+              <h1 className="text-2xl font-black bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent drop-shadow-lg">
+                💳 PDV - Ponto de Venda
+              </h1>
+              <p className="text-sm text-white/90 font-medium drop-shadow">
+                {caixaAberto 
+                  ? "✨ Sistema pronto para vendas - Escaneie os produtos"
+                  : "⚠️ Abra o caixa para começar a vender"}
+              </p>
+            </div>
+            <Badge className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 h-8 px-4 animate-pulse">
+              <Crown className="h-4 w-4 mr-1" />
+              Premium
+            </Badge>
+          </div>
+
+          <div className={cn(
+            "backdrop-blur-xl bg-white/90 dark:bg-gray-900/90 rounded-2xl border-2 border-white/30 shadow-2xl transition-all duration-500 p-4",
+            !caixaAberto && "opacity-60 pointer-events-none border-yellow-400/50 dark:border-yellow-600/50"
+          )}>
+            <PDVScanner
+              onSaleComplete={handleSaleComplete}
+              onProductNotFound={handleProductNotFound}
+              onFetchProduct={fetchProduct}
+            />
+          </div>
         </div>
       </div>
 

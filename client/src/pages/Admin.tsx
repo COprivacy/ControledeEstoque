@@ -56,6 +56,9 @@ interface User {
   status: string;
   data_criacao?: string;
   cargo?: string;
+  max_funcionarios?: number;
+  data_expiracao_plano?: string;
+  data_expiracao_trial?: string;
 }
 
 interface Permission {
@@ -70,6 +73,7 @@ interface Permission {
   dashboard: string;
   caixa: string;
   configuracoes: string;
+  historico_caixas: string;
 }
 
 interface EmployeeFormData {
@@ -307,6 +311,7 @@ export default function Admin() {
     dashboard: "false",
     caixa: "false",
     configuracoes: "false",
+    historico_caixas: "false",
   });
 
   const togglePermission = (userId: string, permission: keyof Permission) => {
@@ -508,21 +513,7 @@ export default function Admin() {
                         </p>
                       </div>
                     </div>
-                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4">
-                      <div className="flex items-center justify-between gap-4">
-                        <p className="text-white text-sm flex-1">
-                          💡 <strong>Precisa de mais funcionários?</strong> Entre em contato para planos personalizados com limite expandido de funcionários.
-                        </p>
-                        <Button
-                          onClick={() => setLocation("/planos")}
-                          variant="outline"
-                          className="bg-white/20 text-white border-white/30 hover:bg-white/30 whitespace-nowrap"
-                          size="sm"
-                        >
-                          Ver Planos
-                        </Button>
-                      </div>
-                    </div>
+                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                       <div className="flex items-center gap-3 p-3 bg-white/10 backdrop-blur-sm rounded-lg">
                         <div className="p-2 bg-blue-500/30 rounded-lg">
@@ -1055,7 +1046,7 @@ export default function Admin() {
               Você atingiu o limite do seu plano. Escolha uma opção abaixo para aumentar a capacidade:
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Plano 5 Funcionários */}

@@ -37,6 +37,7 @@ export default function Planos() {
       valorTotal: null,
       recursos: [
         "✅ Acesso completo ao sistema",
+        "👥 Funcionários ilimitados no sistema",
         "✅ PDV e controle de caixa",
         "✅ Gestão de produtos e estoque ilimitados",
         "✅ Emissão de NFC-e",
@@ -58,6 +59,7 @@ export default function Planos() {
       destaque: true,
       recursos: [
         "✅ Todos os recursos do plano mensal",
+        "👥 Funcionários ilimitados no sistema",
         "✅ Acesso completo ao sistema",
         "✅ PDV e controle de caixa",
         "✅ Gestão de produtos e estoque ilimitados",

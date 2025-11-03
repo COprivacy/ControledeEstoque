@@ -682,8 +682,17 @@ export default function Admin() {
               {accountUsers.length >= (currentUser.max_funcionarios || 5) && (
                 <Alert className="mt-4 border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20">
                   <AlertTitle className="text-orange-800 dark:text-orange-200">Limite atingido!</AlertTitle>
-                  <AlertDescription className="text-orange-700 dark:text-orange-300">
-                    Você atingiu o limite de {currentUser.max_funcionarios || 5} funcionários. Entre em contato para aumentar o limite.
+                  <AlertDescription className="text-orange-700 dark:text-orange-300 flex flex-col gap-3">
+                    <p>Você atingiu o limite de {currentUser.max_funcionarios || 5} funcionários.</p>
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      onClick={() => setLocation("/planos")}
+                      className="w-fit"
+                      data-testid="button-upgrade-plan"
+                    >
+                      Ver Planos e Aumentar Limite
+                    </Button>
                   </AlertDescription>
                 </Alert>
               )}

@@ -382,28 +382,26 @@ export default function PDV() {
         </div>
       )}
 
-      <div className="space-y-6 animate-in fade-in duration-500">
-        
-
-        <div className="flex items-center gap-3">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent animate-in slide-in-from-left duration-700">
+      <div className="space-y-3 animate-in fade-in duration-500 max-h-screen overflow-hidden">
+        <div className="flex items-center justify-between gap-2 py-2">
+          <div className="space-y-0">
+            <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent">
               PDV - Ponto de Venda
             </h1>
-            <p className="text-sm text-muted-foreground animate-in slide-in-from-left duration-700 delay-100">
+            <p className="text-xs text-muted-foreground">
               {caixaAberto 
                 ? "Escaneie os produtos para adicionar ao carrinho"
                 : "Abra o caixa para começar a vender"}
             </p>
           </div>
-          <Badge className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 animate-in zoom-in duration-500">
-            <Crown className="h-3 w-3 mr-1 animate-pulse" />
+          <Badge className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white border-0 shadow-md h-6">
+            <Crown className="h-3 w-3 mr-1" />
             Premium
           </Badge>
         </div>
 
         <div className={cn(
-          "backdrop-blur-sm bg-card/80 rounded-lg border-2 shadow-xl hover:shadow-2xl transition-all duration-500 p-6 animate-in slide-in-from-bottom duration-700",
+          "backdrop-blur-sm bg-card/80 rounded-lg border-2 shadow-lg transition-all duration-300 p-3",
           !caixaAberto && "opacity-60 pointer-events-none border-yellow-200 dark:border-yellow-900"
         )}>
           <PDVScanner

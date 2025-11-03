@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Scan, ShoppingCart, Plus, Minus, DollarSign, Wallet, User, Check, ChevronsUpDown, Users, CreditCard } from "lucide-react";
+import { Trash2, Scan, ShoppingCart, Plus, Minus, DollarSign, Wallet, User, Check, ChevronsUpDown, Users, CreditCard, Banknote, Percent } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import type { Cliente } from "@shared/schema";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -163,18 +163,18 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
 
       playBeep(true);
 
-      const existingItem = cart.find(item => item.codigo_barras === scannedBarcode);
+      const existingItemIndex = cart.findIndex(item => item.codigo_barras === scannedBarcode);
 
-      if (existingItem) {
-        setCart(cart.map(item =>
-          item.codigo_barras === scannedBarcode
-            ? {
-                ...item,
-                quantidade: Math.min(item.quantidade + 1, item.estoque_disponivel),
-                subtotal: Math.min(item.quantidade + 1, item.estoque_disponivel) * item.preco
-              }
-            : item
-        ));
+      if (existingItemIndex > -1) {
+        const updatedCart = [...cart];
+        const existingItem = updatedCart[existingItemIndex];
+        const newQuantity = Math.min(existingItem.quantidade + 1, existingItem.estoque_disponivel);
+        updatedCart[existingItemIndex] = {
+          ...existingItem,
+          quantidade: newQuantity,
+          subtotal: newQuantity * existingItem.preco
+        };
+        setCart(updatedCart);
       } else {
         setCart([...cart, {
           id: produto.id,
@@ -202,22 +202,22 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
   };
 
-  const updateQuantity = (codigo_barras: string, delta: number) => {
-    setCart(cart.map(item => {
-      if (item.codigo_barras === codigo_barras) {
-        const newQuantity = Math.max(1, Math.min(item.quantidade + delta, item.estoque_disponivel));
+  const updateQuantity = (index: number, newQuantity: number) => {
+    setCart(cart.map((item, i) => {
+      if (i === index) {
+        const quantity = Math.max(1, Math.min(newQuantity, item.estoque_disponivel));
         return {
           ...item,
-          quantidade: newQuantity,
-          subtotal: newQuantity * item.preco
+          quantidade: quantity,
+          subtotal: quantity * item.preco
         };
       }
       return item;
     }));
   };
 
-  const removeItem = (codigo_barras: string) => {
-    setCart(cart.filter(item => item.codigo_barras !== codigo_barras));
+  const removeItem = (index: number) => {
+    setCart(cart.filter((_, i) => i !== index));
   };
 
   const handleCompleteSale = () => {
@@ -226,7 +226,6 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
       return;
     }
 
-    // Para pagamentos eletrônicos, não precisa validar valor pago
     if (formaPagamento === 'dinheiro') {
       const valorPagoNum = parseFloat(valorPago || "0");
       if (valorPagoNum < valorTotal) {
@@ -299,363 +298,394 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
   }, [clienteId, clientes]);
 
-  return (
-    <div className="space-y-6">
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Finalização da Venda</AlertDialogTitle>
-            <AlertDialogDescription>
-              <div className="space-y-2 mt-2">
-                <div className="flex justify-between">
-                  <span>Total da Venda:</span>
-                  <span className="font-semibold">R$ {valorTotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Valor Pago:</span>
-                  <span className="font-semibold">R$ {parseFloat(valorPago || "0").toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-green-600">
-                  <span>Troco:</span>
-                  <span className="font-bold">R$ {troco.toFixed(2)}</span>
-                </div>
-                {clienteId !== "none" && (
-                  <div className="flex justify-between mt-4 pt-2 border-t">
-                    <span>Cliente:</span>
-                    <span className="font-semibold">
-                      {clientes.find((c) => c.id.toString() === clienteId)?.nome || ""}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => valorPagoRef.current?.focus()}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleCompleteSale}>
-              Confirmar Venda
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+  const totalComDesconto = valorTotal; // Renomeado para clareza no contexto de descontinuar o uso de subtotalSemDesconto diretamente
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Carrinho de Compras */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5" />
-                Carrinho de Compras
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {cart.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p>Escaneie produtos para começar</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <Table>
-                    <TableHeader>
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 h-[calc(100vh-180px)]">
+      {/* Coluna Esquerda - Carrinho */}
+      <div className="space-y-3 flex flex-col overflow-hidden">
+        <Card className="shadow-md flex-1 flex flex-col overflow-hidden">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ShoppingCart className="h-4 w-4" />
+              Carrinho de Compras
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 px-4 pb-3 flex-1 overflow-auto">
+            <div className="border rounded-md overflow-hidden flex-1">
+              <div className="max-h-full overflow-y-auto">
+                <table className="w-full text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-left p-2 text-xs font-semibold">Produto</TableHead>
+                      <TableHead className="text-center p-2 text-xs font-semibold">Qtd</TableHead>
+                      <TableHead className="text-right p-2 text-xs font-semibold">Preço Unit.</TableHead>
+                      <TableHead className="text-right p-2 text-xs font-semibold">Subtotal</TableHead>
+                      <TableHead className="text-center p-2 text-xs font-semibold w-16">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {cart.length === 0 ? (
                       <TableRow>
-                        <TableHead>Produto</TableHead>
-                        <TableHead className="text-center">Qtd</TableHead>
-                        <TableHead className="text-right">Preço Unit.</TableHead>
-                        <TableHead className="text-right">Subtotal</TableHead>
-                        <TableHead className="w-[100px]"></TableHead>
+                        <TableCell colSpan={5} className="text-center p-4 text-muted-foreground text-xs">
+                          Carrinho vazio. Escaneie um produto para começar.
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {cart.map((item) => (
-                        <TableRow key={item.codigo_barras}>
-                          <TableCell className="font-medium">{item.nome}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-center gap-2">
+                    ) : (
+                      cart.map((item, index) => (
+                        <TableRow key={index} className="border-t hover:bg-muted/30">
+                          <TableCell className="p-2 text-xs">{item.nome}</TableCell>
+                          <TableCell className="p-2 text-center">
+                            <div className="flex items-center justify-center gap-1">
                               <Button
                                 variant="outline"
                                 size="icon"
-                                className="h-7 w-7"
-                                onClick={() => updateQuantity(item.codigo_barras, -1)}
+                                className="h-6 w-6"
+                                onClick={() => updateQuantity(index, item.quantidade - 1)}
                               >
                                 <Minus className="h-3 w-3" />
                               </Button>
-                              <span className="w-8 text-center">{item.quantidade}</span>
+                              <span className="w-6 text-center font-medium text-xs">{item.quantidade}</span>
                               <Button
                                 variant="outline"
                                 size="icon"
-                                className="h-7 w-7"
-                                onClick={() => updateQuantity(item.codigo_barras, 1)}
+                                className="h-6 w-6"
+                                onClick={() => updateQuantity(index, item.quantidade + 1)}
                                 disabled={item.quantidade >= item.estoque_disponivel}
                               >
                                 <Plus className="h-3 w-3" />
                               </Button>
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">R$ {item.preco.toFixed(2)}</TableCell>
-                          <TableCell className="text-right font-semibold">
-                            R$ {item.subtotal.toFixed(2)}
-                          </TableCell>
-                          <TableCell>
+                          <TableCell className="p-2 text-right text-xs">R$ {item.preco.toFixed(2)}</TableCell>
+                          <TableCell className="p-2 text-right font-semibold text-xs">R$ {item.subtotal.toFixed(2)}</TableCell>
+                          <TableCell className="p-2 text-center">
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => removeItem(item.codigo_barras)}
+                              className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => removeItem(index)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3 w-3" />
                             </Button>
                           </TableCell>
                         </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </table>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-2">
+              <Button
+                variant="outline"
+                onClick={clearCart}
+                disabled={cart.length === 0}
+                className="flex-1 h-8 text-xs"
+                size="sm"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Limpar
+              </Button>
+              <Button
+                onClick={() => setShowConfirmDialog(true)}
+                disabled={cart.length === 0}
+                className="flex-1 h-8 text-xs bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                size="sm"
+              >
+                <Check className="h-3 w-3 mr-1" />
+                Finalizar Venda
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Coluna Direita - Scanner e Pagamento */}
+      <div className="space-y-3 flex flex-col overflow-hidden">
+        {/* Seleção de Cliente */}
+        <Card className="shadow-md">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <User className="h-4 w-4" />
+              Cliente (Opcional)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3">
+            <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openCombobox}
+                  className="w-full justify-between h-8 text-xs"
+                  size="sm"
+                >
+                  {clienteId === "none"
+                    ? "Sem cliente"
+                    : clientes.find((cliente) => cliente.id.toString() === clienteId)?.nome || "Sem cliente"}
+                  <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0">
+                <Command>
+                  <CommandInput placeholder="Buscar cliente..." className="h-8 text-xs" />
+                  <CommandList>
+                    <CommandEmpty className="text-xs">Nenhum cliente encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="none"
+                        onSelect={() => {
+                          setClienteId("none");
+                          setOpenCombobox(false);
+                        }}
+                        className="text-xs"
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-3 w-3",
+                            clienteId === "none" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        Sem cliente
+                      </CommandItem>
+                      {clientes.map((cliente) => (
+                        <CommandItem
+                          key={cliente.id}
+                          value={cliente.id.toString()}
+                          onSelect={(currentValue) => {
+                            setClienteId(currentValue);
+                            setOpenCombobox(false);
+                          }}
+                          className="text-xs"
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-3 w-3",
+                              clienteId === cliente.id.toString() ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {cliente.nome}
+                        </CommandItem>
                       ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </CardContent>
+        </Card>
 
-        {/* Painel de Pagamento */}
-        <div className="space-y-4">
-          {/* Seletor de Cliente */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="space-y-2">
-                <Label htmlFor="cliente" className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Cliente (Opcional)
-                </Label>
-                <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={openCombobox}
-                      className="w-full h-11 justify-between"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        {clienteId === "none"
-                          ? "Sem cliente"
-                          : clientes.find((c) => c.id.toString() === clienteId)?.nome || "Selecione um cliente"}
-                      </div>
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Buscar cliente..." />
-                      <CommandList>
-                        <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
-                        <CommandGroup>
-                          <CommandItem
-                            value="none"
-                            onSelect={() => {
-                              setClienteId("none");
-                              setOpenCombobox(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                clienteId === "none" ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            Sem cliente
-                          </CommandItem>
-                          {clientes.map((cliente) => (
-                            <CommandItem
-                              key={cliente.id}
-                              value={cliente.nome}
-                              onSelect={() => {
-                                setClienteId(cliente.id.toString());
-                                setOpenCombobox(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  clienteId === cliente.id.toString() ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              <div className="flex flex-col">
-                                <span>{cliente.nome}</span>
-                                {cliente.cpf_cnpj && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {cliente.cpf_cnpj}
-                                  </span>
-                                )}
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Scanner discreto */}
-          <Card className="border-dashed">
-            <CardContent className="pt-6">
-              <div className="relative">
-                <Scan className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  ref={inputRef}
-                  type="text"
-                  value={barcode}
-                  onChange={(e) => setBarcode(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Código de barras"
-                  className="pl-10"
-                  autoFocus
-                  data-testid="input-barcode-scanner"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
+        {/* Scanner de Código de Barras */}
+        <Card className="shadow-md">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Scan className="h-4 w-4" />
+              Código de barras
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 px-4 pb-3">
+            <div className="space-y-1">
+              <Label htmlFor="barcode" className="text-xs">Digite ou escaneie o código</Label>
+              <Input
+                ref={inputRef}
+                id="barcode"
+                type="text"
+                placeholder="Código de barras"
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="font-mono h-8 text-xs"
+                autoComplete="off"
+              />
+              <p className="text-xs text-muted-foreground">
                 Escaneie ou digite o código
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Resumo e Pagamento */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Wallet className="h-5 w-5" />
-                Pagamento
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                    <DollarSign className="h-5 w-5" />
-                    Total da Venda
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {descontoPercentual > 0 && (
-                    <>
-                      <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>Subtotal:</span>
-                        <span>R$ {subtotalSemDesconto.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
-                        <span>Desconto ({descontoPercentual}%):</span>
-                        <span>- R$ {valorDesconto.toFixed(2)}</span>
-                      </div>
-                      <div className="border-t pt-2"></div>
-                    </>
-                  )}
-                  <p className="text-4xl font-bold text-green-600 dark:text-green-400">
-                    R$ {valorTotal.toFixed(2)}
-                  </p>
-                </CardContent>
-              </Card>
+        {/* Informações de Pagamento */}
+        <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 shadow-md flex-1">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <CreditCard className="h-4 w-4" />
+              Pagamento
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 px-4 pb-3">
+            <div className="bg-background/60 backdrop-blur-sm rounded-md p-3 border-2 border-primary/30">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium flex items-center gap-1">
+                  <DollarSign className="h-3 w-3" />
+                  Total da Venda
+                </span>
+                <span className="text-2xl font-bold text-primary">
+                  R$ {totalComDesconto.toFixed(2)}
+                </span>
+              </div>
 
-              {cart.length > 0 && (
-                <>
-                  {/* Seleção de Forma de Pagamento */}
-                  <div className="space-y-2">
-                    <Label htmlFor="forma-pagamento" className="flex items-center gap-2">
-                      <CreditCard className="h-4 w-4" />
-                      Forma de Pagamento
-                    </Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        variant={formaPagamento === "dinheiro" ? "default" : "outline"}
-                        onClick={() => setFormaPagamento("dinheiro")}
-                        className="h-10"
-                      >
-                        Dinheiro
-                      </Button>
-                      <Button
-                        variant={formaPagamento === "cartao_credito" ? "default" : "outline"}
-                        onClick={() => setFormaPagamento("cartao_credito")}
-                        className="h-10"
-                      >
-                        Cartão Crédito
-                      </Button>
-                      <Button
-                        variant={formaPagamento === "cartao_debito" ? "default" : "outline"}
-                        onClick={() => setFormaPagamento("cartao_debito")}
-                        className="h-10"
-                      >
-                        Cartão Débito
-                      </Button>
-                      <Button
-                        variant={formaPagamento === "pix" ? "default" : "outline"}
-                        onClick={() => setFormaPagamento("pix")}
-                        className="h-10"
-                      >
-                        Pix
-                      </Button>
-                    </div>
-                  </div>
-
-                  {formaPagamento === 'dinheiro' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="valor-pago" className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4" />
-                        Valor Pago
-                      </Label>
-                      <Input
-                        ref={valorPagoRef}
-                        id="valor-pago"
-                        type="number"
-                        step="0.01"
-                        value={valorPago}
-                        onChange={(e) => setValorPago(e.target.value)}
-                        onKeyDown={handleValorPagoKeyDown}
-                        placeholder="0,00"
-                        className="text-lg"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Pressione Enter para finalizar
-                      </p>
-                    </div>
-                  )}
-
-                  {formaPagamento === 'dinheiro' && valorPago && parseFloat(valorPago) >= valorTotal && (
-                    <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                          Troco:
-                        </span>
-                        <span className="text-xl font-bold text-green-600 dark:text-green-400">
-                          R$ {troco.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={clearCart}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      className="flex-1"
-                      onClick={handleCompleteSale}
-                      disabled={formaPagamento === 'dinheiro' && (!valorPago || parseFloat(valorPago) < valorTotal)}
-                    >
-                      Finalizar
-                    </Button>
-                  </div>
-                </>
+              {descontoPercentual > 0 && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-dashed pt-1 mt-1">
+                  <span>Desconto ({descontoPercentual}%)</span>
+                  <span className="font-medium text-red-600">- R$ {valorDesconto.toFixed(2)}</span>
+                </div>
               )}
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="flex items-center gap-1 text-xs">
+                <CreditCard className="h-3 w-3" />
+                Forma de Pagamento
+              </Label>
+              <div className="grid grid-cols-2 gap-1">
+                <Button
+                  variant={formaPagamento === "dinheiro" ? "default" : "outline"}
+                  onClick={() => setFormaPagamento("dinheiro")}
+                  className={cn(
+                    "h-7 text-xs",
+                    formaPagamento === "dinheiro" && "bg-primary"
+                  )}
+                  size="sm"
+                >
+                  <Banknote className="h-3 w-3 mr-1" />
+                  Dinheiro
+                </Button>
+                <Button
+                  variant={formaPagamento === "cartao_credito" ? "default" : "outline"}
+                  onClick={() => setFormaPagamento("cartao_credito")}
+                  className={cn(
+                    "h-7 text-xs",
+                    formaPagamento === "cartao_credito" && "bg-primary"
+                  )}
+                  size="sm"
+                >
+                  <CreditCard className="h-3 w-3 mr-1" />
+                  Crédito
+                </Button>
+                <Button
+                  variant={formaPagamento === "cartao_debito" ? "default" : "outline"}
+                  onClick={() => setFormaPagamento("cartao_debito")}
+                  className={cn(
+                    "h-7 text-xs",
+                    formaPagamento === "cartao_debito" && "bg-primary"
+                  )}
+                  size="sm"
+                >
+                  <CreditCard className="h-3 w-3 mr-1" />
+                  Débito
+                </Button>
+                <Button
+                  variant={formaPagamento === "pix" ? "default" : "outline"}
+                  onClick={() => setFormaPagamento("pix")}
+                  className={cn(
+                    "h-7 text-xs",
+                    formaPagamento === "pix" && "bg-primary"
+                  )}
+                  size="sm"
+                >
+                  Pix
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="flex items-center gap-1 text-xs">
+                <Percent className="h-3 w-3" />
+                Desconto (%)
+              </Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value={descontoPercentual}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value) || 0;
+                  setDescontoPercentual(Math.min(100, Math.max(0, value)));
+                }}
+                placeholder="0"
+                className="h-8 text-xs"
+              />
+            </div>
+
+            {formaPagamento === 'dinheiro' && (
+              <div className="space-y-1">
+                <Label htmlFor="valor-pago" className="flex items-center gap-1 text-xs">
+                  <DollarSign className="h-3 w-3" />
+                  Valor Pago
+                </Label>
+                <Input
+                  ref={valorPagoRef}
+                  id="valor-pago"
+                  type="number"
+                  step="0.01"
+                  value={valorPago}
+                  onChange={(e) => setValorPago(e.target.value)}
+                  onKeyDown={handleValorPagoKeyDown}
+                  placeholder="0,00"
+                  className="text-lg h-8 text-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Pressione Enter para finalizar
+                </p>
+              </div>
+            )}
+
+            {formaPagamento === 'dinheiro' && valorPago && parseFloat(valorPago) >= valorTotal && (
+              <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                    Troco:
+                  </span>
+                  <span className="text-xl font-bold text-green-600 dark:text-green-400">
+                    R$ {troco.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirmar Finalização da Venda</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    <div className="space-y-2 mt-2">
+                      <div className="flex justify-between">
+                        <span>Total da Venda:</span>
+                        <span className="font-semibold">R$ {valorTotal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Valor Pago:</span>
+                        <span className="font-semibold">R$ {parseFloat(valorPago || "0").toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-green-600">
+                        <span>Troco:</span>
+                        <span className="font-bold">R$ {troco.toFixed(2)}</span>
+                      </div>
+                      {clienteId !== "none" && (
+                        <div className="flex justify-between mt-4 pt-2 border-t">
+                          <span>Cliente:</span>
+                          <span className="font-semibold">
+                            {clientes.find((c) => c.id.toString() === clienteId)?.nome || ""}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => valorPagoRef.current?.focus()}>
+                    Cancelar
+                  </AlertDialogCancel>
+                  <AlertDialogAction onClick={handleCompleteSale}>
+                    Confirmar Venda
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

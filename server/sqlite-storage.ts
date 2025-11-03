@@ -104,6 +104,9 @@ export class SQLiteStorage implements IStorage {
     if (!columnNames.includes('asaas_customer_id')) {
       this.db.exec(`ALTER TABLE users ADD COLUMN asaas_customer_id TEXT`);
     }
+    if (!columnNames.includes('max_funcionarios')) {
+      this.db.exec(`ALTER TABLE users ADD COLUMN max_funcionarios INTEGER NOT NULL DEFAULT 1`);
+    }
 
     this.db.exec(`
 

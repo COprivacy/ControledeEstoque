@@ -1681,6 +1681,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para compra de pacotes de funcionários
+  app.post("/api/purchase-employees", async (req, res) => {
+    try {
+      const userId = req.headers['x-user-id'] as string;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Autenticação necessária" });
+      }
+
+      const { pacoteId, quantidade, valor, nomePacote } = req.body;
+
+      if (!pacoteId || !quantidade || !valor || !nomePacote) {
+        return res.status(400).json({
+          error: "Dados incompletos. Todos os campos são obrigatórios."
+        });
+      }
+
+      // Buscar usuário
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+
+      // Configurar Asaas
+      const asaasConfig = await storage.getConfigAsaas();
+      if (!asaasConfig) {
+        return res.status(500).json({ error: "Configuração de pagamento não encontrada" });
+      }
+
+      const { AsaasClient } = await import("./asaas");
+      const asaas = new AsaasClient({
+        apiKey: asaasConfig.api_key,
+        environment: asaasConfig.ambiente as 'sandbox' | 'production',
+      });
+
+      // Buscar ou criar cliente no Asaas
+      let asaasCustomer;
+      if (user.asaas_customer_id) {
+        try {
+          asaasCustomer = await asaas.getCustomer(user.asaas_customer_id);
+        } catch (error) {
+          console.log("Cliente Asaas não encontrado, criando novo...");
+          asaasCustomer = null;
+        }
+      }
+
+      if (!asaasCustomer) {
+        asaasCustomer = await asaas.createCustomer({
+          name: user.nome,
+          email: user.email,
+          cpfCnpj: user.email,
+        });
+
+        await storage.updateUser(userId, {
+          asaas_customer_id: asaasCustomer.id
+        });
+      }
+
+      // Data de vencimento: 3 dias a partir de hoje
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 3);
+
+      // Criar pagamento
+      const payment = await asaas.createPayment({
+        customer: asaasCustomer.id,
+        billingType: 'PIX', // Padrão PIX, pode ser ajustado
+        value: valor,
+        dueDate: dueDate.toISOString().split('T')[0],
+        description: `${nomePacote} - Pavisoft Sistemas`,
+        externalReference: `${pacoteId}_${userId}_${Date.now()}`
+      });
+
+      // Registrar a compra (poderia ser em uma tabela separada de compras de funcionários)
+      // Por enquanto, vamos apenas retornar o pagamento para o frontend
+      
+      console.log(`✅ Compra de pacote criada - User: ${user.email}, Pacote: ${nomePacote}, Valor: R$ ${valor}`);
+
+      res.json({
+        success: true,
+        payment: {
+          id: payment.id,
+          status: payment.status,
+          invoiceUrl: payment.invoiceUrl,
+          bankSlipUrl: payment.bankSlipUrl,
+          pixQrCode: payment.encodedImage,
+        },
+        message: `Compra de ${nomePacote} criada com sucesso! Realize o pagamento para ativar.`
+      });
+    } catch (error: any) {
+      console.error("❌ Erro ao processar compra de funcionários:", error);
+      res.status(500).json({
+        error: error.message || "Erro ao processar compra. Tente novamente ou entre em contato com o suporte."
+      });
+    }
+  });
+
   app.post("/api/webhook/asaas", async (req, res) => {
     try {
       // Verificação de segurança: validar token do webhook
@@ -1700,6 +1796,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Dados do webhook inválidos" });
       }
 
+      // Verificar se é um pagamento de pacote de funcionários
+      const isEmployeePackage = payment.externalReference && payment.externalReference.startsWith('pacote_');
+      
+      if (isEmployeePackage && (event === "PAYMENT_RECEIVED" || event === "PAYMENT_CONFIRMED")) {
+        // Processar pagamento de pacote de funcionários
+        const parts = payment.externalReference.split('_');
+        const pacoteId = parts[0] + '_' + parts[1]; // pacote_5, pacote_10, etc
+        const userId = parts[2];
+        
+        // Mapear pacotes para quantidade de funcionários
+        const pacoteQuantidades: Record<string, number> = {
+          'pacote_5': 5,
+          'pacote_10': 10,
+          'pacote_20': 20,
+          'pacote_50': 50,
+        };
+        
+        const quantidadeAdicional = pacoteQuantidades[pacoteId];
+        
+        if (quantidadeAdicional && userId) {
+          const user = await storage.getUserById(userId);
+          if (user) {
+            const novoLimite = (user.max_funcionarios || 1) + quantidadeAdicional;
+            await storage.updateUser(userId, {
+              max_funcionarios: novoLimite,
+            });
+            console.log(`✅ Limite de funcionários aumentado para ${novoLimite} - User: ${user.email}`);
+          }
+        }
+        
+        res.json({ success: true, message: "Webhook de pacote processado com sucesso" });
+        return;
+      }
+
+      // Processar pagamento de assinatura normal
       const subscriptions = await storage.getSubscriptions();
       const subscription = subscriptions?.find(s => s.asaas_payment_id === payment.id);
 

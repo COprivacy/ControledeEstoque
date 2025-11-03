@@ -1,4 +1,4 @@
-replit_final_file>
+
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,8 +47,8 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const [clienteId, setClienteId] = useState<string>("none");
   const [openCombobox, setOpenCombobox] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [descontoPercentual, setDescontoPercentual] = useState(0); // Novo estado para o percentual de desconto
-  const [formaPagamento, setFormaPagamento] = useState<string>("dinheiro"); // Novo estado para a forma de pagamento
+  const [descontoPercentual, setDescontoPercentual] = useState(0);
+  const [formaPagamento, setFormaPagamento] = useState<string>("dinheiro");
   const inputRef = useRef<HTMLInputElement>(null);
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const valorPagoRef = useRef<HTMLInputElement>(null);
@@ -67,7 +67,6 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
 
     if (barcode.length >= 8) {
-      // Removed setTimeout for immediate scan processing for better fluidity
       handleScan(barcode);
     }
 
@@ -144,7 +143,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     if (!scannedBarcode.trim()) return;
 
     const now = Date.now();
-    if (now - lastScanTime < 100) { // Basic debounce for rapid scans
+    if (now - lastScanTime < 100) {
       return;
     }
     setLastScanTime(now);
@@ -242,7 +241,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     const saleData: { itens: typeof itens; valorTotal: number; cliente_id?: number; forma_pagamento?: string } = {
       itens,
       valorTotal,
-      forma_pagamento: formaPagamento // Adiciona a forma de pagamento
+      forma_pagamento: formaPagamento
     };
 
     if (clienteId && clienteId !== "none") {
@@ -259,8 +258,8 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     setBarcode("");
     setValorPago("");
     setClienteId("none");
-    setDescontoPercentual(0); // Reseta o desconto ao limpar o carrinho
-    setFormaPagamento("dinheiro"); // Reseta a forma de pagamento
+    setDescontoPercentual(0);
+    setFormaPagamento("dinheiro");
     setShowConfirmDialog(false);
     inputRef.current?.focus();
   };
@@ -284,21 +283,20 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
   };
 
-  // Lógica para aplicar desconto ao cliente selecionado
   useEffect(() => {
     if (clienteId !== "none") {
       const clienteSelecionado = clientes.find(c => c.id.toString() === clienteId);
       if (clienteSelecionado && clienteSelecionado.percentual_desconto) {
         setDescontoPercentual(clienteSelecionado.percentual_desconto);
       } else {
-        setDescontoPercentual(0); // Reseta se o cliente não tiver desconto ou não for encontrado
+        setDescontoPercentual(0);
       }
     } else {
-      setDescontoPercentual(0); // Reseta se nenhum cliente for selecionado
+      setDescontoPercentual(0);
     }
   }, [clienteId, clientes]);
 
-  const totalComDesconto = valorTotal; // Renomeado para clareza no contexto de descontinuar o uso de subtotalSemDesconto diretamente
+  const totalComDesconto = valorTotal;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 h-[calc(100vh-180px)]">
@@ -648,7 +646,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
             <AlertDialog open={showConfirmDialog} onOpenChange={(isOpen) => {
               setShowConfirmDialog(isOpen);
               if (!isOpen && valorPagoRef.current) {
-                valorPagoRef.current.focus(); // Focus on valorPago input after dialog closes
+                valorPagoRef.current.focus();
               }
             }}>
               <AlertDialogContent>
@@ -695,4 +693,3 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     </div>
   );
 }
-</replit_final_file>

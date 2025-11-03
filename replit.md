@@ -10,6 +10,21 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Employee Package Purchase System - November 3, 2025
+- **Implemented Employee Package Add-on System:** Complete system allowing clients to purchase additional employee slots beyond the 1 free employee included in all plans
+  - **EmployeePurchaseDialog Component:** Pop-up dialog with 4 package options:
+    - +5 employees: R$ 49,99 (one-time payment)
+    - +10 employees: R$ 89,99 (one-time payment, popular choice)
+    - +20 employees: R$ 159,99 (one-time payment, best value)
+    - +50 employees: R$ 349,99 (one-time payment, for enterprises)
+  - **Admin Integration:** When user tries to add employee beyond limit, dialog automatically opens instead of redirecting to plans page
+  - **API Endpoint:** POST /api/purchase-employees creates Asaas payment with proper externalReference format (`pacote_{quantity}_{userId}_{timestamp}`)
+  - **Webhook Integration:** Asaas webhook detects package payments and automatically increases user's max_funcionarios
+  - **Plans Page Fix:** Removed incorrect "funcionários ilimitados" text, now shows "1 funcionário incluso (adicione mais conforme necessário)"
+  - **Critical Bug Fix:** Corrected apiRequest signature in both EmployeePurchaseDialog and CheckoutForm (was using wrong parameter order)
+  - **Payment Flow:** Supports PIX, boleto, and credit card via Asaas integration
+  - Validated by architect review - implementation complete and functionally correct
+
 ### Comprehensive Performance Optimizations - November 1, 2025
 - **Implemented Multi-Layer Performance Improvements:** System-wide optimizations to reduce response time across all features
   - **Backend Compression:** Added gzip compression (level 6) on all API responses with optional bypass via `x-no-compression` header

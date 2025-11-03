@@ -411,7 +411,7 @@ export default function PDV() {
         }}
       >
         {/* Overlay para melhor legibilidade */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/30 to-black/40 backdrop-blur-[2px]"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-black/15 to-black/20 backdrop-blur-[1px]"></div>
 
         <div className="relative z-10 space-y-3 p-4">
           <div className="flex items-center justify-between gap-2 py-2 px-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-xl">
@@ -432,7 +432,7 @@ export default function PDV() {
           </div>
 
           <div className={cn(
-            "backdrop-blur-xl bg-white/90 dark:bg-gray-900/90 rounded-2xl border-2 border-white/30 shadow-2xl transition-all duration-500 p-4",
+            "backdrop-blur-md bg-white/70 dark:bg-gray-900/70 rounded-2xl border-2 border-white/30 shadow-2xl transition-all duration-500 p-4",
             !caixaAberto && "opacity-60 pointer-events-none border-yellow-400/50 dark:border-yellow-600/50"
           )}>
             <PDVScanner

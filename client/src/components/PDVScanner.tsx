@@ -608,39 +608,41 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
             </div>
 
             {formaPagamento === 'dinheiro' && (
-              <div className="space-y-1">
-                <Label htmlFor="valor-pago" className="flex items-center gap-1 text-xs">
-                  <DollarSign className="h-3 w-3" />
-                  Valor Pago
-                </Label>
-                <Input
-                  ref={valorPagoRef}
-                  id="valor-pago"
-                  type="number"
-                  step="0.01"
-                  value={valorPago}
-                  onChange={(e) => setValorPago(e.target.value)}
-                  onKeyDown={handleValorPagoKeyDown}
-                  placeholder="0,00"
-                  className="text-lg h-8 text-xs"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Pressione Enter para finalizar
-                </p>
-              </div>
-            )}
-
-            {formaPagamento === 'dinheiro' && valorPago && parseFloat(valorPago) >= valorTotal && (
-              <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                    Troco:
-                  </span>
-                  <span className="text-xl font-bold text-green-600 dark:text-green-400">
-                    R$ {troco.toFixed(2)}
-                  </span>
+              <>
+                <div className="space-y-1">
+                  <Label htmlFor="valor-pago" className="flex items-center gap-1 text-xs">
+                    <DollarSign className="h-3 w-3" />
+                    Valor Pago
+                  </Label>
+                  <Input
+                    ref={valorPagoRef}
+                    id="valor-pago"
+                    type="number"
+                    step="0.01"
+                    value={valorPago}
+                    onChange={(e) => setValorPago(e.target.value)}
+                    onKeyDown={handleValorPagoKeyDown}
+                    placeholder="0,00"
+                    className="text-lg h-8 text-xs"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Pressione Enter para finalizar
+                  </p>
                 </div>
-              </div>
+
+                {valorPago && parseFloat(valorPago) >= valorTotal && (
+                  <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                        Troco:
+                      </span>
+                      <span className="text-xl font-bold text-green-600 dark:text-green-400">
+                        R$ {troco.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             <AlertDialog open={showConfirmDialog} onOpenChange={(isOpen) => {

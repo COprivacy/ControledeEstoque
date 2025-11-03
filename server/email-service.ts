@@ -59,176 +59,44 @@ export class EmailService {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Código de Verificação - Pavisoft</title>
-  <style type="text/css">
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      -webkit-text-size-adjust: 100%;
-      -ms-text-size-adjust: 100%;
-      background-color: #f3f4f6;
-    }
-    table {
-      border-collapse: collapse;
-      mso-table-lspace: 0pt;
-      mso-table-rspace: 0pt;
-    }
-    img {
-      border: 0;
-      height: auto;
-      line-height: 100%;
-      outline: none;
-      text-decoration: none;
-      -ms-interpolation-mode: bicubic;
-    }
-    .wrapper {
-      width: 100%;
-      background-color: #f3f4f6;
-      padding: 40px 0;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background-color: #ffffff;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    .banner {
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      padding: 40px 20px;
-      text-align: center;
-    }
-    .logo-text {
-      font-size: 36px;
-      font-weight: bold;
-      color: #ffffff;
-      margin: 0 0 8px 0;
-      letter-spacing: 1px;
-    }
-    .logo-subtitle {
-      font-size: 14px;
-      color: #ffffff;
-      margin: 0;
-      opacity: 0.95;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-    .content {
-      padding: 40px 30px;
-    }
-    .greeting {
-      font-size: 18px;
-      color: #374151;
-      margin: 0 0 20px 0;
-    }
-    .message {
-      color: #4b5563;
-      font-size: 15px;
-      line-height: 1.8;
-      margin: 0 0 20px 0;
-    }
-    .code-box {
-      background: #eff6ff;
-      border: 2px dashed #3b82f6;
-      border-radius: 12px;
-      padding: 30px;
-      margin: 30px 0;
-      text-align: center;
-    }
-    .code-label {
-      color: #1e40af;
-      font-size: 14px;
-      font-weight: 600;
-      margin: 0 0 15px 0;
-    }
-    .code {
-      font-size: 42px;
-      font-weight: bold;
-      color: #2563eb;
-      letter-spacing: 8px;
-      font-family: 'Courier New', Courier, monospace;
-      margin: 0;
-    }
-    .warning {
-      background-color: #fef3c7;
-      border-left: 4px solid #f59e0b;
-      border-radius: 6px;
-      padding: 16px;
-      margin: 20px 0;
-    }
-    .warning-text {
-      color: #92400e;
-      font-size: 14px;
-      margin: 0;
-      line-height: 1.6;
-    }
-    .footer {
-      background-color: #f9fafb;
-      padding: 30px;
-      text-align: center;
-      border-top: 1px solid #e5e7eb;
-    }
-    .footer-logo {
-      font-size: 20px;
-      font-weight: bold;
-      color: #3b82f6;
-      margin: 0 0 15px 0;
-    }
-    .footer-divider {
-      width: 50px;
-      height: 2px;
-      background-color: #3b82f6;
-      margin: 15px auto;
-    }
-    .footer-text {
-      color: #6b7280;
-      font-size: 13px;
-      line-height: 1.8;
-      margin: 0;
-    }
-    @media only screen and (max-width: 600px) {
-      .wrapper { padding: 20px 10px !important; }
-      .content { padding: 30px 20px !important; }
-      .logo-text { font-size: 28px !important; }
-      .code { font-size: 32px !important; letter-spacing: 4px !important; }
-    }
-  </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f3f4f6;">
-  <table role="presentation" class="wrapper" width="100%" cellpadding="0" cellspacing="0">
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f3f4f6;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f3f4f6; padding: 40px 20px;">
     <tr>
-      <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden;">
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           
           <!-- Banner -->
           <tr>
-            <td class="banner" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 40px 20px; text-align: center;">
-              ${this.logoBase64 ? `<img src="${this.logoBase64}" alt="Pavisoft Sistemas" style="max-width: 100%; height: auto;" />` : `
-              <h1 class="logo-text" style="font-size: 36px; font-weight: bold; color: #ffffff; margin: 0 0 8px 0; letter-spacing: 1px;">PAVISOFT</h1>
-              <p class="logo-subtitle" style="font-size: 14px; color: #ffffff; margin: 0; opacity: 0.95; letter-spacing: 2px; text-transform: uppercase;">Sistemas de Gestão</p>
+            <td style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 40px 20px; text-align: center; border-radius: 12px 12px 0 0;">
+              ${this.logoBase64 ? `
+              <img src="${this.logoBase64}" alt="Pavisoft Sistemas" style="max-width: 200px; height: auto; display: block; margin: 0 auto;" />
+              ` : `
+              <h1 style="font-size: 36px; font-weight: bold; color: #ffffff; margin: 0 0 8px 0; letter-spacing: 1px;">PAVISOFT</h1>
+              <p style="font-size: 14px; color: #ffffff; margin: 0; opacity: 0.95; letter-spacing: 2px; text-transform: uppercase;">Sistemas de Gestão</p>
               `}
             </td>
           </tr>
 
           <!-- Content -->
           <tr>
-            <td class="content" style="padding: 40px 30px;">
-              <p class="greeting" style="font-size: 18px; color: #374151; margin: 0 0 20px 0;">
+            <td style="padding: 40px 30px;">
+              <p style="font-size: 18px; color: #374151; margin: 0 0 20px 0;">
                 Olá, <strong>${config.userName}</strong>! 👋
               </p>
               
-              <p class="message" style="color: #4b5563; font-size: 15px; line-height: 1.8; margin: 0 0 20px 0;">
+              <p style="color: #4b5563; font-size: 15px; line-height: 1.8; margin: 0 0 20px 0;">
                 Você solicitou a redefinição de senha da sua conta. Use o código abaixo para confirmar que é realmente você:
               </p>
 
               <!-- Code Box -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
                 <tr>
-                  <td class="code-box" style="background: #eff6ff; border: 2px dashed #3b82f6; border-radius: 12px; padding: 30px; margin: 30px 0; text-align: center;">
-                    <p class="code-label" style="color: #1e40af; font-size: 14px; font-weight: 600; margin: 0 0 15px 0;">
+                  <td style="background-color: #eff6ff; border: 2px dashed #3b82f6; border-radius: 12px; padding: 30px; text-align: center;">
+                    <p style="color: #1e40af; font-size: 14px; font-weight: 600; margin: 0 0 15px 0;">
                       SEU CÓDIGO DE VERIFICAÇÃO
                     </p>
-                    <p class="code" style="font-size: 42px; font-weight: bold; color: #2563eb; letter-spacing: 8px; font-family: 'Courier New', Courier, monospace; margin: 0;">
+                    <p style="font-size: 42px; font-weight: bold; color: #2563eb; letter-spacing: 8px; font-family: 'Courier New', Courier, monospace; margin: 0;">
                       ${config.code}
                     </p>
                   </td>
@@ -236,17 +104,17 @@ export class EmailService {
               </table>
 
               <!-- Warning -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
                 <tr>
-                  <td class="warning" style="background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 16px; margin: 20px 0;">
-                    <p class="warning-text" style="color: #92400e; font-size: 14px; margin: 0; line-height: 1.6;">
+                  <td style="background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 16px;">
+                    <p style="color: #92400e; font-size: 14px; margin: 0; line-height: 1.6;">
                       ⚠️ <strong>Este código expira em 10 minutos.</strong> Se você não solicitou esta alteração, ignore este email e sua senha permanecerá a mesma.
                     </p>
                   </td>
                 </tr>
               </table>
 
-              <p class="message" style="color: #4b5563; font-size: 15px; line-height: 1.8; margin: 0;">
+              <p style="color: #4b5563; font-size: 15px; line-height: 1.8; margin: 0;">
                 Por segurança, nunca compartilhe este código com ninguém, nem mesmo com a equipe do Pavisoft.
               </p>
             </td>
@@ -254,12 +122,16 @@ export class EmailService {
 
           <!-- Footer -->
           <tr>
-            <td class="footer" style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
-              <p class="footer-logo" style="font-size: 20px; font-weight: bold; color: #3b82f6; margin: 0 0 15px 0;">
+            <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb; border-radius: 0 0 12px 12px;">
+              <p style="font-size: 20px; font-weight: bold; color: #3b82f6; margin: 0 0 15px 0;">
                 PAVISOFT SISTEMAS
               </p>
-              <div class="footer-divider" style="width: 50px; height: 2px; background-color: #3b82f6; margin: 15px auto;"></div>
-              <p class="footer-text" style="color: #6b7280; font-size: 13px; line-height: 1.8; margin: 0;">
+              <table role="presentation" width="50" cellpadding="0" cellspacing="0" border="0" style="margin: 15px auto;">
+                <tr>
+                  <td style="height: 2px; background-color: #3b82f6;"></td>
+                </tr>
+              </table>
+              <p style="color: #6b7280; font-size: 13px; line-height: 1.8; margin: 0;">
                 Sistema Completo de Gestão Empresarial<br>
                 PDV | Estoque | Financeiro | NFCe<br><br>
                 <em>Este é um email automático de segurança. Por favor, não responda.</em>

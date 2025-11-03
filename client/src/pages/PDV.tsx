@@ -322,14 +322,6 @@ export default function PDV() {
     }
   };
 
-  if (isLoadingCaixa) {
-    return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   // Carregar plano de fundo personalizado
   const [pdvBackground, setPdvBackground] = React.useState("");
 
@@ -346,6 +338,14 @@ export default function PDV() {
       }
     }
   }, []);
+
+  if (isLoadingCaixa) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <>

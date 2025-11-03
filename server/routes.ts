@@ -486,7 +486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/backups/restore", requireAdmin, async (req, res) => {
     try {
       const { backupFileName } = req.body;
-      
+
       if (!backupFileName) {
         return res.status(400).json({ error: "Nome do arquivo de backup é obrigatório" });
       }
@@ -579,7 +579,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const usuario = await storage.getUserByEmail(
         (await storage.getUsers()).find((u: any) => u.id === conta_id)?.email || ""
       );
-      
+
       if (!usuario) {
         return res.status(404).json({ error: "Usuário não encontrado" });
       }
@@ -1656,7 +1656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status_pagamento: payment.status,
         invoice_url: payment.invoiceUrl,
         bank_slip_url: payment.bankSlipUrl,
-        pix_qrcode: payment.encodedImage,
+        pix_qrcode: payment.pixQrCode,
       });
 
       console.log(`✅ Assinatura criada com sucesso - User: ${user.email}, Plano: ${planoNomes[plano as keyof typeof planoNomes]}, Pagamento: ${formaPagamento}`);
@@ -1685,7 +1685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/purchase-employees", async (req, res) => {
     try {
       const userId = req.headers['x-user-id'] as string;
-      
+
       if (!userId) {
         return res.status(401).json({ error: "Autenticação necessária" });
       }
@@ -1753,21 +1753,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         externalReference: `${pacoteId}_${userId}_${Date.now()}`
       });
 
-      // Registrar a compra (poderia ser em uma tabela separada de compras de funcionários)
-      // Por enquanto, vamos apenas retornar o pagamento para o frontend
-      
-      console.log(`✅ Compra de pacote criada - User: ${user.email}, Pacote: ${nomePacote}, Valor: R$ ${valor}`);
+      // Enviar email de confirmação (opcional, requer configuração SMTP)
+      try {
+        const { EmailService } = await import('./email-service');
+        const emailService = new EmailService();
+
+        await emailService.sendEmployeePackagePurchased({
+          to: user.email,
+          userName: user.nome,
+          packageName: nomePacote,
+          quantity: quantidade,
+          price: valor,
+          paymentUrl: payment.invoiceUrl || payment.bankSlipUrl || '',
+        });
+
+        console.log(`📧 Email de compra enviado para ${user.email}`);
+      } catch (emailError) {
+        console.error("⚠️ Erro ao enviar email (não crítico):", emailError);
+        // Não bloqueia a compra se o email falhar
+      }
 
       res.json({
-        success: true,
-        payment: {
-          id: payment.id,
-          status: payment.status,
-          invoiceUrl: payment.invoiceUrl,
-          bankSlipUrl: payment.bankSlipUrl,
-          pixQrCode: payment.encodedImage,
-        },
-        message: `Compra de ${nomePacote} criada com sucesso! Realize o pagamento para ativar.`
+        payment,
+        message: "✅ Pacote selecionado. Link de pagamento gerado. Aguardando confirmação."
       });
     } catch (error: any) {
       console.error("❌ Erro ao processar compra de funcionários:", error);
@@ -1798,13 +1806,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verificar se é um pagamento de pacote de funcionários
       const isEmployeePackage = payment.externalReference && payment.externalReference.startsWith('pacote_');
-      
+
       if (isEmployeePackage && (event === "PAYMENT_RECEIVED" || event === "PAYMENT_CONFIRMED")) {
         // Processar pagamento de pacote de funcionários
         const parts = payment.externalReference.split('_');
         const pacoteId = parts[0] + '_' + parts[1]; // pacote_5, pacote_10, etc
         const userId = parts[2];
-        
+
         // Mapear pacotes para quantidade de funcionários
         const pacoteQuantidades: Record<string, number> = {
           'pacote_5': 5,
@@ -1812,9 +1820,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'pacote_20': 20,
           'pacote_50': 50,
         };
-        
+
         const quantidadeAdicional = pacoteQuantidades[pacoteId];
-        
+
         if (quantidadeAdicional && userId) {
           const user = await storage.getUserById(userId);
           if (user) {
@@ -1825,7 +1833,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`✅ Limite de funcionários aumentado para ${novoLimite} - User: ${user.email}`);
           }
         }
-        
+
         res.json({ success: true, message: "Webhook de pacote processado com sucesso" });
         return;
       }

@@ -16,9 +16,11 @@ interface AddProductFormProps {
     vencimento?: string;
   }) => void;
   onCancel?: () => void;
+  isPending?: boolean;
+  isEditing?: boolean;
 }
 
-export default function AddProductForm({ initialData, onSubmit, onCancel }: AddProductFormProps) {
+export default function AddProductForm({ initialData, onSubmit, onCancel, isPending = false, isEditing = false }: AddProductFormProps) {
   const [nome, setNome] = useState(initialData?.nome || "");
   const [categoria, setCategoria] = useState(initialData?.categoria || "");
   const [preco, setPreco] = useState(initialData?.preco?.toString() || "");
@@ -72,6 +74,7 @@ export default function AddProductForm({ initialData, onSubmit, onCancel }: AddP
               onChange={(e) => setNome(e.target.value)}
               placeholder="Ex: Arroz 5kg"
               required
+              disabled={isPending}
               data-testid="input-product-name"
             />
           </div>
@@ -84,6 +87,7 @@ export default function AddProductForm({ initialData, onSubmit, onCancel }: AddP
               onChange={(e) => setCategoria(e.target.value)}
               placeholder="Ex: Alimentos"
               required
+              disabled={isPending}
               data-testid="input-category"
             />
           </div>
@@ -95,6 +99,7 @@ export default function AddProductForm({ initialData, onSubmit, onCancel }: AddP
               value={codigoBarras}
               onChange={(e) => setCodigoBarras(e.target.value)}
               placeholder="7891234567890"
+              disabled={isPending}
               data-testid="input-barcode"
             />
           </div>
@@ -111,6 +116,7 @@ export default function AddProductForm({ initialData, onSubmit, onCancel }: AddP
                 onChange={(e) => setPreco(e.target.value)}
                 placeholder="0.00"
                 required
+                disabled={isPending}
                 data-testid="input-price"
               />
             </div>
@@ -125,6 +131,7 @@ export default function AddProductForm({ initialData, onSubmit, onCancel }: AddP
                 onChange={(e) => setQuantidade(e.target.value)}
                 placeholder="0"
                 required
+                disabled={isPending}
                 data-testid="input-quantity"
               />
             </div>
@@ -139,6 +146,7 @@ export default function AddProductForm({ initialData, onSubmit, onCancel }: AddP
                 onChange={(e) => setEstoqueMinimo(e.target.value)}
                 placeholder="0"
                 required
+                disabled={isPending}
                 data-testid="input-min-stock"
               />
               <p className="text-xs text-muted-foreground">
@@ -154,6 +162,7 @@ export default function AddProductForm({ initialData, onSubmit, onCancel }: AddP
               type="date"
               value={vencimento}
               onChange={(e) => setVencimento(e.target.value)}
+              disabled={isPending}
               data-testid="input-expiry-date"
             />
           </div>
@@ -175,13 +184,14 @@ export default function AddProductForm({ initialData, onSubmit, onCancel }: AddP
           )}
           
           <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1" data-testid="button-save-product">
-              Salvar Produto
+            <Button type="submit" className="flex-1" disabled={isPending} data-testid="button-save-product">
+              {isPending ? (isEditing ? "Salvando..." : "Adicionando...") : (isEditing ? "Salvar Produto" : "Adicionar Produto")}
             </Button>
             <Button 
               type="button" 
               variant="outline" 
               onClick={onCancel}
+              disabled={isPending}
               data-testid="button-cancel"
             >
               Cancelar

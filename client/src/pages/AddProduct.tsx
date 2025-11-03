@@ -60,6 +60,8 @@ export default function AddProduct() {
     setLocation("/produtos");
   };
 
+  const isPending = createMutation.isPending || updateMutation.isPending;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -81,7 +83,9 @@ export default function AddProduct() {
         <AddProductForm 
           initialData={product}
           onSubmit={handleSubmit} 
-          onCancel={handleCancel} 
+          onCancel={handleCancel}
+          isPending={isPending}
+          isEditing={isEditing}
         />
       </div>
     </div>

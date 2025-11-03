@@ -93,18 +93,14 @@ export function EmployeePurchaseDialog({
   const handlePurchase = async (pacote: typeof pacotes[0]) => {
     setIsProcessing(true);
     try {
-      const response = await apiRequest("/api/purchase-employees", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          pacoteId: pacote.id,
-          quantidade: pacote.quantidade,
-          valor: pacote.precoNumerico,
-          nomePacote: pacote.nome,
-        }),
+      const res = await apiRequest("POST", "/api/purchase-employees", {
+        pacoteId: pacote.id,
+        quantidade: pacote.quantidade,
+        valor: pacote.precoNumerico,
+        nomePacote: pacote.nome,
       });
+
+      const response = await res.json();
 
       if (response.payment?.invoiceUrl) {
         window.open(response.payment.invoiceUrl, "_blank");

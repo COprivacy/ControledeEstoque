@@ -90,16 +90,12 @@ export function CheckoutForm({
   const onSubmit = async (data: CheckoutFormData) => {
     setIsSubmitting(true);
     try {
-      const response = await apiRequest("/api/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...data,
-          plano,
-        }),
+      const res = await apiRequest("POST", "/api/checkout", {
+        ...data,
+        plano,
       });
+
+      const response = await res.json();
 
       if (response.payment?.invoiceUrl) {
         window.open(response.payment.invoiceUrl, "_blank");

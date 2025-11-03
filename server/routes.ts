@@ -1847,6 +1847,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
               limiteAnterior: limiteAtual,
               novoLimite
             });
+
+            // Enviar email de confirmação de ativação
+            try {
+              const { EmailService } = await import('./email-service');
+              const emailService = new EmailService();
+
+              const nomePacote = `Pacote ${quantidadeAdicional} Funcionários`;
+
+              await emailService.sendEmployeePackageActivated({
+                to: user.email,
+                userName: user.nome,
+                packageName: nomePacote,
+                quantity: quantidadeAdicional,
+                newLimit: novoLimite,
+                price: payment.value || 0,
+              });
+
+              console.log(`📧 Email de ativação enviado para ${user.email}`);
+            } catch (emailError) {
+              console.error("⚠️ Erro ao enviar email de ativação (não crítico):", emailError);
+            }
           }
         }
 

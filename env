@@ -1,0 +1,7 @@
+
+# Email Configuration (SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=pavisoft.planos@gmail.com
+SMTP_PASS=bwks idip qyen kbnd
+SMTP_FROM=pavisoft.planos@gmail.com

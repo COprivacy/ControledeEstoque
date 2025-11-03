@@ -12,15 +12,24 @@ export class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
-    // Configurar com variáveis de ambiente ou usar serviço de email
+    // Configurar com variáveis de ambiente
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: false,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.SMTP_USER || 'pavisoft.planos@gmail.com',
+        pass: process.env.SMTP_PASS || 'bwks idip qyen kbnd',
       },
+    });
+    
+    // Verificar conexão SMTP ao inicializar
+    this.transporter.verify((error, success) => {
+      if (error) {
+        console.error('❌ Erro ao conectar com servidor SMTP:', error);
+      } else {
+        console.log('✅ Servidor SMTP pronto para enviar emails');
+      }
     });
   }
 

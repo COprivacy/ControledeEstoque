@@ -166,6 +166,132 @@ export class EmailService {
     });
   }
 
+  async sendPasswordResetConfirmation(config: {
+    to: string;
+    userName: string;
+    resetByAdmin: string;
+    resetDate: string;
+  }) {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f3f4f6; }
+          .email-wrapper { width: 100%; background-color: #f3f4f6; padding: 40px 20px; }
+          .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+          .banner { width: 100%; height: 180px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); position: relative; display: flex; align-items: center; justify-content: center; }
+          .banner-content { text-align: center; color: white; }
+          .logo-text { font-size: 36px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
+          .logo-subtitle { font-size: 14px; opacity: 0.95; letter-spacing: 2px; text-transform: uppercase; }
+          .content { padding: 40px 30px; }
+          .greeting { font-size: 18px; color: #374151; margin-bottom: 20px; }
+          .message { color: #4b5563; font-size: 15px; line-height: 1.8; margin-bottom: 20px; }
+          .alert-box { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border-left: 4px solid #ef4444; padding: 20px; border-radius: 8px; margin: 25px 0; }
+          .alert-box-icon { font-size: 48px; text-align: center; margin-bottom: 10px; }
+          .alert-box-text { color: #991b1b; font-size: 16px; text-align: center; font-weight: 600; }
+          .info-grid { background: #f9fafb; border: 2px solid #e5e7eb; padding: 20px; border-radius: 8px; margin: 25px 0; }
+          .info-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+          .info-item:last-child { border-bottom: none; }
+          .info-label { color: #6b7280; font-size: 14px; }
+          .info-value { color: #111827; font-weight: 600; font-size: 14px; }
+          .security-note { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 6px; margin: 20px 0; }
+          .security-note p { color: #92400e; font-size: 14px; margin: 0; display: flex; align-items: flex-start; }
+          .security-note p::before { content: "🔒"; margin-right: 10px; font-size: 18px; flex-shrink: 0; }
+          .footer { background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb; }
+          .footer-logo { font-size: 20px; font-weight: bold; color: #ef4444; margin-bottom: 8px; }
+          .footer-text { color: #6b7280; font-size: 13px; line-height: 1.8; }
+          .footer-divider { width: 50px; height: 2px; background: #ef4444; margin: 15px auto; }
+          @media only screen and (max-width: 600px) {
+            .email-wrapper { padding: 20px 10px; }
+            .content { padding: 30px 20px; }
+            .logo-text { font-size: 28px; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="email-wrapper">
+          <div class="container">
+            <!-- Banner com Logo -->
+            <div class="banner">
+              <div class="banner-content">
+                <div class="logo-text">PAVISOFT</div>
+                <div class="logo-subtitle">Sistemas de Gestão</div>
+              </div>
+            </div>
+
+            <!-- Conteúdo -->
+            <div class="content">
+              <div class="greeting">Olá, <strong>${config.userName}</strong>! 👋</div>
+
+              <!-- Alerta de Segurança -->
+              <div class="alert-box">
+                <div class="alert-box-icon">🔐</div>
+                <div class="alert-box-text">Sua senha foi redefinida</div>
+              </div>
+              
+              <p class="message">
+                Informamos que sua senha de acesso ao sistema Pavisoft foi redefinida pelo administrador da conta.
+              </p>
+
+              <!-- Detalhes da Alteração -->
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="info-label">Redefinido por</span>
+                  <span class="info-value">${config.resetByAdmin}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Data e Hora</span>
+                  <span class="info-value">${config.resetDate}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Email da conta</span>
+                  <span class="info-value">${config.to}</span>
+                </div>
+              </div>
+
+              <!-- Nota de Segurança -->
+              <div class="security-note">
+                <p>
+                  <strong>Por segurança, recomendamos que você altere sua senha no primeiro acesso.</strong> 
+                  Vá em Configurações → Alterar Senha após fazer login.
+                </p>
+              </div>
+
+              <p class="message" style="margin-top: 30px;">
+                Se você não solicitou esta alteração ou não reconhece esta atividade, 
+                entre em contato com o administrador da sua conta imediatamente.
+              </p>
+            </div>
+
+            <!-- Rodapé -->
+            <div class="footer">
+              <div class="footer-logo">PAVISOFT SISTEMAS</div>
+              <div class="footer-divider"></div>
+              <p class="footer-text">
+                Sistema Completo de Gestão Empresarial<br>
+                PDV | Estoque | Financeiro | NFCe<br><br>
+                Dúvidas? Entre em contato: pavisoft.planos@gmail.com<br>
+                <em>Este é um email automático de segurança. Por favor, não responda.</em>
+              </p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.transporter.sendMail({
+      from: process.env.SMTP_FROM || 'noreply@pavisoft.com',
+      to: config.to,
+      subject: '🔐 Senha Redefinida - Pavisoft Sistemas',
+      html,
+    });
+  }
+
   async sendEmployeePackageActivated(config: {
     to: string;
     userName: string;

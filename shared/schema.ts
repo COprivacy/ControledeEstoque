@@ -15,7 +15,7 @@ export const users = pgTable("users", {
   data_expiracao_plano: text("data_expiracao_plano"),
   ultimo_acesso: text("ultimo_acesso"),
   status: text("status").notNull().default("ativo"),
-  asaas_customer_id: text("asaas_customer_id"),
+  mercadopago_customer_id: text("mercadopago_customer_id"),
   conta_id: text("conta_id"),
   permissoes: text("permissoes"),
   max_funcionarios: integer("max_funcionarios").notNull().default(1),
@@ -175,12 +175,11 @@ export const planos = pgTable("planos", {
   data_criacao: text("data_criacao").notNull(),
 });
 
-export const configAsaas = pgTable("config_asaas", {
+export const configMercadoPago = pgTable("config_mercadopago", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  api_key: text("api_key").notNull(),
-  ambiente: text("ambiente").notNull().default("sandbox"),
+  access_token: text("access_token").notNull(),
+  public_key: text("public_key"),
   webhook_url: text("webhook_url"),
-  account_id: text("account_id"),
   ultima_sincronizacao: text("ultima_sincronizacao"),
   status_conexao: text("status_conexao").default("desconectado"),
   updated_at: text("updated_at").notNull(),
@@ -202,13 +201,12 @@ export const subscriptions = pgTable("subscriptions", {
   valor: real("valor").notNull().default(0),
   data_inicio: text("data_inicio"),
   data_vencimento: text("data_vencimento"),
-  asaas_payment_id: text("asaas_payment_id"),
-  asaas_subscription_id: text("asaas_subscription_id"),
+  mercadopago_payment_id: text("mercadopago_payment_id"),
+  mercadopago_preference_id: text("mercadopago_preference_id"),
   forma_pagamento: text("forma_pagamento"),
   status_pagamento: text("status_pagamento"),
-  invoice_url: text("invoice_url"),
-  bank_slip_url: text("bank_slip_url"),
-  pix_qrcode: text("pix_qrcode"),
+  init_point: text("init_point"),
+  external_reference: text("external_reference"),
   data_criacao: text("data_criacao").notNull(),
   data_atualizacao: text("data_atualizacao"),
 });
@@ -220,12 +218,12 @@ export const insertPlanoSchema = createInsertSchema(planos).omit({
 export type Plano = typeof planos.$inferSelect;
 export type InsertPlano = z.infer<typeof insertPlanoSchema>;
 
-export const insertConfigAsaasSchema = createInsertSchema(configAsaas).omit({
+export const insertConfigMercadoPagoSchema = createInsertSchema(configMercadoPago).omit({
   id: true,
   updated_at: true,
 });
-export type ConfigAsaas = typeof configAsaas.$inferSelect;
-export type InsertConfigAsaas = z.infer<typeof insertConfigAsaasSchema>;
+export type ConfigMercadoPago = typeof configMercadoPago.$inferSelect;
+export type InsertConfigMercadoPago = z.infer<typeof insertConfigMercadoPagoSchema>;
 
 export const insertLogAdminSchema = createInsertSchema(logsAdmin).omit({
   id: true,

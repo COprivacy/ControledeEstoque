@@ -10,7 +10,7 @@ import {
   compras,
   configFiscal,
   planos,
-  configAsaas,
+  configMercadoPago,
   logsAdmin,
   subscriptions,
   funcionarios,
@@ -35,8 +35,8 @@ import {
   type InsertConfigFiscal,
   type Plano,
   type InsertPlano,
-  type ConfigAsaas,
-  type InsertConfigAsaas,
+  type ConfigMercadoPago,
+  type InsertConfigMercadoPago,
   type LogAdmin,
   type InsertLogAdmin,
   type Funcionario,
@@ -285,41 +285,41 @@ export class PostgresStorage implements IStorage {
     return result.length > 0;
   }
 
-  async getConfigAsaas(): Promise<ConfigAsaas | null> {
-    const result = await db.select().from(configAsaas).limit(1);
+  async getConfigMercadoPago(): Promise<ConfigMercadoPago | null> {
+    const result = await db.select().from(configMercadoPago).limit(1);
     return result[0] || null;
   }
 
-  async saveConfigAsaas(config: InsertConfigAsaas): Promise<ConfigAsaas> {
-    const existing = await this.getConfigAsaas();
+  async saveConfigMercadoPago(config: InsertConfigMercadoPago): Promise<ConfigMercadoPago> {
+    const existing = await this.getConfigMercadoPago();
     
     if (existing) {
-      const result = await db.update(configAsaas)
+      const result = await db.update(configMercadoPago)
         .set({
           ...config,
           updated_at: new Date().toISOString(),
         })
-        .where(eq(configAsaas.id, existing.id))
+        .where(eq(configMercadoPago.id, existing.id))
         .returning();
       return result[0];
     }
     
-    const result = await db.insert(configAsaas).values({
+    const result = await db.insert(configMercadoPago).values({
       ...config,
       updated_at: new Date().toISOString(),
     }).returning();
     return result[0];
   }
 
-  async updateConfigAsaasStatus(status: string): Promise<void> {
-    const existing = await this.getConfigAsaas();
+  async updateConfigMercadoPagoStatus(status: string): Promise<void> {
+    const existing = await this.getConfigMercadoPago();
     if (existing) {
-      await db.update(configAsaas)
+      await db.update(configMercadoPago)
         .set({
           status_conexao: status,
           ultima_sincronizacao: new Date().toISOString(),
         })
-        .where(eq(configAsaas.id, existing.id));
+        .where(eq(configMercadoPago.id, existing.id));
     }
   }
 

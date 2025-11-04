@@ -15,8 +15,8 @@ import {
   type InsertConfigFiscal,
   type Plano,
   type InsertPlano,
-  type ConfigAsaas,
-  type InsertConfigAsaas,
+  type ConfigMercadoPago,
+  type InsertConfigMercadoPago,
   type LogAdmin,
   type InsertLogAdmin,
   type Funcionario,
@@ -72,9 +72,9 @@ export interface IStorage {
   createPlano?(plano: InsertPlano): Promise<Plano>;
   updatePlano?(id: number, updates: Partial<Plano>): Promise<Plano | undefined>;
   deletePlano?(id: number): Promise<boolean>;
-  getConfigAsaas?(): Promise<ConfigAsaas | null>;
-  saveConfigAsaas?(config: InsertConfigAsaas): Promise<ConfigAsaas>;
-  updateConfigAsaasStatus?(status: string): Promise<void>;
+  getConfigMercadoPago?(): Promise<ConfigMercadoPago | null>;
+  saveConfigMercadoPago?(config: InsertConfigMercadoPago): Promise<ConfigMercadoPago>;
+  updateConfigMercadoPagoStatus?(status: string): Promise<void>;
   getLogsAdmin?(): Promise<LogAdmin[]>;
   createLogAdmin?(log: InsertLogAdmin): Promise<LogAdmin>;
 
@@ -190,7 +190,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
   private contasReceberPath: string;
   private configFiscalPath: string;
   private planosPath: string;
-  private configAsaasPath: string;
+  private configMercadoPagoPath: string;
   private logsAdminPath: string;
   private funcionariosPath: string;
   private permissoesPath: string;
@@ -224,7 +224,7 @@ export class MemStorage implements Storage { // Changed to implement Storage int
     this.contasReceberPath = path.join(dataDir, 'contas_receber.json');
     this.configFiscalPath = path.join(dataDir, 'config_fiscal.json');
     this.planosPath = path.join(dataDir, 'planos.json');
-    this.configAsaasPath = path.join(dataDir, 'config_asaas.json');
+    this.configMercadoPagoPath = path.join(dataDir, 'config_mercadopago.json');
     this.logsAdminPath = path.join(dataDir, 'logs_admin.json');
     this.funcionariosPath = path.join(dataDir, 'funcionarios.json');
     this.permissoesPath = path.join(dataDir, 'permissoes_funcionarios.json');

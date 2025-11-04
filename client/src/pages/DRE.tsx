@@ -6,10 +6,34 @@ import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 export default function DRE() {
   const { data: vendas = [] } = useQuery({
     queryKey: ["/api/vendas"],
+    queryFn: async () => {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const response = await fetch("/api/vendas", {
+        headers: {
+          "x-user-id": user.id || "",
+          "x-user-type": user.tipo || "usuario",
+          "x-conta-id": user.conta_id || user.id || "",
+        },
+      });
+      if (!response.ok) return [];
+      return response.json();
+    },
   });
 
   const { data: contasPagar = [] } = useQuery({
     queryKey: ["/api/contas-pagar"],
+    queryFn: async () => {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const response = await fetch("/api/contas-pagar", {
+        headers: {
+          "x-user-id": user.id || "",
+          "x-user-type": user.tipo || "usuario",
+          "x-conta-id": user.conta_id || user.id || "",
+        },
+      });
+      if (!response.ok) return [];
+      return response.json();
+    },
   });
 
   // Receita Total = Total de Vendas

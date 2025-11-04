@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,8 +18,20 @@ export default function ContasPagar() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingConta, setEditingConta] = useState<any>(null);
 
-  const { data: contas = [] } = useQuery({
+  const { data: contas = [], isLoading } = useQuery({
     queryKey: ["/api/contas-pagar"],
+    queryFn: async () => {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const response = await fetch("/api/contas-pagar", {
+        headers: {
+          "x-user-id": user.id || "",
+          "x-user-type": user.tipo || "usuario",
+          "x-conta-id": user.conta_id || user.id || "",
+        },
+      });
+      if (!response.ok) throw new Error("Erro ao buscar contas a pagar");
+      return response.json();
+    },
   });
 
   const createMutation = useMutation({

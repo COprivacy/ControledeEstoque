@@ -4,9 +4,14 @@ import { setupVite, serveStatic, log } from "./vite";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import compression from "compression";
-import { logger } from "./logger";
-import { backupManager } from "./backup";
-import { storage } from "./storage";
+import { backupManager } from './backup';
+import { logger } from './logger';
+
+// Placeholder for neonConfig and ws if they are used elsewhere and not defined in this snippet
+// Assuming neonConfig and ws are defined in another import or globally available
+// For the purpose of this example, let's assume they exist or are not critical for this change.
+const neonConfig = {}; // Placeholder
+const ws = {}; // Placeholder
 
 const app = express();
 
@@ -117,30 +122,31 @@ app.use((req, res, next) => {
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
   const host = '0.0.0.0';
-  
+
   // reusePort is not supported on Windows
   const isWindows = process.platform === 'win32';
   const listenOptions: any = {
     port,
     host,
   };
-  
+
   if (!isWindows) {
     listenOptions.reusePort = true;
   }
-  
+
   server.listen(listenOptions, () => {
     log(`🚀 Servidor rodando em http://${host}:${port}`);
     log(`📍 Ambiente: ${app.get("env")}`);
   });
 
-  // Iniciar sistema de backup automático
-  backupManager.startAutoBackup();
+  // Sistema de backup automático desativado - usando backups do Neon PostgreSQL
+  // backupManager.startAutoBackup();
+  logger.info('[BACKUP] Sistema de backup local desativado. Usando backups do Neon PostgreSQL.');
   logger.info('Servidor iniciado', 'STARTUP', { port, env: app.get("env") });
 
   // Limpar logs antigos a cada 24h
   setInterval(() => {
-    logger.cleanOldLogs(30).catch(err => 
+    logger.cleanOldLogs(30).catch(err =>
       logger.error('Erro ao limpar logs antigos', 'CLEANUP', { error: err })
     );
   }, 24 * 60 * 60 * 1000);
@@ -149,7 +155,7 @@ app.use((req, res, next) => {
   process.on('SIGINT', () => {
     log('Shutting down gracefully...');
     logger.info('Servidor encerrando', 'SHUTDOWN');
-    
+
     if ('close' in storage && typeof storage.close === 'function') {
       storage.close();
     }

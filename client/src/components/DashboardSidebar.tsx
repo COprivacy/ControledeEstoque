@@ -1,7 +1,7 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { Home, Package, ClipboardList, FileText, Settings, CreditCard, Users, DollarSign, TrendingUp, BarChart3, Crown, Lock, LineChart, Scan, Wallet, ShoppingCart } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useUser } from "@/hooks/use-user";
 
 type MenuItem = {
@@ -14,7 +14,6 @@ type MenuItem = {
 
 const generalMenuItems: MenuItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: Home, permission: "dashboard" },
-  { title: "Relatórios", url: "/relatorios", icon: BarChart3, permission: "relatorios" },
 ];
 
 const inventoryMenuItems: MenuItem[] = [
@@ -29,6 +28,7 @@ const financeMenuItems: MenuItem[] = [
   { title: "Contas a Receber", url: "/financeiro/contas-receber", icon: DollarSign, permission: "financeiro" },
   { title: "Fluxo de Caixa", url: "/financeiro/fluxo-pdv", icon: TrendingUp, permission: "financeiro" },
   { title: "DRE Simplificado", url: "/financeiro/dre", icon: LineChart, permission: "financeiro" },
+  { title: "Relatórios", url: "/relatorios", icon: BarChart3, permission: "relatorios" },
 ];
 
 const configMenuItems: MenuItem[] = [

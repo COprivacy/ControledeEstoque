@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CheckoutForm } from "@/components/CheckoutForm";
 import { Link, navigate, useLocation } from "wouter";
 import { useUser } from "@/hooks/use-user";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Planos() {
   const { user } = useUser();
@@ -15,6 +16,41 @@ export default function Planos() {
     planoNome: string;
     planoPreco: string;
   } | null>(null);
+  const { toast } = useToast();
+
+  // Verificar status do pagamento ao retornar do Mercado Pago
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('status');
+
+    if (status) {
+      const pendingSubscription = localStorage.getItem('pending_subscription');
+
+      if (status === 'success' || status === 'approved') {
+        toast({
+          title: "🎉 Pagamento Confirmado!",
+          description: "Sua assinatura será ativada em breve. Você receberá um e-mail de confirmação.",
+        });
+      } else if (status === 'failure') {
+        toast({
+          title: "❌ Pagamento Recusado",
+          description: "Não foi possível processar seu pagamento. Tente novamente.",
+          variant: "destructive",
+        });
+      } else if (status === 'pending') {
+        toast({
+          title: "⏳ Pagamento Pendente",
+          description: "Seu pagamento está sendo processado. Aguarde a confirmação.",
+        });
+      }
+
+      // Limpar dados salvos
+      localStorage.removeItem('pending_subscription');
+
+      // Limpar URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [toast]);
 
   const handleBackToSystem = () => {
     // Verifica se há um usuário autenticado

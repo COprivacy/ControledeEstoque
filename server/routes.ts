@@ -1878,6 +1878,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Webhook Mercado Pago
+  app.post("/api/webhook/mercadopago", async (req, res) => {
+    try {
+      console.log("📥 Webhook Mercado Pago recebido:", JSON.stringify(req.body, null, 2));
+
+      const { type, data } = req.body;
+
+      if (!type || !data) {
+        console.warn("Webhook Mercado Pago inválido - dados ausentes");
+        return res.status(400).json({ error: "Dados inválidos" });
+      }
+
+      // Processar diferentes tipos de notificações
+      if (type === "payment") {
+        const paymentId = data.id;
+
+        const config = await storage.getConfigMercadoPago();
+        if (!config || !config.access_token) {
+          console.error("Configuração Mercado Pago não encontrada");
+          return res.status(500).json({ error: "Configuração não encontrada" });
+        }
+
+        // Buscar detalhes do pagamento
+        const { MercadoPagoService } = await import('./mercadopago');
+        const mercadopago = new MercadoPagoService({ accessToken: config.access_token });
+        
+        try {
+          const payment = await mercadopago.getPayment(paymentId);
+          
+          console.log(`📋 Pagamento ${paymentId} - Status: ${payment.status}`);
+
+          // Buscar assinatura pela external_reference
+          const externalReference = payment.external_reference;
+          if (!externalReference) {
+            console.warn("Pagamento sem external_reference");
+            return res.json({ success: true, message: "Sem referência externa" });
+          }
+
+          const subscriptions = await storage.getSubscriptions();
+          const subscription = subscriptions?.find(s => s.external_reference === externalReference);
+
+          if (!subscription) {
+            console.warn(`Assinatura não encontrada para referência: ${externalReference}`);
+            return res.json({ success: true, message: "Assinatura não encontrada" });
+          }
+
+          // Processar status do pagamento
+          if (payment.status === "approved") {
+            await storage.updateSubscription(subscription.id, {
+              status: "ativo",
+              status_pagamento: "approved",
+              data_inicio: new Date().toISOString(),
+              mercadopago_payment_id: paymentId,
+            });
+
+            // Atualizar usuário
+            await storage.updateUser(subscription.user_id, {
+              plano: subscription.plano,
+              data_expiracao_plano: subscription.data_vencimento,
+              status: "ativo",
+            });
+
+            console.log(`✅ Pagamento aprovado - Assinatura ${subscription.id} ativada`);
+
+            // Atualizar status da conexão
+            await storage.updateConfigMercadoPagoStatus('conectado');
+
+            logger.info('Pagamento Mercado Pago aprovado', 'WEBHOOK', {
+              subscriptionId: subscription.id,
+              userId: subscription.user_id,
+              paymentId,
+              externalReference,
+            });
+
+          } else if (payment.status === "rejected" || payment.status === "cancelled") {
+            await storage.updateSubscription(subscription.id, {
+              status: "cancelado",
+              status_pagamento: payment.status,
+            });
+
+            console.log(`❌ Pagamento ${payment.status} - Assinatura ${subscription.id}`);
+
+          } else if (payment.status === "pending" || payment.status === "in_process") {
+            await storage.updateSubscription(subscription.id, {
+              status_pagamento: payment.status,
+            });
+
+            console.log(`⏳ Pagamento pendente - Assinatura ${subscription.id}`);
+          }
+
+        } catch (error) {
+          console.error("Erro ao processar pagamento Mercado Pago:", error);
+        }
+      }
+
+      res.json({ success: true, message: "Webhook processado" });
+    } catch (error) {
+      console.error("❌ Erro no webhook Mercado Pago:", error);
+      res.status(500).json({ error: "Erro ao processar webhook" });
+    }
+  });
+
   app.post("/api/webhook/asaas", async (req, res) => {
     try {
       // Verificação de segurança: validar token do webhook

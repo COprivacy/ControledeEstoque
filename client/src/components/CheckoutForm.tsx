@@ -86,6 +86,10 @@ export function CheckoutForm({
   });
 
   const formaPagamento = form.watch("formaPagamento");
+  // Assume selectedPlan is available and holds the current plan value, e.g., 'premium_mensal' or 'premium_anual'
+  // If it's not directly available, it should be passed as a prop or derived from the context.
+  // For this example, we'll use the 'plano' prop.
+  const selectedPlan = plano;
 
   const onSubmit = async (data: CheckoutFormData) => {
     setIsSubmitting(true);
@@ -95,20 +99,36 @@ export function CheckoutForm({
         plano,
       });
 
-      const response = await res.json();
+      const result = await res.json(); // Renamed from response to result for clarity
 
-      // Redirecionar para o Mercado Pago
-      if (response.preference?.init_point) {
-        window.location.href = response.preference.init_point;
+      if (result.preference?.init_point) {
+        toast({
+          title: "✅ Redirecionando para pagamento",
+          description: "Você será redirecionado para o Mercado Pago em instantes...",
+        });
+
+        // Salvar dados da assinatura no localStorage
+        localStorage.setItem('pending_subscription', JSON.stringify({
+          subscriptionId: result.subscription.id,
+          plano: selectedPlan,
+          timestamp: new Date().toISOString(),
+        }));
+
+        // Redirecionar para o checkout do Mercado Pago
+        setTimeout(() => {
+          window.location.href = result.preference.init_point;
+        }, 1500);
+      } else {
+        // Handle cases where init_point is not available but there's a message
+        toast({
+          title: "Assinatura iniciada",
+          description: result.message || "Verifique seu email para mais informações.",
+        });
+        onOpenChange(false);
+        form.reset();
       }
 
-      toast({
-        title: "🎉 Assinatura iniciada!",
-        description: response.message || "Redirecionando para o pagamento...",
-      });
 
-      onOpenChange(false);
-      form.reset();
     } catch (error: any) {
       toast({
         title: "Erro ao processar pagamento",

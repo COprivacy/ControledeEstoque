@@ -53,6 +53,13 @@ export function AdminMasterRoute({ children }: AdminMasterRouteProps) {
     }
     
     setIsCheckingAuth(false);
+
+    // Cleanup: Remover autenticação quando sair da página
+    return () => {
+      console.log("🔄 AdminMasterRoute: Limpando autenticação ao sair da página");
+      sessionStorage.removeItem("admin_master_auth");
+      setIsAuthenticated(false);
+    };
   }, [user, setLocation]);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {

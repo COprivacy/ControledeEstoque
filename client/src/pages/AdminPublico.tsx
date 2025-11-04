@@ -1986,11 +1986,8 @@ export default function AdminPublico() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="trial">Trial (7 dias grátis)</SelectItem>
-                        <SelectItem value="free">Free</SelectItem>
                         <SelectItem value="mensal">Mensal (30 dias)</SelectItem>
-                        <SelectItem value="premium_mensal">Premium Mensal (30 dias)</SelectItem>
                         <SelectItem value="anual">Anual (365 dias)</SelectItem>
-                        <SelectItem value="premium_anual">Premium Anual (365 dias)</SelectItem>
                         <SelectItem value="premium">Premium (3650 dias)</SelectItem>
                       </SelectContent>
                     </Select>

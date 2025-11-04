@@ -935,8 +935,9 @@ export default function AdminPublico() {
                   <SelectItem value="all">Todos os planos</SelectItem>
                   <SelectItem value="trial">Trial</SelectItem>
                   <SelectItem value="free">Free</SelectItem>
-                  <SelectItem value="premium_mensal">Premium Mensal</SelectItem>
-                  <SelectItem value="premium_anual">Premium Anual</SelectItem>
+                  <SelectItem value="mensal">Mensal</SelectItem>
+                  <SelectItem value="anual">Anual</SelectItem>
+                  <SelectItem value="premium">Premium</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1129,19 +1130,19 @@ export default function AdminPublico() {
                             <TableCell className="text-gray-300">{user.email}</TableCell>
                             <TableCell>
                               <Badge
-                                variant={
-                                  user.plano === 'premium' ? 'default' :
-                                  user.plano === 'anual' ? 'secondary' :
-                                  'outline'
-                                }
                                 className={
                                   user.plano === 'trial' ? 'bg-blue-600 text-white' :
                                   user.plano === 'mensal' ? 'bg-green-600 text-white' :
                                   user.plano === 'anual' ? 'bg-purple-600 text-white' :
-                                  'bg-orange-600 text-white'
+                                  user.plano === 'premium' ? 'bg-orange-600 text-white' :
+                                  'bg-gray-600 text-white'
                                 }
                               >
-                                {user.plano.charAt(0).toUpperCase() + user.plano.slice(1)}
+                                {user.plano === 'trial' ? 'Trial' :
+                                 user.plano === 'mensal' ? 'Mensal' :
+                                 user.plano === 'anual' ? 'Anual' :
+                                 user.plano === 'premium' ? 'Premium' :
+                                 user.plano}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -1469,12 +1470,20 @@ export default function AdminPublico() {
                           <TableCell className="text-white font-medium">{user.nome}</TableCell>
                           <TableCell className="text-gray-300">{user.email}</TableCell>
                           <TableCell>
-                            <Badge variant={user.plano === "premium" || user.plano === "mensal" || user.plano === "anual" ? "default" : "secondary"}>
-                              {user.plano === "trial" && "Trial"}
-                              {user.plano === "free" && "Free"}
-                              {user.plano === "mensal" && "Premium Mensal"}
-                              {user.plano === "anual" && "Premium Anual"}
-                              {user.plano === "premium" && "Premium"}
+                            <Badge
+                              className={
+                                user.plano === 'trial' ? 'bg-blue-600 text-white' :
+                                user.plano === 'mensal' ? 'bg-green-600 text-white' :
+                                user.plano === 'anual' ? 'bg-purple-600 text-white' :
+                                user.plano === 'premium' ? 'bg-orange-600 text-white' :
+                                'bg-gray-600 text-white'
+                              }
+                            >
+                              {user.plano === 'trial' ? 'Trial' :
+                               user.plano === 'mensal' ? 'Mensal' :
+                               user.plano === 'anual' ? 'Anual' :
+                               user.plano === 'premium' ? 'Premium' :
+                               user.plano}
                             </Badge>
                           </TableCell>
                           <TableCell>

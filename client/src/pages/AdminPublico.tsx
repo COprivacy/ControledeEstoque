@@ -692,19 +692,17 @@ export default function AdminPublico() {
     createUserMutation.mutate(userData);
   };
 
-  const handleEditUser = (user: User) => {
+  const handleOpenEditUser = (user: User) => {
     setEditingUser(user);
-    const isAdmin = user.is_admin === "true" || user.is_admin === true || user.status === "admin";
     setNewUserData({
       nome: user.nome,
       email: user.email,
-      senha: "",
       plano: user.plano,
-      is_admin: isAdmin ? "true" : "false",
-      cpf_cnpj: (user as any).cpf_cnpj || "",
-      telefone: (user as any).telefone || "",
-      endereco: (user as any).endereco || "",
-      data_expiracao_plano: user.data_expiracao_plano || null,
+      is_admin: user.is_admin || "false",
+      cpf_cnpj: user.cpf_cnpj || "",
+      telefone: user.telefone || "",
+      endereco: user.endereco || "",
+      status: user.status || "ativo",
       max_funcionarios: user.max_funcionarios || 1,
     });
 
@@ -720,11 +718,38 @@ export default function AdminPublico() {
     }
   };
 
+  // Função para calcular dias restantes baseado no plano
+  const getDiasPorPlano = (plano: string): number => {
+    const diasPorPlano: Record<string, number> = {
+      'trial': 7,
+      'mensal': 30,
+      'premium_mensal': 30,
+      'anual': 365,
+      'premium_anual': 365,
+      'premium': 3650, // 10 anos
+      'free': 0
+    };
+    return diasPorPlano[plano] || 0;
+  };
+
+  // Handler para mudança de plano - atualiza dias automaticamente
+  const handlePlanoChange = (novoPlano: string) => {
+    setNewUserData({ ...newUserData, plano: novoPlano });
+
+    // Calcula e atualiza os dias restantes automaticamente
+    const dias = getDiasPorPlano(novoPlano);
+    if (dias > 0) {
+      setDiasRestantes(dias.toString());
+    } else {
+      setDiasRestantes("");
+    }
+  };
+
   const handleUpdateUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingUser) {
       const updates: any = { ...newUserData };
-      
+
       // Remove password if it's empty to avoid sending empty password
       if (!updates.senha) {
         delete updates.senha;
@@ -1477,7 +1502,7 @@ export default function AdminPublico() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => handleEditUser(user)}
+                                onClick={() => handleOpenEditUser(user)}
                                 className="text-green-400 hover:text-green-300 hover:bg-green-900/20"
                               >
                                 <Edit2 className="h-4 w-4 mr-1" />
@@ -1943,18 +1968,21 @@ export default function AdminPublico() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="edit-plano" className="text-gray-300">Plano</Label>
-                    <Select value={newUserData.plano} onValueChange={(value) => setNewUserData({ ...newUserData, plano: value })}>
-                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                    <Select
+                      value={newUserData.plano}
+                      onValueChange={handlePlanoChange}
+                    >
+                      <SelectTrigger id="edit-plano">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                      <SelectContent>
+                        <SelectItem value="trial">Trial (7 dias grátis)</SelectItem>
                         <SelectItem value="free">Free</SelectItem>
-                        <SelectItem value="trial">Trial</SelectItem>
-                        <SelectItem value="mensal">Mensal</SelectItem>
-                        <SelectItem value="anual">Anual</SelectItem>
-                        <SelectItem value="premium">Premium</SelectItem>
-                        <SelectItem value="premium_mensal">Premium Mensal</SelectItem>
-                        <SelectItem value="premium_anual">Premium Anual</SelectItem>
+                        <SelectItem value="mensal">Mensal (30 dias)</SelectItem>
+                        <SelectItem value="premium_mensal">Premium Mensal (30 dias)</SelectItem>
+                        <SelectItem value="anual">Anual (365 dias)</SelectItem>
+                        <SelectItem value="premium_anual">Premium Anual (365 dias)</SelectItem>
+                        <SelectItem value="premium">Premium (3650 dias)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

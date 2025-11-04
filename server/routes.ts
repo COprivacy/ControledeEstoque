@@ -1798,56 +1798,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Usuário não encontrado" });
       }
 
-      // Configurar Asaas
-      const asaasConfig = await storage.getConfigAsaas();
-      if (!asaasConfig) {
-        return res.status(500).json({ error: "Configuração de pagamento não encontrada" });
+      // Configurar Mercado Pago
+      const config = await storage.getConfigMercadoPago();
+      if (!config || !config.access_token) {
+        return res.status(500).json({
+          error: "Sistema de pagamento não configurado. Entre em contato com o suporte."
+        });
       }
 
-      const { AsaasClient } = await import("./asaas");
-      const asaas = new AsaasClient({
-        apiKey: asaasConfig.api_key,
-        environment: asaasConfig.ambiente as 'sandbox' | 'production',
+      const { MercadoPagoService } = await import('./mercadopago');
+      const mercadopago = new MercadoPagoService({
+        accessToken: config.access_token
       });
 
-      // Buscar ou criar cliente no Asaas
-      let asaasCustomer;
-      if (user.asaas_customer_id) {
-        try {
-          asaasCustomer = await asaas.getCustomer(user.asaas_customer_id);
-        } catch (error) {
-          console.log("Cliente Asaas não encontrado, criando novo...");
-          asaasCustomer = null;
-        }
-      }
+      const externalReference = `${pacoteId}_${userId}_${Date.now()}`;
 
-      if (!asaasCustomer) {
-        asaasCustomer = await asaas.createCustomer({
-          name: user.nome,
+      // Criar preferência de pagamento no Mercado Pago
+      const preference = await mercadopago.createPreference({
+        items: [{
+          title: `${nomePacote} - Pavisoft Sistemas`,
+          quantity: 1,
+          unit_price: valor,
+          currency_id: 'BRL',
+          description: `Pacote com ${quantidade} funcionários adicionais`
+        }],
+        payer: {
           email: user.email,
-          cpfCnpj: user.email,
-        });
-
-        await storage.updateUser(userId, {
-          asaas_customer_id: asaasCustomer.id
-        });
-      }
-
-      // Data de vencimento: 3 dias a partir de hoje
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 3);
-
-      // Criar pagamento
-      const payment = await asaas.createPayment({
-        customer: asaasCustomer.id,
-        billingType: 'PIX', // Padrão PIX, pode ser ajustado
-        value: valor,
-        dueDate: dueDate.toISOString().split('T')[0],
-        description: `${nomePacote} - Pavisoft Sistemas`,
-        externalReference: `${pacoteId}_${userId}_${Date.now()}`
+          name: user.nome,
+        },
+        external_reference: externalReference
       });
 
-      // Enviar email de confirmação (opcional, requer configuração SMTP)
+      // Enviar email de confirmação (opcional)
       try {
         const { EmailService } = await import('./email-service');
         const emailService = new EmailService();
@@ -1858,7 +1840,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           packageName: nomePacote,
           quantity: quantidade,
           price: valor,
-          paymentUrl: payment.invoiceUrl || payment.bankSlipUrl || '',
+          paymentUrl: preference.init_point,
         });
 
         console.log(`📧 Email de compra enviado para ${user.email}`);
@@ -1867,9 +1849,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Não bloqueia a compra se o email falhar
       }
 
+      console.log(`✅ Preferência de pagamento criada - Pacote: ${nomePacote}, User: ${user.email}`);
+
       res.json({
-        payment,
-        message: "✅ Pacote selecionado. Link de pagamento gerado. Aguardando confirmação."
+        success: true,
+        preference: {
+          id: preference.id,
+          init_point: preference.init_point,
+        },
+        message: "✅ Pacote selecionado. Você será redirecionado para o pagamento."
       });
     } catch (error: any) {
       console.error("❌ Erro ao processar compra de funcionários:", error);
@@ -1925,48 +1913,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.json({ success: true, message: "Assinatura não encontrada" });
           }
 
-          // Processar status do pagamento
-          if (payment.status === "approved") {
-            await storage.updateSubscription(subscription.id, {
-              status: "ativo",
-              status_pagamento: "approved",
-              data_inicio: new Date().toISOString(),
-              mercadopago_payment_id: paymentId,
-            });
+          // Verificar se é um pagamento de pacote de funcionários
+          const isEmployeePackage = externalReference && externalReference.includes('pacote_');
 
-            // Atualizar usuário
-            await storage.updateUser(subscription.user_id, {
-              plano: subscription.plano,
-              data_expiracao_plano: subscription.data_vencimento,
-              status: "ativo",
-            });
+          if (isEmployeePackage && payment.status === "approved") {
+            // Processar pagamento de pacote de funcionários
+            const parts = externalReference.split('_');
+            const pacoteId = parts[0] + '_' + parts[1]; // pacote_5, pacote_10, etc
+            const userId = parts[2];
 
-            console.log(`✅ Pagamento aprovado - Assinatura ${subscription.id} ativada`);
+            // Mapear pacotes para quantidade de funcionários
+            const pacoteQuantidades: Record<string, number> = {
+              'pacote_5': 5,
+              'pacote_10': 10,
+              'pacote_20': 20,
+              'pacote_50': 50,
+            };
 
-            // Atualizar status da conexão
-            await storage.updateConfigMercadoPagoStatus('conectado');
+            const quantidadeAdicional = pacoteQuantidades[pacoteId];
 
-            logger.info('Pagamento Mercado Pago aprovado', 'WEBHOOK', {
-              subscriptionId: subscription.id,
-              userId: subscription.user_id,
-              paymentId,
-              externalReference,
-            });
+            if (quantidadeAdicional && userId) {
+              const users = await storage.getUsers();
+              const user = users.find((u: any) => u.id === userId);
+              
+              if (user) {
+                const limiteAtual = user.max_funcionarios || 1;
+                const novoLimite = limiteAtual + quantidadeAdicional;
+                
+                await storage.updateUser(userId, {
+                  max_funcionarios: novoLimite,
+                });
+                
+                console.log(`✅ [WEBHOOK MP] Pagamento confirmado - Pacote: ${pacoteId}`);
+                console.log(`✅ [WEBHOOK MP] User: ${user.email} | ${user.nome}`);
+                console.log(`✅ [WEBHOOK MP] Limite anterior: ${limiteAtual} → Novo limite: ${novoLimite}`);
+                
+                logger.info('Pacote de funcionários ativado via Mercado Pago', 'WEBHOOK', {
+                  userId,
+                  userEmail: user.email,
+                  pacoteId,
+                  quantidadeAdicional,
+                  limiteAnterior: limiteAtual,
+                  novoLimite
+                });
 
-          } else if (payment.status === "rejected" || payment.status === "cancelled") {
-            await storage.updateSubscription(subscription.id, {
-              status: "cancelado",
-              status_pagamento: payment.status,
-            });
+                // Enviar email de confirmação de ativação
+                try {
+                  const { EmailService } = await import('./email-service');
+                  const emailService = new EmailService();
 
-            console.log(`❌ Pagamento ${payment.status} - Assinatura ${subscription.id}`);
+                  const nomePacote = `Pacote ${quantidadeAdicional} Funcionários`;
 
-          } else if (payment.status === "pending" || payment.status === "in_process") {
-            await storage.updateSubscription(subscription.id, {
-              status_pagamento: payment.status,
-            });
+                  await emailService.sendEmployeePackageActivated({
+                    to: user.email,
+                    userName: user.nome,
+                    packageName: nomePacote,
+                    quantity: quantidadeAdicional,
+                    newLimit: novoLimite,
+                    price: payment.transaction_amount || 0,
+                  });
 
-            console.log(`⏳ Pagamento pendente - Assinatura ${subscription.id}`);
+                  console.log(`📧 Email de ativação enviado para ${user.email}`);
+                } catch (emailError) {
+                  console.error("⚠️ Erro ao enviar email de ativação (não crítico):", emailError);
+                }
+              }
+            }
+          } else if (!isEmployeePackage) {
+            // Processar status do pagamento de assinatura normal
+            if (payment.status === "approved") {
+              await storage.updateSubscription(subscription.id, {
+                status: "ativo",
+                status_pagamento: "approved",
+                data_inicio: new Date().toISOString(),
+                mercadopago_payment_id: paymentId,
+              });
+
+              // Atualizar usuário
+              await storage.updateUser(subscription.user_id, {
+                plano: subscription.plano,
+                data_expiracao_plano: subscription.data_vencimento,
+                status: "ativo",
+              });
+
+              console.log(`✅ Pagamento aprovado - Assinatura ${subscription.id} ativada`);
+
+              // Atualizar status da conexão
+              await storage.updateConfigMercadoPagoStatus('conectado');
+
+              logger.info('Pagamento Mercado Pago aprovado', 'WEBHOOK', {
+                subscriptionId: subscription.id,
+                userId: subscription.user_id,
+                paymentId,
+                externalReference,
+              });
+
+            } else if (payment.status === "rejected" || payment.status === "cancelled") {
+              await storage.updateSubscription(subscription.id, {
+                status: "cancelado",
+                status_pagamento: payment.status,
+              });
+
+              console.log(`❌ Pagamento ${payment.status} - Assinatura ${subscription.id}`);
+
+            } else if (payment.status === "pending" || payment.status === "in_process") {
+              await storage.updateSubscription(subscription.id, {
+                status_pagamento: payment.status,
+              });
+
+              console.log(`⏳ Pagamento pendente - Assinatura ${subscription.id}`);
+            }
           }
 
         } catch (error) {

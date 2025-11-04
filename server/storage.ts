@@ -150,7 +150,7 @@ export abstract class Storage {
   abstract updateCompra(id: number, updates: Partial<Compra>): Promise<Compra | undefined>;
 
   // Métodos abstratos para Funcionários e Permissões
-  abstract getFuncionarios(contaId: string): Promise<Funcionario[]>;
+  abstract getFuncionarios(): Promise<Funcionario[]>;
   abstract getFuncionariosByContaId(contaId: string): Promise<Funcionario[]>;
   abstract getFuncionario(id: string): Promise<Funcionario | undefined>;
   abstract createFuncionario(funcionario: InsertFuncionario): Promise<Funcionario>;
@@ -742,8 +742,8 @@ export class MemStorage implements Storage { // Changed to implement Storage int
   }
 
   // Funcionários
-  async getFuncionarios(contaId: string): Promise<Funcionario[]> {
-    return this.funcionarios.filter(f => f.conta_id === contaId);
+  async getFuncionarios(): Promise<Funcionario[]> {
+    return this.funcionarios;
   }
 
   async getFuncionariosByContaId(contaId: string): Promise<Funcionario[]> {

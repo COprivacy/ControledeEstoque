@@ -1106,10 +1106,6 @@ export class SQLiteStorage implements IStorage {
     return Array.from(this.funcionarios.values()).filter(f => f.conta_id === contaId);
   }
 
-  async getFuncionariosByContaId(contaId: string): Promise<Funcionario[]> {
-    return Array.from(this.funcionarios.values()).filter(f => f.conta_id === contaId);
-  }
-
   async getFuncionario(id: string): Promise<Funcionario | undefined> {
     return this.funcionarios.get(id);
   }

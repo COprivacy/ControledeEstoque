@@ -362,7 +362,11 @@ export class PostgresStorage implements IStorage {
     return result[0];
   }
 
-  async getFuncionarios(contaId: string): Promise<Funcionario[]> {
+  async getFuncionarios(): Promise<Funcionario[]> {
+    return await db.select().from(funcionarios);
+  }
+
+  async getFuncionariosByContaId(contaId: string): Promise<Funcionario[]> {
     return await db.select().from(funcionarios).where(eq(funcionarios.conta_id, contaId));
   }
 

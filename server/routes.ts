@@ -573,8 +573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Acesso negado" });
       }
 
-      const allFuncionarios = await storage.getFuncionarios();
-      const funcionarios = allFuncionarios.filter(f => f.conta_id === contaId);
+      const funcionarios = await storage.getFuncionariosByContaId(contaId);
       res.json(funcionarios);
     } catch (error: any) {
       console.error("Erro ao buscar funcionários:", error);

@@ -86,7 +86,8 @@ export interface IStorage {
   updateSubscription?(id: number, updates: Partial<Subscription>): Promise<Subscription | undefined>;
 
   // Métodos para Funcionários e Permissões
-  getFuncionarios(contaId: string): Promise<Funcionario[]>;
+  getFuncionarios(): Promise<Funcionario[]>;
+  getFuncionariosByContaId(contaId: string): Promise<Funcionario[]>;
   getFuncionario(id: string): Promise<Funcionario | undefined>;
   createFuncionario(funcionario: InsertFuncionario): Promise<Funcionario>;
   updateFuncionario(id: string, updates: Partial<Funcionario>): Promise<Funcionario | undefined>;
@@ -150,6 +151,7 @@ export abstract class Storage {
 
   // Métodos abstratos para Funcionários e Permissões
   abstract getFuncionarios(contaId: string): Promise<Funcionario[]>;
+  abstract getFuncionariosByContaId(contaId: string): Promise<Funcionario[]>;
   abstract getFuncionario(id: string): Promise<Funcionario | undefined>;
   abstract createFuncionario(funcionario: InsertFuncionario): Promise<Funcionario>;
   abstract updateFuncionario(id: string, updates: Partial<Funcionario>): Promise<Funcionario | undefined>;
@@ -741,6 +743,10 @@ export class MemStorage implements Storage { // Changed to implement Storage int
 
   // Funcionários
   async getFuncionarios(contaId: string): Promise<Funcionario[]> {
+    return this.funcionarios.filter(f => f.conta_id === contaId);
+  }
+
+  async getFuncionariosByContaId(contaId: string): Promise<Funcionario[]> {
     return this.funcionarios.filter(f => f.conta_id === contaId);
   }
 

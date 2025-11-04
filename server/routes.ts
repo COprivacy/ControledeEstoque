@@ -1373,10 +1373,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/contas-pagar", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
+      
+      if (!storage.getContasPagar) {
+        return res.status(501).json({ error: "Método getContasPagar não implementado" });
+      }
+      
       const contas = await storage.getContasPagar();
       const contasFiltered = contas.filter((c: any) => c.user_id === effectiveUserId);
+      console.log(`📋 Contas a pagar retornadas: ${contasFiltered.length} para usuário ${effectiveUserId}`);
       res.json(contasFiltered);
     } catch (error: any) {
+      console.error("❌ Erro ao buscar contas a pagar:", error);
       res.status(500).json({ error: error.message });
     }
   });
@@ -1384,48 +1391,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contas-pagar", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
-      const conta = await storage.createContaPagar({
+      
+      if (!storage.createContaPagar) {
+        return res.status(501).json({ error: "Método createContaPagar não implementado" });
+      }
+      
+      const contaData = {
         ...req.body,
         user_id: effectiveUserId,
         status: "pendente",
         data_cadastro: new Date().toISOString(),
-      });
+      };
+      
+      const conta = await storage.createContaPagar(contaData);
+      console.log(`✅ Conta a pagar criada: ID ${conta.id}, Descrição: ${conta.descricao}`);
       res.json(conta);
     } catch (error: any) {
+      console.error("❌ Erro ao criar conta a pagar:", error);
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.put("/api/contas-pagar/:id", async (req, res) => {
+  app.put("/api/contas-pagar/:id", getUserId, async (req, res) => {
     try {
-      const conta = await storage.updateContaPagar(parseInt(req.params.id), req.body);
+      if (!storage.updateContaPagar) {
+        return res.status(501).json({ error: "Método updateContaPagar não implementado" });
+      }
+      
+      const id = parseInt(req.params.id);
+      const conta = await storage.updateContaPagar(id, req.body);
+      console.log(`✅ Conta a pagar atualizada: ID ${id}`);
       res.json(conta);
     } catch (error: any) {
+      console.error("❌ Erro ao atualizar conta a pagar:", error);
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.delete("/api/contas-pagar/:id", async (req, res) => {
+  app.delete("/api/contas-pagar/:id", getUserId, async (req, res) => {
     try {
+      if (!storage.deleteContaPagar) {
+        return res.status(501).json({ error: "Método deleteContaPagar não implementado" });
+      }
+      
       const id = parseInt(req.params.id);
       console.log(`🗑️ Deletando conta a pagar ID: ${id}`);
       await storage.deleteContaPagar(id);
       console.log(`✅ Conta a pagar ${id} deletada com sucesso`);
       res.json({ success: true });
     } catch (error: any) {
-      console.log(`❌ Erro ao deletar conta a pagar:`, error);
+      console.error(`❌ Erro ao deletar conta a pagar:`, error);
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.post("/api/contas-pagar/:id/pagar", async (req, res) => {
+  app.post("/api/contas-pagar/:id/pagar", getUserId, async (req, res) => {
     try {
-      const conta = await storage.updateContaPagar(parseInt(req.params.id), {
+      if (!storage.updateContaPagar) {
+        return res.status(501).json({ error: "Método updateContaPagar não implementado" });
+      }
+      
+      const id = parseInt(req.params.id);
+      const conta = await storage.updateContaPagar(id, {
         status: "pago",
         data_pagamento: new Date().toISOString(),
       });
+      console.log(`✅ Conta a pagar marcada como paga: ID ${id}`);
       res.json(conta);
     } catch (error: any) {
+      console.error("❌ Erro ao marcar conta como paga:", error);
       res.status(500).json({ error: error.message });
     }
   });
@@ -1434,10 +1468,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/contas-receber", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
+      
+      if (!storage.getContasReceber) {
+        return res.status(501).json({ error: "Método getContasReceber não implementado" });
+      }
+      
       const contas = await storage.getContasReceber();
       const contasFiltered = contas.filter((c: any) => c.user_id === effectiveUserId);
+      console.log(`📋 Contas a receber retornadas: ${contasFiltered.length} para usuário ${effectiveUserId}`);
       res.json(contasFiltered);
     } catch (error: any) {
+      console.error("❌ Erro ao buscar contas a receber:", error);
       res.status(500).json({ error: error.message });
     }
   });
@@ -1445,48 +1486,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contas-receber", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
-      const conta = await storage.createContaReceber({
+      
+      if (!storage.createContaReceber) {
+        return res.status(501).json({ error: "Método createContaReceber não implementado" });
+      }
+      
+      const contaData = {
         ...req.body,
         user_id: effectiveUserId,
         status: "pendente",
         data_cadastro: new Date().toISOString(),
-      });
+      };
+      
+      const conta = await storage.createContaReceber(contaData);
+      console.log(`✅ Conta a receber criada: ID ${conta.id}, Descrição: ${conta.descricao}`);
       res.json(conta);
     } catch (error: any) {
+      console.error("❌ Erro ao criar conta a receber:", error);
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.put("/api/contas-receber/:id", async (req, res) => {
+  app.put("/api/contas-receber/:id", getUserId, async (req, res) => {
     try {
-      const conta = await storage.updateContaReceber(parseInt(req.params.id), req.body);
+      if (!storage.updateContaReceber) {
+        return res.status(501).json({ error: "Método updateContaReceber não implementado" });
+      }
+      
+      const id = parseInt(req.params.id);
+      const conta = await storage.updateContaReceber(id, req.body);
+      console.log(`✅ Conta a receber atualizada: ID ${id}`);
       res.json(conta);
     } catch (error: any) {
+      console.error("❌ Erro ao atualizar conta a receber:", error);
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.delete("/api/contas-receber/:id", async (req, res) => {
+  app.delete("/api/contas-receber/:id", getUserId, async (req, res) => {
     try {
+      if (!storage.deleteContaReceber) {
+        return res.status(501).json({ error: "Método deleteContaReceber não implementado" });
+      }
+      
       const id = parseInt(req.params.id);
       console.log(`🗑️ Deletando conta a receber ID: ${id}`);
       await storage.deleteContaReceber(id);
       console.log(`✅ Conta a receber ${id} deletada com sucesso`);
       res.json({ success: true });
     } catch (error: any) {
-      console.log(`❌ Erro ao deletar conta a receber:`, error);
+      console.error(`❌ Erro ao deletar conta a receber:`, error);
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.post("/api/contas-receber/:id/receber", async (req, res) => {
+  app.post("/api/contas-receber/:id/receber", getUserId, async (req, res) => {
     try {
-      const conta = await storage.updateContaReceber(parseInt(req.params.id), {
+      if (!storage.updateContaReceber) {
+        return res.status(501).json({ error: "Método updateContaReceber não implementado" });
+      }
+      
+      const id = parseInt(req.params.id);
+      const conta = await storage.updateContaReceber(id, {
         status: "recebido",
         data_recebimento: new Date().toISOString(),
       });
+      console.log(`✅ Conta a receber marcada como recebida: ID ${id}`);
       res.json(conta);
     } catch (error: any) {
+      console.error("❌ Erro ao marcar conta como recebida:", error);
       res.status(500).json({ error: error.message });
     }
   });

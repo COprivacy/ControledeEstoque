@@ -59,6 +59,11 @@ import ws from 'ws';
 
 neonConfig.webSocketConstructor = ws;
 
+// Log de debug (sem expor a senha)
+const dbUrl = process.env.DATABASE_URL!;
+const maskedUrl = dbUrl.replace(/:([^@]+)@/, ':****@');
+console.log(`🔌 Conectando ao PostgreSQL: ${maskedUrl}`);
+
 const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
 const db = drizzle(pool);
 

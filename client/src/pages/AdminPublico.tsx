@@ -62,7 +62,7 @@ type Subscription = {
   valor: number;
   data_inicio: string | null;
   data_vencimento: string | null;
-  asaas_payment_id: string | null;
+  mercadopago_payment_id: string | null;
   forma_pagamento: string | null;
   status_pagamento: string | null;
   data_criacao: string;
@@ -78,7 +78,7 @@ type User = {
   data_criacao: string | null;
   data_expiracao_trial: string | null;
   data_expiracao_plano: string | null;
-  asaas_customer_id?: string;
+  mercadopago_customer_id?: string;
   is_admin?: string | boolean;
   cpf_cnpj?: string;
   telefone?: string;
@@ -101,9 +101,6 @@ export default function AdminPublico() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
-  const [configAsaasOpen, setConfigAsaasOpen] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [ambiente, setAmbiente] = useState<"sandbox" | "production">("sandbox");
   const [testingAsaas, setTestingAsaas] = useState(false);
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(true); // Assuming initial state is authenticated for admin
@@ -183,8 +180,8 @@ export default function AdminPublico() {
     queryKey: ["/api/clientes"],
   });
 
-  const { data: configAsaas } = useQuery({
-    queryKey: ["/api/config-asaas"],
+  const { data: configMercadoPago } = useQuery({
+    queryKey: ["/api/config-mercadopago"],
   });
 
   const apiRequest = async (method: string, url: string, body?: any) => {
@@ -223,10 +220,10 @@ export default function AdminPublico() {
   const reenviarCobranca = useMutation({
     mutationFn: async (subscriptionId: number) => {
       const subscription = subscriptions.find(s => s.id === subscriptionId);
-      if (!subscription || !subscription.asaas_payment_id) {
+      if (!subscription || !subscription.mercadopago_payment_id) {
         throw new Error("Assinatura ou pagamento não encontrado");
       }
-      return apiRequest("POST", `/api/payments/${subscription.asaas_payment_id}/resend`);
+      return apiRequest("POST", `/api/payments/${subscription.mercadopago_payment_id}/resend`);
     },
     onSuccess: () => {
       toast({
@@ -244,16 +241,16 @@ export default function AdminPublico() {
     },
   });
 
-  const saveConfigAsaasMutation = useMutation({
+  const saveConfigMercadoPagoMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/config-asaas", data);
+      const response = await apiRequest("POST", "/api/config-mercadopago", data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/config-asaas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/config-mercadopago"] });
       toast({
         title: "Configuração salva",
-        description: "Configuração Asaas atualizada com sucesso",
+        description: "Configuração Mercado Pago atualizada com sucesso",
       });
       setIsConfigDialogOpen(false);
     },
@@ -266,12 +263,11 @@ export default function AdminPublico() {
     },
   });
 
-  const testAsaasConnection = async (apiKey: string, ambiente: string) => {
+  const testMercadoPagoConnection = async (accessToken: string) => {
     setTestingAsaas(true);
     try {
-      const response = await apiRequest("POST", "/api/config-asaas/test", {
-        api_key: apiKey,
-        ambiente,
+      const response = await apiRequest("POST", "/api/config-mercadopago/test", {
+        access_token: accessToken,
       });
       const result = await response.json();
 
@@ -298,29 +294,8 @@ export default function AdminPublico() {
     }
   };
 
-  const testAsaasMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/config-asaas/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ api_key: apiKey, ambiente }),
-      });
-      if (!response.ok) throw new Error("Erro ao testar conexão");
-      return response.json();
-    },
-    onSuccess: (data) => {
-      if (data.success) {
-        toast({ title: "Conexão bem-sucedida!", description: data.message });
-      } else {
-        toast({ title: "Erro na conexão", description: data.message, variant: "destructive" });
-      }
-    },
-    onError: () => {
-      toast({ title: "Erro", description: "Falha ao testar conexão", variant: "destructive" });
-    },
-  });
 
-  const createClientWithAsaasMutation = useMutation({
+  const createClientWithMercadoPagoMutation = useMutation({
     mutationFn: async (clientData: typeof newClientForm) => {
       const response = await fetch("/api/checkout", {
         method: "POST",
@@ -333,13 +308,17 @@ export default function AdminPublico() {
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/subscriptions"] });
       toast({
         title: "Cliente criado com sucesso!",
-        description: "O cliente foi criado e a cobrança foi gerada no Asaas.",
+        description: "O cliente foi criado e a preferência de pagamento foi gerada.",
       });
+      // Redirect to payment
+      if (data.preference?.init_point) {
+        window.open(data.preference.init_point, '_blank');
+      }
       setIsCreateClientDialogOpen(false);
       setNewClientForm({
         nome: "",
@@ -1236,10 +1215,10 @@ export default function AdminPublico() {
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <CreditCard className="h-6 w-6" />
-                  Gestão de Planos e Assinaturas Asaas
+                  Gestão de Planos e Assinaturas
                 </CardTitle>
                 <CardDescription className="text-gray-400">
-                  Todas as assinaturas e pagamentos processados pela Asaas
+                  Todas as assinaturas e pagamentos processados pelo Mercado Pago
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1254,7 +1233,7 @@ export default function AdminPublico() {
                       <TableHead className="text-gray-400">Pagamento</TableHead>
                       <TableHead className="text-gray-400">Forma</TableHead>
                       <TableHead className="text-gray-400">Vencimento</TableHead>
-                      <TableHead className="text-gray-400">ID Asaas</TableHead>
+                      <TableHead className="text-gray-400">ID Pagamento</TableHead>
                       <TableHead className="text-gray-400 text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1299,7 +1278,7 @@ export default function AdminPublico() {
                               {sub.data_vencimento ? formatDate(sub.data_vencimento) : "-"}
                             </TableCell>
                             <TableCell className="text-gray-400 font-mono text-xs">
-                              {sub.asaas_payment_id ? sub.asaas_payment_id.slice(0, 12) + "..." : "-"}
+                              {sub.mercadopago_payment_id ? sub.mercadopago_payment_id.slice(0, 12) + "..." : "-"}
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-2">
@@ -1356,14 +1335,14 @@ export default function AdminPublico() {
                     <DialogTrigger asChild>
                       <Button className="bg-blue-600 hover:bg-blue-700">
                         <UserPlus className="h-4 w-4 mr-2" />
-                        Criar Cliente com Asaas
+                        Criar Cliente
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="bg-gray-900 border-gray-800 text-white">
                       <DialogHeader>
                         <DialogTitle>Criar Novo Cliente com Assinatura</DialogTitle>
                         <DialogDescription className="text-gray-400">
-                          Crie um cliente e gere automaticamente a cobrança no Asaas
+                          Crie um cliente e gere automaticamente a preferência de pagamento
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
@@ -1427,17 +1406,17 @@ export default function AdminPublico() {
                           </Select>
                         </div>
                         <Button
-                          onClick={() => createClientWithAsaasMutation.mutate(newClientForm)}
-                          disabled={createClientWithAsaasMutation.isPending}
+                          onClick={() => createClientWithMercadoPagoMutation.mutate(newClientForm)}
+                          disabled={createClientWithMercadoPagoMutation.isPending}
                           className="w-full bg-blue-600 hover:bg-blue-700"
                         >
-                          {createClientWithAsaasMutation.isPending ? (
+                          {createClientWithMercadoPagoMutation.isPending ? (
                             <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               Criando...
                             </>
                           ) : (
-                            "Criar Cliente e Gerar Cobrança"
+                            "Criar Cliente e Gerar Preferência"
                           )}
                         </Button>
                       </div>
@@ -1712,7 +1691,7 @@ export default function AdminPublico() {
                     <div className="bg-gray-800 p-4 rounded-lg">
                       <p className="text-gray-400 text-sm mb-1">Status da Conexão</p>
                       <div className="flex items-center gap-2">
-                        {configAsaas?.status_conexao === "conectado" ? (
+                        {configMercadoPago?.status_conexao === "conectado" ? (
                           <>
                             <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
                             <span className="text-green-400 font-semibold">Conectado</span>
@@ -1725,18 +1704,12 @@ export default function AdminPublico() {
                         )}
                       </div>
                     </div>
-                    <div className="bg-gray-800 p-4 rounded-lg">
-                      <p className="text-gray-400 text-sm mb-1">Ambiente</p>
-                      <Badge variant={configAsaas?.ambiente === "production" ? "default" : "secondary"}>
-                        {configAsaas?.ambiente === "production" ? "Produção" : "Sandbox"}
-                      </Badge>
-                    </div>
                   </div>
 
-                  {configAsaas?.ultima_sincronizacao && (
+                  {configMercadoPago?.ultima_sincronizacao && (
                     <div className="bg-gray-800 p-4 rounded-lg">
                       <p className="text-gray-400 text-sm mb-1">Última Sincronização</p>
-                      <p className="text-white">{formatDateTime(configAsaas.ultima_sincronizacao)}</p>
+                      <p className="text-white">{formatDateTime(configMercadoPago.ultima_sincronizacao)}</p>
                     </div>
                   )}
 
@@ -1744,17 +1717,17 @@ export default function AdminPublico() {
                     <DialogTrigger asChild>
                       <Button className="w-full bg-orange-600 hover:bg-orange-700">
                         <Edit2 className="h-4 w-4 mr-2" />
-                        Configurar Integração Asaas
+                        Configurar Integração Mercado Pago
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-2xl">
                       <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                           <DollarSign className="h-5 w-5" />
-                          Configuração Asaas
+                          Configuração Mercado Pago
                         </DialogTitle>
                         <DialogDescription className="text-gray-400">
-                          Configure a integração com o gateway de pagamentos Asaas
+                          Configure a integração com o gateway de pagamentos Mercado Pago
                         </DialogDescription>
                       </DialogHeader>
                       <form
@@ -1762,37 +1735,36 @@ export default function AdminPublico() {
                           e.preventDefault();
                           const formData = new FormData(e.currentTarget);
                           const data = {
-                            api_key: formData.get("api_key"),
-                            ambiente: formData.get("ambiente"),
+                            access_token: formData.get("access_token"),
+                            public_key: formData.get("public_key"),
                             webhook_url: formData.get("webhook_url"),
                           };
-                          saveConfigAsaasMutation.mutate(data);
+                          saveConfigMercadoPagoMutation.mutate(data);
                         }}
                         className="space-y-4 py-4"
                       >
                         <div>
-                          <Label htmlFor="api_key" className="text-gray-300">API Key</Label>
+                          <Label htmlFor="access_token" className="text-gray-300">Access Token</Label>
                           <Input
-                            id="api_key"
-                            name="api_key"
+                            id="access_token"
+                            name="access_token"
                             type="password"
-                            defaultValue={configAsaas?.api_key || ""}
-                            placeholder="Sua API Key do Asaas"
+                            defaultValue={configMercadoPago?.access_token || ""}
+                            placeholder="Seu Access Token do Mercado Pago"
                             className="bg-gray-800 border-gray-700 text-white"
                             required
                           />
                         </div>
                         <div>
-                          <Label htmlFor="ambiente" className="text-gray-300">Ambiente</Label>
-                          <Select name="ambiente" defaultValue={configAsaas?.ambiente || "sandbox"}>
-                            <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                              <SelectValue placeholder="Selecione o ambiente" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                              <SelectItem value="sandbox">Sandbox (Testes)</SelectItem>
-                              <SelectItem value="production">Produção</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Label htmlFor="public_key" className="text-gray-300">Public Key</Label>
+                          <Input
+                            id="public_key"
+                            name="public_key"
+                            type="text"
+                            defaultValue={configMercadoPago?.public_key || ""}
+                            placeholder="Sua Public Key do Mercado Pago"
+                            className="bg-gray-800 border-gray-700 text-white"
+                          />
                         </div>
                         <div>
                           <Label htmlFor="webhook_url" className="text-gray-300">Webhook URL</Label>
@@ -1800,8 +1772,8 @@ export default function AdminPublico() {
                             id="webhook_url"
                             name="webhook_url"
                             type="url"
-                            defaultValue={configAsaas?.webhook_url || ""}
-                            placeholder="https://seudominio.com/api/webhook/asaas"
+                            defaultValue={configMercadoPago?.webhook_url || ""}
+                            placeholder="https://seudominio.com/api/webhook/mercadopago"
                             className="bg-gray-800 border-gray-700 text-white"
                           />
                         </div>
@@ -1810,10 +1782,9 @@ export default function AdminPublico() {
                             type="button"
                             variant="outline"
                             onClick={() => {
-                              const apiKeyInput = document.getElementById("api_key") as HTMLInputElement;
-                              const ambienteSelect = document.querySelector('[name="ambiente"]') as HTMLSelectElement;
-                              if (apiKeyInput && ambienteSelect) {
-                                testAsaasConnection(apiKeyInput.value, ambienteSelect.value);
+                              const accessTokenInput = document.getElementById("access_token") as HTMLInputElement;
+                              if (accessTokenInput) {
+                                testMercadoPagoConnection(accessTokenInput.value);
                               }
                             }}
                             disabled={testingAsaas}
@@ -1824,9 +1795,9 @@ export default function AdminPublico() {
                           <Button
                             type="submit"
                             className="flex-1 bg-green-600 hover:bg-green-700"
-                            disabled={saveConfigAsaasMutation.isPending}
+                            disabled={saveConfigMercadoPagoMutation.isPending}
                           >
-                            {saveConfigAsaasMutation.isPending ? "Salvando..." : "Salvar Configuração"}
+                            {saveConfigMercadoPagoMutation.isPending ? "Salvando..." : "Salvar Configuração"}
                           </Button>
                         </div>
                       </form>
@@ -1835,25 +1806,21 @@ export default function AdminPublico() {
                 </CardContent>
               </Card>
 
-              {/* Informações da Conta Asaas */}
-              {configAsaas?.account_id && (
+              {/* Informações da Conta Mercado Pago */}
+              {configMercadoPago?.webhook_url && (
                 <Card className="bg-gray-900 border-gray-800">
                   <CardHeader>
-                    <CardTitle className="text-white">Informações da Conta</CardTitle>
+                    <CardTitle className="text-white">Informações da Integração</CardTitle>
                     <CardDescription className="text-gray-400">
-                      Dados da sua conta Asaas
+                      Dados da sua integração com Mercado Pago
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-gray-800 p-4 rounded-lg">
-                        <p className="text-gray-400 text-sm mb-1">Account ID</p>
-                        <p className="text-white font-mono text-sm">{configAsaas.account_id}</p>
-                      </div>
+                    <div className="grid grid-cols-1 gap-4">
                       <div className="bg-gray-800 p-4 rounded-lg">
                         <p className="text-gray-400 text-sm mb-1">Webhook URL</p>
                         <p className="text-white text-sm truncate">
-                          {configAsaas.webhook_url || "Não configurado"}
+                          {configMercadoPago.webhook_url || "Não configurado"}
                         </p>
                       </div>
                     </div>
@@ -1899,8 +1866,8 @@ export default function AdminPublico() {
                     <p className="text-white">{selectedUser.is_admin ? "Sim" : "Não"}</p>
                   </div>
                   <div>
-                    <Label className="text-gray-300">ID Cliente Asaas:</Label>
-                    <p className="text-white font-mono text-sm">{selectedUser.asaas_customer_id || "-"}</p>
+                    <Label className="text-gray-300">ID Cliente Mercado Pago:</Label>
+                    <p className="text-white font-mono text-sm">{selectedUser.mercadopago_customer_id || "-"}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

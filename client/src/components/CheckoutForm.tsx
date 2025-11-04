@@ -97,15 +97,14 @@ export function CheckoutForm({
 
       const response = await res.json();
 
-      if (response.payment?.invoiceUrl) {
-        window.open(response.payment.invoiceUrl, "_blank");
-      } else if (response.payment?.bankSlipUrl) {
-        window.open(response.payment.bankSlipUrl, "_blank");
+      // Redirecionar para o Mercado Pago
+      if (response.preference?.init_point) {
+        window.location.href = response.preference.init_point;
       }
 
       toast({
         title: "🎉 Assinatura iniciada!",
-        description: response.message || "Sua cobrança foi criada com sucesso.",
+        description: response.message || "Redirecionando para o pagamento...",
       });
 
       onOpenChange(false);

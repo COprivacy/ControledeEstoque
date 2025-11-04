@@ -217,11 +217,15 @@ export const insertPlanoSchema = createInsertSchema(planos).omit({
   id: true,
   data_criacao: true,
 });
+export type Plano = typeof planos.$inferSelect;
+export type InsertPlano = z.infer<typeof insertPlanoSchema>;
 
 export const insertConfigAsaasSchema = createInsertSchema(configAsaas).omit({
   id: true,
   updated_at: true,
 });
+export type ConfigAsaas = typeof configAsaas.$inferSelect;
+export type InsertConfigAsaas = z.infer<typeof insertConfigAsaasSchema>;
 
 export const insertLogAdminSchema = createInsertSchema(logsAdmin).omit({
   id: true,

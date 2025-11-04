@@ -945,6 +945,6 @@ export class MemStorage implements Storage { // Changed to implement Storage int
   }
 }
 
-import { SQLiteStorage } from './sqlite-storage';
+import { PostgresStorage } from './postgres-storage';
 
-export const storage = new SQLiteStorage();
+export const storage = new PostgresStorage();

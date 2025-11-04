@@ -21,15 +21,7 @@ export default function ContasPagar() {
   const { data: contas = [], isLoading } = useQuery({
     queryKey: ["/api/contas-pagar"],
     queryFn: async () => {
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      const response = await fetch("/api/contas-pagar", {
-        headers: {
-          "x-user-id": user.id || "",
-          "x-user-type": user.tipo || "usuario",
-          "x-conta-id": user.conta_id || user.id || "",
-        },
-      });
-      if (!response.ok) throw new Error("Erro ao buscar contas a pagar");
+      const response = await apiRequest("GET", "/api/contas-pagar");
       return response.json();
     },
   });

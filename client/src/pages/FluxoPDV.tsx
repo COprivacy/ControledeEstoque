@@ -3,37 +3,32 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays, TrendingUp, TrendingDown } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function FluxoPDV() {
   const { data: contasPagar = [] } = useQuery({
     queryKey: ["/api/contas-pagar"],
     queryFn: async () => {
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      const response = await fetch("/api/contas-pagar", {
-        headers: {
-          "x-user-id": user.id || "",
-          "x-user-type": user.tipo || "usuario",
-          "x-conta-id": user.conta_id || user.id || "",
-        },
-      });
-      if (!response.ok) return [];
-      return response.json();
+      try {
+        const response = await apiRequest("GET", "/api/contas-pagar");
+        return response.json();
+      } catch (error) {
+        console.error("Erro ao buscar contas a pagar:", error);
+        return [];
+      }
     },
   });
 
   const { data: contasReceber = [] } = useQuery({
     queryKey: ["/api/contas-receber"],
     queryFn: async () => {
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      const response = await fetch("/api/contas-receber", {
-        headers: {
-          "x-user-id": user.id || "",
-          "x-user-type": user.tipo || "usuario",
-          "x-conta-id": user.conta_id || user.id || "",
-        },
-      });
-      if (!response.ok) return [];
-      return response.json();
+      try {
+        const response = await apiRequest("GET", "/api/contas-receber");
+        return response.json();
+      } catch (error) {
+        console.error("Erro ao buscar contas a receber:", error);
+        return [];
+      }
     },
   });
 

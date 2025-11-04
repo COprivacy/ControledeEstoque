@@ -20,15 +20,7 @@ export default function ContasReceber() {
   const { data: contas = [], isLoading } = useQuery({
     queryKey: ["/api/contas-receber"],
     queryFn: async () => {
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      const response = await fetch("/api/contas-receber", {
-        headers: {
-          "x-user-id": user.id || "",
-          "x-user-type": user.tipo || "usuario",
-          "x-conta-id": user.conta_id || user.id || "",
-        },
-      });
-      if (!response.ok) throw new Error("Erro ao buscar contas a receber");
+      const response = await apiRequest("GET", "/api/contas-receber");
       return response.json();
     },
   });

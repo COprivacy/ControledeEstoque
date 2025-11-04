@@ -114,6 +114,7 @@ export interface IStorage {
   atualizarTotaisCaixa?(id: number, campo: 'total_vendas' | 'total_suprimentos' | 'total_retiradas', valor: number): Promise<any | undefined>;
   getMovimentacoesCaixa?(caixaId: number): Promise<any[]>;
   createMovimentacaoCaixa?(movimentacao: any): Promise<any>;
+  limparHistoricoCaixas?(userId: string): Promise<{ deletedCount: number }>;
 }
 
 export abstract class Storage {

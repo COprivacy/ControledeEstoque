@@ -2326,6 +2326,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/caixas/historico", getUserId, async (req, res) => {
+    try {
+      const userId = req.headers['effective-user-id'] as string;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Usuário não autenticado" });
+      }
+
+      if (!storage.limparHistoricoCaixas) {
+        return res.status(501).json({ error: "Método limparHistoricoCaixas não implementado" });
+      }
+
+      const resultado = await storage.limparHistoricoCaixas(userId);
+      console.log(`✅ Histórico de caixas limpo - User: ${userId}, Caixas removidos: ${resultado.deletedCount}`);
+      res.json({ success: true, deletedCount: resultado.deletedCount });
+    } catch (error) {
+      console.error("Erro ao limpar histórico de caixas:", error);
+      res.status(500).json({ error: "Erro ao limpar histórico de caixas" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

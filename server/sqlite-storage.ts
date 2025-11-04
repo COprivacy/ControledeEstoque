@@ -1287,4 +1287,21 @@ export class SQLiteStorage implements IStorage {
 
     return { ...movimentacaoData, id: Number(info.lastInsertRowid) };
   }
+
+  async limparHistoricoCaixas(userId: string): Promise<{ deletedCount: number }> {
+    // Buscar IDs dos caixas fechados
+    const caixasFechados = this.db.prepare('SELECT id FROM caixas WHERE user_id = ? AND status = ?').all(userId, 'fechado');
+    
+    // Deletar movimentações dos caixas fechados
+    const deleteMovStmt = this.db.prepare('DELETE FROM movimentacoes_caixa WHERE caixa_id = ?');
+    for (const caixa of caixasFechados as any[]) {
+      deleteMovStmt.run(caixa.id);
+    }
+
+    // Deletar caixas fechados
+    const deleteCaixaStmt = this.db.prepare('DELETE FROM caixas WHERE user_id = ? AND status = ?');
+    const result = deleteCaixaStmt.run(userId, 'fechado');
+
+    return { deletedCount: result.changes };
+  }
 }

@@ -308,6 +308,42 @@ export default function Caixa() {
     );
   };
 
+  const handleLimparHistorico = async () => {
+    if (!confirm("Tem certeza que deseja limpar todo o histórico de caixas fechados? Esta ação não pode ser desfeita.")) {
+      return;
+    }
+
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const response = await fetch("/api/caixas/historico", {
+        method: "DELETE",
+        headers: {
+          "x-user-id": user.id || "",
+          "x-user-type": user.tipo || "usuario",
+          "x-conta-id": user.conta_id || user.id || "",
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao limpar histórico");
+      }
+
+      const result = await response.json();
+      queryClient.invalidateQueries({ queryKey: ["/api/caixas"] });
+      toast({
+        title: "Histórico limpo com sucesso!",
+        description: `${result.deletedCount} caixa(s) removido(s).`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao limpar histórico",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   // Function to check if "Finalizar" button should be enabled
   const isFinalizarCompraEnabled = () => {
     if (!caixaAberto) return false;
@@ -667,9 +703,20 @@ export default function Caixa() {
       {hasPermission("historico_caixas") && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <History className="h-5 w-5" />
-              Histórico de Caixas
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Histórico de Caixas
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleLimparHistorico}
+                disabled={caixas.filter((c: any) => c.status === "fechado").length === 0}
+                data-testid="button-limpar-historico"
+              >
+                Limpar Histórico
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>

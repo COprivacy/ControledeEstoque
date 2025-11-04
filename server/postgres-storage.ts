@@ -527,4 +527,23 @@ export class PostgresStorage implements IStorage {
     const result = await db.insert(movimentacoesCaixa).values(movimentacao).returning();
     return result[0];
   }
+
+  async limparHistoricoCaixas(userId: string): Promise<{ deletedCount: number }> {
+    // Deletar todas as movimentações dos caixas fechados do usuário
+    await db.delete(movimentacoesCaixa).where(
+      eq(movimentacoesCaixa.caixa_id, 
+        db.select({ id: caixas.id })
+          .from(caixas)
+          .where(and(eq(caixas.user_id, userId), eq(caixas.status, 'fechado')))
+          .limit(1) as any
+      )
+    );
+
+    // Deletar todos os caixas fechados do usuário
+    const result = await db.delete(caixas)
+      .where(and(eq(caixas.user_id, userId), eq(caixas.status, 'fechado')))
+      .returning();
+
+    return { deletedCount: result.length };
+  }
 }

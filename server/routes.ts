@@ -412,75 +412,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Rotas de Configuração Asaas
-  app.get("/api/config-asaas", async (req, res) => {
+  // Rotas de Configuração Mercado Pago
+  app.get("/api/config-mercadopago", async (req, res) => {
     try {
-      const config = await storage.getConfigAsaas();
+      const config = await storage.getConfigMercadoPago();
       if (!config) {
         return res.json(null);
       }
       res.json({
         ...config,
-        api_key: config.api_key ? '***' : ''
+        access_token: config.access_token ? '***' : '',
+        public_key: config.public_key || ''
       });
     } catch (error) {
-      res.status(500).json({ error: "Erro ao buscar configuração Asaas" });
+      res.status(500).json({ error: "Erro ao buscar configuração Mercado Pago" });
     }
   });
 
-  app.post("/api/config-asaas", async (req, res) => {
+  app.post("/api/config-mercadopago", async (req, res) => {
     try {
       const config = req.body;
 
-      await storage.saveConfigAsaas({
+      await storage.saveConfigMercadoPago({
         ...config,
         updated_at: new Date().toISOString(),
       });
 
-      // Se webhook_url foi fornecido, tentar registrar no Asaas
-      if (config.webhook_url && config.api_key) {
-        try {
-          const { AsaasService } = await import('./asaas');
-          const asaas = new AsaasService({
-            apiKey: config.api_key,
-            ambiente: config.ambiente as 'sandbox' | 'production'
-          });
-
-          // Nota: Asaas não tem endpoint direto para registrar webhook via API
-          // O webhook deve ser configurado manualmente no painel Asaas
-          console.log("⚠️ Lembre-se de configurar o webhook manualmente no painel Asaas:", config.webhook_url);
-        } catch (error) {
-          console.error("Erro ao validar configuração:", error);
-        }
-      }
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+        : 'http://localhost:5000';
 
       res.json({
         success: true,
-        message: "Configuração salva com sucesso. Configure o webhook manualmente no painel Asaas.",
-        webhook_info: config.webhook_url ? {
-          url: config.webhook_url,
-          events: ["PAYMENT_RECEIVED", "PAYMENT_CONFIRMED", "PAYMENT_OVERDUE"]
-        } : null
+        message: "Configuração salva com sucesso!",
+        webhook_info: {
+          url: `${baseUrl}/api/webhook/mercadopago`,
+          instructions: "Configure este URL no painel do Mercado Pago"
+        }
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.post("/api/config-asaas/test", async (req, res) => {
+  app.post("/api/config-mercadopago/test", async (req, res) => {
     try {
-      const { api_key, ambiente } = req.body;
+      const { access_token } = req.body;
 
-      if (!api_key) {
-        return res.status(400).json({ error: "API Key é obrigatória" });
+      if (!access_token) {
+        return res.status(400).json({ error: "Access Token é obrigatório" });
       }
 
-      const { AsaasService } = await import('./asaas');
-      const asaas = new AsaasService({ apiKey: api_key, ambiente });
-      const result = await asaas.testConnection();
+      const { MercadoPagoService } = await import('./mercadopago');
+      const mercadopago = new MercadoPagoService({ accessToken: access_token });
+      const result = await mercadopago.testConnection();
 
       if (result.success) {
-        await storage.updateConfigAsaasStatus('conectado');
+        await storage.updateConfigMercadoPagoStatus('conectado');
       }
 
       res.json(result);
@@ -1698,37 +1686,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Plano inválido" });
       }
 
-      const config = await storage.getConfigAsaas();
-      if (!config || !config.api_key) {
+      const config = await storage.getConfigMercadoPago();
+      if (!config || !config.access_token) {
         return res.status(500).json({
           error: "Sistema de pagamento não configurado. Entre em contato com o suporte."
         });
       }
 
-      const { AsaasService } = await import('./asaas');
-      const asaas = new AsaasService({
-        apiKey: config.api_key,
-        ambiente: config.ambiente as 'sandbox' | 'production'
+      const { MercadoPagoService } = await import('./mercadopago');
+      const mercadopago = new MercadoPagoService({
+        accessToken: config.access_token
       });
 
-      // Criar ou atualizar cliente no Asaas
-      const asaasCustomer = await asaas.createCustomer({
-        name: nome,
-        email,
-        cpfCnpj: cpfCnpj || undefined,
-      });
+      const externalReference = `${plano}_${Date.now()}`;
 
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 3);
-
-      // Criar cobrança
-      const payment = await asaas.createPayment({
-        customer: asaasCustomer.id,
-        billingType: formaPagamento,
-        value: planoValues[plano as keyof typeof planoValues],
-        dueDate: dueDate.toISOString().split('T')[0],
-        description: `Assinatura ${planoNomes[plano as keyof typeof planoNomes]} - Pavisoft Sistemas`,
-        externalReference: `${plano}_${Date.now()}`
+      // Criar preferência de pagamento no Mercado Pago
+      const preference = await mercadopago.createPreference({
+        items: [{
+          title: `Assinatura ${planoNomes[plano as keyof typeof planoNomes]} - Pavisoft Sistemas`,
+          quantity: 1,
+          unit_price: planoValues[plano as keyof typeof planoValues],
+          currency_id: 'BRL',
+          description: `Plano ${planoNomes[plano as keyof typeof planoNomes]}`
+        }],
+        payer: {
+          email,
+          name: nome,
+          identification: cpfCnpj ? {
+            type: cpfCnpj.replace(/\D/g, '').length === 11 ? 'CPF' : 'CNPJ',
+            number: cpfCnpj.replace(/\D/g, '')
+          } : undefined
+        },
+        external_reference: externalReference
       });
 
       // Criar ou atualizar usuário
@@ -1742,11 +1731,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           plano: "free",
           is_admin: "false",
           status: "ativo",
-          asaas_customer_id: asaasCustomer.id,
-        });
-      } else {
-        await storage.updateUser(user.id, {
-          asaas_customer_id: asaasCustomer.id
         });
       }
 
@@ -1764,27 +1748,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "pendente",
         valor: planoValues[plano as keyof typeof planoValues],
         data_vencimento: dataVencimento.toISOString(),
-        asaas_payment_id: payment.id,
+        mercadopago_preference_id: preference.id,
         forma_pagamento: formaPagamento,
-        status_pagamento: payment.status,
-        invoice_url: payment.invoiceUrl,
-        bank_slip_url: payment.bankSlipUrl,
-        pix_qrcode: payment.pixQrCode,
+        status_pagamento: "pending",
+        init_point: preference.init_point,
+        external_reference: externalReference,
       });
 
-      console.log(`✅ Assinatura criada com sucesso - User: ${user.email}, Plano: ${planoNomes[plano as keyof typeof planoNomes]}, Pagamento: ${formaPagamento}`);
+      console.log(`✅ Assinatura criada com sucesso - User: ${user.email}, Plano: ${planoNomes[plano as keyof typeof planoNomes]}, Forma: ${formaPagamento}`);
 
       res.json({
         success: true,
         subscription,
-        payment: {
-          id: payment.id,
-          status: payment.status,
-          invoiceUrl: payment.invoiceUrl,
-          bankSlipUrl: payment.bankSlipUrl,
-          pixQrCode: payment.pixQrCode,
+        preference: {
+          id: preference.id,
+          init_point: preference.init_point,
         },
-        message: `Assinatura ${planoNomes[plano as keyof typeof planoNomes]} criada com sucesso! Realize o pagamento para ativar.`
+        message: `Assinatura ${planoNomes[plano as keyof typeof planoNomes]} criada com sucesso! Você será redirecionado para o pagamento.`
       });
     } catch (error: any) {
       console.error("❌ Erro ao criar checkout:", error);

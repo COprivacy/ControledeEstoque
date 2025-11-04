@@ -1792,7 +1792,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar usuário
-      const user = await storage.getUserById(userId);
+      const users = await storage.getUsers();
+      const user = users.find(u => u.id === userId);
       if (!user) {
         return res.status(404).json({ error: "Usuário não encontrado" });
       }

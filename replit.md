@@ -10,6 +10,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Database Migration to PostgreSQL (Neon) - November 4, 2025
+- **Successfully Migrated from SQLite to PostgreSQL:** Complete database migration to Neon-hosted PostgreSQL
+  - Created `PostgresStorage` class implementing full IStorage interface using Drizzle ORM
+  - Developed migration script (`migrate-to-postgres.ts`) to transfer all data from SQLite to PostgreSQL
+  - Migrated all tables: users, products, sales, suppliers, clients, purchases, fiscal config, plans, Asaas config, logs, subscriptions, employee data, financial accounts, and cash register data
+  - Updated `server/storage.ts` to use PostgreSQL storage instead of SQLite
+  - Database URL configured via Replit Secrets for security
+  - Backup of original SQLite database maintained in `server/database.db`
+  - Application tested and verified working correctly with PostgreSQL
+  - All existing data preserved and accessible in new database
+
 ### UX Improvements for Financial Module - November 3, 2025
 - **Added Loading States to Accounts Payable/Receivable:** Improved user experience during form submissions
   - Added loading indicators on submit buttons ("Adicionando..." / "Salvando...")

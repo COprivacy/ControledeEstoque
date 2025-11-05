@@ -1,4 +1,3 @@
-
 import { storage } from './storage';
 import { EmailService } from './email-service';
 import { logger } from './logger';
@@ -41,7 +40,7 @@ export class PaymentReminderService {
         // Verificar vencimentos de planos
         if (subscription.data_vencimento) {
           const daysUntilExpiration = this.getDaysDifference(now, new Date(subscription.data_vencimento));
-          
+
           // Avisos antes do vencimento
           if (this.config.daysBeforeExpiration.includes(daysUntilExpiration)) {
             await this.sendExpirationWarning(subscription, daysUntilExpiration);
@@ -153,15 +152,38 @@ export class PaymentReminderService {
    */
   private async blockExpiredSubscription(subscription: any): Promise<void> {
     await storage.updateSubscription(subscription.id, {
-      status: 'bloqueado',
+      status: "bloqueado",
     });
 
     await storage.updateUser(subscription.user_id, {
-      status: 'bloqueado',
+      status: "bloqueado",
     });
 
     const user = (await storage.getUsers()).find(u => u.id === subscription.user_id);
     if (user) {
+      // Bloquear também todos os funcionários desta conta
+      if (storage.getFuncionarios) {
+        const funcionarios = await storage.getFuncionarios();
+        const funcionariosDaConta = funcionarios.filter(f => f.conta_id === user.id);
+
+        for (const funcionario of funcionariosDaConta) {
+          await storage.updateFuncionario(funcionario.id, {
+            status: "bloqueado",
+          });
+
+          logger.warn('Funcionário bloqueado devido ao bloqueio da conta principal', 'PAYMENT_REMINDER', {
+            funcionarioId: funcionario.id,
+            contaId: user.id,
+          });
+        }
+
+        if (funcionariosDaConta.length > 0) {
+          logger.info(`${funcionariosDaConta.length} funcionário(s) bloqueado(s) junto com a conta`, 'PAYMENT_REMINDER', {
+            contaId: user.id,
+          });
+        }
+      }
+
       await this.emailService.sendAccountBlocked({
         to: user.email,
         userName: user.nome,

@@ -12,12 +12,19 @@ export function TrialExpiredModal() {
   const isTrialExpired = (): boolean => {
     if (!user) return false;
     
+    // Admin nunca é bloqueado
     if (user.is_admin === "true") return false;
     
+    // Verificar se o usuário está bloqueado
+    if (user.status === "bloqueado") return true;
+    
+    // Para funcionários, não verificar aqui (a conta principal que controla)
     if (user.tipo === "funcionario") return false;
     
+    // Usuários premium não expiram
     if (isPremium()) return false;
 
+    // Verificar expiração para trial e free
     if (user.plano === 'trial' || user.plano === 'free') {
       if (user.data_expiracao_plano) {
         const now = new Date();

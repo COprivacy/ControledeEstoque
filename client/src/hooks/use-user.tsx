@@ -58,9 +58,61 @@ export function UserProvider({ children }: { children: ReactNode }) {
 }
 
 export function useUser() {
-  const context = useContext(UserContext);
-  if (context === undefined) {
-    throw new Error("useUser must be used within a UserProvider");
-  }
-  return context;
+  const [user, setUser] = useState<User | null>(() => {
+    const userStr = localStorage.getItem("user");
+    return userStr ? JSON.parse(userStr) : null;
+  });
+
+  // Verificar bloqueio periodicamente (a cada 5 minutos)
+  useEffect(() => {
+    if (!user) return;
+
+    const checkBlocked = async () => {
+      try {
+        const response = await fetch("/api/user/check-blocked", {
+          headers: {
+            "x-user-id": user.id,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.isBlocked && user.status !== "bloqueado") {
+            // Atualizar status do usuário para bloqueado
+            const updatedUser = { ...user, status: "bloqueado" };
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            setUser(updatedUser);
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao verificar bloqueio:", error);
+      }
+    };
+
+    // Verificar imediatamente
+    checkBlocked();
+
+    // Verificar a cada 5 minutos
+    const interval = setInterval(checkBlocked, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
+  const login = (userData: User) => {
+    localStorage.setItem("user", JSON.stringify(userData));
+    setUser(userData);
+  };
+
+  const logout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+  };
+
+  const updateUser = (userData: Partial<User>) => {
+    const updatedUser = { ...user, ...userData } as User;
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
+  return { user, login, logout, updateUser };
 }

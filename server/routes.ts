@@ -438,7 +438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updated_at: new Date().toISOString(),
       });
 
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN
         ? `https://${process.env.REPLIT_DEV_DOMAIN}`
         : 'http://localhost:5000';
 
@@ -622,7 +622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const maxFuncionarios = usuario.max_funcionarios || 1;
 
       if (funcionariosDaConta.length >= maxFuncionarios) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "Limite de funcionários atingido, verifique os planos e aumente a capacidade de novos cadastros.",
           limite_atingido: true,
           max_funcionarios: maxFuncionarios,
@@ -1994,8 +1994,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       logger.info('Emails de teste enviados', 'TEST_EMAIL', { email, results });
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: `${results.filter(r => r.status === 'enviado').length} emails enviados para ${email}`,
         details: results
       });
@@ -2189,6 +2189,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Erro ao cancelar assinatura:", error);
       res.status(500).json({ error: error.message || "Erro ao cancelar assinatura" });
+    }
+  });
+
+  // Sistema de lembretes de pagamento
+  app.post("/api/payment-reminders/check", requireAdmin, async (req, res) => {
+    try {
+      const { paymentReminderService } = await import('./payment-reminder');
+      await paymentReminderService.checkAndSendReminders();
+      res.json({ success: true, message: "Verificação de pagamentos executada" });
+    } catch (error) {
+      console.error("Erro ao verificar pagamentos:", error);
+      res.status(500).json({ error: "Erro ao verificar pagamentos" });
+    }
+  });
+
+  // Verificar status de bloqueio do usuário
+  app.get("/api/user/check-blocked", async (req, res) => {
+    try {
+      const userId = req.headers["x-user-id"] as string;
+      if (!userId) {
+        return res.status(401).json({ error: "Não autorizado" });
+      }
+
+      const users = await storage.getUsers();
+      const user = users.find(u => u.id === userId);
+
+      if (!user) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+
+      const isBlocked = user.status === "bloqueado";
+
+      res.json({
+        isBlocked,
+        status: user.status,
+        plano: user.plano
+      });
+    } catch (error) {
+      console.error("Erro ao verificar bloqueio:", error);
+      res.status(500).json({ error: "Erro ao verificar status de bloqueio" });
     }
   });
 

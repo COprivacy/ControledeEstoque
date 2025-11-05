@@ -122,9 +122,10 @@ export default function AdminPublico() {
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [testingMercadoPago, setTestingMercadoPago] = useState(false);
   const [createUserOpen, setCreateUserOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Começa como false para exigir senha
   const setLocation = useLocation()[1];
 
+  const [password, setPassword] = useState(""); // Estado para a senha do admin
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [planoFilter, setPlanoFilter] = useState<string>("all");
@@ -772,12 +773,12 @@ export default function AdminPublico() {
     if (!subscription.prazo_limite_pagamento || subscription.status !== 'pendente') {
       return null;
     }
-    
+
     const now = new Date();
     const prazoLimite = new Date(subscription.prazo_limite_pagamento);
     const diffTime = prazoLimite.getTime() - now.getTime();
     const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (daysRemaining < 0) {
       return {
         text: `Expirou há ${Math.abs(daysRemaining)} dia(s)`,
@@ -892,6 +893,51 @@ export default function AdminPublico() {
     ];
   }, [assinaturasAtivas, assinaturasPendentes]);
 
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    console.log("🔐 Tentando verificar senha master...");
+
+    try {
+      const response = await fetch("/api/auth/verify-master-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      const result = await response.json();
+      console.log("📋 Resultado verificação:", result);
+
+      if (result.valid) {
+        console.log("✅ Senha master válida - Autenticando...");
+        setIsAuthenticated(true);
+        sessionStorage.setItem("admin_auth", "authenticated");
+        sessionStorage.setItem("admin_auth_time", Date.now().toString());
+        toast({
+          title: "Acesso autorizado",
+          description: "Bem-vindo ao Painel Administrativo",
+        });
+      } else {
+        console.log("❌ Senha master inválida");
+        toast({
+          title: "Senha incorreta",
+          description: "A senha de administrador está incorreta",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("❌ Erro ao verificar senha:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível verificar a senha. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setPassword("");
+    }
+  };
 
   if (isLoadingSubscriptions || isLoadingUsers || isLoadingClientes) {
     return (
@@ -910,21 +956,26 @@ export default function AdminPublico() {
         <div className="text-center space-y-6 max-w-md">
           <Shield className="h-20 w-20 text-cyan-400 mx-auto" />
           <h1 className="text-4xl font-bold text-white">Acesso Restrito</h1>
-          <p className="text-slate-400 text-lg">Você não tem permissão para acessar esta página.</p>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setIsAuthenticated(false);
-              sessionStorage.removeItem("admin_auth");
-              sessionStorage.removeItem("admin_auth_time");
-              setLocation("/dashboard");
-            }}
-            className="gap-2 bg-slate-800/50 border-slate-700 hover:bg-slate-800"
-            data-testid="button-voltar"
-          >
-            <Lock className="h-4 w-4" />
-            Voltar para o Dashboard
-          </Button>
+          <p className="text-slate-400 text-lg">Acesso ao Painel Master requer autenticação.</p>
+          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+            <Input
+              type="password"
+              placeholder="Digite a senha master"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+              required
+              data-testid="input-master-password"
+            />
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-lg shadow-cyan-500/20"
+              data-testid="button-submit-password"
+            >
+              <Lock className="h-4 w-4 mr-2" />
+              Entrar no Painel
+            </Button>
+          </form>
         </div>
       </div>
     );

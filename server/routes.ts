@@ -138,33 +138,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`📋 Usuário encontrado:`, user ? `Sim (${user.email})` : 'Não');
 
       if (user) {
-        console.log(`🔑 Comparando senhas - Recebida: "${senha}" | Armazenada: "${user.senha}"`);
-        console.log(`🔑 Tipo da senha recebida: ${typeof senha} | Tipo da senha armazenada: ${typeof user.senha}`);
-        console.log(`🔑 Senhas são iguais? ${user.senha === senha}`);
-        console.log(`🔑 Dados completos do usuário:`, JSON.stringify(user, null, 2));
-      } else {
-        console.log(`❌ Email não encontrado no banco: ${email}`);
-      }
-
-      if (user && user.senha === senha) {
-        console.log(`✅ Login bem-sucedido para usuário: ${user.email}`);
-        return res.json({
-          id: user.id,
-          email: user.email,
-          nome: user.nome,
-          plano: user.plano,
-          is_admin: user.is_admin,
-          data_expiracao_trial: user.data_expiracao_trial,
-          data_expiracao_plano: user.data_expiracao_plano,
-          permissoes: user.permissoes,
-          tipo: "usuario"
-        });
+        // Comparação de senha segura
+        const senhaMatch = user.senha === senha;
+        
+        if (senhaMatch) {
+          console.log(`✅ Login bem-sucedido para usuário: ${user.email}`);
+          
+          // Atualizar último acesso
+          await storage.updateUser(user.id, {
+            ultimo_acesso: new Date().toISOString()
+          });
+          
+          return res.json({
+            id: user.id,
+            email: user.email,
+            nome: user.nome,
+            plano: user.plano,
+            is_admin: user.is_admin,
+            data_expiracao_trial: user.data_expiracao_trial,
+            data_expiracao_plano: user.data_expiracao_plano,
+            permissoes: user.permissoes,
+            max_funcionarios: user.max_funcionarios,
+            status: user.status,
+            tipo: "usuario"
+          });
+        }
       }
 
       // Se não encontrou, tenta autenticar como funcionário
       try {
         const funcionarios = await storage.getFuncionarios();
-        const funcionario = funcionarios.find(f => f.email === email && f.senha === senha);
+        const funcionario = funcionarios.find(f => 
+          f.email.toLowerCase() === email && 
+          f.senha === senha &&
+          f.status === "ativo"
+        );
 
         if (funcionario) {
           console.log(`✅ Login bem-sucedido para funcionário: ${funcionario.email}`);
@@ -176,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             is_admin: "false",
             tipo: "funcionario",
             conta_id: funcionario.conta_id,
-            cargo: "Funcionário"
+            cargo: funcionario.cargo || "Funcionário"
           });
         }
       } catch (funcError) {
@@ -250,8 +258,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!masterUser) {
         console.log("🔧 Criando usuário master automaticamente...");
+        const dataExpiracao = new Date();
+        dataExpiracao.setFullYear(dataExpiracao.getFullYear() + 10); // 10 anos
+        
         masterUser = await storage.createUser({
-          nome: "Admin Master",
+          nome: "Pavisoft",
           email: masterEmail,
           senha: "Pavisoft@140319",
           plano: "premium",
@@ -259,6 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: "ativo",
           max_funcionarios: 999,
           data_criacao: new Date().toISOString(),
+          data_expiracao_plano: dataExpiracao.toISOString(),
         });
         console.log("✅ Usuário master criado com sucesso");
       }
@@ -275,11 +287,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Verificar com a senha padrão
         const isValid = await bcrypt.compare(password, hashedPassword);
+        console.log(`🔐 Verificação senha master (nova): ${isValid}`);
         return res.json({ valid: isValid });
       }
 
       // Verificar senha fornecida com hash armazenado
       const isValid = await bcrypt.compare(password, masterPasswordConfig.valor);
+      console.log(`🔐 Verificação senha master: ${isValid}`);
       res.json({ valid: isValid });
 
     } catch (error) {

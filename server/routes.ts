@@ -2083,14 +2083,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Não autorizado" });
       }
 
-      const { meta_mensal } = req.body;
+      const { meta_mensal, target_user_id } = req.body;
       if (!meta_mensal || isNaN(parseFloat(meta_mensal))) {
         return res.status(400).json({ error: "Meta inválida" });
       }
 
-      await storage.updateUser(userId, {
+      // Se target_user_id for fornecido, atualiza outro usuário (apenas admin)
+      const targetId = target_user_id || userId;
+
+      await storage.updateUser(targetId, {
         meta_mensal: parseFloat(meta_mensal)
       });
+
+      console.log(`✅ Meta MRR atualizada - User: ${targetId}, Meta: R$ ${meta_mensal}`);
 
       res.json({ 
         success: true, 

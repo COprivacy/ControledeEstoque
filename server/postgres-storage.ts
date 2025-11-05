@@ -56,6 +56,8 @@ import {
 import type { IStorage } from './storage';
 import { randomUUID } from 'crypto';
 import ws from 'ws';
+import { logger } from '@shared/logger';
+
 
 neonConfig.webSocketConstructor = ws;
 
@@ -65,16 +67,60 @@ const maskedUrl = dbUrl.replace(/:([^@]+)@/, ':****@');
 console.log(`🔌 Conectando ao PostgreSQL: ${maskedUrl}`);
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
-const db = drizzle(pool);
 
 export class PostgresStorage implements IStorage {
-  async getUsers(): Promise<User[]> {
-    return await db.select().from(users);
+  private db;
+
+  constructor() {
+    this.db = drizzle(pool);
+    console.log('✅ PostgreSQL conectado com sucesso');
+
+    // Testar conexão imediatamente
+    this.testConnection();
   }
 
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    return result[0];
+  private async testConnection() {
+    try {
+      const result = await this.db.select().from(users).limit(1);
+      logger.info('[DB] Teste de conexão bem-sucedido', {
+        usuariosEncontrados: result.length
+      });
+    } catch (error: any) {
+      logger.error('[DB] Erro no teste de conexão:', {
+        error: error.message,
+        stack: error.stack
+      });
+    }
+  }
+
+  async getUsers(): Promise<User[]> {
+    return await this.db.select().from(users);
+  }
+
+  async getUserByEmail(email: string): Promise<User | null> {
+    try {
+      logger.info('[DB] Buscando usuário por email:', { email });
+
+      const result = await this.db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      logger.info('[DB] Resultado da busca:', {
+        encontrado: result.length > 0,
+        usuario: result[0] ? { id: result[0].id, email: result[0].email, nome: result[0].nome } : null
+      });
+
+      return result[0] || null;
+    } catch (error: any) {
+      logger.error('[DB] Erro ao buscar usuário por email:', {
+        email,
+        error: error.message,
+        stack: error.stack
+      });
+      throw error;
+    }
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -83,75 +129,75 @@ export class PostgresStorage implements IStorage {
       id: randomUUID(),
       data_criacao: new Date().toISOString(),
     };
-    const result = await db.insert(users).values(newUser).returning();
+    const result = await this.db.insert(users).values(newUser).returning();
     return result[0];
   }
 
   async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
-    const result = await db.update(users).set(updates).where(eq(users.id, id)).returning();
+    const result = await this.db.update(users).set(updates).where(eq(users.id, id)).returning();
     return result[0];
   }
 
   async deleteUser(id: string): Promise<void> {
-    await db.delete(users).where(eq(users.id, id));
+    await this.db.delete(users).where(eq(users.id, id));
   }
 
   async getProdutos(): Promise<Produto[]> {
-    return await db.select().from(produtos);
+    return await this.db.select().from(produtos);
   }
 
   async getProduto(id: number): Promise<Produto | undefined> {
-    const result = await db.select().from(produtos).where(eq(produtos.id, id)).limit(1);
+    const result = await this.db.select().from(produtos).where(eq(produtos.id, id)).limit(1);
     return result[0];
   }
 
   async getProdutoByCodigoBarras(codigo: string): Promise<Produto | undefined> {
-    const result = await db.select().from(produtos).where(eq(produtos.codigo_barras, codigo)).limit(1);
+    const result = await this.db.select().from(produtos).where(eq(produtos.codigo_barras, codigo)).limit(1);
     return result[0];
   }
 
   async createProduto(insertProduto: InsertProduto): Promise<Produto> {
-    const result = await db.insert(produtos).values(insertProduto).returning();
+    const result = await this.db.insert(produtos).values(insertProduto).returning();
     return result[0];
   }
 
   async updateProduto(id: number, updates: Partial<Produto>): Promise<Produto | undefined> {
-    const result = await db.update(produtos).set(updates).where(eq(produtos.id, id)).returning();
+    const result = await this.db.update(produtos).set(updates).where(eq(produtos.id, id)).returning();
     return result[0];
   }
 
   async deleteProduto(id: number): Promise<boolean> {
-    const result = await db.delete(produtos).where(eq(produtos.id, id)).returning();
+    const result = await this.db.delete(produtos).where(eq(produtos.id, id)).returning();
     return result.length > 0;
   }
 
   async getVendas(startDate?: string, endDate?: string): Promise<Venda[]> {
     if (startDate && endDate) {
-      return await db.select().from(vendas).where(
+      return await this.db.select().from(vendas).where(
         and(
           gte(vendas.data, startDate),
           lte(vendas.data, endDate)
         )
       );
     }
-    return await db.select().from(vendas);
+    return await this.db.select().from(vendas);
   }
 
   async createVenda(insertVenda: InsertVenda): Promise<Venda> {
-    const result = await db.insert(vendas).values(insertVenda).returning();
+    const result = await this.db.insert(vendas).values(insertVenda).returning();
     return result[0];
   }
 
   async clearVendas(): Promise<void> {
-    await db.delete(vendas);
+    await this.db.delete(vendas);
   }
 
   async getFornecedores(): Promise<Fornecedor[]> {
-    return await db.select().from(fornecedores);
+    return await this.db.select().from(fornecedores);
   }
 
   async getFornecedor(id: number): Promise<Fornecedor | undefined> {
-    const result = await db.select().from(fornecedores).where(eq(fornecedores.id, id)).limit(1);
+    const result = await this.db.select().from(fornecedores).where(eq(fornecedores.id, id)).limit(1);
     return result[0];
   }
 
@@ -160,26 +206,26 @@ export class PostgresStorage implements IStorage {
       ...insertFornecedor,
       data_cadastro: new Date().toISOString(),
     };
-    const result = await db.insert(fornecedores).values(newFornecedor).returning();
+    const result = await this.db.insert(fornecedores).values(newFornecedor).returning();
     return result[0];
   }
 
   async updateFornecedor(id: number, updates: Partial<Fornecedor>): Promise<Fornecedor | undefined> {
-    const result = await db.update(fornecedores).set(updates).where(eq(fornecedores.id, id)).returning();
+    const result = await this.db.update(fornecedores).set(updates).where(eq(fornecedores.id, id)).returning();
     return result[0];
   }
 
   async deleteFornecedor(id: number): Promise<boolean> {
-    const result = await db.delete(fornecedores).where(eq(fornecedores.id, id)).returning();
+    const result = await this.db.delete(fornecedores).where(eq(fornecedores.id, id)).returning();
     return result.length > 0;
   }
 
   async getClientes(): Promise<Cliente[]> {
-    return await db.select().from(clientes);
+    return await this.db.select().from(clientes);
   }
 
   async getCliente(id: number): Promise<Cliente | undefined> {
-    const result = await db.select().from(clientes).where(eq(clientes.id, id)).limit(1);
+    const result = await this.db.select().from(clientes).where(eq(clientes.id, id)).limit(1);
     return result[0];
   }
 
@@ -188,23 +234,23 @@ export class PostgresStorage implements IStorage {
       ...insertCliente,
       data_cadastro: insertCliente.data_cadastro || new Date().toISOString(),
     };
-    const result = await db.insert(clientes).values(newCliente).returning();
+    const result = await this.db.insert(clientes).values(newCliente).returning();
     return result[0];
   }
 
   async updateCliente(id: number, updates: Partial<Cliente>): Promise<Cliente | undefined> {
-    const result = await db.update(clientes).set(updates).where(eq(clientes.id, id)).returning();
+    const result = await this.db.update(clientes).set(updates).where(eq(clientes.id, id)).returning();
     return result[0];
   }
 
   async deleteCliente(id: number): Promise<boolean> {
-    const result = await db.delete(clientes).where(eq(clientes.id, id)).returning();
+    const result = await this.db.delete(clientes).where(eq(clientes.id, id)).returning();
     return result.length > 0;
   }
 
   async getCompras(fornecedorId?: number, startDate?: string, endDate?: string): Promise<Compra[]> {
-    let query = db.select().from(compras);
-    
+    let query = this.db.select().from(compras);
+
     if (fornecedorId && startDate && endDate) {
       return await query.where(
         and(
@@ -223,30 +269,30 @@ export class PostgresStorage implements IStorage {
         )
       );
     }
-    
+
     return await query;
   }
 
   async createCompra(insertCompra: InsertCompra): Promise<Compra> {
-    const result = await db.insert(compras).values(insertCompra).returning();
+    const result = await this.db.insert(compras).values(insertCompra).returning();
     return result[0];
   }
 
   async updateCompra(id: number, updates: Partial<Compra>): Promise<Compra | undefined> {
-    const result = await db.update(compras).set(updates).where(eq(compras.id, id)).returning();
+    const result = await this.db.update(compras).set(updates).where(eq(compras.id, id)).returning();
     return result[0];
   }
 
   async getConfigFiscal(): Promise<ConfigFiscal | undefined> {
-    const result = await db.select().from(configFiscal).limit(1);
+    const result = await this.db.select().from(configFiscal).limit(1);
     return result[0];
   }
 
   async saveConfigFiscal(insertConfig: InsertConfigFiscal): Promise<ConfigFiscal> {
     const existing = await this.getConfigFiscal();
-    
+
     if (existing) {
-      const result = await db.update(configFiscal)
+      const result = await this.db.update(configFiscal)
         .set({
           ...insertConfig,
           updated_at: new Date().toISOString(),
@@ -255,8 +301,8 @@ export class PostgresStorage implements IStorage {
         .returning();
       return result[0];
     }
-    
-    const result = await db.insert(configFiscal).values({
+
+    const result = await this.db.insert(configFiscal).values({
       ...insertConfig,
       updated_at: new Date().toISOString(),
     }).returning();
@@ -264,11 +310,11 @@ export class PostgresStorage implements IStorage {
   }
 
   async getPlanos(): Promise<Plano[]> {
-    return await db.select().from(planos).orderBy(desc(planos.id));
+    return await this.db.select().from(planos).orderBy(desc(planos.id));
   }
 
   async createPlano(plano: InsertPlano): Promise<Plano> {
-    const result = await db.insert(planos).values({
+    const result = await this.db.insert(planos).values({
       ...plano,
       data_criacao: new Date().toISOString(),
     }).returning();
@@ -276,25 +322,25 @@ export class PostgresStorage implements IStorage {
   }
 
   async updatePlano(id: number, updates: Partial<Plano>): Promise<Plano | undefined> {
-    const result = await db.update(planos).set(updates).where(eq(planos.id, id)).returning();
+    const result = await this.db.update(planos).set(updates).where(eq(planos.id, id)).returning();
     return result[0];
   }
 
   async deletePlano(id: number): Promise<boolean> {
-    const result = await db.delete(planos).where(eq(planos.id, id)).returning();
+    const result = await this.db.delete(planos).where(eq(planos.id, id)).returning();
     return result.length > 0;
   }
 
   async getConfigMercadoPago(): Promise<ConfigMercadoPago | null> {
-    const result = await db.select().from(configMercadoPago).limit(1);
+    const result = await this.db.select().from(configMercadoPago).limit(1);
     return result[0] || null;
   }
 
   async saveConfigMercadoPago(config: InsertConfigMercadoPago): Promise<ConfigMercadoPago> {
     const existing = await this.getConfigMercadoPago();
-    
+
     if (existing) {
-      const result = await db.update(configMercadoPago)
+      const result = await this.db.update(configMercadoPago)
         .set({
           ...config,
           updated_at: new Date().toISOString(),
@@ -303,8 +349,8 @@ export class PostgresStorage implements IStorage {
         .returning();
       return result[0];
     }
-    
-    const result = await db.insert(configMercadoPago).values({
+
+    const result = await this.db.insert(configMercadoPago).values({
       ...config,
       updated_at: new Date().toISOString(),
     }).returning();
@@ -314,7 +360,7 @@ export class PostgresStorage implements IStorage {
   async updateConfigMercadoPagoStatus(status: string): Promise<void> {
     const existing = await this.getConfigMercadoPago();
     if (existing) {
-      await db.update(configMercadoPago)
+      await this.db.update(configMercadoPago)
         .set({
           status_conexao: status,
           ultima_sincronizacao: new Date().toISOString(),
@@ -324,11 +370,11 @@ export class PostgresStorage implements IStorage {
   }
 
   async getLogsAdmin(): Promise<LogAdmin[]> {
-    return await db.select().from(logsAdmin).orderBy(desc(logsAdmin.id));
+    return await this.db.select().from(logsAdmin).orderBy(desc(logsAdmin.id));
   }
 
   async createLogAdmin(log: InsertLogAdmin): Promise<LogAdmin> {
-    const result = await db.insert(logsAdmin).values({
+    const result = await this.db.insert(logsAdmin).values({
       ...log,
       data: new Date().toISOString(),
     }).returning();
@@ -336,20 +382,20 @@ export class PostgresStorage implements IStorage {
   }
 
   async getSubscriptions(): Promise<Subscription[]> {
-    return await db.select().from(subscriptions).orderBy(desc(subscriptions.id));
+    return await this.db.select().from(subscriptions).orderBy(desc(subscriptions.id));
   }
 
   async getSubscription(id: number): Promise<Subscription | undefined> {
-    const result = await db.select().from(subscriptions).where(eq(subscriptions.id, id)).limit(1);
+    const result = await this.db.select().from(subscriptions).where(eq(subscriptions.id, id)).limit(1);
     return result[0];
   }
 
   async getSubscriptionsByUser(userId: string): Promise<Subscription[]> {
-    return await db.select().from(subscriptions).where(eq(subscriptions.user_id, userId));
+    return await this.db.select().from(subscriptions).where(eq(subscriptions.user_id, userId));
   }
 
   async createSubscription(subscription: InsertSubscription): Promise<Subscription> {
-    const result = await db.insert(subscriptions).values({
+    const result = await this.db.insert(subscriptions).values({
       ...subscription,
       data_criacao: new Date().toISOString(),
     }).returning();
@@ -357,7 +403,7 @@ export class PostgresStorage implements IStorage {
   }
 
   async updateSubscription(id: number, updates: Partial<Subscription>): Promise<Subscription | undefined> {
-    const result = await db.update(subscriptions)
+    const result = await this.db.update(subscriptions)
       .set({
         ...updates,
         data_atualizacao: new Date().toISOString(),
@@ -368,15 +414,15 @@ export class PostgresStorage implements IStorage {
   }
 
   async getFuncionarios(): Promise<Funcionario[]> {
-    return await db.select().from(funcionarios);
+    return await this.db.select().from(funcionarios);
   }
 
   async getFuncionariosByContaId(contaId: string): Promise<Funcionario[]> {
-    return await db.select().from(funcionarios).where(eq(funcionarios.conta_id, contaId));
+    return await this.db.select().from(funcionarios).where(eq(funcionarios.conta_id, contaId));
   }
 
   async getFuncionario(id: string): Promise<Funcionario | undefined> {
-    const result = await db.select().from(funcionarios).where(eq(funcionarios.id, id)).limit(1);
+    const result = await this.db.select().from(funcionarios).where(eq(funcionarios.id, id)).limit(1);
     return result[0];
   }
 
@@ -386,22 +432,22 @@ export class PostgresStorage implements IStorage {
       id: funcionario.id || randomUUID(),
       data_criacao: new Date().toISOString(),
     };
-    const result = await db.insert(funcionarios).values(newFunc).returning();
+    const result = await this.db.insert(funcionarios).values(newFunc).returning();
     return result[0];
   }
 
   async updateFuncionario(id: string, updates: Partial<Funcionario>): Promise<Funcionario | undefined> {
-    const result = await db.update(funcionarios).set(updates).where(eq(funcionarios.id, id)).returning();
+    const result = await this.db.update(funcionarios).set(updates).where(eq(funcionarios.id, id)).returning();
     return result[0];
   }
 
   async deleteFuncionario(id: string): Promise<boolean> {
-    const result = await db.delete(funcionarios).where(eq(funcionarios.id, id)).returning();
+    const result = await this.db.delete(funcionarios).where(eq(funcionarios.id, id)).returning();
     return result.length > 0;
   }
 
   async getPermissoesFuncionario(funcionarioId: string): Promise<PermissaoFuncionario | undefined> {
-    const result = await db.select().from(permissoesFuncionarios)
+    const result = await this.db.select().from(permissoesFuncionarios)
       .where(eq(permissoesFuncionarios.funcionario_id, funcionarioId))
       .limit(1);
     return result[0];
@@ -409,16 +455,16 @@ export class PostgresStorage implements IStorage {
 
   async savePermissoesFuncionario(funcionarioId: string, permissoes: Partial<PermissaoFuncionario>): Promise<PermissaoFuncionario> {
     const existing = await this.getPermissoesFuncionario(funcionarioId);
-    
+
     if (existing) {
-      const result = await db.update(permissoesFuncionarios)
+      const result = await this.db.update(permissoesFuncionarios)
         .set(permissoes)
         .where(eq(permissoesFuncionarios.funcionario_id, funcionarioId))
         .returning();
       return result[0];
     }
-    
-    const result = await db.insert(permissoesFuncionarios).values({
+
+    const result = await this.db.insert(permissoesFuncionarios).values({
       funcionario_id: funcionarioId,
       ...permissoes,
     } as any).returning();
@@ -426,11 +472,11 @@ export class PostgresStorage implements IStorage {
   }
 
   async getContasPagar(): Promise<ContasPagar[]> {
-    return await db.select().from(contasPagar).orderBy(desc(contasPagar.id));
+    return await this.db.select().from(contasPagar).orderBy(desc(contasPagar.id));
   }
 
   async createContaPagar(conta: InsertContasPagar): Promise<ContasPagar> {
-    const result = await db.insert(contasPagar).values({
+    const result = await this.db.insert(contasPagar).values({
       ...conta,
       data_cadastro: new Date().toISOString(),
     }).returning();
@@ -438,21 +484,21 @@ export class PostgresStorage implements IStorage {
   }
 
   async updateContaPagar(id: number, updates: Partial<ContasPagar>): Promise<ContasPagar | undefined> {
-    const result = await db.update(contasPagar).set(updates).where(eq(contasPagar.id, id)).returning();
+    const result = await this.db.update(contasPagar).set(updates).where(eq(contasPagar.id, id)).returning();
     return result[0];
   }
 
   async deleteContaPagar(id: number): Promise<boolean> {
-    const result = await db.delete(contasPagar).where(eq(contasPagar.id, id)).returning();
+    const result = await this.db.delete(contasPagar).where(eq(contasPagar.id, id)).returning();
     return result.length > 0;
   }
 
   async getContasReceber(): Promise<ContasReceber[]> {
-    return await db.select().from(contasReceber).orderBy(desc(contasReceber.id));
+    return await this.db.select().from(contasReceber).orderBy(desc(contasReceber.id));
   }
 
   async createContaReceber(conta: InsertContasReceber): Promise<ContasReceber> {
-    const result = await db.insert(contasReceber).values({
+    const result = await this.db.insert(contasReceber).values({
       ...conta,
       data_cadastro: new Date().toISOString(),
     }).returning();
@@ -460,38 +506,38 @@ export class PostgresStorage implements IStorage {
   }
 
   async updateContaReceber(id: number, updates: Partial<ContasReceber>): Promise<ContasReceber | undefined> {
-    const result = await db.update(contasReceber).set(updates).where(eq(contasReceber.id, id)).returning();
+    const result = await this.db.update(contasReceber).set(updates).where(eq(contasReceber.id, id)).returning();
     return result[0];
   }
 
   async deleteContaReceber(id: number): Promise<boolean> {
-    const result = await db.delete(contasReceber).where(eq(contasReceber.id, id)).returning();
+    const result = await this.db.delete(contasReceber).where(eq(contasReceber.id, id)).returning();
     return result.length > 0;
   }
 
   async getCaixas(userId: string): Promise<Caixa[]> {
-    return await db.select().from(caixas).where(eq(caixas.user_id, userId)).orderBy(desc(caixas.id));
+    return await this.db.select().from(caixas).where(eq(caixas.user_id, userId)).orderBy(desc(caixas.id));
   }
 
   async getCaixaAberto(userId: string): Promise<Caixa | undefined> {
-    const result = await db.select().from(caixas)
+    const result = await this.db.select().from(caixas)
       .where(and(eq(caixas.user_id, userId), eq(caixas.status, 'aberto')))
       .limit(1);
     return result[0];
   }
 
   async getCaixa(id: number): Promise<Caixa | undefined> {
-    const result = await db.select().from(caixas).where(eq(caixas.id, id)).limit(1);
+    const result = await this.db.select().from(caixas).where(eq(caixas.id, id)).limit(1);
     return result[0];
   }
 
   async abrirCaixa(caixa: InsertCaixa): Promise<Caixa> {
-    const result = await db.insert(caixas).values(caixa).returning();
+    const result = await this.db.insert(caixas).values(caixa).returning();
     return result[0];
   }
 
   async fecharCaixa(id: number, dados: Partial<Caixa>): Promise<Caixa | undefined> {
-    const result = await db.update(caixas)
+    const result = await this.db.update(caixas)
       .set({
         ...dados,
         data_fechamento: new Date().toISOString(),
@@ -510,7 +556,7 @@ export class PostgresStorage implements IStorage {
       [campo]: (caixa[campo] || 0) + valor,
     };
 
-    const result = await db.update(caixas)
+    const result = await this.db.update(caixas)
       .set(updates)
       .where(eq(caixas.id, id))
       .returning();
@@ -518,21 +564,21 @@ export class PostgresStorage implements IStorage {
   }
 
   async getMovimentacoesCaixa(caixaId: number): Promise<MovimentacaoCaixa[]> {
-    return await db.select().from(movimentacoesCaixa)
+    return await this.db.select().from(movimentacoesCaixa)
       .where(eq(movimentacoesCaixa.caixa_id, caixaId))
       .orderBy(desc(movimentacoesCaixa.id));
   }
 
   async createMovimentacaoCaixa(movimentacao: InsertMovimentacaoCaixa): Promise<MovimentacaoCaixa> {
-    const result = await db.insert(movimentacoesCaixa).values(movimentacao).returning();
+    const result = await this.db.insert(movimentacoesCaixa).values(movimentacao).returning();
     return result[0];
   }
 
   async limparHistoricoCaixas(userId: string): Promise<{ deletedCount: number }> {
     // Deletar todas as movimentações dos caixas fechados do usuário
-    await db.delete(movimentacoesCaixa).where(
-      eq(movimentacoesCaixa.caixa_id, 
-        db.select({ id: caixas.id })
+    await this.db.delete(movimentacoesCaixa).where(
+      eq(movimentacoesCaixa.caixa_id,
+        this.db.select({ id: caixas.id })
           .from(caixas)
           .where(and(eq(caixas.user_id, userId), eq(caixas.status, 'fechado')))
           .limit(1) as any
@@ -540,7 +586,7 @@ export class PostgresStorage implements IStorage {
     );
 
     // Deletar todos os caixas fechados do usuário
-    const result = await db.delete(caixas)
+    const result = await this.db.delete(caixas)
       .where(and(eq(caixas.user_id, userId), eq(caixas.status, 'fechado')))
       .returning();
 

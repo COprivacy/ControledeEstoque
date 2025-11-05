@@ -1413,7 +1413,7 @@ export default function AdminPublico() {
                         <Input
                           id="access_token"
                           name="access_token"
-                          type="password"
+                          type="text"
                           defaultValue={(configMercadoPago as any)?.access_token || ""}
                           placeholder="Seu Access Token do Mercado Pago"
                           className="bg-slate-800 border-slate-700 text-white"

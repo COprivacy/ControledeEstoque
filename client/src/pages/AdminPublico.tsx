@@ -190,12 +190,22 @@ export default function AdminPublico() {
   });
 
   const apiRequest = async (method: string, url: string, body?: any) => {
+    const userStr = localStorage.getItem("user");
+    const user = userStr ? JSON.parse(userStr) : null;
+    
     const response = await fetch(url, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "x-user-id": user?.id || "",
+        "x-is-admin": user?.is_admin || "false",
+      },
       body: body ? JSON.stringify(body) : undefined,
     });
-    if (!response.ok) throw new Error("Erro na requisição");
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: "Erro na requisição" }));
+      throw new Error(errorData.error || "Erro na requisição");
+    }
     return response;
   };
 

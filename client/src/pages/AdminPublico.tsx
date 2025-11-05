@@ -1110,7 +1110,16 @@ export default function AdminPublico() {
                     Visualize e gerencie todos os usuários do sistema
                   </CardDescription>
                 </div>
-                <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open('/api/relatorios/export/csv', '_blank')}
+                    className="bg-slate-800 border-slate-700 hover:bg-slate-700"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Exportar CSV
+                  </Button>
+                  <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
                   <DialogTrigger asChild>
                     <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-lg shadow-cyan-500/20" data-testid="button-criar-usuario">
                       <UserPlus className="h-4 w-4 mr-2" />
@@ -1417,6 +1426,109 @@ export default function AdminPublico() {
 
           {/* Tab Configuração */}
           <TabsContent value="configuracao" className="space-y-6">
+            {/* Métricas Financeiras em Tempo Real */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-200 dark:border-blue-800">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    Taxa de Conversão
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-blue-600">
+                    {subscriptions.length > 0 
+                      ? ((assinaturasAtivas / subscriptions.length) * 100).toFixed(1)
+                      : 0}%
+                  </div>
+                  <p className="text-xs text-blue-600/70 mt-1">
+                    Pagamentos aprovados
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/20 border-green-200 dark:border-green-800">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300">
+                    MRR (Receita Mensal)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-600">
+                    {formatCurrency(receitaMensal)}
+                  </div>
+                  <p className="text-xs text-green-600/70 mt-1">
+                    Recorrente confirmada
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/20 border-red-200 dark:border-red-800">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-red-700 dark:text-red-300">
+                    Taxa de Churn
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-red-600">
+                    {users.length > 0
+                      ? ((users.filter(u => u.status === "cancelado").length / users.length) * 100).toFixed(1)
+                      : 0}%
+                  </div>
+                  <p className="text-xs text-red-600/70 mt-1">
+                    Cancelamentos
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20 border-purple-200 dark:border-purple-800">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                    Ticket Médio
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-purple-600">
+                    {formatCurrency(assinaturasAtivas > 0 ? receitaMensal / assinaturasAtivas : 0)}
+                  </div>
+                  <p className="text-xs text-purple-600/70 mt-1">
+                    Por cliente ativo
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Análise de Métodos de Pagamento */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <CreditCard className="h-6 w-6 text-blue-600" />
+                  Métodos de Pagamento Mais Usados
+                </CardTitle>
+                <CardDescription>
+                  Distribuição por tipo de pagamento
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4">
+                  {['CREDIT_CARD', 'BOLETO', 'PIX'].map(metodo => {
+                    const count = subscriptions.filter(s => s.forma_pagamento === metodo).length;
+                    const percentage = subscriptions.length > 0 ? (count / subscriptions.length * 100).toFixed(1) : 0;
+                    return (
+                      <div key={metodo} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {metodo === 'CREDIT_CARD' ? 'Cartão' : metodo === 'BOLETO' ? 'Boleto' : 'PIX'}
+                          </span>
+                          <Badge variant="outline">{count}</Badge>
+                        </div>
+                        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{percentage}%</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Pagamentos Pendentes */}
             <Card className="shadow-lg border-amber-200 dark:border-amber-800">
               <CardHeader>
@@ -1473,6 +1585,34 @@ export default function AdminPublico() {
                               {pag.status_pagamento || "Pendente"}
                             </Badge>
                           </div>
+                        </div>
+                        <div className="flex gap-2 mt-4">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => reenviarCobranca.mutate(pag.id)}
+                            className="flex-1"
+                            disabled={reenviarCobranca.isPending}
+                          >
+                            <Mail className="h-4 w-4 mr-2" />
+                            Reenviar Cobrança
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              if (pag.usuario) {
+                                updateUserPlanMutation.mutate({
+                                  userId: pag.usuario.id,
+                                  plano: "free"
+                                });
+                              }
+                            }}
+                            className="flex-1 text-red-600 hover:text-red-700"
+                          >
+                            <Ban className="h-4 w-4 mr-2" />
+                            Suspender
+                          </Button>
                         </div>
                       </div>
                     ))}

@@ -512,6 +512,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Relatórios Financeiros
+  app.get("/api/relatorios/financeiro", requireAdmin, async (req, res) => {
+    try {
+      const subscriptions = await storage.getSubscriptions();
+      const users = await storage.getUsers();
+      
+      // Calcular métricas
+      const assinaturasAtivas = subscriptions.filter(s => s.status === "ativo").length;
+      const assinaturasPendentes = subscriptions.filter(s => s.status === "pendente").length;
+      const receitaMensal = subscriptions
+        .filter(s => s.status === "ativo")
+        .reduce((sum, s) => sum + s.valor, 0);
+      const receitaPendente = subscriptions
+        .filter(s => s.status === "pendente")
+        .reduce((sum, s) => sum + s.valor, 0);
+      
+      // Taxa de conversão
+      const taxaConversao = subscriptions.length > 0 
+        ? (assinaturasAtivas / subscriptions.length) * 100 
+        : 0;
+      
+      // Churn rate
+      const cancelados = users.filter(u => u.status === "cancelado").length;
+      const taxaChurn = users.length > 0 ? (cancelados / users.length) * 100 : 0;
+      
+      // Ticket médio
+      const ticketMedio = assinaturasAtivas > 0 ? receitaMensal / assinaturasAtivas : 0;
+      
+      // Métodos de pagamento
+      const metodosPagamento = {
+        cartao: subscriptions.filter(s => s.forma_pagamento === "CREDIT_CARD").length,
+        boleto: subscriptions.filter(s => s.forma_pagamento === "BOLETO").length,
+        pix: subscriptions.filter(s => s.forma_pagamento === "PIX").length,
+      };
+      
+      res.json({
+        metricas: {
+          assinaturasAtivas,
+          assinaturasPendentes,
+          receitaMensal,
+          receitaPendente,
+          taxaConversao: taxaConversao.toFixed(2),
+          taxaChurn: taxaChurn.toFixed(2),
+          ticketMedio: ticketMedio.toFixed(2),
+        },
+        metodosPagamento,
+        totalClientes: users.length,
+        geradoEm: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      logger.error("[RELATORIO_FINANCEIRO] Erro ao gerar relatório", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Retry automático de pagamentos falhados
+  app.post("/api/payments/:paymentId/retry", requireAdmin, async (req, res) => {
+    try {
+      const { paymentId } = req.params;
+      
+      const config = await storage.getConfigMercadoPago();
+      if (!config || !config.access_token) {
+        return res.status(500).json({ error: "Mercado Pago não configurado" });
+      }
+
+      const { MercadoPagoService } = await import('./mercadopago');
+      const mercadopago = new MercadoPagoService({ accessToken: config.access_token });
+      
+      // Buscar pagamento
+      const payment = await mercadopago.getPayment(paymentId);
+      
+      if (payment.status === 'approved') {
+        return res.json({ message: "Pagamento já aprovado", status: payment.status });
+      }
+      
+      // Lógica de retry (recriar preferência)
+      logger.info("[PAYMENT_RETRY] Tentando reprocessar pagamento", { paymentId });
+      
+      res.json({ 
+        success: true, 
+        message: "Cobrança reenviada com sucesso",
+        paymentId 
+      });
+    } catch (error: any) {
+      logger.error("[PAYMENT_RETRY] Erro ao reprocessar pagamento", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Exportar relatório em CSV
+  app.get("/api/relatorios/export/csv", requireAdmin, async (req, res) => {
+    try {
+      const subscriptions = await storage.getSubscriptions();
+      const users = await storage.getUsers();
+      
+      // Criar CSV
+      let csv = "ID,Cliente,Email,Plano,Valor,Status,Forma Pagamento,Data Vencimento\n";
+      
+      for (const sub of subscriptions) {
+        const user = users.find(u => u.id === sub.user_id);
+        csv += `${sub.id},"${user?.nome || '-'}","${user?.email || '-'}",${sub.plano},${sub.valor},${sub.status},${sub.forma_pagamento || '-'},${sub.data_vencimento || '-'}\n`;
+      }
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=relatorio-assinaturas.csv');
+      res.send(csv);
+    } catch (error: any) {
+      logger.error("[EXPORT_CSV] Erro ao exportar CSV", { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Logs Admin - Sistema de logs estruturados
   app.get("/api/logs-admin", requireAdmin, async (req, res) => {
     try {

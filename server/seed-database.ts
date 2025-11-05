@@ -1,54 +1,75 @@
 
 import { PostgresStorage } from './postgres-storage';
-import bcrypt from 'bcryptjs';
-
-const storage = new PostgresStorage();
+import { logger } from './logger';
+import { randomUUID } from 'crypto';
 
 async function seedDatabase() {
-  console.log('🌱 Verificando banco de dados...');
+  logger.info('[SEED] Iniciando seed do banco de dados PostgreSQL...');
+  
+  const storage = new PostgresStorage();
 
   try {
-    // Verificar se já existem usuários
-    const users = await storage.getUsers();
-    
-    if (users.length === 0) {
-      console.log('📝 Banco vazio. Criando usuários de exemplo...');
-      
-      // Criar usuário pavisoft.suporte@gmail.com
-      const hashedPassword1 = await bcrypt.hash('Pavisoft@140319', 10);
-      await storage.createUser({
-        email: 'pavisoft.suporte@gmail.com',
-        password: hashedPassword1,
-        nome: 'Suporte Pavisoft',
-        tipo_conta: 'admin_master',
-        status_assinatura: 'ativa',
-        data_fim_trial: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      });
-      console.log('✅ Usuário pavisoft.suporte@gmail.com criado');
+    // Verificar se já existe um usuário admin
+    const adminEmail = 'pavisoft.suporte@gmail.com';
+    const existingAdmin = await storage.getUserByEmail(adminEmail);
 
-      // Criar usuário carol@gmail.com
-      const hashedPassword2 = await bcrypt.hash('123456', 10);
-      await storage.createUser({
-        email: 'carol@gmail.com',
-        password: hashedPassword2,
-        nome: 'Carol',
-        tipo_conta: 'admin',
-        status_assinatura: 'trial',
-        data_fim_trial: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      });
-      console.log('✅ Usuário carol@gmail.com criado');
-
-      console.log('✅ Banco populado com sucesso!');
-    } else {
-      console.log(`ℹ️  Banco já contém ${users.length} usuário(s)`);
-      console.log('Usuários encontrados:');
-      users.forEach(u => console.log(`  - ${u.email} (${u.tipo_conta})`));
+    if (existingAdmin) {
+      logger.info('[SEED] Usuário admin já existe, pulando criação...');
+      return;
     }
 
-  } catch (error) {
-    console.error('❌ Erro ao verificar/popular banco:', error);
-    process.exit(1);
+    // Criar usuário admin padrão
+    logger.info('[SEED] Criando usuário admin padrão...');
+    const adminUser = await storage.createUser({
+      email: adminEmail,
+      senha: 'Pavisoft@140319', // Senha que você está tentando usar
+      nome: 'Pavisoft Admin',
+      is_admin: 'true',
+      plano: 'premium',
+      data_expiracao_trial: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 ano
+      data_expiracao_plano: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      permissoes: JSON.stringify({
+        produtos: true,
+        vendas: true,
+        relatorios: true,
+        configuracoes: true,
+        clientes: true,
+        fornecedores: true,
+        fiscal: true,
+        funcionarios: true,
+        caixa: true,
+        financeiro: true
+      })
+    });
+
+    logger.info('[SEED] ✅ Usuário admin criado com sucesso!', {
+      id: adminUser.id,
+      email: adminUser.email,
+      nome: adminUser.nome
+    });
+
+    logger.info('[SEED] ✅ Seed concluído com sucesso!');
+    
+  } catch (error: any) {
+    logger.error('[SEED] ❌ Erro ao executar seed:', {
+      error: error.message,
+      stack: error.stack
+    });
+    throw error;
   }
 }
 
-seedDatabase();
+// Executar seed se chamado diretamente
+if (require.main === module) {
+  seedDatabase()
+    .then(() => {
+      console.log('✅ Seed executado com sucesso!');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ Erro ao executar seed:', error);
+      process.exit(1);
+    });
+}
+
+export { seedDatabase };

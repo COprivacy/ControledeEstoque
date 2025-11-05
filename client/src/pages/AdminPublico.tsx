@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,6 +56,11 @@ import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 type Subscription = {
   id: number;
@@ -98,6 +103,16 @@ type Cliente = {
   endereco?: string;
   observacoes?: string;
   data_cadastro: string;
+};
+
+type PagamentoPendente = {
+  id: number;
+  usuario?: User;
+  plano: string;
+  valor: number;
+  status_pagamento: string | null;
+  data_vencimento: string;
+  diasPendentes: number;
 };
 
 export default function AdminPublico() {
@@ -787,6 +802,60 @@ export default function AdminPublico() {
     return user && (user.plano === "premium" || user.plano === "mensal" || user.plano === "anual");
   });
 
+  // Calcular dias pendentes para pagamentos pendentes
+  const pagamentosPendentes: PagamentoPendente[] = useMemo(() => {
+    const today = new Date();
+    return subscriptions
+      .filter(sub => sub.status === "pendente" && sub.data_vencimento)
+      .map(sub => {
+        const user = users.find(u => u.id === sub.user_id);
+        const vencimento = new Date(sub.data_vencimento!);
+        const diasPendentes = Math.ceil((today.getTime() - vencimento.getTime()) / (1000 * 60 * 60 * 24));
+        return {
+          id: sub.id,
+          usuario: user,
+          plano: sub.plano,
+          valor: sub.valor,
+          status_pagamento: sub.status_pagamento,
+          data_vencimento: sub.data_vencimento,
+          diasPendentes: diasPendentes < 0 ? 0 : diasPendentes,
+        };
+      });
+  }, [subscriptions, users]);
+
+  // Dados para o gráfico de distribuição de planos
+  const planDistributionChartData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const colors: Record<string, string> = {
+      free: "#a1a1aa", // Cinza
+      trial: "#60a5fa", // Azul
+      mensal: "#3b82f6", // Azul mais forte
+      premium_mensal: "#3b82f6", // Azul mais forte
+      anual: "#10b981", // Verde
+      premium_anual: "#10b981", // Verde
+      premium: "#8b5cf6", // Roxo
+    };
+
+    users.forEach(user => {
+      counts[user.plano] = (counts[user.plano] || 0) + 1;
+    });
+
+    return Object.entries(counts).map(([plano, value]) => ({
+      name: plano.charAt(0).toUpperCase() + plano.slice(1).replace('_', ' '),
+      value,
+      color: colors[plano] || "#facc15", // Amarelo para planos desconhecidos
+    })).sort((a, b) => b.value - a.value); // Ordena do maior para o menor
+  }, [users]);
+
+  // Dados para o gráfico de status de pagamento
+  const statusPaymentChartData = useMemo(() => {
+    return [
+      { name: "Pagos", value: assinaturasAtivas, color: "#10b981" }, // Verde
+      { name: "Pendentes", value: assinaturasPendentes, color: "#f59e0b" }, // Amarelo/Laranja
+    ];
+  }, [assinaturasAtivas, assinaturasPendentes]);
+
+
   if (isLoadingSubscriptions || isLoadingUsers || isLoadingClientes) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center">
@@ -830,7 +899,7 @@ export default function AdminPublico() {
         {/* Header Profissional com Glassmorphism */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900/90 via-blue-900/50 to-slate-900/90 backdrop-blur-xl border border-white/10 shadow-2xl">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PHBhdGggZD0iTTM2IDM0djItaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30"></div>
-          
+
           <div className="relative p-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-6">
@@ -1002,25 +1071,25 @@ export default function AdminPublico() {
         {/* Tabs com Design Premium */}
         <Tabs defaultValue="usuarios" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 bg-slate-900/50 p-1.5 rounded-xl border border-slate-700/50 backdrop-blur-sm">
-            <TabsTrigger 
-              value="usuarios" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-300" 
+            <TabsTrigger
+              value="usuarios"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-300"
               data-testid="tab-usuarios"
             >
               <Users className="h-4 w-4 mr-2" />
               Usuários ({filteredUsers.length})
             </TabsTrigger>
-            <TabsTrigger 
-              value="planos-assinaturas" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white rounded-lg transition-all duration-300" 
+            <TabsTrigger
+              value="planos-assinaturas"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white rounded-lg transition-all duration-300"
               data-testid="tab-assinaturas"
             >
               <CreditCard className="h-4 w-4 mr-2" />
               Assinaturas ({filteredSubscriptions.length})
             </TabsTrigger>
-            <TabsTrigger 
-              value="configuracao" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600 data-[state=active]:to-red-600 data-[state=active]:text-white rounded-lg transition-all duration-300" 
+            <TabsTrigger
+              value="configuracao"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600 data-[state=active]:to-red-600 data-[state=active]:text-white rounded-lg transition-all duration-300"
               data-testid="tab-configuracao"
             >
               <Settings className="h-4 w-4 mr-2" />
@@ -1348,9 +1417,210 @@ export default function AdminPublico() {
 
           {/* Tab Configuração */}
           <TabsContent value="configuracao" className="space-y-6">
+            {/* Pagamentos Pendentes */}
+            <Card className="shadow-lg border-amber-200 dark:border-amber-800">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Clock className="h-6 w-6 text-amber-600" />
+                  Pagamentos Pendentes ({assinaturasPendentes})
+                </CardTitle>
+                <CardDescription>
+                  Clientes aguardando confirmação de pagamento
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pagamentosPendentes.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-500" />
+                    <p>Nenhum pagamento pendente no momento</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-h-[400px] overflow-y-auto">
+                    {pagamentosPendentes.map((pag) => (
+                      <div
+                        key={pag.id}
+                        className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200 dark:border-amber-800 rounded-lg"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 dark:text-gray-100">
+                              {pag.usuario?.nome || "Cliente Desconhecido"}
+                            </h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {pag.usuario?.email || "Email não disponível"}
+                            </p>
+                          </div>
+                          <Badge className="bg-amber-600 text-white">
+                            {pag.diasPendentes} {pag.diasPendentes === 1 ? "dia" : "dias"}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3 text-sm mt-3">
+                          <div>
+                            <p className="text-gray-500 dark:text-gray-400">Plano</p>
+                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                              {pag.plano === "premium_mensal" ? "Mensal" : "Anual"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 dark:text-gray-400">Valor</p>
+                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                              R$ {pag.valor.toFixed(2)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 dark:text-gray-400">Status</p>
+                            <Badge variant="outline" className="text-amber-700 border-amber-700">
+                              {pag.status_pagamento || "Pendente"}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Gráficos */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Users className="h-6 w-6 text-blue-600" />
+                    Distribuição de Clientes por Plano
+                  </CardTitle>
+                  <CardDescription>
+                    Total: {users.length} clientes
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer config={{}} className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={planDistributionChartData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {planDistributionChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+
+                  {/* Legenda detalhada */}
+                  <div className="mt-4 space-y-2">
+                    {planDistributionChartData.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                          <span className="text-gray-700 dark:text-gray-300">{item.name}</span>
+                        </div>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <CreditCard className="h-6 w-6 text-green-600" />
+                    Status de Pagamentos
+                  </CardTitle>
+                  <CardDescription>
+                    Assinaturas ativas vs pendentes
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer config={{}} className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={statusPaymentChartData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {statusPaymentChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+
+                  {/* Estatísticas */}
+                  <div className="mt-4 grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="text-sm text-green-700 dark:text-green-400 mb-1">Pagos</p>
+                      <p className="text-2xl font-bold text-green-600">{assinaturasAtivas}</p>
+                      <p className="text-xs text-green-600 mt-1">R$ {receitaMensal.toFixed(2)}/mês</p>
+                    </div>
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <p className="text-sm text-amber-700 dark:text-amber-400 mb-1">Pendentes</p>
+                      <p className="text-2xl font-bold text-amber-600">{assinaturasPendentes}</p>
+                      <p className="text-xs text-amber-600 mt-1">R$ {receitaPendente.toFixed(2)}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Gráfico de linha - Histórico */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <TrendingUp className="h-6 w-6 text-blue-600" />
+                  Crescimento de Planos Pagos
+                </CardTitle>
+                <CardDescription>
+                  Evolução de assinaturas ao longo do tempo
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={{}} className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={planDistributionChartData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {planDistributionChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+
+
             <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-2xl text-white flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-white">
                   <Settings className="h-6 w-6 text-orange-400" />
                   Integração Mercado Pago
                 </CardTitle>

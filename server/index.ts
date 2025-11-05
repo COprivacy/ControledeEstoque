@@ -136,6 +136,11 @@ app.use((req, res, next) => {
   // Sistema de backup automático desativado - usando backups do Neon PostgreSQL
   // backupManager.startAutoBackup();
   logger.info('[BACKUP] Sistema de backup local desativado. Usando backups do Neon PostgreSQL.');
+  
+  // Sistema de lembretes de pagamento
+  const { paymentReminderService } = await import('./payment-reminder');
+  paymentReminderService.startAutoCheck();
+  
   logger.info('Servidor iniciado', 'STARTUP', { port, env: app.get("env") });
 
   // Limpar logs antigos a cada 24h

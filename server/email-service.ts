@@ -421,6 +421,205 @@ export class EmailService {
     });
   }
 
+  async sendPaymentPendingReminder(config: {
+    to: string;
+    userName: string;
+    planName: string;
+    daysWaiting: number;
+    amount: number;
+  }) {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; background: #f3f4f6; }
+          .container { max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; overflow: hidden; }
+          .header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 40px; text-align: center; color: white; }
+          .content { padding: 40px 30px; }
+          .warning-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 20px 0; border-radius: 8px; }
+          .footer { background: #f9fafb; padding: 30px; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>⏰ Pagamento Pendente</h1>
+          </div>
+          <div class="content">
+            <p>Olá, <strong>${config.userName}</strong>!</p>
+            <div class="warning-box">
+              <p>Seu pagamento do <strong>${config.planName}</strong> está pendente há <strong>${config.daysWaiting} dias</strong>.</p>
+              <p style="margin-top: 15px;">Valor: <strong>R$ ${config.amount.toFixed(2)}</strong></p>
+            </div>
+            <p>Complete o pagamento para continuar usando todos os recursos do sistema.</p>
+          </div>
+          <div class="footer">
+            <p>PAVISOFT SISTEMAS</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.transporter.sendMail({
+      from: process.env.SMTP_FROM || 'noreply@pavisoft.com',
+      to: config.to,
+      subject: '⏰ Lembrete: Pagamento Pendente - Pavisoft',
+      html,
+    });
+  }
+
+  async sendExpirationWarning(config: {
+    to: string;
+    userName: string;
+    planName: string;
+    daysRemaining: number;
+    expirationDate: string;
+    amount: number;
+  }) {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; background: #f3f4f6; }
+          .container { max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; overflow: hidden; }
+          .header { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 40px; text-align: center; color: white; }
+          .content { padding: 40px 30px; }
+          .info-box { background: #dbeafe; border-left: 4px solid #3b82f6; padding: 20px; margin: 20px 0; border-radius: 8px; }
+          .footer { background: #f9fafb; padding: 30px; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🔔 Seu Plano Vence em ${config.daysRemaining} Dias</h1>
+          </div>
+          <div class="content">
+            <p>Olá, <strong>${config.userName}</strong>!</p>
+            <div class="info-box">
+              <p>Seu plano <strong>${config.planName}</strong> vence em <strong>${config.expirationDate}</strong>.</p>
+              <p style="margin-top: 15px;">Renove agora por apenas <strong>R$ ${config.amount.toFixed(2)}</strong>.</p>
+            </div>
+            <p>Garanta acesso contínuo a todos os recursos do sistema.</p>
+          </div>
+          <div class="footer">
+            <p>PAVISOFT SISTEMAS</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.transporter.sendMail({
+      from: process.env.SMTP_FROM || 'noreply@pavisoft.com',
+      to: config.to,
+      subject: `🔔 Seu plano vence em ${config.daysRemaining} dias - Pavisoft`,
+      html,
+    });
+  }
+
+  async sendOverdueNotice(config: {
+    to: string;
+    userName: string;
+    planName: string;
+    daysOverdue: number;
+    amount: number;
+  }) {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; background: #f3f4f6; }
+          .container { max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; overflow: hidden; }
+          .header { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 40px; text-align: center; color: white; }
+          .content { padding: 40px 30px; }
+          .alert-box { background: #fee2e2; border-left: 4px solid #ef4444; padding: 20px; margin: 20px 0; border-radius: 8px; }
+          .footer { background: #f9fafb; padding: 30px; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>⚠️ Pagamento Atrasado</h1>
+          </div>
+          <div class="content">
+            <p>Olá, <strong>${config.userName}</strong>!</p>
+            <div class="alert-box">
+              <p><strong>ATENÇÃO:</strong> Seu pagamento está atrasado há <strong>${config.daysOverdue} dias</strong>.</p>
+              <p style="margin-top: 15px;">Valor: <strong>R$ ${config.amount.toFixed(2)}</strong></p>
+            </div>
+            <p>Regularize sua situação para evitar bloqueio da conta.</p>
+          </div>
+          <div class="footer">
+            <p>PAVISOFT SISTEMAS</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.transporter.sendMail({
+      from: process.env.SMTP_FROM || 'noreply@pavisoft.com',
+      to: config.to,
+      subject: '⚠️ URGENTE: Pagamento Atrasado - Pavisoft',
+      html,
+    });
+  }
+
+  async sendAccountBlocked(config: {
+    to: string;
+    userName: string;
+    planName: string;
+  }) {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; background: #f3f4f6; }
+          .container { max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; overflow: hidden; }
+          .header { background: #991b1b; padding: 40px; text-align: center; color: white; }
+          .content { padding: 40px 30px; }
+          .footer { background: #f9fafb; padding: 30px; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🔒 Conta Bloqueada</h1>
+          </div>
+          <div class="content">
+            <p>Olá, <strong>${config.userName}</strong>,</p>
+            <p style="margin-top: 20px;">Sua conta foi bloqueada por falta de pagamento do plano <strong>${config.planName}</strong>.</p>
+            <p style="margin-top: 20px;">Entre em contato com nosso suporte para regularizar sua situação.</p>
+          </div>
+          <div class="footer">
+            <p>PAVISOFT SISTEMAS<br>pavisoft.planos@gmail.com</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.transporter.sendMail({
+      from: process.env.SMTP_FROM || 'noreply@pavisoft.com',
+      to: config.to,
+      subject: '🔒 Conta Bloqueada - Pavisoft Sistemas',
+      html,
+    });
+  }
+
   async sendEmployeePackageActivated(config: {
     to: string;
     userName: string;

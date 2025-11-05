@@ -18,6 +18,10 @@ function getAuthHeaders(): Record<string, string> {
       "x-user-type": user.tipo || "usuario",
     };
     
+    if (user.is_admin) {
+      headers["x-is-admin"] = user.is_admin;
+    }
+    
     if (user.tipo === "funcionario" && user.conta_id) {
       headers["x-conta-id"] = user.conta_id;
     }

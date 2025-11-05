@@ -2641,18 +2641,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Você só pode cancelar suas próprias assinaturas" });
       }
 
+      // Atualizar assinatura com status cancelado e data de atualização
       await storage.updateSubscription(subscriptionId, {
         status: "cancelado",
+        status_pagamento: "cancelled",
         data_cancelamento: new Date().toISOString(),
-        motivo_cancelamento: reason || null,
+        data_atualizacao: new Date().toISOString(),
+        motivo_cancelamento: reason || "Cancelado manualmente pelo administrador",
       });
 
+      // Atualizar usuário para plano free
       await storage.updateUser(subscription.user_id, {
         plano: "free",
         status: "ativo",
       });
 
-      console.log(`✅ Assinatura ${subscriptionId} cancelada. Motivo: ${reason || "Não informado"}`);
+      console.log(`✅ Assinatura ${subscriptionId} cancelada. Motivo: ${reason || "Cancelado manualmente"}`);
+      logger.info('Assinatura cancelada', 'SUBSCRIPTION', {
+        subscriptionId,
+        userId: subscription.user_id,
+        reason: reason || "Cancelado manualmente"
+      });
 
       res.json({
         success: true,
@@ -2660,6 +2669,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Erro ao cancelar assinatura:", error);
+      logger.error('Erro ao cancelar assinatura', 'SUBSCRIPTION', { error: error.message });
       res.status(500).json({ error: error.message || "Erro ao cancelar assinatura" });
     }
   });

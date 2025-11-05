@@ -1681,17 +1681,32 @@ export default function AdminPublico() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => {
+                            onClick={async () => {
                               if (confirm("Tem certeza que deseja suspender este usuário e cancelar a assinatura?")) {
                                 if (pag.usuario) {
-                                  updateUserPlanMutation.mutate({
+                                  // Suspender o plano do usuário
+                                  await updateUserPlanMutation.mutateAsync({
                                     userId: pag.usuario.id,
                                     plano: "free"
                                   });
+                                  
+                                  // Cancelar a assinatura
+                                  const subscription = subscriptions.find(s => s.user_id === pag.usuario?.id && s.status === "pendente");
+                                  if (subscription) {
+                                    await cancelSubscriptionMutation.mutateAsync({
+                                      subscriptionId: subscription.id,
+                                      reason: "Suspensão por pagamento pendente"
+                                    });
+                                  }
+                                  
+                                  // Recarregar dados
+                                  queryClient.invalidateQueries({ queryKey: ["/api/subscriptions"] });
+                                  queryClient.invalidateQueries({ queryKey: ["/api/users"] });
                                 }
                               }
                             }}
                             className="flex-1 text-red-600 hover:text-red-700"
+                            disabled={updateUserPlanMutation.isPending || cancelSubscriptionMutation.isPending}
                           >
                             <Ban className="h-4 w-4 mr-2" />
                             Suspender

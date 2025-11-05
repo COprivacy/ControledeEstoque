@@ -153,8 +153,31 @@ export class PostgresStorage implements IStorage {
   }
 
   async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
-    const result = await this.db.update(users).set(updates).where(eq(users.id, id)).returning();
-    return result[0];
+    try {
+      // Remover campos undefined do objeto updates
+      const cleanUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([_, value]) => value !== undefined)
+      );
+
+      if (Object.keys(cleanUpdates).length === 0) {
+        return await this.getUserById(id);
+      }
+
+      const result = await this.db
+        .update(users)
+        .set(cleanUpdates)
+        .where(eq(users.id, id))
+        .returning();
+      
+      return result[0];
+    } catch (error: any) {
+      logger.error('[DB] Erro ao atualizar usuário:', {
+        userId: id,
+        updates,
+        error: error.message
+      });
+      throw error;
+    }
   }
 
   async deleteUser(id: string): Promise<void> {

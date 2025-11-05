@@ -953,8 +953,44 @@ export default function AdminPublico() {
           <Card className="relative overflow-hidden bg-gradient-to-br from-blue-900/40 to-blue-950/40 border-blue-500/20 backdrop-blur-sm" data-testid="card-receita-mensal">
             <CardContent className="pt-3 pb-3 relative">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-300/70 text-xs font-medium mb-0.5">MRR</p>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-blue-300/70 text-xs font-medium mb-0.5">MRR</p>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-5 w-5 hover:bg-blue-500/20">
+                          <Edit2 className="h-3 w-3 text-blue-400" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-slate-900 border-slate-700 text-white">
+                        <DialogHeader>
+                          <DialogTitle>Configurar Meta MRR</DialogTitle>
+                          <DialogDescription className="text-slate-400">
+                            Defina a meta de receita mensal recorrente
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div>
+                            <Label className="text-slate-300">Meta MRR Mensal (R$)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="Ex: 50000.00"
+                              className="bg-slate-800 border-slate-700 text-white"
+                            />
+                            <p className="text-xs text-slate-500 mt-2">
+                              MRR atual: {formatCurrency(receitaMensal)}
+                            </p>
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button className="bg-gradient-to-r from-blue-600 to-purple-600">
+                            Salvar Meta
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                   <p className="text-2xl font-bold text-blue-100">{formatCurrency(receitaMensal)}</p>
                 </div>
                 <div className="p-2 bg-blue-500/20 rounded-lg">
@@ -967,8 +1003,35 @@ export default function AdminPublico() {
           <Card className="relative overflow-hidden bg-gradient-to-br from-amber-900/40 to-amber-950/40 border-amber-500/20 backdrop-blur-sm" data-testid="card-pendentes">
             <CardContent className="pt-3 pb-3 relative">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-amber-300/70 text-xs font-medium mb-0.5">Pendentes</p>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-amber-300/70 text-xs font-medium mb-0.5">Pendentes</p>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-5 w-5 hover:bg-amber-500/20">
+                          <Settings className="h-3 w-3 text-amber-400" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-slate-900 border-slate-700 text-white">
+                        <DialogHeader>
+                          <DialogTitle>Ações em Massa - Pendentes</DialogTitle>
+                          <DialogDescription className="text-slate-400">
+                            Realizar ações em todos os {assinaturasPendentes} pagamentos pendentes
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <Button variant="outline" className="w-full justify-start bg-slate-800 border-slate-700">
+                            <Mail className="h-4 w-4 mr-2" />
+                            Enviar lembrete para todos
+                          </Button>
+                          <Button variant="outline" className="w-full justify-start bg-slate-800 border-slate-700 text-red-400">
+                            <Ban className="h-4 w-4 mr-2" />
+                            Suspender todos após X dias
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                   <p className="text-2xl font-bold text-amber-100">{assinaturasPendentes}</p>
                 </div>
                 <div className="p-2 bg-amber-500/20 rounded-lg">

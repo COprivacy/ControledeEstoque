@@ -70,9 +70,33 @@ export function AdminMasterRoute({ children }: AdminMasterRouteProps) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-user-id": user?.id || "",
+          "x-user-email": user?.email || "",
         },
         body: JSON.stringify({ password }),
       });
+
+      if (response.status === 429) {
+        const result = await response.json();
+        toast({
+          title: "Bloqueado temporariamente",
+          description: result.error,
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        setPassword("");
+        return;
+      }
+
+      if (response.status === 403) {
+        toast({
+          title: "Acesso negado",
+          description: "Você não tem permissão para acessar esta área",
+          variant: "destructive",
+        });
+        setLocation("/dashboard");
+        return;
+      }
 
       const result = await response.json();
 

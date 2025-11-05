@@ -243,13 +243,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Rota para verificar senha master
+  // Rate limiting para tentativas de senha master
+  const masterPasswordAttempts = new Map<string, { count: number; lastAttempt: number }>();
+  const MAX_ATTEMPTS = 3;
+  const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutos
+
+  // Rota para verificar senha master (COM RATE LIMITING)
   app.post("/api/auth/verify-master-password", async (req, res) => {
     try {
       const { password } = req.body;
+      const userId = req.headers['x-user-id'] as string;
+      const userEmail = req.headers['x-user-email'] as string;
+
+      // VALIDAÇÃO 1: Apenas usuário master pode tentar
+      if (userEmail !== "pavisoft.suporte@gmail.com") {
+        logger.warn('Tentativa de acesso não autorizada ao admin master', 'SECURITY', { 
+          attemptedBy: userEmail || 'unknown',
+          ip: req.ip 
+        });
+        return res.status(403).json({ error: "Acesso não autorizado" });
+      }
 
       if (!password) {
         return res.status(400).json({ error: "Senha é obrigatória" });
+      }
+
+      // VALIDAÇÃO 2: Rate limiting
+      const clientKey = userId || req.ip || 'unknown';
+      const attempts = masterPasswordAttempts.get(clientKey);
+      const now = Date.now();
+
+      if (attempts) {
+        // Se está em período de lockout
+        if (attempts.count >= MAX_ATTEMPTS && (now - attempts.lastAttempt) < LOCKOUT_TIME) {
+          const remainingTime = Math.ceil((LOCKOUT_TIME - (now - attempts.lastAttempt)) / 60000);
+          logger.warn('Tentativa bloqueada por rate limit', 'SECURITY', { 
+            clientKey, 
+            attempts: attempts.count,
+            remainingMinutes: remainingTime 
+          });
+          return res.status(429).json({ 
+            error: `Muitas tentativas. Tente novamente em ${remainingTime} minutos.` 
+          });
+        }
+
+        // Reset se o lockout expirou
+        if ((now - attempts.lastAttempt) >= LOCKOUT_TIME) {
+          masterPasswordAttempts.delete(clientKey);
+        }
       }
 
       // Garantir que o usuário master existe
@@ -259,7 +300,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!masterUser) {
         console.log("🔧 Criando usuário master automaticamente...");
         const dataExpiracao = new Date();
-        dataExpiracao.setFullYear(dataExpiracao.getFullYear() + 10); // 10 anos
+        dataExpiracao.setFullYear(dataExpiracao.getFullYear() + 10);
         
         masterUser = await storage.createUser({
           nome: "Pavisoft",
@@ -279,25 +320,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const masterPasswordConfig = await storage.getSystemConfig("master_password");
 
       if (!masterPasswordConfig) {
-        // Se não existir, criar com senha padrão hasheada
         const defaultPassword = "PAVISOFT.SISTEMASLTDA";
         const hashedPassword = await bcrypt.hash(defaultPassword, 10);
-        
         await storage.setSystemConfig("master_password", hashedPassword);
         
-        // Verificar com a senha padrão
         const isValid = await bcrypt.compare(password, hashedPassword);
-        console.log(`🔐 Verificação senha master (nova): ${isValid}`);
+        
+        // Registrar tentativa
+        if (!isValid) {
+          const currentAttempts = masterPasswordAttempts.get(clientKey);
+          masterPasswordAttempts.set(clientKey, {
+            count: (currentAttempts?.count || 0) + 1,
+            lastAttempt: now
+          });
+          logger.warn('Senha master incorreta', 'SECURITY', { clientKey });
+        } else {
+          masterPasswordAttempts.delete(clientKey);
+          logger.info('Acesso admin master autorizado', 'SECURITY', { userEmail });
+        }
+        
         return res.json({ valid: isValid });
       }
 
       // Verificar senha fornecida com hash armazenado
       const isValid = await bcrypt.compare(password, masterPasswordConfig.valor);
-      console.log(`🔐 Verificação senha master: ${isValid}`);
+      
+      // Registrar tentativa
+      if (!isValid) {
+        const currentAttempts = masterPasswordAttempts.get(clientKey);
+        masterPasswordAttempts.set(clientKey, {
+          count: (currentAttempts?.count || 0) + 1,
+          lastAttempt: now
+        });
+        logger.warn('Senha master incorreta', 'SECURITY', { 
+          clientKey, 
+          attempts: (currentAttempts?.count || 0) + 1 
+        });
+      } else {
+        masterPasswordAttempts.delete(clientKey);
+        logger.info('Acesso admin master autorizado', 'SECURITY', { userEmail });
+      }
+      
       res.json({ valid: isValid });
 
     } catch (error) {
       console.error("Erro ao verificar senha master:", error);
+      logger.error('Erro ao verificar senha master', 'SECURITY', { error });
       res.status(500).json({ error: "Erro ao verificar senha" });
     }
   });

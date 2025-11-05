@@ -768,6 +768,47 @@ export default function AdminPublico() {
     return diffDays;
   };
 
+  const getPrazoLimiteInfo = (subscription: any) => {
+    if (!subscription.prazo_limite_pagamento || subscription.status !== 'pendente') {
+      return null;
+    }
+    
+    const now = new Date();
+    const prazoLimite = new Date(subscription.prazo_limite_pagamento);
+    const diffTime = prazoLimite.getTime() - now.getTime();
+    const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (daysRemaining < 0) {
+      return {
+        text: `Expirou há ${Math.abs(daysRemaining)} dia(s)`,
+        color: 'text-red-400',
+        bgColor: 'bg-red-500/10 border-red-500/20',
+        urgent: true
+      };
+    } else if (daysRemaining <= 1) {
+      return {
+        text: `Expira em ${daysRemaining} dia`,
+        color: 'text-orange-400',
+        bgColor: 'bg-orange-500/10 border-orange-500/20',
+        urgent: true
+      };
+    } else if (daysRemaining <= 3) {
+      return {
+        text: `${daysRemaining} dias restantes`,
+        color: 'text-yellow-400',
+        bgColor: 'bg-yellow-500/10 border-yellow-500/20',
+        urgent: false
+      };
+    } else {
+      return {
+        text: `${daysRemaining} dias restantes`,
+        color: 'text-slate-400',
+        bgColor: 'bg-slate-500/10 border-slate-500/20',
+        urgent: false
+      };
+    }
+  };
+
   const handleEditClient = (cliente: Cliente) => {
     setEditingClient(cliente);
     setEditedClientData({ ...cliente });
@@ -1382,6 +1423,7 @@ export default function AdminPublico() {
                         <TableHead className="text-slate-300 font-semibold">Valor</TableHead>
                         <TableHead className="text-slate-300 font-semibold">Status</TableHead>
                         <TableHead className="text-slate-300 font-semibold">Pagamento</TableHead>
+                        <TableHead className="text-slate-300 font-semibold">Prazo Limite</TableHead>
                         <TableHead className="text-slate-300 font-semibold">Vencimento</TableHead>
                         <TableHead className="text-slate-300 font-semibold text-right">Ações</TableHead>
                       </TableRow>
@@ -1389,7 +1431,7 @@ export default function AdminPublico() {
                     <TableBody>
                       {filteredSubscriptions.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-12 text-slate-400">
+                          <TableCell colSpan={8} className="text-center py-12 text-slate-400">
                             <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-30" />
                             Nenhuma assinatura encontrada
                           </TableCell>
@@ -1397,8 +1439,13 @@ export default function AdminPublico() {
                       ) : (
                         filteredSubscriptions.map((sub) => {
                           const user = getUserInfo(sub.user_id);
+                          const prazoInfo = getPrazoLimiteInfo(sub);
                           return (
-                            <TableRow key={sub.id} className="border-slate-800/50 hover:bg-slate-800/30 transition-colors" data-testid={`row-subscription-${sub.id}`}>
+                            <TableRow 
+                              key={sub.id} 
+                              className={`border-slate-800/50 hover:bg-slate-800/30 transition-colors ${prazoInfo?.urgent ? 'bg-red-500/5' : ''}`}
+                              data-testid={`row-subscription-${sub.id}`}
+                            >
                               <TableCell className="font-medium text-white">
                                 {user?.nome || "-"}
                               </TableCell>
@@ -1412,6 +1459,24 @@ export default function AdminPublico() {
                               </TableCell>
                               <TableCell>{getStatusBadge(sub.status)}</TableCell>
                               <TableCell>{getPaymentMethodBadge(sub.forma_pagamento)}</TableCell>
+                              <TableCell>
+                                {prazoInfo ? (
+                                  <div className="flex items-center gap-2">
+                                    {prazoInfo.urgent && (
+                                      <AlertCircle className="h-4 w-4 text-orange-400 animate-pulse" />
+                                    )}
+                                    <Badge className={`${prazoInfo.bgColor} ${prazoInfo.color} border text-xs`}>
+                                      {prazoInfo.text}
+                                    </Badge>
+                                  </div>
+                                ) : sub.status === 'ativo' ? (
+                                  <span className="text-emerald-400 text-sm">✓ Pago</span>
+                                ) : sub.status === 'cancelado' ? (
+                                  <span className="text-slate-500 text-sm">-</span>
+                                ) : (
+                                  <span className="text-slate-400 text-sm">-</span>
+                                )}
+                              </TableCell>
                               <TableCell className="text-slate-300">
                                 {formatDate(sub.data_vencimento)}
                               </TableCell>
@@ -1424,6 +1489,18 @@ export default function AdminPublico() {
                                       onClick={() => window.open(sub.invoice_url, '_blank')}
                                       className="hover:bg-purple-500/10 hover:text-purple-400"
                                       data-testid={`button-invoice-${sub.id}`}
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {(sub as any).init_point && sub.status === 'pendente' && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => window.open((sub as any).init_point, '_blank')}
+                                      className="hover:bg-blue-500/10 hover:text-blue-400"
+                                      data-testid={`button-pagar-${sub.id}`}
+                                      title="Abrir link de pagamento"
                                     >
                                       <ExternalLink className="h-4 w-4" />
                                     </Button>

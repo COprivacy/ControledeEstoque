@@ -2406,11 +2406,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/subscriptions/:id/cancel", requireAdmin, async (req, res) => {
+  app.post("/api/subscriptions/:id/cancel", async (req, res) => {
     try {
       const { id } = req.params;
       const { reason } = req.body;
       const subscriptionId = parseInt(id);
+      const userId = req.headers['x-user-id'] as string;
+      const isAdmin = req.headers['x-is-admin'] as string;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Autenticação necessária" });
+      }
 
       const subscriptions = await storage.getSubscriptions();
       const subscription = subscriptions?.find(s => s.id === subscriptionId);
@@ -2419,14 +2425,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Assinatura não encontrada" });
       }
 
-      // Atualizar assinatura para cancelado
+      if (subscription.user_id !== userId && isAdmin !== "true") {
+        return res.status(403).json({ error: "Você só pode cancelar suas próprias assinaturas" });
+      }
+
       await storage.updateSubscription(subscriptionId, {
         status: "cancelado",
         data_cancelamento: new Date().toISOString(),
         motivo_cancelamento: reason || null,
       });
 
-      // Atualizar usuário para free
       await storage.updateUser(subscription.user_id, {
         plano: "free",
         status: "ativo",

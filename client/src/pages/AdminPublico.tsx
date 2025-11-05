@@ -122,10 +122,9 @@ export default function AdminPublico() {
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [testingMercadoPago, setTestingMercadoPago] = useState(false);
   const [createUserOpen, setCreateUserOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // Começa como false para exigir senha
+  // A autenticação é gerenciada pelo AdminMasterRoute
   const setLocation = useLocation()[1];
 
-  const [password, setPassword] = useState(""); // Estado para a senha do admin
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [planoFilter, setPlanoFilter] = useState<string>("all");
@@ -893,51 +892,7 @@ export default function AdminPublico() {
     ];
   }, [assinaturasAtivas, assinaturasPendentes]);
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    console.log("🔐 Tentando verificar senha master...");
-
-    try {
-      const response = await fetch("/api/auth/verify-master-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ password }),
-      });
-
-      const result = await response.json();
-      console.log("📋 Resultado verificação:", result);
-
-      if (result.valid) {
-        console.log("✅ Senha master válida - Autenticando...");
-        setIsAuthenticated(true);
-        sessionStorage.setItem("admin_auth", "authenticated");
-        sessionStorage.setItem("admin_auth_time", Date.now().toString());
-        toast({
-          title: "Acesso autorizado",
-          description: "Bem-vindo ao Painel Administrativo",
-        });
-      } else {
-        console.log("❌ Senha master inválida");
-        toast({
-          title: "Senha incorreta",
-          description: "A senha de administrador está incorreta",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("❌ Erro ao verificar senha:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível verificar a senha. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setPassword("");
-    }
-  };
+  // A autenticação é gerenciada pelo AdminMasterRoute
 
   if (isLoadingSubscriptions || isLoadingUsers || isLoadingClientes) {
     return (
@@ -945,37 +900,6 @@ export default function AdminPublico() {
         <div className="text-center space-y-4">
           <Loader2 className="h-12 w-12 animate-spin text-cyan-400 mx-auto" />
           <p className="text-slate-300 text-lg">Carregando painel...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex flex-col items-center justify-center p-4">
-        <div className="text-center space-y-6 max-w-md">
-          <Shield className="h-20 w-20 text-cyan-400 mx-auto" />
-          <h1 className="text-4xl font-bold text-white">Acesso Restrito</h1>
-          <p className="text-slate-400 text-lg">Acesso ao Painel Master requer autenticação.</p>
-          <form onSubmit={handlePasswordSubmit} className="space-y-4">
-            <Input
-              type="password"
-              placeholder="Digite a senha master"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
-              required
-              data-testid="input-master-password"
-            />
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-lg shadow-cyan-500/20"
-              data-testid="button-submit-password"
-            >
-              <Lock className="h-4 w-4 mr-2" />
-              Entrar no Painel
-            </Button>
-          </form>
         </div>
       </div>
     );
@@ -1492,8 +1416,8 @@ export default function AdminPublico() {
                           const user = getUserInfo(sub.user_id);
                           const prazoInfo = getPrazoLimiteInfo(sub);
                           return (
-                            <TableRow 
-                              key={sub.id} 
+                            <TableRow
+                              key={sub.id}
                               className={`border-slate-800/50 hover:bg-slate-800/30 transition-colors ${prazoInfo?.urgent ? 'bg-red-500/5' : ''}`}
                               data-testid={`row-subscription-${sub.id}`}
                             >
@@ -1593,7 +1517,7 @@ export default function AdminPublico() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-blue-600">
-                    {subscriptions.length > 0 
+                    {subscriptions.length > 0
                       ? ((assinaturasAtivas / subscriptions.length) * 100).toFixed(1)
                       : 0}%
                   </div>

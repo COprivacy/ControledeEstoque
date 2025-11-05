@@ -104,7 +104,7 @@ export default function AdminPublico() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
-  const [testingAsaas, setTestingAsaas] = useState(false);
+  const [testingMercadoPago, setTestingMercadoPago] = useState(false);
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const setLocation = useLocation()[1];
@@ -253,7 +253,7 @@ export default function AdminPublico() {
   });
 
   const testMercadoPagoConnection = async (accessToken: string) => {
-    setTestingAsaas(true);
+    setTestingMercadoPago(true);
     try {
       const response = await apiRequest("POST", "/api/config-mercadopago/test", {
         access_token: accessToken,
@@ -279,7 +279,7 @@ export default function AdminPublico() {
         variant: "destructive",
       });
     } finally {
-      setTestingAsaas(false);
+      setTestingMercadoPago(false);
     }
   };
 
@@ -1455,11 +1455,11 @@ export default function AdminPublico() {
                               testMercadoPagoConnection(accessTokenInput.value);
                             }
                           }}
-                          disabled={testingAsaas}
+                          disabled={testingMercadoPago}
                           className="bg-slate-800 border-slate-700"
                           data-testid="button-testar-conexao"
                         >
-                          {testingAsaas ? "Testando..." : "Testar Conexão"}
+                          {testingMercadoPago ? "Testando..." : "Testar Conexão"}
                         </Button>
                         <Button
                           type="submit"

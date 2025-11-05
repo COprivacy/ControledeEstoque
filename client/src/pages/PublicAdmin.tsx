@@ -639,7 +639,7 @@ export default function PublicAdmin() {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 h-14 bg-white dark:bg-gray-800 shadow-lg rounded-xl">
+          <TabsList className="grid w-full grid-cols-4 h-14 bg-white dark:bg-gray-800 shadow-lg rounded-xl">
             <TabsTrigger value="dashboard" className="text-base" data-testid="tab-dashboard">
               <Activity className="h-5 w-5 mr-2" />
               Dashboard
@@ -655,10 +655,6 @@ export default function PublicAdmin() {
             <TabsTrigger value="planos" className="text-base" data-testid="tab-planos">
               <Crown className="h-5 w-5 mr-2" />
               Planos
-            </TabsTrigger>
-            <TabsTrigger value="asaas" className="text-base" data-testid="tab-asaas">
-              <DollarSign className="h-5 w-5 mr-2" />
-              Pagamentos
             </TabsTrigger>
           </TabsList>
 
@@ -1021,32 +1017,6 @@ export default function PublicAdmin() {
               )}
             </div>
 
-            {/* Status Asaas */}
-            {configAsaasData && (
-              <Card className="shadow-lg border-2">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-2xl">
-                    <Activity className="h-6 w-6" />
-                    Status da Integração Asaas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <Badge variant={configAsaasData.status_conexao === "conectado" ? "default" : "secondary"} className="text-base px-4 py-2">
-                      {configAsaasData.status_conexao === "conectado" ? "✓ Conectado" : "✗ Desconectado"}
-                    </Badge>
-                    <span className="text-base text-muted-foreground">
-                      <strong>Ambiente:</strong> {configAsaasData.ambiente === "sandbox" ? "Sandbox" : "Produção"}
-                    </span>
-                    {configAsaasData.ultima_sincronizacao && (
-                      <span className="text-base text-muted-foreground">
-                        <strong>Última sincronização:</strong> {new Date(configAsaasData.ultima_sincronizacao).toLocaleString('pt-BR')}
-                      </span>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </TabsContent>
 
           <TabsContent value="usuarios" className="space-y-6 mt-6">
@@ -1096,30 +1066,6 @@ export default function PublicAdmin() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button
-                    onClick={async () => {
-                      try {
-                        const response = await apiRequest("POST", "/api/asaas/sync");
-                        const result = await response.json();
-                        toast({
-                          title: "Sincronização concluída",
-                          description: result.message,
-                        });
-                        queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-                      } catch (error: any) {
-                        toast({
-                          title: "Erro na sincronização",
-                          description: error.message,
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                    variant="outline"
-                    className="h-12"
-                  >
-                    <Activity className="h-5 w-5 mr-2" />
-                    Sincronizar Asaas
-                  </Button>
                   <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
                     <DialogTrigger asChild>
                       <Button className="h-12" data-testid="button-create-user">
@@ -1530,101 +1476,6 @@ export default function PublicAdmin() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="asaas" className="space-y-6 mt-6">
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Key className="h-6 w-6" />
-                  Configuração da API Asaas
-                </CardTitle>
-                <CardDescription className="text-base">
-                  Configure a integração com a plataforma de pagamentos Asaas
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="api-key" className="text-base">API Key</Label>
-                  <Input
-                    id="api-key"
-                    type="password"
-                    value={asaasConfig.api_key}
-                    onChange={(e) => setAsaasConfig({ ...asaasConfig, api_key: e.target.value })}
-                    placeholder="Insira sua chave de API"
-                    className="h-12"
-                    data-testid="input-asaas-api-key"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="ambiente" className="text-base">Ambiente</Label>
-                  <Select
-                    value={asaasConfig.ambiente}
-                    onValueChange={(v) => setAsaasConfig({ ...asaasConfig, ambiente: v })}
-                  >
-                    <SelectTrigger className="h-12">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sandbox">Sandbox (Testes)</SelectItem>
-                      <SelectItem value="production">Produção</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="account-id" className="text-base">ID da Conta Asaas</Label>
-                  <Input
-                    id="account-id"
-                    value={asaasConfig.account_id}
-                    onChange={(e) => setAsaasConfig({ ...asaasConfig, account_id: e.target.value })}
-                    placeholder="ID da sua conta"
-                    className="h-12"
-                    data-testid="input-asaas-account-id"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="webhook-url" className="text-base">Webhook URL</Label>
-                  <div className="flex gap-2">
-                    <Webhook className="h-5 w-5 mt-3 text-muted-foreground" />
-                    <Input
-                      id="webhook-url"
-                      value={asaasConfig.webhook_url}
-                      onChange={(e) => setAsaasConfig({ ...asaasConfig, webhook_url: e.target.value })}
-                      placeholder="https://seu-dominio.com/webhook/asaas"
-                      className="h-12"
-                      data-testid="input-asaas-webhook"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button onClick={() => saveAsaasMutation.mutate(asaasConfig)} className="h-12" data-testid="button-save-asaas-config">
-                    <Database className="h-5 w-5 mr-2" />
-                    Salvar Configuração
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={testAsaasConnection}
-                    disabled={testingAsaas || !asaasConfig.api_key}
-                    className="h-12"
-                    data-testid="button-test-asaas"
-                  >
-                    {testingAsaas ? "Testando..." : "Testar Conexão"}
-                  </Button>
-                </div>
-
-                <Alert className="border-2">
-                  <AlertCircle className="h-5 w-5" />
-                  <AlertTitle className="text-base font-semibold">Importante!</AlertTitle>
-                  <AlertDescription className="text-base">
-                    Use o ambiente Sandbox para testes. Mude para Produção apenas quando estiver pronto
-                    para processar pagamentos reais. Mantenha sua API Key em segurança.
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
     </div>

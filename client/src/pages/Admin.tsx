@@ -653,7 +653,7 @@ export default function Admin() {
                           <div className="flex items-center justify-center gap-2 mb-2">
                             <CreditCard className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                             <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                              Pagamento 100% seguro via Asaas
+                              Pagamento 100% seguro via Mercado Pago
                             </p>
                           </div>
                           <p className="text-xs text-gray-500 dark:text-gray-400 text-center">

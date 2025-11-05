@@ -260,8 +260,8 @@ export default function Planos() {
                 <div className="flex items-start gap-3 p-4 bg-slate-800/50 rounded-lg border border-blue-500/10">
                   <CreditCard className="h-5 w-5 text-purple-400 mt-1" />
                   <div>
-                    <h3 className="text-white font-semibold mb-1">Gateway Seguro Asaas</h3>
-                    <p className="text-gray-400 text-sm">Pagamentos processados via Asaas, certificado PCI-DSS Nível 1 (máxima segurança)</p>
+                    <h3 className="text-white font-semibold mb-1">Gateway Seguro Mercado Pago</h3>
+                    <p className="text-gray-400 text-sm">Pagamentos processados via Mercado Pago, certificado PCI-DSS Nível 1 (máxima segurança)</p>
                   </div>
                 </div>
 

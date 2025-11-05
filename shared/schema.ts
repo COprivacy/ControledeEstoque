@@ -125,6 +125,9 @@ export const systemConfig = pgTable("system_config", {
 
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
+  data_criacao: true,
+}).extend({
+  meta_mensal: z.number().optional(),
 });
 
 export const insertProdutoSchema = createInsertSchema(produtos).omit({

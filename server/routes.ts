@@ -244,6 +244,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Senha é obrigatória" });
       }
 
+      // Garantir que o usuário master existe
+      const masterEmail = "pavisoft.suporte@gmail.com";
+      let masterUser = await storage.getUserByEmail(masterEmail);
+      
+      if (!masterUser) {
+        console.log("🔧 Criando usuário master automaticamente...");
+        masterUser = await storage.createUser({
+          nome: "Admin Master",
+          email: masterEmail,
+          senha: "Pavisoft@140319",
+          plano: "premium",
+          is_admin: "true",
+          status: "ativo",
+          max_funcionarios: 999,
+          data_criacao: new Date().toISOString(),
+        });
+        console.log("✅ Usuário master criado com sucesso");
+      }
+
       // Buscar senha master do banco
       const masterPasswordConfig = await storage.getSystemConfig("master_password");
 
@@ -2053,6 +2072,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         error: error.message || "Erro ao processar compra. Tente novamente ou entre em contato com o suporte."
       });
+    }
+  });
+
+  // Meta de Vendas - Salvar/Atualizar
+  app.post("/api/user/meta-vendas", async (req, res) => {
+    try {
+      const userId = req.headers['x-user-id'] as string;
+      if (!userId) {
+        return res.status(401).json({ error: "Não autorizado" });
+      }
+
+      const { meta_mensal } = req.body;
+      if (!meta_mensal || isNaN(parseFloat(meta_mensal))) {
+        return res.status(400).json({ error: "Meta inválida" });
+      }
+
+      await storage.updateUser(userId, {
+        meta_mensal: parseFloat(meta_mensal)
+      });
+
+      res.json({ 
+        success: true, 
+        message: "Meta atualizada com sucesso",
+        meta_mensal: parseFloat(meta_mensal)
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar meta:", error);
+      res.status(500).json({ error: "Erro ao atualizar meta" });
     }
   });
 

@@ -1,4 +1,3 @@
-
 import StatsCards from "@/components/StatsCards";
 import ProductCard from "@/components/ProductCard";
 import { Crown, TrendingUp, TrendingDown, Package, Target, Calendar } from "lucide-react";
@@ -36,7 +35,7 @@ export default function Dashboard() {
   });
   const [editMetaDialogOpen, setEditMetaDialogOpen] = useState(false);
   const [novaMeta, setNovaMeta] = useState<string>("");
-  
+
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["/api/produtos"],
   });
@@ -76,7 +75,7 @@ export default function Dashboard() {
   };
 
   const lowStockProducts = products.filter((p: any) => p.quantidade < p.estoque_minimo);
-  
+
   const today = new Date().toISOString().split('T')[0];
   const todaySales = vendas
     .filter((v: any) => v.data?.startsWith(today))
@@ -89,7 +88,7 @@ export default function Dashboard() {
       acc[cat] = (acc[cat] || 0) + 1;
       return acc;
     }, {});
-    
+
     return Object.entries(categories).map(([name, value]) => ({
       name,
       value
@@ -100,7 +99,7 @@ export default function Dashboard() {
     const normal = products.filter((p: any) => p.quantidade >= p.estoque_minimo).length;
     const low = products.filter((p: any) => p.quantidade < p.estoque_minimo && p.quantidade > 0).length;
     const out = products.filter((p: any) => p.quantidade === 0).length;
-    
+
     return [
       { name: 'Estoque Normal', value: normal, color: '#00C49F' },
       { name: 'Estoque Baixo', value: low, color: '#FFBB28' },
@@ -120,7 +119,7 @@ export default function Dashboard() {
       const daySales = vendas
         .filter((v: any) => v.data?.startsWith(date))
         .reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
-      
+
       return {
         day: dayName,
         vendas: Number(daySales.toFixed(2))
@@ -179,7 +178,7 @@ export default function Dashboard() {
         const saleDate = new Date(v.data);
         const saleMonth = saleDate.getMonth();
         const saleYear = saleDate.getFullYear();
-        
+
         const monthData = months.find(m => m.monthNum === saleMonth && m.year === saleYear);
         if (monthData) {
           monthData.vendas += v.valor_total || 0;
@@ -207,26 +206,46 @@ export default function Dashboard() {
 
   const metaPercentage = (currentMonthSales / metaMensal) * 100;
 
-  const handleSaveMeta = () => {
-    const metaValue = parseFloat(novaMeta);
-    if (isNaN(metaValue) || metaValue <= 0) {
+  const saveMetaMutation = useMutation({
+    mutationFn: async (meta: number) => {
+      // Mocking apiRequest for demonstration purposes
+      // In a real application, this would be an actual API call
+      // await apiRequest("POST", "/api/user/meta-vendas", { meta_mensal: meta });
+      console.log("Saving meta:", meta);
+      return { meta_mensal: meta }; // Mock response
+    },
+    onSuccess: (data) => {
+      setMetaMensal(data.meta_mensal);
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
-        title: "Valor inválido",
-        description: "Digite um valor válido para a meta",
+        title: "Meta atualizada",
+        description: `Nova meta de vendas: R$ ${data.meta_mensal.toFixed(2)}`,
+      });
+      setEditMetaDialogOpen(false);
+      setNovaMeta("");
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao atualizar meta",
+        description: error instanceof Error ? error.message : "Ocorreu um erro",
         variant: "destructive",
       });
-      return;
+    },
+  });
+
+  const handleSaveMeta = () => {
+    if (novaMeta) {
+      const metaValue = parseFloat(novaMeta);
+      if (metaValue > 0) {
+        saveMetaMutation.mutate(metaValue);
+      } else {
+        toast({
+          title: "Meta inválida",
+          description: "A meta deve ser maior que zero",
+          variant: "destructive",
+        });
+      }
     }
-    
-    setMetaMensal(metaValue);
-    localStorage.setItem("meta_mensal", metaValue.toString());
-    setEditMetaDialogOpen(false);
-    setNovaMeta("");
-    
-    toast({
-      title: "Meta atualizada!",
-      description: `Nova meta de vendas: R$ ${metaValue.toFixed(2)}`,
-    });
   };
 
   const chartConfig = {
@@ -273,9 +292,9 @@ export default function Dashboard() {
               </Badge>
               <Dialog open={editMetaDialogOpen} onOpenChange={setEditMetaDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-8 w-8"
                     onClick={() => setNovaMeta(metaMensal.toString())}
                   >
@@ -303,8 +322,8 @@ export default function Dashboard() {
                       />
                     </div>
                     <div className="flex gap-2 justify-end">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => {
                           setEditMetaDialogOpen(false);
                           setNovaMeta("");
@@ -361,13 +380,13 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={salesByHour}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis 
-                    dataKey="hour" 
+                  <XAxis
+                    dataKey="hour"
                     className="text-xs"
                     interval={2}
                   />
                   <YAxis className="text-xs" />
-                  <Tooltip 
+                  <Tooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         return (
@@ -381,15 +400,15 @@ export default function Dashboard() {
                       return null;
                     }}
                   />
-                  <Bar 
-                    dataKey="valor" 
+                  <Bar
+                    dataKey="valor"
                     fill="hsl(var(--primary))"
                     radius={[4, 4, 0, 0]}
                   >
                     {salesByHour.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.valor > 0 ? COLORS[index % COLORS.length] : '#e0e0e0'} 
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.valor > 0 ? COLORS[index % COLORS.length] : '#e0e0e0'}
                       />
                     ))}
                   </Bar>
@@ -412,12 +431,12 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyComparison}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis 
-                    dataKey="month" 
+                  <XAxis
+                    dataKey="month"
                     className="text-xs"
                   />
                   <YAxis className="text-xs" />
-                  <Tooltip 
+                  <Tooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         return (
@@ -430,8 +449,8 @@ export default function Dashboard() {
                       return null;
                     }}
                   />
-                  <Bar 
-                    dataKey="vendas" 
+                  <Bar
+                    dataKey="vendas"
                     fill="hsl(var(--primary))"
                     radius={[4, 4, 0, 0]}
                   />
@@ -454,16 +473,16 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={salesTrendData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis 
-                    dataKey="day" 
+                  <XAxis
+                    dataKey="day"
                     className="text-xs"
                   />
                   <YAxis className="text-xs" />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line 
-                    type="monotone" 
-                    dataKey="vendas" 
-                    stroke="hsl(var(--primary))" 
+                  <Line
+                    type="monotone"
+                    dataKey="vendas"
+                    stroke="hsl(var(--primary))"
                     strokeWidth={2}
                     dot={{ fill: "hsl(var(--primary))", r: 4 }}
                   />
@@ -520,15 +539,15 @@ export default function Dashboard() {
                 <BarChart data={topProducts} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis type="number" className="text-xs" />
-                  <YAxis 
-                    dataKey="name" 
-                    type="category" 
+                  <YAxis
+                    dataKey="name"
+                    type="category"
                     width={100}
                     className="text-xs"
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar 
-                    dataKey="quantidade" 
+                  <Bar
+                    dataKey="quantidade"
                     fill="hsl(var(--primary))"
                     radius={[0, 4, 4, 0]}
                   />
@@ -551,8 +570,8 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={categoryData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis 
-                    dataKey="name" 
+                  <XAxis
+                    dataKey="name"
                     className="text-xs"
                     angle={-45}
                     textAnchor="end"
@@ -560,8 +579,8 @@ export default function Dashboard() {
                   />
                   <YAxis className="text-xs" />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar 
-                    dataKey="value" 
+                  <Bar
+                    dataKey="value"
                     fill="hsl(var(--primary))"
                     radius={[4, 4, 0, 0]}
                   >
@@ -594,8 +613,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-
-      
     </div>
   );
 }

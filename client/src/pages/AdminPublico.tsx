@@ -167,6 +167,9 @@ export default function AdminPublico() {
     formaPagamento: "CREDIT_CARD" as "BOLETO" | "CREDIT_CARD" | "PIX"
   });
 
+  // Estados para testes de email
+  const [testEmail, setTestEmail] = useState("");
+
 
   const { data: subscriptions = [], isLoading: isLoadingSubscriptions } = useQuery<Subscription[]>({
     queryKey: ["/api/subscriptions"],
@@ -188,7 +191,7 @@ export default function AdminPublico() {
     const response = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: body ? JSON.stringify(body) : undefined,
+      body: body ? JSON.JSON.stringify(body) : undefined,
     });
     if (!response.ok) throw new Error("Erro na requisição");
     return response;
@@ -660,6 +663,67 @@ export default function AdminPublico() {
       });
     },
   });
+
+  const deletePlanoMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await fetch(`/api/planos/${id}`, {
+        method: "DELETE",
+        headers: {
+          "x-user-id": "", // Assuming currentUser is available or handled elsewhere
+        },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/planos"] });
+      toast({
+        title: "Plano deletado",
+        description: "Plano removido com sucesso.",
+      });
+    },
+  });
+
+  const sendTestEmailsMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const response = await fetch('/api/test/send-emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+      if (!response.ok) {
+        throw new Error('Erro ao enviar emails de teste');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "✅ Emails enviados!",
+        description: `${data.details?.filter((d: any) => d.status === 'enviado').length || 0} emails foram enviados para ${testEmail}`,
+      });
+      setTestEmail("");
+    },
+    onError: (error) => {
+      toast({
+        title: "❌ Erro ao enviar emails",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSendTestEmails = () => {
+    if (!testEmail) {
+      toast({
+        title: "Email obrigatório",
+        description: "Digite um email para enviar os testes",
+        variant: "destructive",
+      });
+      return;
+    }
+    sendTestEmailsMutation.mutate(testEmail);
+  };
+
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1828,6 +1892,44 @@ export default function AdminPublico() {
                 </Card>
               )}
             </div>
+            {/* Seção de Testes de Email */}
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  Testes de Email
+                </CardTitle>
+                <CardDescription>
+                  Envie emails de teste para verificar se o sistema de notificações está funcionando
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="test-email">Email de Destino</Label>
+                  <Input
+                    id="test-email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                  />
+                </div>
+                <Button
+                  onClick={handleSendTestEmails}
+                  disabled={sendTestEmailsMutation.isPending || !testEmail}
+                  className="w-full"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  {sendTestEmailsMutation.isPending ? "Enviando..." : "📧 Enviar Todos os Emails de Teste"}
+                </Button>
+                <Alert>
+                  <AlertDescription className="text-xs">
+                    Serão enviados 8 tipos de emails: Código de Verificação, Pacote de Funcionários (aguardando/ativado),
+                    Senha Redefinida, Pagamento Pendente, Aviso de Vencimento, Pagamento Atrasado e Conta Bloqueada.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 

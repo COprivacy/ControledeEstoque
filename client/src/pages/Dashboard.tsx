@@ -208,14 +208,12 @@ export default function Dashboard() {
 
   const saveMetaMutation = useMutation({
     mutationFn: async (meta: number) => {
-      // Mocking apiRequest for demonstration purposes
-      // In a real application, this would be an actual API call
-      // await apiRequest("POST", "/api/user/meta-vendas", { meta_mensal: meta });
-      console.log("Saving meta:", meta);
-      return { meta_mensal: meta }; // Mock response
+      const response = await apiRequest("POST", "/api/user/meta-vendas", { meta_mensal: meta });
+      return response.json();
     },
     onSuccess: (data) => {
       setMetaMensal(data.meta_mensal);
+      localStorage.setItem("meta_mensal", data.meta_mensal.toString());
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
         title: "Meta atualizada",

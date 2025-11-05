@@ -1,4 +1,3 @@
-replit_final_file>
 import StatsCards from "@/components/StatsCards";
 import ProductCard from "@/components/ProductCard";
 import { Crown, TrendingUp, TrendingDown, Package, Target, Calendar } from "lucide-react";
@@ -616,4 +615,3 @@ export default function Dashboard() {
     </div>
   );
 }
-</replit_final_file>

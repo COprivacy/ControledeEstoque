@@ -1244,7 +1244,8 @@ export default function AdminPublico() {
                     </form>
                   </DialogContent>
                 </Dialog>
-              </CardHeader>
+              </div>
+            </CardHeader>
               <CardContent>
                 <div className="rounded-xl border border-slate-700/50 overflow-hidden">
                   <Table>

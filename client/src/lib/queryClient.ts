@@ -38,6 +38,14 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<Response> {
   const authHeaders = getAuthHeaders();
+  
+  console.log('🔍 [API REQUEST]', {
+    method,
+    url,
+    authHeaders,
+    hasUser: !!localStorage.getItem('user')
+  });
+  
   const res = await fetch(url, {
     method,
     headers: {

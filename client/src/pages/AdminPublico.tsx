@@ -46,7 +46,10 @@ import {
   User,
   LineChart,
   Percent,
-  Lock
+  Lock,
+  TrendingDown,
+  Clock,
+  Sparkles
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
@@ -103,16 +106,13 @@ export default function AdminPublico() {
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [testingAsaas, setTestingAsaas] = useState(false);
   const [createUserOpen, setCreateUserOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // Assuming initial state is authenticated for admin
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const setLocation = useLocation()[1];
 
-
-  // Estados de busca e filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [planoFilter, setPlanoFilter] = useState<string>("all");
 
-  // Estados de diálogos
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<any>(null);
   const [isViewUserDialogOpen, setIsViewUserDialogOpen] = useState(false);
@@ -122,18 +122,7 @@ export default function AdminPublico() {
   const [editingClient, setEditingClient] = useState<Cliente | null>(null);
   const [editedClientData, setEditedClientData] = useState<Cliente | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [newUserData, setNewUserData] = useState<{
-    nome: string;
-    email: string;
-    senha: string;
-    plano: string;
-    is_admin: string;
-    cpf_cnpj: string;
-    telefone: string;
-    endereco: string;
-    data_expiracao_plano: string | null;
-    max_funcionarios: number;
-  }>({
+  const [newUserData, setNewUserData] = useState<any>({
     nome: "",
     email: "",
     senha: "",
@@ -158,7 +147,6 @@ export default function AdminPublico() {
     data_expiracao_plano: null as string | null,
   });
 
-  // Estados do formulário de criação de cliente
   const [newClientForm, setNewClientForm] = useState({
     nome: "",
     email: "",
@@ -167,9 +155,7 @@ export default function AdminPublico() {
     formaPagamento: "CREDIT_CARD" as "BOLETO" | "CREDIT_CARD" | "PIX"
   });
 
-  // Estados para testes de email
   const [testEmail, setTestEmail] = useState("");
-
 
   const { data: subscriptions = [], isLoading: isLoadingSubscriptions } = useQuery<Subscription[]>({
     queryKey: ["/api/subscriptions"],
@@ -191,7 +177,7 @@ export default function AdminPublico() {
     const response = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: body ? JSON.JSON.stringify(body) : undefined,
+      body: body ? JSON.stringify(body) : undefined,
     });
     if (!response.ok) throw new Error("Erro na requisição");
     return response;
@@ -297,7 +283,6 @@ export default function AdminPublico() {
     }
   };
 
-
   const createClientWithMercadoPagoMutation = useMutation({
     mutationFn: async (clientData: typeof newClientForm) => {
       const response = await fetch("/api/checkout", {
@@ -318,7 +303,6 @@ export default function AdminPublico() {
         title: "Cliente criado com sucesso!",
         description: "O cliente foi criado e a preferência de pagamento foi gerada.",
       });
-      // Redirect to payment
       if (data.preference?.init_point) {
         window.open(data.preference.init_point, '_blank');
       }
@@ -374,7 +358,6 @@ export default function AdminPublico() {
     mutationFn: async ({ userId, plano }: { userId: string; plano: string }) => {
       const updates: any = { plano };
 
-      // Calcular nova data de expiração baseada no plano
       const hoje = new Date();
       if (plano === "trial") {
         hoje.setDate(hoje.getDate() + 7);
@@ -389,15 +372,14 @@ export default function AdminPublico() {
         updates.data_expiracao_plano = hoje.toISOString();
         updates.data_expiracao_trial = null;
       } else if (plano === "premium") {
-        // Premium sem expiração ou com expiração muito longa
         hoje.setFullYear(hoje.getFullYear() + 10);
         updates.data_expiracao_plano = hoje.toISOString();
         updates.data_expiracao_trial = null;
       } else if (plano === "free") {
         updates.data_expiracao_plano = null;
-        updates.da
+        updates.data_expiracao_trial = null;
       }
-      // Ensure status is active when plan is changed, unless it's explicitly 'free'
+
       if (plano !== "free") {
         updates.status = "ativo";
       }
@@ -406,18 +388,13 @@ export default function AdminPublico() {
       return response.json();
     },
     onSuccess: () => {
-      // Invalidar todas as queries relacionadas ao usuário
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/subscriptions"] });
 
-      // Atualizar também o localStorage se o usuário logado for o que foi atualizado
       const currentUserStr = localStorage.getItem("user");
       if (currentUserStr) {
         const currentUser = JSON.parse(currentUserStr);
-        if (currentUser.id === userId) {
-          // Recarregar dados do usuário atualizado
-          queryClient.invalidateQueries({ queryKey: ["currentUser"] });
-        }
+        queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       }
 
       toast({
@@ -434,91 +411,6 @@ export default function AdminPublico() {
     },
   });
 
-
-  const getUserInfo = (userId: string) => {
-    return users.find(u => u.id === userId);
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", label: string }> = {
-      ativo: { variant: "default", label: "Ativo" },
-      pendente: { variant: "secondary", label: "Pendente" },
-      expirado: { variant: "destructive", label: "Expirado" },
-      cancelado: { variant: "outline", label: "Cancelado" },
-    };
-    const config = statusMap[status] || { variant: "outline" as const, label: status };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
-  };
-
-  const getPaymentMethodBadge = (method: string | null) => {
-    if (!method) return <Badge variant="outline">-</Badge>;
-    const methodMap: Record<string, string> = {
-      BOLETO: "Boleto",
-      CREDIT_CARD: "Cartão",
-      PIX: "PIX",
-    };
-    return <Badge variant="secondary">{methodMap[method] || method}</Badge>;
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "-";
-    return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
-  };
-
-  const formatDateTime = (dateString: string | null) => {
-    if (!dateString) return "-";
-    return format(new Date(dateString), "dd/MM/yyyy HH:mm", { locale: ptBR });
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
-
-  const calculateDaysRemaining = (expirationDate?: string) => {
-    if (!expirationDate) return 0;
-    const now = new Date();
-    const expiration = new Date(expirationDate);
-    const diffTime = expiration.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
-
-  const handleEditClient = (cliente: Cliente) => {
-    setEditingClient(cliente);
-    setEditedClientData({ ...cliente });
-  };
-
-  const handleSaveClient = () => {
-    if (editedClientData) {
-      updateClienteMutation.mutate(editedClientData);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingClient(null);
-    setEditedClientData(null);
-  };
-
-  // Estatísticas Asaas
-  const assinaturasAtivas = subscriptions.filter(s => s.status === "ativo").length;
-  const assinaturasPendentes = subscriptions.filter(s => s.status === "pendente").length;
-  const receitaMensal = subscriptions
-    .filter(s => s.status === "ativo")
-    .reduce((sum, s) => sum + s.valor, 0);
-  const receitaPendente = subscriptions
-    .filter(s => s.status === "pendente")
-    .reduce((sum, s) => sum + s.valor, 0);
-
-  // Clientes com planos pagos
-  const clientesComPlanos = clientes.filter((c: any) => {
-    const user = users.find((u: any) => u.email === c.email);
-    return user && (user.plano === "premium" || user.plano === "mensal" || user.plano === "anual");
-  });
-
-  // Filtrar usuários com busca e filtros
   const filteredUsers = useMemo(() => {
     return users.filter((user: any) => {
       const matchSearch = searchTerm === "" ||
@@ -533,7 +425,6 @@ export default function AdminPublico() {
     });
   }, [users, searchTerm, statusFilter, planoFilter]);
 
-  // Filtrar assinaturas
   const filteredSubscriptions = useMemo(() => {
     return subscriptions.filter((sub: any) => {
       const user = users.find((u: any) => u.id === sub.user_id);
@@ -547,7 +438,6 @@ export default function AdminPublico() {
     });
   }, [subscriptions, users, searchTerm]);
 
-  // Mutations para gerenciamento de usuários
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof newUserForm) => {
       const response = await apiRequest("POST", "/api/auth/register", {
@@ -669,7 +559,7 @@ export default function AdminPublico() {
       await fetch(`/api/planos/${id}`, {
         method: "DELETE",
         headers: {
-          "x-user-id": "", // Assuming currentUser is available or handled elsewhere
+          "x-user-id": "",
         },
       });
     },
@@ -724,7 +614,6 @@ export default function AdminPublico() {
     sendTestEmailsMutation.mutate(testEmail);
   };
 
-
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
     const dataExpiracao = calcularDataExpiracao(newUserForm.plano);
@@ -747,21 +636,18 @@ export default function AdminPublico() {
       endereco: user.endereco || "",
       status: user.status || "ativo",
       max_funcionarios: user.max_funcionarios || 1,
+      senha: ""
     });
 
-    // Calcula dias restantes - deixa vazio se não há data
     const expirationDate = user.data_expiracao_plano || user.data_expiracao_trial;
     if (expirationDate) {
       const dias = calculateDaysRemaining(expirationDate);
-      // Só preenche se há dias positivos
       setDiasRestantes(dias > 0 ? dias.toString() : "");
     } else {
-      // Deixa vazio para não forçar atualização
       setDiasRestantes("");
     }
   };
 
-  // Função para calcular dias restantes baseado no plano
   const getDiasPorPlano = (plano: string): number => {
     const diasPorPlano: Record<string, number> = {
       'trial': 7,
@@ -769,17 +655,15 @@ export default function AdminPublico() {
       'premium_mensal': 30,
       'anual': 365,
       'premium_anual': 365,
-      'premium': 3650, // 10 anos
+      'premium': 3650,
       'free': 0
     };
     return diasPorPlano[plano] || 0;
   };
 
-  // Handler para mudança de plano - atualiza dias automaticamente
   const handlePlanoChange = (novoPlano: string) => {
     setNewUserData({ ...newUserData, plano: novoPlano });
 
-    // Calcula e atualiza os dias restantes automaticamente
     const dias = getDiasPorPlano(novoPlano);
     if (dias > 0) {
       setDiasRestantes(dias.toString());
@@ -793,15 +677,12 @@ export default function AdminPublico() {
     if (editingUser) {
       const updates: any = { ...newUserData };
 
-      // Remove password if it's empty to avoid sending empty password
       if (!updates.senha) {
         delete updates.senha;
       }
 
-      // Garantir que is_admin seja sempre uma string "true" ou "false"
       updates.is_admin = newUserData.is_admin === "true" ? "true" : "false";
 
-      // Só atualiza a data de expiração se dias restantes foi EXPLICITAMENTE preenchido com valor > 0
       if (diasRestantes && diasRestantes !== "") {
         const dias = parseInt(diasRestantes);
         if (!isNaN(dias) && dias > 0) {
@@ -811,7 +692,6 @@ export default function AdminPublico() {
         }
       }
 
-      // Quando o plano é atualizado, marca o status como ativo
       updates.status = "ativo";
 
       console.log("📝 Atualizando usuário com:", updates);
@@ -825,142 +705,274 @@ export default function AdminPublico() {
     }
   };
 
+  const getUserInfo = (userId: string) => {
+    return users.find(u => u.id === userId);
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", label: string, color: string }> = {
+      ativo: { variant: "default", label: "Ativo", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+      pendente: { variant: "secondary", label: "Pendente", color: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
+      expirado: { variant: "destructive", label: "Expirado", color: "bg-red-500/10 text-red-400 border-red-500/20" },
+      cancelado: { variant: "outline", label: "Cancelado", color: "bg-gray-500/10 text-gray-400 border-gray-500/20" },
+    };
+    const config = statusMap[status] || { variant: "outline" as const, label: status, color: "bg-gray-500/10 text-gray-400 border-gray-500/20" };
+    return <Badge className={`${config.color} border`}>{config.label}</Badge>;
+  };
+
+  const getPaymentMethodBadge = (method: string | null) => {
+    if (!method) return <Badge variant="outline">-</Badge>;
+    const methodMap: Record<string, { label: string; color: string }> = {
+      BOLETO: { label: "Boleto", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+      CREDIT_CARD: { label: "Cartão", color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+      PIX: { label: "PIX", color: "bg-teal-500/10 text-teal-400 border-teal-500/20" },
+    };
+    const config = methodMap[method] || { label: method, color: "bg-gray-500/10 text-gray-400 border-gray-500/20" };
+    return <Badge className={`${config.color} border`}>{config.label}</Badge>;
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "-";
+    return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
+  };
+
+  const formatDateTime = (dateString: string | null) => {
+    if (!dateString) return "-";
+    return format(new Date(dateString), "dd/MM/yyyy HH:mm", { locale: ptBR });
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
+  const calculateDaysRemaining = (expirationDate?: string) => {
+    if (!expirationDate) return 0;
+    const now = new Date();
+    const expiration = new Date(expirationDate);
+    const diffTime = expiration.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const handleEditClient = (cliente: Cliente) => {
+    setEditingClient(cliente);
+    setEditedClientData({ ...cliente });
+  };
+
+  const handleSaveClient = () => {
+    if (editedClientData) {
+      updateClienteMutation.mutate(editedClientData);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingClient(null);
+    setEditedClientData(null);
+  };
+
+  const assinaturasAtivas = subscriptions.filter(s => s.status === "ativo").length;
+  const assinaturasPendentes = subscriptions.filter(s => s.status === "pendente").length;
+  const receitaMensal = subscriptions
+    .filter(s => s.status === "ativo")
+    .reduce((sum, s) => sum + s.valor, 0);
+  const receitaPendente = subscriptions
+    .filter(s => s.status === "pendente")
+    .reduce((sum, s) => sum + s.valor, 0);
+
+  const clientesComPlanos = clientes.filter((c: any) => {
+    const user = users.find((u: any) => u.email === c.email);
+    return user && (user.plano === "premium" || user.plano === "mensal" || user.plano === "anual");
+  });
+
   if (isLoadingSubscriptions || isLoadingUsers || isLoadingClientes) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-cyan-400 mx-auto" />
+          <p className="text-slate-300 text-lg">Carregando painel...</p>
+        </div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4">
-        <h1 className="text-3xl font-bold text-white mb-4">Acesso Restrito</h1>
-        <p className="text-gray-400 mb-6">Você não tem permissão para acessar esta página.</p>
-        <Button
-          variant="outline"
-          onClick={() => {
-            setIsAuthenticated(false); // Ensure this is set correctly if re-authentication is needed
-            sessionStorage.removeItem("admin_auth");
-            sessionStorage.removeItem("admin_auth_time");
-            setLocation("/dashboard"); // Redirect to dashboard after logout/unauthorized access
-          }}
-          className="gap-2"
-        >
-          <Lock className="h-4 w-4" />
-          Voltar para o Dashboard
-        </Button>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 flex flex-col items-center justify-center p-4">
+        <div className="text-center space-y-6 max-w-md">
+          <Shield className="h-20 w-20 text-cyan-400 mx-auto" />
+          <h1 className="text-4xl font-bold text-white">Acesso Restrito</h1>
+          <p className="text-slate-400 text-lg">Você não tem permissão para acessar esta página.</p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setIsAuthenticated(false);
+              sessionStorage.removeItem("admin_auth");
+              sessionStorage.removeItem("admin_auth_time");
+              setLocation("/dashboard");
+            }}
+            className="gap-2 bg-slate-800/50 border-slate-700 hover:bg-slate-800"
+            data-testid="button-voltar"
+          >
+            <Lock className="h-4 w-4" />
+            Voltar para o Dashboard
+          </Button>
+        </div>
       </div>
     );
   }
 
-
   return (
-    <div className="min-h-screen bg-gray-950 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5 text-gray-400" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
+      <div className="max-w-[1600px] mx-auto p-6 space-y-8">
+        {/* Header Profissional com Glassmorphism */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900/90 via-blue-900/50 to-slate-900/90 backdrop-blur-xl border border-white/10 shadow-2xl">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PHBhdGggZD0iTTM2IDM0djItaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30"></div>
+          
+          <div className="relative p-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <Link href="/dashboard">
+                  <Button variant="ghost" size="icon" className="hover:bg-white/10 rounded-full" data-testid="button-voltar-dashboard">
+                    <ArrowLeft className="h-5 w-5 text-slate-300" />
+                  </Button>
+                </Link>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl shadow-lg shadow-cyan-500/20">
+                      <Shield className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-cyan-200 to-blue-300 bg-clip-text text-transparent">
+                        Painel Master
+                      </h1>
+                      <p className="text-slate-400 mt-1 flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-cyan-400" />
+                        Gestão Empresarial de Clientes e Assinaturas
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <Button
+                onClick={() => {
+                  queryClient.invalidateQueries({ queryKey: ["/api/subscriptions"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/clientes"] });
+                }}
+                className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border-0 shadow-lg shadow-cyan-500/20"
+                data-testid="button-atualizar"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Atualizar Dados
               </Button>
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-white">
-                Painel de Administração Master
-              </h1>
-              <p className="text-gray-400 mt-1">
-                Gestão de Planos, Assinaturas e Clientes
-              </p>
             </div>
           </div>
-          <Button
-            onClick={() => {
-              queryClient.invalidateQueries({ queryKey: ["/api/subscriptions"] });
-              queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-              queryClient.invalidateQueries({ queryKey: ["/api/clientes"] });
-            }}
-            variant="outline"
-            className="bg-gray-900 border-gray-700 text-gray-300 hover:bg-gray-800"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar
-          </Button>
         </div>
 
-        {/* Cards de Estatísticas Asaas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="bg-gradient-to-br from-green-900 to-green-950 border-green-800">
-            <CardContent className="pt-6">
+        {/* Cards de Estatísticas Premium */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-900/40 to-emerald-950/40 border-emerald-500/20 backdrop-blur-sm hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300" data-testid="card-assinaturas-ativas">
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 bg-emerald-500/10 rounded-full blur-2xl"></div>
+            <CardContent className="pt-6 relative">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-green-200">Assinaturas Ativas</p>
-                  <p className="text-3xl font-bold text-green-100">{assinaturasAtivas}</p>
-                  <p className="text-xs text-green-300 mt-1">Clientes pagantes</p>
+                  <p className="text-emerald-300/70 text-sm font-medium mb-1">Assinaturas Ativas</p>
+                  <p className="text-4xl font-bold text-emerald-100 mb-1">{assinaturasAtivas}</p>
+                  <p className="text-emerald-400/60 text-xs">Clientes pagantes ativos</p>
                 </div>
-                <Users className="h-10 w-10 text-green-400" />
+                <div className="p-4 bg-emerald-500/20 rounded-2xl backdrop-blur-sm">
+                  <Users className="h-8 w-8 text-emerald-400" />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-xs">
+                <TrendingUp className="h-3 w-3 text-emerald-400" />
+                <span className="text-emerald-300/70">Base sólida de clientes</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-blue-900 to-blue-950 border-blue-800">
-            <CardContent className="pt-6">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-blue-900/40 to-blue-950/40 border-blue-500/20 backdrop-blur-sm hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300" data-testid="card-receita-mensal">
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 bg-blue-500/10 rounded-full blur-2xl"></div>
+            <CardContent className="pt-6 relative">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-blue-200">Receita Mensal (MRR)</p>
-                  <p className="text-3xl font-bold text-blue-100">{formatCurrency(receitaMensal)}</p>
-                  <p className="text-xs text-blue-300 mt-1">Recorrente confirmada</p>
+                  <p className="text-blue-300/70 text-sm font-medium mb-1">Receita Mensal (MRR)</p>
+                  <p className="text-4xl font-bold text-blue-100 mb-1">{formatCurrency(receitaMensal)}</p>
+                  <p className="text-blue-400/60 text-xs">Recorrente confirmada</p>
                 </div>
-                <DollarSign className="h-10 w-10 text-blue-400" />
+                <div className="p-4 bg-blue-500/20 rounded-2xl backdrop-blur-sm">
+                  <DollarSign className="h-8 w-8 text-blue-400" />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-xs">
+                <Activity className="h-3 w-3 text-blue-400" />
+                <span className="text-blue-300/70">Receita recorrente estável</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-900 to-orange-950 border-orange-800">
-            <CardContent className="pt-6">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-amber-900/40 to-amber-950/40 border-amber-500/20 backdrop-blur-sm hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-300" data-testid="card-pendentes">
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 bg-amber-500/10 rounded-full blur-2xl"></div>
+            <CardContent className="pt-6 relative">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-orange-200">Pendentes</p>
-                  <p className="text-3xl font-bold text-orange-100">{assinaturasPendentes}</p>
-                  <p className="text-xs text-orange-300 mt-1">{formatCurrency(receitaPendente)}</p>
+                  <p className="text-amber-300/70 text-sm font-medium mb-1">Pagamentos Pendentes</p>
+                  <p className="text-4xl font-bold text-amber-100 mb-1">{assinaturasPendentes}</p>
+                  <p className="text-amber-400/60 text-xs">{formatCurrency(receitaPendente)} aguardando</p>
                 </div>
-                <CreditCard className="h-10 w-10 text-orange-400" />
+                <div className="p-4 bg-amber-500/20 rounded-2xl backdrop-blur-sm">
+                  <Clock className="h-8 w-8 text-amber-400" />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-xs">
+                <AlertCircle className="h-3 w-3 text-amber-400" />
+                <span className="text-amber-300/70">Requer acompanhamento</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-900 to-purple-950 border-purple-800">
-            <CardContent className="pt-6">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-950/40 border-purple-500/20 backdrop-blur-sm hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300" data-testid="card-total-clientes">
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 bg-purple-500/10 rounded-full blur-2xl"></div>
+            <CardContent className="pt-6 relative">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-purple-200">Total Clientes</p>
-                  <p className="text-3xl font-bold text-purple-100">{users.length}</p>
-                  <p className="text-xs text-purple-300 mt-1">{clientesComPlanos.length} com planos pagos</p>
+                  <p className="text-purple-300/70 text-sm font-medium mb-1">Total de Clientes</p>
+                  <p className="text-4xl font-bold text-purple-100 mb-1">{users.length}</p>
+                  <p className="text-purple-400/60 text-xs">{clientesComPlanos.length} com planos pagos</p>
                 </div>
-                <TrendingUp className="h-10 w-10 text-purple-400" />
+                <div className="p-4 bg-purple-500/20 rounded-2xl backdrop-blur-sm">
+                  <TrendingUp className="h-8 w-8 text-purple-400" />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-xs">
+                <BarChart3 className="h-3 w-3 text-purple-400" />
+                <span className="text-purple-300/70">Base de usuários crescente</span>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Barra de Busca e Filtros */}
-        <Card className="bg-gray-900 border-gray-800 mt-6">
+        {/* Barra de Busca e Filtros Premium */}
+        <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="md:col-span-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
                   <Input
                     placeholder="Buscar por nome ou email..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-gray-800 border-gray-700 text-white"
+                    className="pl-11 bg-slate-800/50 border-slate-600/50 text-white placeholder:text-slate-500 focus:border-cyan-500/50 focus:ring-cyan-500/20"
+                    data-testid="input-buscar"
                   />
                 </div>
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                <SelectTrigger className="bg-slate-800/50 border-slate-600/50 text-white" data-testid="select-status">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -971,7 +983,7 @@ export default function AdminPublico() {
                 </SelectContent>
               </Select>
               <Select value={planoFilter} onValueChange={setPlanoFilter}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                <SelectTrigger className="bg-slate-800/50 border-slate-600/50 text-white" data-testid="select-plano">
                   <SelectValue placeholder="Plano" />
                 </SelectTrigger>
                 <SelectContent>
@@ -987,943 +999,538 @@ export default function AdminPublico() {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="usuarios" className="mt-8">
-          <TabsList className="grid w-full grid-cols-3 bg-gray-800 p-1 rounded-lg">
-            <TabsTrigger value="usuarios" className="data-[state=active]:bg-cyan-600" data-testid="tab-dashboard">
+        {/* Tabs com Design Premium */}
+        <Tabs defaultValue="usuarios" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 bg-slate-900/50 p-1.5 rounded-xl border border-slate-700/50 backdrop-blur-sm">
+            <TabsTrigger 
+              value="usuarios" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-300" 
+              data-testid="tab-usuarios"
+            >
               <Users className="h-4 w-4 mr-2" />
               Usuários ({filteredUsers.length})
             </TabsTrigger>
-            <TabsTrigger value="planos-assinaturas" className="data-[state=active]:bg-blue-600" data-testid="tab-planos">
+            <TabsTrigger 
+              value="planos-assinaturas" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white rounded-lg transition-all duration-300" 
+              data-testid="tab-assinaturas"
+            >
               <CreditCard className="h-4 w-4 mr-2" />
               Assinaturas ({filteredSubscriptions.length})
             </TabsTrigger>
-            <TabsTrigger value="configuracao" className="data-[state=active]:bg-orange-600" data-testid="tab-asaas">
+            <TabsTrigger 
+              value="configuracao" 
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600 data-[state=active]:to-red-600 data-[state=active]:text-white rounded-lg transition-all duration-300" 
+              data-testid="tab-configuracao"
+            >
               <Settings className="h-4 w-4 mr-2" />
               Configuração
             </TabsTrigger>
           </TabsList>
 
-          {/* Tab Dashboard */}
-          <TabsContent value="dashboard" className="mt-6">
-            <div className="space-y-6">
-              {/* Métricas Principais */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="bg-gradient-to-br from-cyan-900 to-cyan-950 border-cyan-800" data-testid="card-receita-total">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-cyan-200">Receita Total</p>
-                        <p className="text-3xl font-bold text-cyan-100">{formatCurrency(receitaMensal + receitaPendente)}</p>
-                        <p className="text-xs text-cyan-300 mt-1">Este mês</p>
-                      </div>
-                      <DollarSign className="h-12 w-12 text-cyan-400" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-green-900 to-green-950 border-green-800" data-testid="card-clientes-ativos">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-green-200">Clientes Ativos</p>
-                        <p className="text-3xl font-bold text-green-100">{assinaturasAtivas}</p>
-                        <p className="text-xs text-green-300 mt-1">Com assinaturas ativas</p>
-                      </div>
-                      <CheckCircle className="h-12 w-12 text-green-400" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-purple-900 to-purple-950 border-purple-800" data-testid="card-total-usuarios">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-purple-200">Total Usuários</p>
-                        <p className="text-3xl font-bold text-purple-100">{users.length}</p>
-                        <p className="text-xs text-purple-300 mt-1">{users.filter(u => u.status === 'ativo').length} ativos</p>
-                      </div>
-                      <Users className="h-12 w-12 text-purple-400" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-orange-900 to-orange-950 border-orange-800" data-testid="card-taxa-conversao">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-orange-200">Taxa de Conversão</p>
-                        <p className="text-3xl font-bold text-orange-100">
-                          {users.length > 0 ? ((assinaturasAtivas / users.length) * 100).toFixed(1) : 0}%
-                        </p>
-                        <p className="text-xs text-orange-300 mt-1">Trial → Pago</p>
-                      </div>
-                      <Percent className="h-12 w-12 text-orange-400" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Gráficos */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Gráfico de Planos */}
-                <Card className="bg-gray-900 border-gray-800">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Activity className="h-5 w-5" />
-                      Distribuição de Planos
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
-                        <Pie
-                          data={[
-                            { name: 'Trial', value: users.filter(u => u.plano === 'trial').length, color: '#3b82f6' },
-                            { name: 'Mensal', value: users.filter(u => u.plano === 'mensal').length, color: '#10b981' },
-                            { name: 'Anual', value: users.filter(u => u.plano === 'anual').length, color: '#8b5cf6' },
-                            { name: 'Premium', value: users.filter(u => u.plano === 'premium').length, color: '#f59e0b' },
-                          ].filter(item => item.value > 0)}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, value }) => `${name}: ${value}`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {[
-                            { name: 'Trial', value: users.filter(u => u.plano === 'trial').length, color: '#3b82f6' },
-                            { name: 'Mensal', value: users.filter(u => u.plano === 'mensal').length, color: '#10b981' },
-                            { name: 'Anual', value: users.filter(u => u.plano === 'anual').length, color: '#8b5cf6' },
-                            { name: 'Premium', value: users.filter(u => u.plano === 'premium').length, color: '#f59e0b' },
-                          ].filter(item => item.value > 0).map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                {/* Gráfico de Status */}
-                <Card className="bg-gray-900 border-gray-800">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5" />
-                      Status das Assinaturas
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={[
-                        { name: 'Ativas', value: assinaturasAtivas, color: '#10b981' },
-                        { name: 'Pendentes', value: assinaturasPendentes, color: '#f59e0b' },
-                        { name: 'Canceladas', value: subscriptions.filter(s => s.status === 'cancelado').length, color: '#ef4444' },
-                      ]}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="name" stroke="#9ca3af" />
-                        <YAxis stroke="#9ca3af" />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
-                          labelStyle={{ color: '#f3f4f6' }}
-                        />
-                        <Bar dataKey="value" fill="#10b981" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Atividades Recentes */}
-              <Card className="bg-gray-900 border-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Usuários Recentes
+          {/* Tab Usuários */}
+          <TabsContent value="usuarios" className="space-y-6">
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-4">
+                <div>
+                  <CardTitle className="text-2xl text-white flex items-center gap-2">
+                    <Users className="h-6 w-6 text-cyan-400" />
+                    Gerenciamento de Usuários
                   </CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Últimos 10 usuários cadastrados
+                  <CardDescription className="text-slate-400 mt-1">
+                    Visualize e gerencie todos os usuários do sistema
                   </CardDescription>
-                </CardHeader>
-                <CardContent>
+                </div>
+                <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-lg shadow-cyan-500/20" data-testid="button-criar-usuario">
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Novo Usuário
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2 text-xl">
+                        <UserPlus className="h-5 w-5 text-cyan-400" />
+                        Criar Novo Usuário
+                      </DialogTitle>
+                      <DialogDescription className="text-slate-400">
+                        Preencha os dados para criar um novo usuário no sistema
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleCreateUser} className="space-y-4 py-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="nome" className="text-slate-300">Nome Completo</Label>
+                          <Input
+                            id="nome"
+                            value={newUserForm.nome}
+                            onChange={(e) => setNewUserForm({ ...newUserForm, nome: e.target.value })}
+                            className="bg-slate-800 border-slate-700 text-white"
+                            required
+                            data-testid="input-nome-novo"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="email" className="text-slate-300">Email</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={newUserForm.email}
+                            onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
+                            className="bg-slate-800 border-slate-700 text-white"
+                            required
+                            data-testid="input-email-novo"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="senha" className="text-slate-300">Senha</Label>
+                          <Input
+                            id="senha"
+                            type="password"
+                            value={newUserForm.senha}
+                            onChange={(e) => setNewUserForm({ ...newUserForm, senha: e.target.value })}
+                            className="bg-slate-800 border-slate-700 text-white"
+                            required
+                            data-testid="input-senha-novo"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="plano" className="text-slate-300">Plano</Label>
+                          <Select value={newUserForm.plano} onValueChange={(value) => setNewUserForm({ ...newUserForm, plano: value })}>
+                            <SelectTrigger id="plano" className="bg-slate-800 border-slate-700 text-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="trial">Trial</SelectItem>
+                              <SelectItem value="free">Free</SelectItem>
+                              <SelectItem value="mensal">Mensal</SelectItem>
+                              <SelectItem value="anual">Anual</SelectItem>
+                              <SelectItem value="premium">Premium</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="cpf_cnpj" className="text-slate-300">CPF/CNPJ</Label>
+                          <Input
+                            id="cpf_cnpj"
+                            value={newUserForm.cpf_cnpj}
+                            onChange={(e) => setNewUserForm({ ...newUserForm, cpf_cnpj: e.target.value })}
+                            className="bg-slate-800 border-slate-700 text-white"
+                            data-testid="input-cpf-novo"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="telefone" className="text-slate-300">Telefone</Label>
+                          <Input
+                            id="telefone"
+                            value={newUserForm.telefone}
+                            onChange={(e) => setNewUserForm({ ...newUserForm, telefone: e.target.value })}
+                            className="bg-slate-800 border-slate-700 text-white"
+                            data-testid="input-telefone-novo"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="endereco" className="text-slate-300">Endereço</Label>
+                        <Input
+                          id="endereco"
+                          value={newUserForm.endereco}
+                          onChange={(e) => setNewUserForm({ ...newUserForm, endereco: e.target.value })}
+                          className="bg-slate-800 border-slate-700 text-white"
+                          data-testid="input-endereco-novo"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2 pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setCreateUserOpen(false)}
+                          className="bg-slate-800 border-slate-700"
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          type="submit"
+                          className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500"
+                          disabled={createUserMutation.isPending}
+                          data-testid="button-salvar-novo-usuario"
+                        >
+                          {createUserMutation.isPending ? "Criando..." : "Criar Usuário"}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-xl border border-slate-700/50 overflow-hidden">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-gray-800">
-                        <TableHead className="text-gray-400">Nome</TableHead>
-                        <TableHead className="text-gray-400">Email</TableHead>
-                        <TableHead className="text-gray-400">Plano</TableHead>
-                        <TableHead className="text-gray-400">Status</TableHead>
-                        <TableHead className="text-gray-400">Cadastro</TableHead>
+                      <TableRow className="bg-slate-800/50 hover:bg-slate-800/70 border-slate-700/50">
+                        <TableHead className="text-slate-300 font-semibold">Nome</TableHead>
+                        <TableHead className="text-slate-300 font-semibold">Email</TableHead>
+                        <TableHead className="text-slate-300 font-semibold">Plano</TableHead>
+                        <TableHead className="text-slate-300 font-semibold">Status</TableHead>
+                        <TableHead className="text-slate-300 font-semibold">Expira em</TableHead>
+                        <TableHead className="text-slate-300 font-semibold text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users
-                        .slice()
-                        .sort((a, b) => {
-                          const dateA = a.data_criacao ? new Date(a.data_criacao).getTime() : 0;
-                          const dateB = b.data_criacao ? new Date(b.data_criacao).getTime() : 0;
-                          return dateB - dateA;
-                        })
-                        .slice(0, 10)
-                        .map((user) => (
-                          <TableRow key={user.id} className="border-gray-800 hover:bg-gray-800/50" data-testid={`user-row-${user.id}`}>
-                            <TableCell className="text-white font-medium">{user.nome}</TableCell>
-                            <TableCell className="text-gray-300">{user.email}</TableCell>
+                      {filteredUsers.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-12 text-slate-400">
+                            <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                            Nenhum usuário encontrado
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredUsers.map((user) => (
+                          <TableRow key={user.id} className="border-slate-800/50 hover:bg-slate-800/30 transition-colors" data-testid={`row-user-${user.id}`}>
+                            <TableCell className="font-medium text-white">
+                              <div className="flex items-center gap-2">
+                                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-sm font-bold">
+                                  {user.nome?.charAt(0).toUpperCase()}
+                                </div>
+                                {user.nome}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-slate-300">{user.email}</TableCell>
                             <TableCell>
-                              <Badge
-                                className={
-                                  user.plano === 'trial' ? 'bg-blue-600 text-white' :
-                                  user.plano === 'mensal' ? 'bg-green-600 text-white' :
-                                  user.plano === 'anual' ? 'bg-purple-600 text-white' :
-                                  user.plano === 'premium' ? 'bg-orange-600 text-white' :
-                                  'bg-gray-600 text-white'
-                                }
-                              >
-                                {user.plano === 'trial' ? 'Trial' :
-                                 user.plano === 'mensal' ? 'Mensal' :
-                                 user.plano === 'anual' ? 'Anual' :
-                                 user.plano === 'premium' ? 'Premium' :
-                                 user.plano}
+                              <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 border">
+                                {user.plano}
                               </Badge>
                             </TableCell>
-                            <TableCell>
-                              <Badge variant={user.status === 'ativo' ? 'default' : 'destructive'}>
-                                {user.status === 'ativo' ? 'Ativo' : 'Inativo'}
-                              </Badge>
+                            <TableCell>{getStatusBadge(user.status)}</TableCell>
+                            <TableCell className="text-slate-300">
+                              {formatDate(user.data_expiracao_plano || user.data_expiracao_trial)}
                             </TableCell>
-                            <TableCell className="text-gray-300">
-                              {user.data_criacao ? formatDate(user.data_criacao) : '-'}
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setIsViewUserDialogOpen(true);
+                                  }}
+                                  className="hover:bg-blue-500/10 hover:text-blue-400"
+                                  data-testid={`button-ver-${user.id}`}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleOpenEditUser(user)}
+                                  className="hover:bg-cyan-500/10 hover:text-cyan-400"
+                                  data-testid={`button-editar-${user.id}`}
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteUser(user.id)}
+                                  className="hover:bg-red-500/10 hover:text-red-400"
+                                  data-testid={`button-deletar-${user.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
-                        ))}
+                        ))
+                      )}
                     </TableBody>
                   </Table>
-                </CardContent>
-              </Card>
-
-              {/* Alertas e Avisos */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="bg-gradient-to-br from-yellow-900/20 to-yellow-950/20 border-yellow-800/50">
-                  <CardHeader>
-                    <CardTitle className="text-yellow-200 flex items-center gap-2">
-                      <AlertCircle className="h-5 w-5" />
-                      Assinaturas Vencendo
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {users.filter(u => {
-                        if (!u.data_expiracao_plano) return false;
-                        const expDate = new Date(u.data_expiracao_plano);
-                        const today = new Date();
-                        const daysUntilExp = Math.floor((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                        return daysUntilExp >= 0 && daysUntilExp <= 7;
-                      }).length > 0 ? (
-                        users.filter(u => {
-                          if (!u.data_expiracao_plano) return false;
-                          const expDate = new Date(u.data_expiracao_plano);
-                          const today = new Date();
-                          const daysUntilExp = Math.floor((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                          return daysUntilExp >= 0 && daysUntilExp <= 7;
-                        }).slice(0, 5).map(user => (
-                          <div key={user.id} className="flex items-center justify-between p-3 bg-yellow-900/30 rounded-lg">
-                            <div>
-                              <p className="text-white font-medium">{user.nome}</p>
-                              <p className="text-xs text-yellow-200">{user.email}</p>
-                            </div>
-                            <Badge variant="outline" className="bg-yellow-600 text-white border-yellow-700">
-                              {Math.floor((new Date(user.data_expiracao_plano!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} dias
-                            </Badge>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-gray-400 text-center py-4">Nenhuma assinatura vencendo nos próximos 7 dias</p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-blue-900/20 to-blue-950/20 border-blue-800/50">
-                  <CardHeader>
-                    <CardTitle className="text-blue-200 flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5" />
-                      Resumo Financeiro
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-3 bg-blue-900/30 rounded-lg">
-                        <span className="text-blue-200">Receita Confirmada</span>
-                        <span className="text-white font-bold text-lg">{formatCurrency(receitaMensal)}</span>
-                      </div>
-                      <div className="flex items-center justify-between p-3 bg-blue-900/30 rounded-lg">
-                        <span className="text-blue-200">Receita Pendente</span>
-                        <span className="text-white font-bold text-lg">{formatCurrency(receitaPendente)}</span>
-                      </div>
-                      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-900 to-cyan-900 rounded-lg">
-                        <span className="text-blue-100 font-semibold">Total Esperado</span>
-                        <span className="text-white font-bold text-xl">{formatCurrency(receitaMensal + receitaPendente)}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
-          {/* Tab Planos & Assinaturas */}
-          <TabsContent value="planos-assinaturas" className="mt-6">
-            <Card className="bg-gray-900 border-gray-800">
+          {/* Tab Assinaturas */}
+          <TabsContent value="planos-assinaturas" className="space-y-6">
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <CreditCard className="h-6 w-6" />
-                  Gestão de Planos e Assinaturas
+                <CardTitle className="text-2xl text-white flex items-center gap-2">
+                  <CreditCard className="h-6 w-6 text-blue-400" />
+                  Assinaturas e Pagamentos
                 </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Todas as assinaturas e pagamentos processados pelo Mercado Pago
+                <CardDescription className="text-slate-400 mt-1">
+                  Gerencie todas as assinaturas e status de pagamento
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-gray-800">
-                      <TableHead className="text-gray-400">Cliente</TableHead>
-                      <TableHead className="text-gray-400">Email</TableHead>
-                      <TableHead className="text-gray-400">Plano</TableHead>
-                      <TableHead className="text-gray-400">Valor</TableHead>
-                      <TableHead className="text-gray-400">Status</TableHead>
-                      <TableHead className="text-gray-400">Pagamento</TableHead>
-                      <TableHead className="text-gray-400">Forma</TableHead>
-                      <TableHead className="text-gray-400">Vencimento</TableHead>
-                      <TableHead className="text-gray-400">ID Pagamento</TableHead>
-                      <TableHead className="text-gray-400 text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredSubscriptions.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={10} className="text-center text-gray-400 py-8">
-                          Nenhuma assinatura encontrada
-                        </TableCell>
+                <div className="rounded-xl border border-slate-700/50 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-800/50 hover:bg-slate-800/70 border-slate-700/50">
+                        <TableHead className="text-slate-300 font-semibold">Cliente</TableHead>
+                        <TableHead className="text-slate-300 font-semibold">Plano</TableHead>
+                        <TableHead className="text-slate-300 font-semibold">Valor</TableHead>
+                        <TableHead className="text-slate-300 font-semibold">Status</TableHead>
+                        <TableHead className="text-slate-300 font-semibold">Pagamento</TableHead>
+                        <TableHead className="text-slate-300 font-semibold">Vencimento</TableHead>
+                        <TableHead className="text-slate-300 font-semibold text-right">Ações</TableHead>
                       </TableRow>
-                    ) : (
-                      filteredSubscriptions.map((sub: any) => {
-                        const user = users.find((u: any) => u.id === sub.user_id);
-                        return (
-                          <TableRow key={sub.id} className="border-gray-800">
-                            <TableCell className="text-white font-medium">{user?.nome || "-"}</TableCell>
-                            <TableCell className="text-gray-300">{user?.email || "-"}</TableCell>
-                            <TableCell>
-                              <Badge variant="default">{sub.plano}</Badge>
-                            </TableCell>
-                            <TableCell className="text-white font-semibold">{formatCurrency(sub.valor)}</TableCell>
-                            <TableCell>
-                              <Badge variant={
-                                sub.status === "ativo" ? "default" :
-                                sub.status === "cancelado" ? "destructive" :
-                                "secondary"
-                              }>
-                                {sub.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={
-                                sub.status_pagamento === "RECEIVED" || sub.status_pagamento === "CONFIRMED" ? "default" :
-                                sub.status_pagamento === "PENDING" ? "secondary" :
-                                "destructive"
-                              }>
-                                {sub.status_pagamento || "N/A"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-gray-300">{sub.forma_pagamento || "-"}</TableCell>
-                            <TableCell className="text-gray-400">
-                              {sub.data_vencimento ? formatDate(sub.data_vencimento) : "-"}
-                            </TableCell>
-                            <TableCell className="text-gray-400 font-mono text-xs">
-                              {sub.mercadopago_payment_id ? sub.mercadopago_payment_id.slice(0, 12) + "..." : "-"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                {sub.invoice_url && (
+                    </TableHeader>
+                    <TableBody>
+                      {filteredSubscriptions.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-12 text-slate-400">
+                            <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                            Nenhuma assinatura encontrada
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredSubscriptions.map((sub) => {
+                          const user = getUserInfo(sub.user_id);
+                          return (
+                            <TableRow key={sub.id} className="border-slate-800/50 hover:bg-slate-800/30 transition-colors" data-testid={`row-subscription-${sub.id}`}>
+                              <TableCell className="font-medium text-white">
+                                {user?.nome || "-"}
+                              </TableCell>
+                              <TableCell>
+                                <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 border">
+                                  {sub.plano}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-slate-300 font-semibold">
+                                {formatCurrency(sub.valor)}
+                              </TableCell>
+                              <TableCell>{getStatusBadge(sub.status)}</TableCell>
+                              <TableCell>{getPaymentMethodBadge(sub.forma_pagamento)}</TableCell>
+                              <TableCell className="text-slate-300">
+                                {formatDate(sub.data_vencimento)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  {sub.invoice_url && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => window.open(sub.invoice_url, '_blank')}
+                                      className="hover:bg-purple-500/10 hover:text-purple-400"
+                                      data-testid={`button-invoice-${sub.id}`}
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                   <Button
-                                    size="sm"
                                     variant="ghost"
-                                    onClick={() => window.open(sub.invoice_url, '_blank')}
-                                    className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
-                                  >
-                                    <ExternalLink className="h-4 w-4" />
-                                  </Button>
-                                )}
-                                {sub.status === "ativo" && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
+                                    size="icon"
                                     onClick={() => {
                                       setSelectedSubscription(sub);
                                       setIsCancelSubscriptionDialogOpen(true);
                                     }}
-                                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                                    className="hover:bg-red-500/10 hover:text-red-400"
+                                    data-testid={`button-cancelar-${sub.id}`}
                                   >
                                     <Ban className="h-4 w-4" />
                                   </Button>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Tab Clientes & Usuários */}
-          <TabsContent value="usuarios" className="mt-6">
-            <Card className="bg-gray-900 border-gray-800">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Users className="h-6 w-6" />
-                      Gestão de Usuários
-                    </CardTitle>
-                    <CardDescription className="text-gray-400">
-                      Todos os usuários cadastrados no sistema
-                    </CardDescription>
-                  </div>
-                  <Dialog open={isCreateClientDialogOpen} onOpenChange={setIsCreateClientDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="bg-blue-600 hover:bg-blue-700">
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Criar Cliente
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="bg-gray-900 border-gray-800 text-white">
-                      <DialogHeader>
-                        <DialogTitle>Criar Novo Cliente com Assinatura</DialogTitle>
-                        <DialogDescription className="text-gray-400">
-                          Crie um cliente e gere automaticamente a preferência de pagamento
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label>Nome Completo</Label>
-                          <Input
-                            value={newClientForm.nome}
-                            onChange={(e) => setNewClientForm({ ...newClientForm, nome: e.target.value })}
-                            className="bg-gray-800 border-gray-700"
-                            placeholder="Nome do cliente"
-                          />
-                        </div>
-                        <div>
-                          <Label>Email</Label>
-                          <Input
-                            type="email"
-                            value={newClientForm.email}
-                            onChange={(e) => setNewClientForm({ ...newClientForm, email: e.target.value })}
-                            className="bg-gray-800 border-gray-700"
-                            placeholder="email@exemplo.com"
-                          />
-                        </div>
-                        <div>
-                          <Label>CPF/CNPJ</Label>
-                          <Input
-                            value={newClientForm.cpfCnpj}
-                            onChange={(e) => setNewClientForm({ ...newClientForm, cpfCnpj: e.target.value })}
-                            className="bg-gray-800 border-gray-700"
-                            placeholder="000.000.000-00"
-                          />
-                        </div>
-                        <div>
-                          <Label>Plano</Label>
-                          <Select
-                            value={newClientForm.plano}
-                            onValueChange={(value: any) => setNewClientForm({ ...newClientForm, plano: value })}
-                          >
-                            <SelectTrigger className="bg-gray-800 border-gray-700">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="premium_mensal">Premium Mensal - R$ 79,99</SelectItem>
-                              <SelectItem value="premium_anual">Premium Anual - R$ 67,99/mês</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label>Forma de Pagamento</Label>
-                          <Select
-                            value={newClientForm.formaPagamento}
-                            onValueChange={(value: any) => setNewClientForm({ ...newClientForm, formaPagamento: value })}
-                          >
-                            <SelectTrigger className="bg-gray-800 border-gray-700">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="CREDIT_CARD">Cartão de Crédito</SelectItem>
-                              <SelectItem value="BOLETO">Boleto</SelectItem>
-                              <SelectItem value="PIX">PIX</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Button
-                          onClick={() => createClientWithMercadoPagoMutation.mutate(newClientForm)}
-                          disabled={createClientWithMercadoPagoMutation.isPending}
-                          className="w-full bg-blue-600 hover:bg-blue-700"
-                        >
-                          {createClientWithMercadoPagoMutation.isPending ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Criando...
-                            </>
-                          ) : (
-                            "Criar Cliente e Gerar Preferência"
-                          )}
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-gray-800">
-                      <TableHead className="text-gray-400">Nome</TableHead>
-                      <TableHead className="text-gray-400">Email</TableHead>
-                      <TableHead className="text-gray-400">Plano</TableHead>
-                      <TableHead className="text-gray-400">Status</TableHead>
-                      <TableHead className="text-gray-400">Cadastro</TableHead>
-                      <TableHead className="text-gray-400 text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center text-gray-400 py-8">
-                          Nenhum usuário encontrado
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredUsers.map((user: any) => (
-                        <TableRow key={user.id} className="border-gray-800">
-                          <TableCell className="text-white font-medium">{user.nome}</TableCell>
-                          <TableCell className="text-gray-300">{user.email}</TableCell>
-                          <TableCell>
-                            <Badge
-                              className={
-                                user.plano === 'trial' ? 'bg-blue-600 text-white' :
-                                user.plano === 'mensal' ? 'bg-green-600 text-white' :
-                                user.plano === 'anual' ? 'bg-purple-600 text-white' :
-                                user.plano === 'premium' ? 'bg-orange-600 text-white' :
-                                'bg-gray-600 text-white'
-                              }
-                            >
-                              {user.plano === 'trial' ? 'Trial' :
-                               user.plano === 'mensal' ? 'Mensal' :
-                               user.plano === 'anual' ? 'Anual' :
-                               user.plano === 'premium' ? 'Premium' :
-                               user.plano}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={user.status === "ativo" ? "default" : "destructive"}>
-                              {user.status === "ativo" ? "Ativo" : "Inativo"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-gray-400">
-                            {user.data_criacao ? formatDate(user.data_criacao) : "-"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => {
-                                  setSelectedUser(user);
-                                  setIsViewUserDialogOpen(true);
-                                }}
-                                className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                Ver Detalhes
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleOpenEditUser(user)}
-                                className="text-green-400 hover:text-green-300 hover:bg-green-900/20"
-                              >
-                                <Edit2 className="h-4 w-4 mr-1" />
-                                Editar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleDeleteUser(user.id)}
-                                className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Tab Base de Clientes */}
-          <TabsContent value="base-clientes" className="mt-6">
-            <Card className="bg-gray-900 border-gray-800">
+          {/* Tab Configuração */}
+          <TabsContent value="configuracao" className="space-y-6">
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <User className="h-6 w-6" />
-                  Base Completa de Clientes (Editável)
+                <CardTitle className="text-2xl text-white flex items-center gap-2">
+                  <Settings className="h-6 w-6 text-orange-400" />
+                  Integração Mercado Pago
                 </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Todos os clientes cadastrados no sistema - Clique para editar
+                <CardDescription className="text-slate-400 mt-1">
+                  Configure a integração com o gateway de pagamentos
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-gray-800">
-                      <TableHead className="text-gray-400">Nome</TableHead>
-                      <TableHead className="text-gray-400">CPF/CNPJ</TableHead>
-                      <TableHead className="text-gray-400">Email</TableHead>
-                      <TableHead className="text-gray-400">Telefone</TableHead>
-                      <TableHead className="text-gray-400">Endereço</TableHead>
-                      <TableHead className="text-gray-400">Data Cadastro</TableHead>
-                      <TableHead className="text-gray-400">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {clientes.map((cliente) => (
-                      <TableRow key={cliente.id} className="border-gray-800">
-                        <TableCell className="text-white">{cliente.nome}</TableCell>
-                        <TableCell className="text-gray-300">{cliente.cpf_cnpj || "-"}</TableCell>
-                        <TableCell className="text-gray-300">{cliente.email || "-"}</TableCell>
-                        <TableCell className="text-gray-300">{cliente.telefone || "-"}</TableCell>
-                        <TableCell className="text-gray-300 max-w-xs truncate">{cliente.endereco || "-"}</TableCell>
-                        <TableCell className="text-gray-300">{formatDate(cliente.data_cadastro)}</TableCell>
-                        <TableCell>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditClient(cliente)}
-                                className="bg-gray-800 border-gray-700"
-                              >
-                                <Edit2 className="h-4 w-4 mr-1" />
-                                Editar
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-2xl">
-                              <DialogHeader>
-                                <DialogTitle className="flex items-center gap-2">
-                                  <Edit2 className="h-5 w-5" />
-                                  Editar Cliente
-                                </DialogTitle>
-                                <DialogDescription className="text-gray-400">
-                                  Atualize as informações do cliente
-                                </DialogDescription>
-                              </DialogHeader>
-                              {editedClientData && (
-                                <div className="space-y-4 py-4">
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <Label htmlFor="nome" className="text-gray-300">Nome Completo</Label>
-                                      <Input
-                                        id="nome"
-                                        value={editedClientData.nome}
-                                        onChange={(e) => setEditedClientData({ ...editedClientData, nome: e.target.value })}
-                                        className="bg-gray-800 border-gray-700 text-white"
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="cpf_cnpj" className="text-gray-300">CPF/CNPJ</Label>
-                                      <Input
-                                        id="cpf_cnpj"
-                                        value={editedClientData.cpf_cnpj || ""}
-                                        onChange={(e) => setEditedClientData({ ...editedClientData, cpf_cnpj: e.target.value })}
-                                        className="bg-gray-800 border-gray-700 text-white"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <Label htmlFor="email" className="text-gray-300 flex items-center gap-1">
-                                        <Mail className="h-4 w-4" />
-                                        Email
-                                      </Label>
-                                      <Input
-                                        id="email"
-                                        type="email"
-                                        value={editedClientData.email || ""}
-                                        onChange={(e) => setEditedClientData({ ...editedClientData, email: e.target.value })}
-                                        className="bg-gray-800 border-gray-700 text-white"
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="telefone" className="text-gray-300 flex items-center gap-1">
-                                        <Phone className="h-4 w-4" />
-                                        Telefone
-                                      </Label>
-                                      <Input
-                                        id="telefone"
-                                        value={editedClientData.telefone || ""}
-                                        onChange={(e) => setEditedClientData({ ...editedClientData, telefone: e.target.value })}
-                                        className="bg-gray-800 border-gray-700 text-white"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="endereco" className="text-gray-300 flex items-center gap-1">
-                                      <MapPin className="h-4 w-4" />
-                                      Endereço Completo
-                                    </Label>
-                                    <Input
-                                      id="endereco"
-                                      value={editedClientData.endereco || ""}
-                                      onChange={(e) => setEditedClientData({ ...editedClientData, endereco: e.target.value })}
-                                      className="bg-gray-800 border-gray-700 text-white"
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="observacoes" className="text-gray-300">Observações</Label>
-                                    <Input
-                                      id="observacoes"
-                                      value={editedClientData.observacoes || ""}
-                                      onChange={(e) => setEditedClientData({ ...editedClientData, observacoes: e.target.value })}
-                                      className="bg-gray-800 border-gray-700 text-white"
-                                    />
-                                  </div>
-                                  <div className="flex justify-end gap-2 pt-4">
-                                    <Button
-                                      variant="outline"
-                                      onClick={handleCancelEdit}
-                                      className="bg-gray-800 border-gray-700"
-                                    >
-                                      <X className="h-4 w-4 mr-1" />
-                                      Cancelar
-                                    </Button>
-                                    <Button
-                                      onClick={handleSaveClient}
-                                      className="bg-green-600 hover:bg-green-700"
-                                    >
-                                      <Save className="h-4 w-4 mr-1" />
-                                      Salvar Alterações
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
-                            </DialogContent>
-                          </Dialog>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <CardContent className="space-y-4">
+                {(configMercadoPago as any)?.access_token && (
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="h-5 w-5 text-emerald-400" />
+                      <p className="text-emerald-300 font-semibold">Conexão Ativa</p>
+                    </div>
+                    <p className="text-emerald-400/70 text-sm">
+                      Integração configurada e funcionando corretamente
+                    </p>
+                  </div>
+                )}
+
+                {(configMercadoPago as any)?.ultima_sincronizacao && (
+                  <div className="bg-slate-800/50 rounded-xl p-4">
+                    <p className="text-slate-400 text-sm mb-1">Última Sincronização</p>
+                    <p className="text-white font-medium">{formatDateTime((configMercadoPago as any).ultima_sincronizacao)}</p>
+                  </div>
+                )}
+
+                <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 shadow-lg shadow-orange-500/20" data-testid="button-configurar-mercadopago">
+                      <Edit2 className="h-4 w-4 mr-2" />
+                      Configurar Integração Mercado Pago
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2 text-xl">
+                        <DollarSign className="h-5 w-5 text-orange-400" />
+                        Configuração Mercado Pago
+                      </DialogTitle>
+                      <DialogDescription className="text-slate-400">
+                        Configure a integração com o gateway de pagamentos Mercado Pago
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        const data = {
+                          access_token: formData.get("access_token"),
+                          public_key: formData.get("public_key"),
+                          webhook_url: formData.get("webhook_url"),
+                        };
+                        saveConfigMercadoPagoMutation.mutate(data);
+                      }}
+                      className="space-y-4 py-4"
+                    >
+                      <div>
+                        <Label htmlFor="access_token" className="text-slate-300">Access Token</Label>
+                        <Input
+                          id="access_token"
+                          name="access_token"
+                          type="password"
+                          defaultValue={(configMercadoPago as any)?.access_token || ""}
+                          placeholder="Seu Access Token do Mercado Pago"
+                          className="bg-slate-800 border-slate-700 text-white"
+                          required
+                          data-testid="input-access-token"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="public_key" className="text-slate-300">Public Key</Label>
+                        <Input
+                          id="public_key"
+                          name="public_key"
+                          type="text"
+                          defaultValue={(configMercadoPago as any)?.public_key || ""}
+                          placeholder="Sua Public Key do Mercado Pago"
+                          className="bg-slate-800 border-slate-700 text-white"
+                          data-testid="input-public-key"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="webhook_url" className="text-slate-300">Webhook URL</Label>
+                        <Input
+                          id="webhook_url"
+                          name="webhook_url"
+                          type="url"
+                          defaultValue={(configMercadoPago as any)?.webhook_url || ""}
+                          placeholder="https://seudominio.com/api/webhook/mercadopago"
+                          className="bg-slate-800 border-slate-700 text-white"
+                          data-testid="input-webhook-url"
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            const accessTokenInput = document.getElementById("access_token") as HTMLInputElement;
+                            if (accessTokenInput) {
+                              testMercadoPagoConnection(accessTokenInput.value);
+                            }
+                          }}
+                          disabled={testingAsaas}
+                          className="bg-slate-800 border-slate-700"
+                          data-testid="button-testar-conexao"
+                        >
+                          {testingAsaas ? "Testando..." : "Testar Conexão"}
+                        </Button>
+                        <Button
+                          type="submit"
+                          className="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500"
+                          disabled={saveConfigMercadoPagoMutation.isPending}
+                          data-testid="button-salvar-config"
+                        >
+                          {saveConfigMercadoPagoMutation.isPending ? "Salvando..." : "Salvar Configuração"}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          {/* Tab Integração Asaas */}
-          <TabsContent value="configuracao" className="mt-6">
-            <div className="grid gap-6">
-              {/* Status da Conexão */}
-              <Card className="bg-gray-900 border-gray-800">
+            {(configMercadoPago as any)?.webhook_url && (
+              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
                 <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <DollarSign className="h-6 w-6" />
-                    Status da Integração Asaas
-                  </CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Configuração e status da conexão com o gateway de pagamentos
+                  <CardTitle className="text-white">Informações da Integração</CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Dados da sua integração com Mercado Pago
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-800 p-4 rounded-lg">
-                      <p className="text-gray-400 text-sm mb-1">Status da Conexão</p>
-                      <div className="flex items-center gap-2">
-                        {configMercadoPago?.status_conexao === "conectado" ? (
-                          <>
-                            <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
-                            <span className="text-green-400 font-semibold">Conectado</span>
-                          </>
-                        ) : (
-                          <>
-                            <div className="h-3 w-3 bg-red-500 rounded-full"></div>
-                            <span className="text-red-400 font-semibold">Desconectado</span>
-                          </>
-                        )}
-                      </div>
+                <CardContent>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                      <p className="text-slate-400 text-sm mb-1">Webhook URL</p>
+                      <p className="text-white text-sm truncate">
+                        {(configMercadoPago as any).webhook_url || "Não configurado"}
+                      </p>
                     </div>
                   </div>
-
-                  {configMercadoPago?.ultima_sincronizacao && (
-                    <div className="bg-gray-800 p-4 rounded-lg">
-                      <p className="text-gray-400 text-sm mb-1">Última Sincronização</p>
-                      <p className="text-white">{formatDateTime(configMercadoPago.ultima_sincronizacao)}</p>
-                    </div>
-                  )}
-
-                  <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="w-full bg-orange-600 hover:bg-orange-700">
-                        <Edit2 className="h-4 w-4 mr-2" />
-                        Configurar Integração Mercado Pago
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                          <DollarSign className="h-5 w-5" />
-                          Configuração Mercado Pago
-                        </DialogTitle>
-                        <DialogDescription className="text-gray-400">
-                          Configure a integração com o gateway de pagamentos Mercado Pago
-                        </DialogDescription>
-                      </DialogHeader>
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          const formData = new FormData(e.currentTarget);
-                          const data = {
-                            access_token: formData.get("access_token"),
-                            public_key: formData.get("public_key"),
-                            webhook_url: formData.get("webhook_url"),
-                          };
-                          saveConfigMercadoPagoMutation.mutate(data);
-                        }}
-                        className="space-y-4 py-4"
-                      >
-                        <div>
-                          <Label htmlFor="access_token" className="text-gray-300">Access Token</Label>
-                          <Input
-                            id="access_token"
-                            name="access_token"
-                            type="password"
-                            defaultValue={configMercadoPago?.access_token || ""}
-                            placeholder="Seu Access Token do Mercado Pago"
-                            className="bg-gray-800 border-gray-700 text-white"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="public_key" className="text-gray-300">Public Key</Label>
-                          <Input
-                            id="public_key"
-                            name="public_key"
-                            type="text"
-                            defaultValue={configMercadoPago?.public_key || ""}
-                            placeholder="Sua Public Key do Mercado Pago"
-                            className="bg-gray-800 border-gray-700 text-white"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="webhook_url" className="text-gray-300">Webhook URL</Label>
-                          <Input
-                            id="webhook_url"
-                            name="webhook_url"
-                            type="url"
-                            defaultValue={configMercadoPago?.webhook_url || ""}
-                            placeholder="https://seudominio.com/api/webhook/mercadopago"
-                            className="bg-gray-800 border-gray-700 text-white"
-                          />
-                        </div>
-                        <div className="flex gap-2 pt-4">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                              const accessTokenInput = document.getElementById("access_token") as HTMLInputElement;
-                              if (accessTokenInput) {
-                                testMercadoPagoConnection(accessTokenInput.value);
-                              }
-                            }}
-                            disabled={testingAsaas}
-                            className="bg-gray-800 border-gray-700"
-                          >
-                            {testingAsaas ? "Testando..." : "Testar Conexão"}
-                          </Button>
-                          <Button
-                            type="submit"
-                            className="flex-1 bg-green-600 hover:bg-green-700"
-                            disabled={saveConfigMercadoPagoMutation.isPending}
-                          >
-                            {saveConfigMercadoPagoMutation.isPending ? "Salvando..." : "Salvar Configuração"}
-                          </Button>
-                        </div>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
                 </CardContent>
               </Card>
+            )}
 
-              {/* Informações da Conta Mercado Pago */}
-              {configMercadoPago?.webhook_url && (
-                <Card className="bg-gray-900 border-gray-800">
-                  <CardHeader>
-                    <CardTitle className="text-white">Informações da Integração</CardTitle>
-                    <CardDescription className="text-gray-400">
-                      Dados da sua integração com Mercado Pago
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="bg-gray-800 p-4 rounded-lg">
-                        <p className="text-gray-400 text-sm mb-1">Webhook URL</p>
-                        <p className="text-white text-sm truncate">
-                          {configMercadoPago.webhook_url || "Não configurado"}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-            {/* Seção de Testes de Email */}
-            <Card className="mt-6">
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <Mail className="h-5 w-5 text-cyan-400" />
                   Testes de Email
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-slate-400">
                   Envie emails de teste para verificar se o sistema de notificações está funcionando
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="test-email">Email de Destino</Label>
+                  <Label htmlFor="test-email" className="text-slate-300">Email de Destino</Label>
                   <Input
                     id="test-email"
                     type="email"
                     placeholder="seu@email.com"
                     value={testEmail}
                     onChange={(e) => setTestEmail(e.target.value)}
+                    className="bg-slate-800 border-slate-700 text-white"
+                    data-testid="input-test-email"
                   />
                 </div>
                 <Button
                   onClick={handleSendTestEmails}
                   disabled={sendTestEmailsMutation.isPending || !testEmail}
-                  className="w-full"
+                  className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500"
+                  data-testid="button-send-test-emails"
                 >
                   <Mail className="h-4 w-4 mr-2" />
                   {sendTestEmailsMutation.isPending ? "Enviando..." : "📧 Enviar Todos os Emails de Teste"}
                 </Button>
-                <Alert>
-                  <AlertDescription className="text-xs">
+                <Alert className="bg-blue-500/10 border-blue-500/20">
+                  <AlertDescription className="text-xs text-blue-300">
                     Serão enviados 8 tipos de emails: Código de Verificação, Pacote de Funcionários (aguardando/ativado),
                     Senha Redefinida, Pagamento Pendente, Aviso de Vencimento, Pagamento Atrasado e Conta Bloqueada.
                   </AlertDescription>
@@ -1935,71 +1542,71 @@ export default function AdminPublico() {
 
         {/* Dialog para visualizar detalhes do usuário */}
         <Dialog open={isViewUserDialogOpen} onOpenChange={setIsViewUserDialogOpen}>
-          <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-3xl">
+          <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-3xl">
             <DialogHeader>
-              <DialogTitle>Detalhes do Usuário</DialogTitle>
-              <DialogDescription className="text-gray-400">Informações completas do usuário selecionado</DialogDescription>
+              <DialogTitle className="text-xl">Detalhes do Usuário</DialogTitle>
+              <DialogDescription className="text-slate-400">Informações completas do usuário selecionado</DialogDescription>
             </DialogHeader>
             {selectedUser && (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-gray-300">Nome:</Label>
-                    <p className="text-white">{selectedUser.nome}</p>
+                    <Label className="text-slate-400 text-sm">Nome:</Label>
+                    <p className="text-white font-medium">{selectedUser.nome}</p>
                   </div>
                   <div>
-                    <Label className="text-gray-300">Email:</Label>
-                    <p className="text-white">{selectedUser.email}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-gray-300">Plano:</Label>
-                    <p className="text-white">{selectedUser.plano}</p>
-                  </div>
-                  <div>
-                    <Label className="text-gray-300">Status:</Label>
-                    <p className="text-white">{selectedUser.status}</p>
+                    <Label className="text-slate-400 text-sm">Email:</Label>
+                    <p className="text-white font-medium">{selectedUser.email}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-gray-300">Administrador:</Label>
-                    <p className="text-white">{selectedUser.is_admin ? "Sim" : "Não"}</p>
+                    <Label className="text-slate-400 text-sm">Plano:</Label>
+                    <p className="text-white font-medium">{selectedUser.plano}</p>
                   </div>
                   <div>
-                    <Label className="text-gray-300">ID Cliente Mercado Pago:</Label>
+                    <Label className="text-slate-400 text-sm">Status:</Label>
+                    <p className="text-white font-medium">{selectedUser.status}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-slate-400 text-sm">Administrador:</Label>
+                    <p className="text-white font-medium">{selectedUser.is_admin ? "Sim" : "Não"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-slate-400 text-sm">ID Cliente Mercado Pago:</Label>
                     <p className="text-white font-mono text-sm">{selectedUser.mercadopago_customer_id || "-"}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-gray-300">CPF/CNPJ:</Label>
-                    <p className="text-white">{selectedUser.cpf_cnpj || "-"}</p>
+                    <Label className="text-slate-400 text-sm">CPF/CNPJ:</Label>
+                    <p className="text-white font-medium">{selectedUser.cpf_cnpj || "-"}</p>
                   </div>
                   <div>
-                    <Label className="text-gray-300">Telefone:</Label>
-                    <p className="text-white">{selectedUser.telefone || "-"}</p>
+                    <Label className="text-slate-400 text-sm">Telefone:</Label>
+                    <p className="text-white font-medium">{selectedUser.telefone || "-"}</p>
                   </div>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Endereço:</Label>
-                  <p className="text-white">{selectedUser.endereco || "-"}</p>
+                  <Label className="text-slate-400 text-sm">Endereço:</Label>
+                  <p className="text-white font-medium">{selectedUser.endereco || "-"}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-gray-300">Data de Cadastro:</Label>
-                    <p className="text-white">{formatDate(selectedUser.data_criacao)}</p>
+                    <Label className="text-slate-400 text-sm">Data de Cadastro:</Label>
+                    <p className="text-white font-medium">{formatDate(selectedUser.data_criacao)}</p>
                   </div>
                   <div>
-                    <Label className="text-gray-300">Expira em:</Label>
-                    <p className="text-white">{formatDate(selectedUser.data_expiracao_plano || selectedUser.data_expiracao_trial)}</p>
+                    <Label className="text-slate-400 text-sm">Expira em:</Label>
+                    <p className="text-white font-medium">{formatDate(selectedUser.data_expiracao_plano || selectedUser.data_expiracao_trial)}</p>
                   </div>
                 </div>
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsViewUserDialogOpen(false)}>
+              <Button variant="outline" onClick={() => setIsViewUserDialogOpen(false)} className="bg-slate-800 border-slate-700">
                 Fechar
               </Button>
             </DialogFooter>
@@ -2008,13 +1615,13 @@ export default function AdminPublico() {
 
         {/* Dialog para editar usuário */}
         <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
-          <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-3xl">
+          <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-3xl">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Edit2 className="h-5 w-5" />
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <Edit2 className="h-5 w-5 text-cyan-400" />
                 Editar Usuário
               </DialogTitle>
-              <DialogDescription className="text-gray-400">
+              <DialogDescription className="text-slate-400">
                 Atualize as informações do usuário
               </DialogDescription>
             </DialogHeader>
@@ -2022,35 +1629,37 @@ export default function AdminPublico() {
               <form onSubmit={handleUpdateUser} className="space-y-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="edit-nome" className="text-gray-300">Nome Completo</Label>
+                    <Label htmlFor="edit-nome" className="text-slate-300">Nome Completo</Label>
                     <Input
                       id="edit-nome"
                       value={newUserData.nome}
                       onChange={(e) => setNewUserData({ ...newUserData, nome: e.target.value })}
-                      className="bg-gray-800 border-gray-700 text-white"
+                      className="bg-slate-800 border-slate-700 text-white"
                       required
+                      data-testid="input-edit-nome"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="edit-email" className="text-gray-300">Email</Label>
+                    <Label htmlFor="edit-email" className="text-slate-300">Email</Label>
                     <Input
                       id="edit-email"
                       type="email"
                       value={newUserData.email}
                       onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
-                      className="bg-gray-800 border-gray-700 text-white"
+                      className="bg-slate-800 border-slate-700 text-white"
                       required
+                      data-testid="input-edit-email"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="edit-plano" className="text-gray-300">Plano</Label>
+                    <Label htmlFor="edit-plano" className="text-slate-300">Plano</Label>
                     <Select
                       value={newUserData.plano}
                       onValueChange={handlePlanoChange}
                     >
-                      <SelectTrigger id="edit-plano">
+                      <SelectTrigger id="edit-plano" className="bg-slate-800 border-slate-700 text-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -2062,9 +1671,9 @@ export default function AdminPublico() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="edit-dias-restantes" className="text-gray-300">
+                    <Label htmlFor="edit-dias-restantes" className="text-slate-300">
                       Dias Restantes
-                      <span className="ml-1 text-xs text-gray-500">(define a validade do plano)</span>
+                      <span className="ml-1 text-xs text-slate-500">(define a validade do plano)</span>
                     </Label>
                     <Input
                       id="edit-dias-restantes"
@@ -2072,11 +1681,11 @@ export default function AdminPublico() {
                       min="0"
                       value={diasRestantes}
                       onChange={(e) => setDiasRestantes(e.target.value)}
-                      className="bg-gray-800 border-gray-700 text-white"
+                      className="bg-slate-800 border-slate-700 text-white"
                       placeholder="Ex: 30"
                       data-testid="input-dias-restantes"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       {diasRestantes && parseInt(diasRestantes) > 0
                         ? `Expira em: ${new Date(new Date().getTime() + parseInt(diasRestantes) * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}`
                         : "Informe os dias para calcular a data"}
@@ -2085,9 +1694,9 @@ export default function AdminPublico() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="edit-max-funcionarios" className="text-gray-300">
+                    <Label htmlFor="edit-max-funcionarios" className="text-slate-300">
                       Limite de Funcionários
-                      <span className="ml-1 text-xs text-gray-500">(máximo que o cliente pode cadastrar)</span>
+                      <span className="ml-1 text-xs text-slate-500">(máximo que o cliente pode cadastrar)</span>
                     </Label>
                     <Input
                       id="edit-max-funcionarios"
@@ -2095,11 +1704,11 @@ export default function AdminPublico() {
                       min="1"
                       value={newUserData.max_funcionarios}
                       onChange={(e) => setNewUserData({ ...newUserData, max_funcionarios: parseInt(e.target.value) || 1 })}
-                      className="bg-gray-800 border-gray-700 text-white"
+                      className="bg-slate-800 border-slate-700 text-white"
                       placeholder="Ex: 10"
                       data-testid="input-max-funcionarios"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       O cliente poderá cadastrar até {newUserData.max_funcionarios} funcionários
                     </p>
                   </div>
@@ -2114,42 +1723,46 @@ export default function AdminPublico() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="edit-cpf_cnpj" className="text-gray-300">CPF/CNPJ</Label>
+                    <Label htmlFor="edit-cpf_cnpj" className="text-slate-300">CPF/CNPJ</Label>
                     <Input
                       id="edit-cpf_cnpj"
                       value={newUserData.cpf_cnpj}
                       onChange={(e) => setNewUserData({ ...newUserData, cpf_cnpj: e.target.value })}
-                      className="bg-gray-800 border-gray-700 text-white"
+                      className="bg-slate-800 border-slate-700 text-white"
+                      data-testid="input-edit-cpf"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="edit-telefone" className="text-gray-300">Telefone</Label>
+                    <Label htmlFor="edit-telefone" className="text-slate-300">Telefone</Label>
                     <Input
                       id="edit-telefone"
                       value={newUserData.telefone}
                       onChange={(e) => setNewUserData({ ...newUserData, telefone: e.target.value })}
-                      className="bg-gray-800 border-gray-700 text-white"
+                      className="bg-slate-800 border-slate-700 text-white"
+                      data-testid="input-edit-telefone"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="edit-senha" className="text-gray-300">Nova Senha (deixe em branco para não alterar)</Label>
+                  <Label htmlFor="edit-senha" className="text-slate-300">Nova Senha (deixe em branco para não alterar)</Label>
                   <Input
                     id="edit-senha"
                     type="password"
                     value={newUserData.senha}
                     onChange={(e) => setNewUserData({ ...newUserData, senha: e.target.value })}
-                    className="bg-gray-800 border-gray-700 text-white"
+                    className="bg-slate-800 border-slate-700 text-white"
                     placeholder="Nova senha (opcional)"
+                    data-testid="input-edit-senha"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-endereco" className="text-gray-300">Endereço Completo</Label>
+                  <Label htmlFor="edit-endereco" className="text-slate-300">Endereço Completo</Label>
                   <Input
                     id="edit-endereco"
                     value={newUserData.endereco}
                     onChange={(e) => setNewUserData({ ...newUserData, endereco: e.target.value })}
-                    className="bg-gray-800 border-gray-700 text-white"
+                    className="bg-slate-800 border-slate-700 text-white"
+                    data-testid="input-edit-endereco"
                   />
                 </div>
                 <div className="flex items-center space-x-2">
@@ -2159,23 +1772,25 @@ export default function AdminPublico() {
                     checked={newUserData.is_admin === "true"}
                     onChange={(e) => setNewUserData({ ...newUserData, is_admin: e.target.checked ? "true" : "false" })}
                     className="h-4 w-4"
+                    data-testid="checkbox-is-admin"
                   />
-                  <Label htmlFor="edit-is_admin" className="text-gray-300">Administrador</Label>
+                  <Label htmlFor="edit-is_admin" className="text-slate-300">Administrador</Label>
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setEditingUser(null)}
-                    className="bg-gray-800 border-gray-700"
+                    className="bg-slate-800 border-slate-700"
                   >
                     <X className="h-4 w-4 mr-1" />
                     Cancelar
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500"
                     disabled={updateUserMutation.isPending}
+                    data-testid="button-salvar-edicao"
                   >
                     {updateUserMutation.isPending ? "Salvando..." : "Salvar Alterações"}
                   </Button>
@@ -2187,10 +1802,10 @@ export default function AdminPublico() {
 
         {/* Dialog para cancelar assinatura */}
         <Dialog open={isCancelSubscriptionDialogOpen} onOpenChange={setIsCancelSubscriptionDialogOpen}>
-          <DialogContent className="bg-gray-900 border-gray-800 text-white">
+          <DialogContent className="bg-slate-900 border-slate-700 text-white">
             <DialogHeader>
               <DialogTitle>Cancelar Assinatura</DialogTitle>
-              <DialogDescription className="text-gray-400">
+              <DialogDescription className="text-slate-400">
                 Você tem certeza que deseja cancelar esta assinatura? Por favor, informe o motivo.
               </DialogDescription>
             </DialogHeader>
@@ -2199,16 +1814,18 @@ export default function AdminPublico() {
                 placeholder="Motivo do cancelamento..."
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                className="bg-gray-800 border-gray-700 min-h-[100px]"
+                className="bg-slate-800 border-slate-700 min-h-[100px] text-white"
+                data-testid="textarea-cancel-reason"
               />
               <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setIsCancelSubscriptionDialogOpen(false)} className="bg-gray-800 border-gray-700">
+                <Button variant="outline" onClick={() => setIsCancelSubscriptionDialogOpen(false)} className="bg-slate-800 border-slate-700">
                   Cancelar
                 </Button>
                 <Button
                   onClick={() => selectedSubscription && cancelSubscriptionMutation.mutate({ subscriptionId: selectedSubscription.id, reason: cancelReason })}
                   disabled={cancelSubscriptionMutation.isPending}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600"
+                  data-testid="button-confirmar-cancelamento"
                 >
                   {cancelSubscriptionMutation.isPending ? "Cancelando..." : "Confirmar Cancelamento"}
                 </Button>

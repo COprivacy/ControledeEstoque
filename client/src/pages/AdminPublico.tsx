@@ -53,6 +53,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
@@ -341,12 +342,7 @@ export default function AdminPublico() {
 
   const cancelSubscriptionMutation = useMutation({
     mutationFn: async ({ subscriptionId, reason }: { subscriptionId: number; reason: string }) => {
-      const response = await fetch(`/api/subscriptions/${subscriptionId}/cancel`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason }),
-      });
-      if (!response.ok) throw new Error("Erro ao cancelar assinatura");
+      const response = await apiRequest("POST", `/api/subscriptions/${subscriptionId}/cancel`, { reason });
       return response.json();
     },
     onSuccess: () => {

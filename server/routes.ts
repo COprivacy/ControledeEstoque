@@ -1361,11 +1361,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/contas-pagar", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
-      
+
       if (!storage.getContasPagar) {
         return res.status(501).json({ error: "Método getContasPagar não implementado" });
       }
-      
+
       const contas = await storage.getContasPagar();
       const contasFiltered = contas.filter((c: any) => c.user_id === effectiveUserId);
       console.log(`📋 Contas a pagar retornadas: ${contasFiltered.length} para usuário ${effectiveUserId}`);
@@ -1379,18 +1379,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contas-pagar", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
-      
+
       if (!storage.createContaPagar) {
         return res.status(501).json({ error: "Método createContaPagar não implementado" });
       }
-      
+
       const contaData = {
         ...req.body,
         user_id: effectiveUserId,
         status: "pendente",
         data_cadastro: new Date().toISOString(),
       };
-      
+
       const conta = await storage.createContaPagar(contaData);
       console.log(`✅ Conta a pagar criada: ID ${conta.id}, Descrição: ${conta.descricao}`);
       res.json(conta);
@@ -1405,7 +1405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!storage.updateContaPagar) {
         return res.status(501).json({ error: "Método updateContaPagar não implementado" });
       }
-      
+
       const id = parseInt(req.params.id);
       const conta = await storage.updateContaPagar(id, req.body);
       console.log(`✅ Conta a pagar atualizada: ID ${id}`);
@@ -1421,7 +1421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!storage.deleteContaPagar) {
         return res.status(501).json({ error: "Método deleteContaPagar não implementado" });
       }
-      
+
       const id = parseInt(req.params.id);
       console.log(`🗑️ Deletando conta a pagar ID: ${id}`);
       await storage.deleteContaPagar(id);
@@ -1438,7 +1438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!storage.updateContaPagar) {
         return res.status(501).json({ error: "Método updateContaPagar não implementado" });
       }
-      
+
       const id = parseInt(req.params.id);
       const conta = await storage.updateContaPagar(id, {
         status: "pago",
@@ -1456,11 +1456,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/contas-receber", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
-      
+
       if (!storage.getContasReceber) {
         return res.status(501).json({ error: "Método getContasReceber não implementado" });
       }
-      
+
       const contas = await storage.getContasReceber();
       const contasFiltered = contas.filter((c: any) => c.user_id === effectiveUserId);
       console.log(`📋 Contas a receber retornadas: ${contasFiltered.length} para usuário ${effectiveUserId}`);
@@ -1474,18 +1474,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contas-receber", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
-      
+
       if (!storage.createContaReceber) {
         return res.status(501).json({ error: "Método createContaReceber não implementado" });
       }
-      
+
       const contaData = {
         ...req.body,
         user_id: effectiveUserId,
         status: "pendente",
         data_cadastro: new Date().toISOString(),
       };
-      
+
       const conta = await storage.createContaReceber(contaData);
       console.log(`✅ Conta a receber criada: ID ${conta.id}, Descrição: ${conta.descricao}`);
       res.json(conta);
@@ -1500,7 +1500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!storage.updateContaReceber) {
         return res.status(501).json({ error: "Método updateContaReceber não implementado" });
       }
-      
+
       const id = parseInt(req.params.id);
       const conta = await storage.updateContaReceber(id, req.body);
       console.log(`✅ Conta a receber atualizada: ID ${id}`);
@@ -1516,7 +1516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!storage.deleteContaReceber) {
         return res.status(501).json({ error: "Método deleteContaReceber não implementado" });
       }
-      
+
       const id = parseInt(req.params.id);
       console.log(`🗑️ Deletando conta a receber ID: ${id}`);
       await storage.deleteContaReceber(id);
@@ -1533,7 +1533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!storage.updateContaReceber) {
         return res.status(501).json({ error: "Método updateContaReceber não implementado" });
       }
-      
+
       const id = parseInt(req.params.id);
       const conta = await storage.updateContaReceber(id, {
         status: "recebido",
@@ -1867,307 +1867,269 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Webhook Mercado Pago
-  app.post("/api/webhook/mercadopago", async (req, res) => {
+  // Teste de Emails (apenas desenvolvimento)
+  app.post('/api/test/send-emails', async (req, res) => {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ error: 'Endpoint disponível apenas em desenvolvimento' });
+    }
+
     try {
-      console.log("📥 Webhook Mercado Pago recebido:", JSON.stringify(req.body, null, 2));
-
-      const { type, data } = req.body;
-
-      if (!type || !data) {
-        console.warn("Webhook Mercado Pago inválido - dados ausentes");
-        return res.status(400).json({ error: "Dados inválidos" });
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: 'Email é obrigatório' });
       }
 
-      // Processar diferentes tipos de notificações
-      if (type === "payment") {
-        const paymentId = data.id;
+      const { EmailService } = await import('./email-service');
+      const emailService = new EmailService();
+      const results = [];
 
-        const config = await storage.getConfigMercadoPago();
-        if (!config || !config.access_token) {
-          console.error("Configuração Mercado Pago não encontrada");
-          return res.status(500).json({ error: "Configuração não encontrada" });
-        }
-
-        // Buscar detalhes do pagamento
-        const { MercadoPagoService } = await import('./mercadopago');
-        const mercadopago = new MercadoPagoService({ accessToken: config.access_token });
-        
-        try {
-          const payment = await mercadopago.getPayment(paymentId);
-          
-          console.log(`📋 Pagamento ${paymentId} - Status: ${payment.status}`);
-
-          // Buscar assinatura pela external_reference
-          const externalReference = payment.external_reference;
-          if (!externalReference) {
-            console.warn("Pagamento sem external_reference");
-            return res.json({ success: true, message: "Sem referência externa" });
-          }
-
-          const subscriptions = await storage.getSubscriptions();
-          const subscription = subscriptions?.find(s => s.external_reference === externalReference);
-
-          if (!subscription) {
-            console.warn(`Assinatura não encontrada para referência: ${externalReference}`);
-            return res.json({ success: true, message: "Assinatura não encontrada" });
-          }
-
-          // Verificar se é um pagamento de pacote de funcionários
-          const isEmployeePackage = externalReference && externalReference.includes('pacote_');
-
-          if (isEmployeePackage && payment.status === "approved") {
-            // Processar pagamento de pacote de funcionários
-            const parts = externalReference.split('_');
-            const pacoteId = parts[0] + '_' + parts[1]; // pacote_5, pacote_10, etc
-            const userId = parts[2];
-
-            // Mapear pacotes para quantidade de funcionários
-            const pacoteQuantidades: Record<string, number> = {
-              'pacote_5': 5,
-              'pacote_10': 10,
-              'pacote_20': 20,
-              'pacote_50': 50,
-            };
-
-            const quantidadeAdicional = pacoteQuantidades[pacoteId];
-
-            if (quantidadeAdicional && userId) {
-              const users = await storage.getUsers();
-              const user = users.find((u: any) => u.id === userId);
-              
-              if (user) {
-                const limiteAtual = user.max_funcionarios || 1;
-                const novoLimite = limiteAtual + quantidadeAdicional;
-                
-                await storage.updateUser(userId, {
-                  max_funcionarios: novoLimite,
-                });
-                
-                console.log(`✅ [WEBHOOK MP] Pagamento confirmado - Pacote: ${pacoteId}`);
-                console.log(`✅ [WEBHOOK MP] User: ${user.email} | ${user.nome}`);
-                console.log(`✅ [WEBHOOK MP] Limite anterior: ${limiteAtual} → Novo limite: ${novoLimite}`);
-                
-                logger.info('Pacote de funcionários ativado via Mercado Pago', 'WEBHOOK', {
-                  userId,
-                  userEmail: user.email,
-                  pacoteId,
-                  quantidadeAdicional,
-                  limiteAnterior: limiteAtual,
-                  novoLimite
-                });
-
-                // Enviar email de confirmação de ativação
-                try {
-                  const { EmailService } = await import('./email-service');
-                  const emailService = new EmailService();
-
-                  const nomePacote = `Pacote ${quantidadeAdicional} Funcionários`;
-
-                  await emailService.sendEmployeePackageActivated({
-                    to: user.email,
-                    userName: user.nome,
-                    packageName: nomePacote,
-                    quantity: quantidadeAdicional,
-                    newLimit: novoLimite,
-                    price: payment.transaction_amount || 0,
-                  });
-
-                  console.log(`📧 Email de ativação enviado para ${user.email}`);
-                } catch (emailError) {
-                  console.error("⚠️ Erro ao enviar email de ativação (não crítico):", emailError);
-                }
-              }
-            }
-          } else if (!isEmployeePackage) {
-            // Processar status do pagamento de assinatura normal
-            if (payment.status === "approved") {
-              await storage.updateSubscription(subscription.id, {
-                status: "ativo",
-                status_pagamento: "approved",
-                data_inicio: new Date().toISOString(),
-                mercadopago_payment_id: paymentId,
-              });
-
-              // Atualizar usuário
-              await storage.updateUser(subscription.user_id, {
-                plano: subscription.plano,
-                data_expiracao_plano: subscription.data_vencimento,
-                status: "ativo",
-              });
-
-              console.log(`✅ Pagamento aprovado - Assinatura ${subscription.id} ativada`);
-
-              // Atualizar status da conexão
-              await storage.updateConfigMercadoPagoStatus('conectado');
-
-              logger.info('Pagamento Mercado Pago aprovado', 'WEBHOOK', {
-                subscriptionId: subscription.id,
-                userId: subscription.user_id,
-                paymentId,
-                externalReference,
-              });
-
-            } else if (payment.status === "rejected" || payment.status === "cancelled") {
-              await storage.updateSubscription(subscription.id, {
-                status: "cancelado",
-                status_pagamento: payment.status,
-              });
-
-              console.log(`❌ Pagamento ${payment.status} - Assinatura ${subscription.id}`);
-
-            } else if (payment.status === "pending" || payment.status === "in_process") {
-              await storage.updateSubscription(subscription.id, {
-                status_pagamento: payment.status,
-              });
-
-              console.log(`⏳ Pagamento pendente - Assinatura ${subscription.id}`);
-            }
-          }
-
-        } catch (error) {
-          console.error("Erro ao processar pagamento Mercado Pago:", error);
-        }
+      // 1. Email de Código de Verificação
+      try {
+        await emailService.sendVerificationCode({
+          to: email,
+          userName: 'Usuário Teste',
+          code: '123456'
+        });
+        results.push({ tipo: 'Código de Verificação', status: 'enviado' });
+      } catch (error) {
+        results.push({ tipo: 'Código de Verificação', status: 'erro', erro: error.message });
       }
 
-      res.json({ success: true, message: "Webhook processado" });
+      // 2. Email de Pacote de Funcionários Comprado
+      try {
+        await emailService.sendEmployeePackagePurchased({
+          to: email,
+          userName: 'Usuário Teste',
+          packageName: 'Pacote 5 Funcionários',
+          quantity: 5,
+          price: 25.00,
+          paymentUrl: 'https://sandbox.asaas.com/i/test123'
+        });
+        results.push({ tipo: 'Pacote de Funcionários - Aguardando Pagamento', status: 'enviado' });
+      } catch (error) {
+        results.push({ tipo: 'Pacote de Funcionários - Aguardando Pagamento', status: 'erro', erro: error.message });
+      }
+
+      // 3. Email de Pacote de Funcionários Ativado
+      try {
+        await emailService.sendEmployeePackageActivated({
+          to: email,
+          userName: 'Usuário Teste',
+          packageName: 'Pacote 5 Funcionários',
+          quantity: 5,
+          newLimit: 10,
+          price: 25.00
+        });
+        results.push({ tipo: 'Pacote de Funcionários - Ativado', status: 'enviado' });
+      } catch (error) {
+        results.push({ tipo: 'Pacote de Funcionários - Ativado', status: 'erro', erro: error.message });
+      }
+
+      // 4. Email de Senha Redefinida
+      try {
+        await emailService.sendPasswordResetConfirmation({
+          to: email,
+          userName: 'Usuário Teste',
+          resetByAdmin: 'Admin Master',
+          resetDate: new Date().toLocaleString('pt-BR')
+        });
+        results.push({ tipo: 'Senha Redefinida', status: 'enviado' });
+      } catch (error) {
+        results.push({ tipo: 'Senha Redefinida', status: 'erro', erro: error.message });
+      }
+
+      // 5. Email de Pagamento Pendente
+      try {
+        await emailService.sendPaymentPendingReminder({
+          to: email,
+          userName: 'Usuário Teste',
+          planName: 'Plano Premium Mensal',
+          daysWaiting: 5,
+          amount: 99.90
+        });
+        results.push({ tipo: 'Pagamento Pendente', status: 'enviado' });
+      } catch (error) {
+        results.push({ tipo: 'Pagamento Pendente', status: 'erro', erro: error.message });
+      }
+
+      // 6. Email de Aviso de Vencimento
+      try {
+        await emailService.sendExpirationWarning({
+          to: email,
+          userName: 'Usuário Teste',
+          planName: 'Plano Premium Mensal',
+          daysRemaining: 7,
+          expirationDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR'),
+          amount: 99.90
+        });
+        results.push({ tipo: 'Aviso de Vencimento', status: 'enviado' });
+      } catch (error) {
+        results.push({ tipo: 'Aviso de Vencimento', status: 'erro', erro: error.message });
+      }
+
+      // 7. Email de Pagamento Atrasado
+      try {
+        await emailService.sendOverdueNotice({
+          to: email,
+          userName: 'Usuário Teste',
+          planName: 'Plano Premium Mensal',
+          daysOverdue: 3,
+          amount: 99.90
+        });
+        results.push({ tipo: 'Pagamento Atrasado', status: 'enviado' });
+      } catch (error) {
+        results.push({ tipo: 'Pagamento Atrasado', status: 'erro', erro: error.message });
+      }
+
+      // 8. Email de Conta Bloqueada
+      try {
+        await emailService.sendAccountBlocked({
+          to: email,
+          userName: 'Usuário Teste',
+          planName: 'Plano Premium Mensal'
+        });
+        results.push({ tipo: 'Conta Bloqueada', status: 'enviado' });
+      } catch (error) {
+        results.push({ tipo: 'Conta Bloqueada', status: 'erro', erro: error.message });
+      }
+
+      logger.info('Emails de teste enviados', 'TEST_EMAIL', { email, results });
+      res.json({ 
+        success: true, 
+        message: `${results.filter(r => r.status === 'enviado').length} emails enviados para ${email}`,
+        details: results
+      });
+
     } catch (error) {
-      console.error("❌ Erro no webhook Mercado Pago:", error);
-      res.status(500).json({ error: "Erro ao processar webhook" });
+      logger.error('Erro ao enviar emails de teste', 'TEST_EMAIL', { error });
+      res.status(500).json({ error: 'Erro ao enviar emails de teste' });
     }
   });
 
-  app.post("/api/webhook/asaas", async (req, res) => {
-    try {
-      // Verificação de segurança: validar token do webhook
-      const webhookToken = req.headers['asaas-access-token'];
-      const config = await storage.getConfigAsaas();
+  // Asaas Webhook
+  app.post('/api/webhook/asaas', async (req, res) => {
+    const signature = req.headers['asaas-access-token'];
+    if (signature !== process.env.ASAAS_ACCESS_TOKEN) {
+      logger.warn('Webhook rejeitado - token inválido', 'WEBHOOK');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-      if (!config || !webhookToken || webhookToken !== config.api_key) {
-        console.warn("Tentativa de webhook não autorizada");
-        return res.status(401).json({ error: "Não autorizado" });
-      }
+    const { event, payment } = req.body;
 
-      const { event, payment } = req.body;
+    console.log("Webhook Asaas recebido:", event, payment);
 
-      console.log("Webhook Asaas recebido:", event, payment);
+    if (!payment || !payment.id) {
+      return res.status(400).json({ error: "Dados do webhook inválidos" });
+    }
 
-      if (!payment || !payment.id) {
-        return res.status(400).json({ error: "Dados do webhook inválidos" });
-      }
+    // Verificar se é um pagamento de pacote de funcionários
+    const isEmployeePackage = payment.externalReference && payment.externalReference.startsWith('pacote_');
 
-      // Verificar se é um pagamento de pacote de funcionários
-      const isEmployeePackage = payment.externalReference && payment.externalReference.startsWith('pacote_');
+    if (isEmployeePackage && (event === "PAYMENT_RECEIVED" || event === "PAYMENT_CONFIRMED")) {
+      // Processar pagamento de pacote de funcionários
+      const parts = payment.externalReference.split('_');
+      const pacoteId = parts[0] + '_' + parts[1]; // pacote_5, pacote_10, etc
+      const userId = parts[2];
 
-      if (isEmployeePackage && (event === "PAYMENT_RECEIVED" || event === "PAYMENT_CONFIRMED")) {
-        // Processar pagamento de pacote de funcionários
-        const parts = payment.externalReference.split('_');
-        const pacoteId = parts[0] + '_' + parts[1]; // pacote_5, pacote_10, etc
-        const userId = parts[2];
+      // Mapear pacotes para quantidade de funcionários
+      const pacoteQuantidades: Record<string, number> = {
+        'pacote_5': 5,
+        'pacote_10': 10,
+        'pacote_20': 20,
+        'pacote_50': 50,
+      };
 
-        // Mapear pacotes para quantidade de funcionários
-        const pacoteQuantidades: Record<string, number> = {
-          'pacote_5': 5,
-          'pacote_10': 10,
-          'pacote_20': 20,
-          'pacote_50': 50,
-        };
+      const quantidadeAdicional = pacoteQuantidades[pacoteId];
 
-        const quantidadeAdicional = pacoteQuantidades[pacoteId];
+      if (quantidadeAdicional && userId) {
+        const users = await storage.getUsers();
+        const user = users.find((u: any) => u.id === userId);
 
-        if (quantidadeAdicional && userId) {
-          const users = await storage.getUsers();
-          const user = users.find((u: any) => u.id === userId);
-          
-          if (user) {
-            const limiteAtual = user.max_funcionarios || 1;
-            const novoLimite = limiteAtual + quantidadeAdicional;
-            
-            await storage.updateUser(userId, {
-              max_funcionarios: novoLimite,
+        if (user) {
+          const limiteAtual = user.max_funcionarios || 1;
+          const novoLimite = limiteAtual + quantidadeAdicional;
+
+          await storage.updateUser(userId, {
+            max_funcionarios: novoLimite,
+          });
+
+          console.log(`✅ [WEBHOOK] Pagamento confirmado - Pacote: ${pacoteId}`);
+          console.log(`✅ [WEBHOOK] User: ${user.email} | ${user.nome}`);
+          console.log(`✅ [WEBHOOK] Limite anterior: ${limiteAtual} → Novo limite: ${novoLimite}`);
+
+          logger.info('Pacote de funcionários ativado', 'WEBHOOK', {
+            userId,
+            userEmail: user.email,
+            pacoteId,
+            quantidadeAdicional,
+            limiteAnterior: limiteAtual,
+            novoLimite
+          });
+
+          // Enviar email de confirmação de ativação
+          try {
+            const { EmailService } = await import('./email-service');
+            const emailService = new EmailService();
+
+            const nomePacote = `Pacote ${quantidadeAdicional} Funcionários`;
+
+            await emailService.sendEmployeePackageActivated({
+              to: user.email,
+              userName: user.nome,
+              packageName: nomePacote,
+              quantity: quantidadeAdicional,
+              newLimit: novoLimite,
+              price: payment.value || 0,
             });
-            
-            console.log(`✅ [WEBHOOK] Pagamento confirmado - Pacote: ${pacoteId}`);
-            console.log(`✅ [WEBHOOK] User: ${user.email} | ${user.nome}`);
-            console.log(`✅ [WEBHOOK] Limite anterior: ${limiteAtual} → Novo limite: ${novoLimite}`);
-            
-            logger.info('Pacote de funcionários ativado', 'WEBHOOK', {
-              userId,
-              userEmail: user.email,
-              pacoteId,
-              quantidadeAdicional,
-              limiteAnterior: limiteAtual,
-              novoLimite
-            });
 
-            // Enviar email de confirmação de ativação
-            try {
-              const { EmailService } = await import('./email-service');
-              const emailService = new EmailService();
-
-              const nomePacote = `Pacote ${quantidadeAdicional} Funcionários`;
-
-              await emailService.sendEmployeePackageActivated({
-                to: user.email,
-                userName: user.nome,
-                packageName: nomePacote,
-                quantity: quantidadeAdicional,
-                newLimit: novoLimite,
-                price: payment.value || 0,
-              });
-
-              console.log(`📧 Email de ativação enviado para ${user.email}`);
-            } catch (emailError) {
-              console.error("⚠️ Erro ao enviar email de ativação (não crítico):", emailError);
-            }
+            console.log(`📧 Email de ativação enviado para ${user.email}`);
+          } catch (emailError) {
+            console.error("⚠️ Erro ao enviar email de ativação (não crítico):", emailError);
           }
         }
-
-        res.json({ success: true, message: "Webhook de pacote processado com sucesso" });
-        return;
       }
 
-      // Processar pagamento de assinatura normal
-      const subscriptions = await storage.getSubscriptions();
-      const subscription = subscriptions?.find(s => s.asaas_payment_id === payment.id);
-
-      if (!subscription) {
-        console.log("Assinatura não encontrada para pagamento:", payment.id);
-        return res.status(404).json({ error: "Assinatura não encontrada" });
-      }
-
-      if (event === "PAYMENT_RECEIVED" || event === "PAYMENT_CONFIRMED") {
-        await storage.updateSubscription(subscription.id, {
-          status: "ativo",
-          status_pagamento: "RECEIVED",
-          data_inicio: new Date().toISOString(),
-        });
-
-        await storage.updateUser(subscription.user_id, {
-          plano: subscription.plano,
-          data_expiracao_plano: subscription.data_vencimento,
-          status: "ativo",
-        });
-
-        console.log(`Pagamento confirmado para assinatura ${subscription.id}`);
-      } else if (event === "PAYMENT_OVERDUE") {
-        await storage.updateSubscription(subscription.id, {
-          status: "expirado",
-          status_pagamento: "OVERDUE",
-        });
-
-        await storage.updateUser(subscription.user_id, {
-          status: "inativo",
-        });
-
-        console.log(`Pagamento vencido para assinatura ${subscription.id}`);
-      }
-
-      res.json({ success: true, message: "Webhook processado com sucesso" });
-    } catch (error) {
-      console.error("Erro ao processar webhook:", error);
-      res.status(500).json({ error: "Erro ao processar webhook" });
+      res.json({ success: true, message: "Webhook de pacote processado com sucesso" });
+      return;
     }
+
+    // Processar pagamento de assinatura normal
+    const subscriptions = await storage.getSubscriptions();
+    const subscription = subscriptions?.find(s => s.asaas_payment_id === payment.id);
+
+    if (!subscription) {
+      console.log("Assinatura não encontrada para pagamento:", payment.id);
+      return res.status(404).json({ error: "Assinatura não encontrada" });
+    }
+
+    if (event === "PAYMENT_RECEIVED" || event === "PAYMENT_CONFIRMED") {
+      await storage.updateSubscription(subscription.id, {
+        status: "ativo",
+        status_pagamento: "RECEIVED",
+        data_inicio: new Date().toISOString(),
+      });
+
+      await storage.updateUser(subscription.user_id, {
+        plano: subscription.plano,
+        data_expiracao_plano: subscription.data_vencimento,
+        status: "ativo",
+      });
+
+      console.log(`Pagamento confirmado para assinatura ${subscription.id}`);
+    } else if (event === "PAYMENT_OVERDUE") {
+      await storage.updateSubscription(subscription.id, {
+        status: "expirado",
+        status_pagamento: "OVERDUE",
+      });
+
+      await storage.updateUser(subscription.user_id, {
+        status: "inativo",
+      });
+
+      console.log(`Pagamento vencido para assinatura ${subscription.id}`);
+    }
+
+    res.json({ success: true, message: "Webhook processado com sucesso" });
   });
 
   // Subscriptions routes - RESTRITO a admins

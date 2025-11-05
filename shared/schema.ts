@@ -19,6 +19,7 @@ export const users = pgTable("users", {
   conta_id: text("conta_id"),
   permissoes: text("permissoes"),
   max_funcionarios: integer("max_funcionarios").notNull().default(1),
+  meta_mensal: real("meta_mensal"),
 });
 
 export const produtos = pgTable("produtos", {

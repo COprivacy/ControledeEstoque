@@ -24,8 +24,10 @@ export class PaymentReminderService {
   async checkAndSendReminders(): Promise<void> {
     try {
       const subscriptions = await storage.getSubscriptions();
+      const users = await storage.getUsers();
       const now = new Date();
 
+      // Verificar assinaturas existentes
       for (const subscription of subscriptions) {
         // Ignorar assinaturas já canceladas ou inativas
         if (subscription.status === 'cancelado' || subscription.status === 'inativo') {
@@ -55,6 +57,33 @@ export class PaymentReminderService {
           // Bloqueio automático após 15 dias de atraso
           if (daysUntilExpiration < -15) {
             await this.blockExpiredSubscription(subscription);
+          }
+        }
+      }
+
+      // Verificar usuários trial expirados (sem assinatura)
+      for (const user of users) {
+        // Apenas usuários trial ou free
+        if (user.plano === 'trial' || user.plano === 'free') {
+          const expirationDate = user.data_expiracao_plano || user.data_expiracao_trial;
+          
+          if (expirationDate) {
+            const daysUntilExpiration = this.getDaysDifference(now, new Date(expirationDate));
+            
+            // Avisos antes do vencimento do trial
+            if (this.config.daysBeforeExpiration.includes(daysUntilExpiration)) {
+              await this.sendTrialExpirationWarning(user, daysUntilExpiration);
+            }
+            
+            // Trial expirado - converter para free e bloquear
+            if (daysUntilExpiration < 0) {
+              const daysExpired = Math.abs(daysUntilExpiration);
+              
+              // Bloquear após 0 dias de expiração (imediato)
+              if (daysExpired >= 0 && user.status !== 'bloqueado') {
+                await this.blockExpiredTrialUser(user);
+              }
+            }
           }
         }
       }
@@ -194,6 +223,68 @@ export class PaymentReminderService {
     logger.error('Conta bloqueada por falta de pagamento', 'PAYMENT_REMINDER', {
       subscriptionId: subscription.id,
       userId: subscription.user_id,
+    });
+  }
+
+  /**
+   * Envia aviso de vencimento de trial
+   */
+  private async sendTrialExpirationWarning(user: any, daysRemaining: number): Promise<void> {
+    await this.emailService.sendExpirationWarning({
+      to: user.email,
+      userName: user.nome,
+      planName: 'Plano Trial (7 dias grátis)',
+      daysRemaining,
+      expirationDate: new Date(user.data_expiracao_trial || user.data_expiracao_plano!).toLocaleDateString('pt-BR'),
+      amount: 0, // Trial é gratuito
+    });
+
+    logger.info('Aviso de vencimento de trial enviado', 'PAYMENT_REMINDER', {
+      userId: user.id,
+      daysRemaining,
+    });
+  }
+
+  /**
+   * Bloqueia usuário trial expirado
+   */
+  private async blockExpiredTrialUser(user: any): Promise<void> {
+    // Atualizar usuário para free e bloqueado
+    await storage.updateUser(user.id, {
+      plano: 'free',
+      status: 'bloqueado',
+      data_expiracao_trial: null,
+      data_expiracao_plano: null,
+    });
+
+    // Bloquear todos os funcionários desta conta
+    if (storage.getFuncionarios) {
+      const funcionarios = await storage.getFuncionarios();
+      const funcionariosDaConta = funcionarios.filter(f => f.conta_id === user.id);
+
+      for (const funcionario of funcionariosDaConta) {
+        await storage.updateFuncionario(funcionario.id, {
+          status: 'bloqueado',
+        });
+      }
+
+      if (funcionariosDaConta.length > 0) {
+        logger.info(`${funcionariosDaConta.length} funcionário(s) bloqueado(s) devido ao trial expirado`, 'PAYMENT_REMINDER', {
+          userId: user.id,
+        });
+      }
+    }
+
+    // Enviar email de conta bloqueada
+    await this.emailService.sendAccountBlocked({
+      to: user.email,
+      userName: user.nome,
+      planName: 'Plano Trial',
+    });
+
+    logger.warn('Usuário trial expirado bloqueado', 'PAYMENT_REMINDER', {
+      userId: user.id,
+      userEmail: user.email,
     });
   }
 

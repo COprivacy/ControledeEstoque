@@ -2264,6 +2264,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mercado Pago Webhook
+  app.post('/api/webhook/mercadopago', async (req, res) => {
+    try {
+      const { type, data } = req.body;
+      
+      console.log('📥 Webhook Mercado Pago recebido:', { type, data });
+      
+      // Processar notificação de pagamento
+      if (type === 'payment') {
+        const paymentId = data.id;
+        
+        // Buscar detalhes do pagamento
+        const config = await storage.getConfigMercadoPago();
+        if (!config || !config.access_token) {
+          console.error('❌ Configuração do Mercado Pago não encontrada');
+          return res.status(500).json({ error: 'Configuração não encontrada' });
+        }
+
+        const { MercadoPagoService } = await import('./mercadopago');
+        const mercadopago = new MercadoPagoService({ accessToken: config.access_token });
+        
+        // Buscar informações do pagamento
+        const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+          headers: {
+            'Authorization': `Bearer ${config.access_token}`,
+          },
+        });
+        
+        if (!response.ok) {
+          console.error('❌ Erro ao buscar pagamento do Mercado Pago');
+          return res.status(500).json({ error: 'Erro ao buscar pagamento' });
+        }
+        
+        const paymentData = await response.json();
+        const externalReference = paymentData.external_reference;
+        const status = paymentData.status;
+        
+        console.log('💳 Dados do pagamento:', { 
+          id: paymentId, 
+          status, 
+          externalReference 
+        });
+        
+        // Encontrar assinatura pelo external_reference
+        const subscriptions = await storage.getSubscriptions();
+        const subscription = subscriptions.find(s => s.external_reference === externalReference);
+        
+        if (!subscription) {
+          console.log('⚠️ Assinatura não encontrada para referência:', externalReference);
+          return res.status(404).json({ error: 'Assinatura não encontrada' });
+        }
+        
+        // Processar status do pagamento
+        if (status === 'approved') {
+          // Pagamento aprovado
+          console.log('✅ Pagamento aprovado - Ativando assinatura:', subscription.id);
+          
+          await storage.updateSubscription(subscription.id, {
+            status: 'ativo',
+            status_pagamento: 'approved',
+            mercadopago_payment_id: paymentId.toString(),
+            data_inicio: new Date().toISOString(),
+            data_atualizacao: new Date().toISOString(),
+          });
+          
+          // Atualizar plano do usuário
+          await storage.updateUser(subscription.user_id, {
+            plano: subscription.plano,
+            data_expiracao_plano: subscription.data_vencimento,
+            status: 'ativo',
+          });
+          
+          console.log(`✅ Assinatura ${subscription.id} ativada com sucesso!`);
+          logger.info('Pagamento aprovado via webhook', 'MERCADOPAGO_WEBHOOK', {
+            subscriptionId: subscription.id,
+            userId: subscription.user_id,
+            plano: subscription.plano,
+          });
+          
+        } else if (status === 'rejected' || status === 'cancelled') {
+          // Pagamento recusado ou cancelado
+          console.log('❌ Pagamento recusado/cancelado:', subscription.id);
+          
+          await storage.updateSubscription(subscription.id, {
+            status: 'cancelado',
+            status_pagamento: status,
+            mercadopago_payment_id: paymentId.toString(),
+            motivo_cancelamento: `Pagamento ${status} pelo Mercado Pago`,
+            data_atualizacao: new Date().toISOString(),
+          });
+          
+          logger.warn('Pagamento recusado/cancelado via webhook', 'MERCADOPAGO_WEBHOOK', {
+            subscriptionId: subscription.id,
+            status,
+          });
+          
+        } else if (status === 'pending' || status === 'in_process') {
+          // Pagamento pendente
+          console.log('⏳ Pagamento pendente:', subscription.id);
+          
+          await storage.updateSubscription(subscription.id, {
+            status_pagamento: status,
+            mercadopago_payment_id: paymentId.toString(),
+            data_atualizacao: new Date().toISOString(),
+          });
+        }
+      }
+      
+      res.json({ success: true, message: 'Webhook processado com sucesso' });
+      
+    } catch (error: any) {
+      console.error('❌ Erro ao processar webhook Mercado Pago:', error);
+      logger.error('Erro no webhook Mercado Pago', 'MERCADOPAGO_WEBHOOK', { error });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Asaas Webhook
   app.post('/api/webhook/asaas', async (req, res) => {
     const signature = req.headers['asaas-access-token'];

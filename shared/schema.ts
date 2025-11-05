@@ -218,6 +218,9 @@ export const subscriptions = pgTable("subscriptions", {
   status_pagamento: text("status_pagamento"),
   init_point: text("init_point"),
   external_reference: text("external_reference"),
+  prazo_limite_pagamento: text("prazo_limite_pagamento"),
+  tentativas_cobranca: integer("tentativas_cobranca").default(0),
+  motivo_cancelamento: text("motivo_cancelamento"),
   data_criacao: text("data_criacao").notNull(),
   data_atualizacao: text("data_atualizacao"),
 });

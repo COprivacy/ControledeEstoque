@@ -46,99 +46,70 @@ export class EmailService {
     });
   }
 
-  async sendVerificationCode(config: {
-    to: string;
-    userName: string;
-    code: string;
-  }) {
-    const html = `
+  // Template base para todos os emails
+  private getBaseTemplate(content: string, backgroundColor: string = '#f8fafc'): string {
+    return `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Código de Verificação - Pavisoft</title>
+  <title>Pavisoft Sistemas</title>
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td {font-family: Arial, sans-serif !important;}
+  </style>
+  <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f3f4f6;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f3f4f6; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: ${backgroundColor};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: ${backgroundColor}; padding: 40px 20px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); overflow: hidden;">
           
-          <!-- Banner -->
+          <!-- Header com Logo -->
           <tr>
-            <td style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 50px 20px; text-align: center; border-radius: 12px 12px 0 0;">
+            <td style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 48px 40px; text-align: center;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center">
-                    <h1 style="font-size: 42px; font-weight: bold; color: #ffffff; margin: 0 0 10px 0; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">PAVISOFT</h1>
-                    <div style="width: 80px; height: 3px; background-color: rgba(255,255,255,0.8); margin: 10px auto;"></div>
-                    <p style="font-size: 15px; color: #ffffff; margin: 10px 0 0 0; opacity: 0.95; letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">Sistemas de Gestão</p>
+                    <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 12px; padding: 20px; display: inline-block;">
+                      <h1 style="font-size: 32px; font-weight: 700; color: #ffffff; margin: 0; letter-spacing: 1px;">PAVISOFT</h1>
+                      <div style="width: 60px; height: 3px; background: linear-gradient(90deg, #60a5fa, #3b82f6); margin: 12px auto; border-radius: 2px;"></div>
+                      <p style="font-size: 13px; color: rgba(255, 255, 255, 0.9); margin: 0; letter-spacing: 2px; text-transform: uppercase; font-weight: 500;">Sistemas de Gestão</p>
+                    </div>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- Content -->
-          <tr>
-            <td style="padding: 40px 30px;">
-              <p style="font-size: 18px; color: #374151; margin: 0 0 20px 0;">
-                Olá, <strong>${config.userName}</strong>! 👋
-              </p>
-              
-              <p style="color: #4b5563; font-size: 15px; line-height: 1.8; margin: 0 0 20px 0;">
-                Você solicitou a redefinição de senha da sua conta. Use o código abaixo para confirmar que é realmente você:
-              </p>
-
-              <!-- Code Box -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
-                <tr>
-                  <td style="background-color: #eff6ff; border: 2px dashed #3b82f6; border-radius: 12px; padding: 30px; text-align: center;">
-                    <p style="color: #1e40af; font-size: 14px; font-weight: 600; margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 1px;">
-                      SEU CÓDIGO DE VERIFICAÇÃO
-                    </p>
-                    <p style="font-size: 46px; font-weight: bold; color: #2563eb; letter-spacing: 10px; font-family: 'Courier New', Courier, monospace; margin: 0; text-shadow: 1px 1px 2px rgba(37,99,235,0.2);">
-                      ${config.code}
-                    </p>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Warning -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
-                <tr>
-                  <td style="background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 16px;">
-                    <p style="color: #92400e; font-size: 14px; margin: 0; line-height: 1.6;">
-                      ⚠️ <strong>Este código expira em 10 minutos.</strong> Se você não solicitou esta alteração, ignore este email e sua senha permanecerá a mesma.
-                    </p>
-                  </td>
-                </tr>
-              </table>
-
-              <p style="color: #4b5563; font-size: 15px; line-height: 1.8; margin: 0;">
-                Por segurança, nunca compartilhe este código com ninguém, nem mesmo com a equipe do Pavisoft.
-              </p>
-            </td>
-          </tr>
+          <!-- Conteúdo -->
+          ${content}
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb; border-radius: 0 0 12px 12px;">
-              <p style="font-size: 22px; font-weight: bold; color: #3b82f6; margin: 0 0 15px 0; letter-spacing: 1px;">
-                PAVISOFT SISTEMAS
-              </p>
-              <table role="presentation" width="60" cellpadding="0" cellspacing="0" border="0" style="margin: 15px auto;">
+            <td style="background: linear-gradient(to bottom, #f8fafc, #f1f5f9); padding: 40px; text-align: center; border-top: 1px solid #e2e8f0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="height: 3px; background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%); border-radius: 2px;"></td>
+                  <td align="center">
+                    <h3 style="font-size: 18px; font-weight: 700; color: #1e3a8a; margin: 0 0 8px 0; letter-spacing: 0.5px;">PAVISOFT SISTEMAS</h3>
+                    <div style="width: 40px; height: 2px; background: linear-gradient(90deg, #3b82f6, #60a5fa); margin: 12px auto; border-radius: 2px;"></div>
+                    <p style="color: #64748b; font-size: 13px; line-height: 1.8; margin: 16px 0 0 0;">
+                      <strong style="color: #475569;">Gestão Empresarial Completa</strong><br>
+                      PDV • Estoque • Financeiro • NFCe • Relatórios<br><br>
+                      <span style="font-size: 12px; color: #94a3b8;">
+                        📧 pavisoft.planos@gmail.com<br>
+                        🌐 www.pavisoft.com.br
+                      </span>
+                    </p>
+                    <p style="color: #94a3b8; font-size: 11px; margin: 20px 0 0 0; font-style: italic;">
+                      Este é um email automático. Por favor, não responda.
+                    </p>
+                  </td>
                 </tr>
               </table>
-              <p style="color: #6b7280; font-size: 13px; line-height: 1.8; margin: 0;">
-                Sistema Completo de Gestão Empresarial<br>
-                PDV | Estoque | Financeiro | NFCe<br><br>
-                <em>Este é um email automático de segurança. Por favor, não responda.</em>
-              </p>
             </td>
           </tr>
 
@@ -149,9 +120,70 @@ export class EmailService {
 </body>
 </html>
     `;
+  }
+
+  async sendVerificationCode(config: {
+    to: string;
+    userName: string;
+    code: string;
+  }) {
+    const content = `
+<tr>
+  <td style="padding: 48px 40px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td>
+          <p style="font-size: 18px; color: #1e293b; margin: 0 0 8px 0; font-weight: 600;">
+            Olá, ${config.userName}! 👋
+          </p>
+          <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 0 0 32px 0;">
+            Recebemos uma solicitação para redefinir a senha da sua conta. Use o código de verificação abaixo para confirmar sua identidade e criar uma nova senha.
+          </p>
+
+          <!-- Code Box -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 32px 0;">
+            <tr>
+              <td style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 32px; text-align: center;">
+                <p style="color: #1e40af; font-size: 13px; font-weight: 700; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 1.5px;">
+                  SEU CÓDIGO DE VERIFICAÇÃO
+                </p>
+                <div style="background: #ffffff; border-radius: 8px; padding: 20px; margin: 0 auto; display: inline-block; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);">
+                  <p style="font-size: 42px; font-weight: 700; color: #1e40af; letter-spacing: 8px; font-family: 'Courier New', Courier, monospace; margin: 0;">
+                    ${config.code}
+                  </p>
+                </div>
+                <p style="color: #3b82f6; font-size: 12px; margin: 16px 0 0 0; font-weight: 500;">
+                  Válido por 10 minutos
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Warning Box -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+            <tr>
+              <td style="background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 20px;">
+                <p style="color: #92400e; font-size: 14px; margin: 0; line-height: 1.6;">
+                  <strong>⚠️ Importante:</strong> Se você não solicitou esta alteração, ignore este email. Sua senha permanecerá inalterada e sua conta continuará segura.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <p style="color: #64748b; font-size: 14px; line-height: 1.7; margin: 24px 0 0 0;">
+            <strong style="color: #475569;">Dica de segurança:</strong> Nunca compartilhe este código com ninguém, nem mesmo com a equipe do Pavisoft. Nossos funcionários jamais solicitarão este código.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+    `;
+
+    const html = this.getBaseTemplate(content, '#eff6ff');
 
     await this.transporter.sendMail({
-      from: process.env.SMTP_FROM || 'noreply@pavisoft.com',
+      from: process.env.SMTP_FROM || 'Pavisoft Sistemas <noreply@pavisoft.com>',
       to: config.to,
       subject: '🔐 Código de Verificação - Pavisoft Sistemas',
       html,
@@ -166,130 +198,216 @@ export class EmailService {
     price: number;
     paymentUrl: string;
   }) {
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f3f4f6; }
-          .email-wrapper { width: 100%; background-color: #f3f4f6; padding: 40px 20px; }
-          .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-          .banner { width: 100%; height: 180px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-          .banner img { width: 100%; height: 100%; object-fit: cover; }
-          .banner-content { text-align: center; color: white; }
-          .logo-text { font-size: 36px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
-          .logo-subtitle { font-size: 14px; opacity: 0.95; letter-spacing: 2px; text-transform: uppercase; }
-          .content { padding: 40px 30px; }
-          .greeting { font-size: 18px; color: #374151; margin-bottom: 20px; }
-          .message { color: #4b5563; font-size: 15px; line-height: 1.8; margin-bottom: 20px; }
-          .highlight-box { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid #2563eb; padding: 20px; border-radius: 8px; margin: 25px 0; }
-          .highlight-box h3 { color: #1e40af; font-size: 16px; margin-bottom: 15px; display: flex; align-items: center; }
-          .highlight-box h3::before { content: "📦"; margin-right: 10px; font-size: 20px; }
-          .detail-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
-          .detail-item:last-child { border-bottom: none; }
-          .detail-label { color: #6b7280; font-size: 14px; }
-          .detail-value { color: #111827; font-weight: 600; font-size: 14px; }
-          .cta-button { display: block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white !important; text-decoration: none; padding: 16px 32px; text-align: center; border-radius: 8px; font-weight: 600; font-size: 16px; margin: 30px 0; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3); transition: all 0.3s; }
-          .cta-button:hover { box-shadow: 0 6px 12px rgba(37, 99, 235, 0.4); transform: translateY(-2px); }
-          .info-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 6px; margin: 20px 0; }
-          .info-box p { color: #92400e; font-size: 14px; margin: 0; display: flex; align-items: flex-start; }
-          .info-box p::before { content: "⏰"; margin-right: 10px; font-size: 18px; flex-shrink: 0; }
-          .footer { background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb; }
-          .footer-logo { font-size: 20px; font-weight: bold; color: #2563eb; margin-bottom: 8px; }
-          .footer-text { color: #6b7280; font-size: 13px; line-height: 1.8; }
-          .footer-divider { width: 50px; height: 2px; background: #2563eb; margin: 15px auto; }
-          @media only screen and (max-width: 600px) {
-            .email-wrapper { padding: 20px 10px; }
-            .content { padding: 30px 20px; }
-            .logo-text { font-size: 28px; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="email-wrapper">
-          <div class="container">
-            <!-- Banner com Logo -->
-            <div class="banner">
-              ${this.logoBase64 ? `<img src="${this.logoBase64}" alt="Pavisoft Sistemas" />` : `
-              <div class="banner-content">
-                <div class="logo-text">PAVISOFT</div>
-                <div class="logo-subtitle">Sistemas de Gestão</div>
-              </div>
-              `}
-            </div>
+    const content = `
+<tr>
+  <td style="padding: 48px 40px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td>
+          <p style="font-size: 18px; color: #1e293b; margin: 0 0 8px 0; font-weight: 600;">
+            Olá, ${config.userName}! 👋
+          </p>
+          <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 0 0 32px 0;">
+            Ficamos felizes em informar que você selecionou o <strong style="color: #1e40af;">${config.packageName}</strong> para expandir sua equipe no Pavisoft Sistemas!
+          </p>
 
-            <!-- Conteúdo -->
-            <div class="content">
-              <div class="greeting">Olá, <strong>${config.userName}</strong>! 👋</div>
-              
-              <p class="message">
-                Ficamos felizes em informar que você selecionou o <strong>${config.packageName}</strong> 
-                para expandir sua equipe no Pavisoft Sistemas!
-              </p>
-
-              <!-- Detalhes da Compra -->
-              <div class="highlight-box">
-                <h3>Resumo do Pedido</h3>
-                <div class="detail-item">
-                  <span class="detail-label">Pacote Selecionado</span>
-                  <span class="detail-value">${config.packageName}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Funcionários Adicionais</span>
-                  <span class="detail-value">+${config.quantity} colaboradores</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Valor Total</span>
-                  <span class="detail-value" style="color: #2563eb; font-size: 18px;">R$ ${config.price.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <p class="message">
-                Para completar sua compra e ativar os novos funcionários, 
-                clique no botão abaixo para realizar o pagamento:
-              </p>
-
-              <a href="${config.paymentUrl}" class="cta-button">
-                🔒 Realizar Pagamento Seguro
-              </a>
-
-              <!-- Aviso Importante -->
-              <div class="info-box">
-                <p>
-                  <strong>Seu limite de funcionários será aumentado automaticamente</strong> 
-                  assim que o pagamento for confirmado pelo sistema Asaas. 
-                  Você receberá um email de confirmação quando isso acontecer.
+          <!-- Resumo do Pedido -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #0ea5e9; border-radius: 12px; padding: 28px; margin: 32px 0;">
+            <tr>
+              <td>
+                <p style="color: #0c4a6e; font-size: 15px; font-weight: 700; margin: 0 0 20px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+                  📦 Resumo do Pedido
                 </p>
-              </div>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #bae6fd;">
+                      <span style="color: #0369a1; font-size: 14px;">Pacote Selecionado</span>
+                    </td>
+                    <td align="right" style="padding: 12px 0; border-bottom: 1px solid #bae6fd;">
+                      <strong style="color: #0c4a6e; font-size: 14px;">${config.packageName}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #bae6fd;">
+                      <span style="color: #0369a1; font-size: 14px;">Funcionários Adicionais</span>
+                    </td>
+                    <td align="right" style="padding: 12px 0; border-bottom: 1px solid #bae6fd;">
+                      <strong style="color: #0c4a6e; font-size: 14px;">+${config.quantity} colaboradores</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 16px 0 0 0;">
+                      <span style="color: #0369a1; font-size: 14px;">Valor Total</span>
+                    </td>
+                    <td align="right" style="padding: 16px 0 0 0;">
+                      <strong style="color: #0ea5e9; font-size: 22px; font-weight: 700;">R$ ${config.price.toFixed(2)}</strong>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
 
-              <p class="message" style="margin-top: 30px;">
-                Se tiver alguma dúvida, nossa equipe está à disposição para ajudar!
-              </p>
-            </div>
+          <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
+            Para completar sua compra e ativar os novos funcionários, clique no botão abaixo para realizar o pagamento de forma segura:
+          </p>
 
-            <!-- Rodapé -->
-            <div class="footer">
-              <div class="footer-logo">PAVISOFT SISTEMAS</div>
-              <div class="footer-divider"></div>
-              <p class="footer-text">
-                Sistema Completo de Gestão Empresarial<br>
-                PDV | Estoque | Financeiro | NFCe<br><br>
-                <em>Este é um email automático. Por favor, não responda.</em>
-              </p>
-            </div>
-          </div>
-        </div>
-      </body>
-      </html>
+          <!-- CTA Button -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 32px 0;">
+            <tr>
+              <td align="center">
+                <a href="${config.paymentUrl}" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #ffffff; text-decoration: none; padding: 18px 48px; border-radius: 10px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); transition: all 0.3s;">
+                  🔒 Realizar Pagamento Seguro
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Info Box -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 32px 0;">
+            <tr>
+              <td style="background: #ecfdf5; border-left: 4px solid #10b981; border-radius: 8px; padding: 20px;">
+                <p style="color: #065f46; font-size: 14px; margin: 0; line-height: 1.6;">
+                  <strong>✅ Ativação Automática:</strong> Seu limite de funcionários será aumentado automaticamente assim que o pagamento for confirmado. Você receberá um email de confirmação imediatamente.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <p style="color: #64748b; font-size: 14px; line-height: 1.7; margin: 32px 0 0 0;">
+            Dúvidas? Nossa equipe está à disposição para ajudar. Entre em contato conosco através do email <a href="mailto:pavisoft.planos@gmail.com" style="color: #3b82f6; text-decoration: none;">pavisoft.planos@gmail.com</a>
+          </p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
     `;
 
+    const html = this.getBaseTemplate(content);
+
     await this.transporter.sendMail({
-      from: process.env.SMTP_FROM || 'noreply@pavisoft.com',
+      from: process.env.SMTP_FROM || 'Pavisoft Sistemas <noreply@pavisoft.com>',
       to: config.to,
-      subject: `${config.packageName} - Aguardando Pagamento`,
+      subject: `💼 ${config.packageName} - Aguardando Pagamento`,
+      html,
+    });
+  }
+
+  async sendEmployeePackageActivated(config: {
+    to: string;
+    userName: string;
+    packageName: string;
+    quantity: number;
+    newLimit: number;
+    price: number;
+  }) {
+    const content = `
+<tr>
+  <td style="padding: 48px 40px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td>
+          <p style="font-size: 18px; color: #1e293b; margin: 0 0 8px 0; font-weight: 600;">
+            Olá, ${config.userName}! 👋
+          </p>
+
+          <!-- Success Banner -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+            <tr>
+              <td style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border: 2px solid #10b981; border-radius: 12px; padding: 28px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 12px;">✅</div>
+                <p style="color: #065f46; font-size: 20px; font-weight: 700; margin: 0;">
+                  Pagamento Confirmado com Sucesso!
+                </p>
+              </td>
+            </tr>
+          </table>
+          
+          <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
+            Temos o prazer de informar que seu pagamento foi processado e confirmado. <strong style="color: #10b981;">Seu limite de funcionários foi aumentado imediatamente!</strong>
+          </p>
+
+          <!-- Recibo da Transação -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 28px; margin: 32px 0;">
+            <tr>
+              <td>
+                <p style="color: #1e293b; font-size: 15px; font-weight: 700; margin: 0 0 20px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+                  📋 Recibo da Transação
+                </p>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <span style="color: #64748b; font-size: 14px;">Pacote Adquirido</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <strong style="color: #1e293b; font-size: 14px;">${config.packageName}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <span style="color: #64748b; font-size: 14px;">Funcionários Adicionados</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <strong style="color: #1e293b; font-size: 14px;">+${config.quantity} colaboradores</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <span style="color: #64748b; font-size: 14px;">Novo Limite Total</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <strong style="color: #10b981; font-size: 18px;">${config.newLimit} funcionários</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <span style="color: #64748b; font-size: 14px;">Valor Pago</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <strong style="color: #1e293b; font-size: 14px;">R$ ${config.price.toFixed(2)}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0;">
+                      <span style="color: #64748b; font-size: 14px;">Data da Ativação</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0;">
+                      <strong style="color: #1e293b; font-size: 14px;">${new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</strong>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Call to Action -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+            <tr>
+              <td style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid #3b82f6; border-radius: 8px; padding: 20px;">
+                <p style="color: #1e40af; font-size: 15px; margin: 0; line-height: 1.6; font-weight: 500;">
+                  <strong>🚀 Próximo Passo:</strong> Você já pode cadastrar novos funcionários no sistema! Acesse o painel administrativo e comece agora mesmo.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <p style="color: #64748b; font-size: 14px; line-height: 1.7; margin: 32px 0 0 0;">
+            Obrigado por escolher o Pavisoft Sistemas! Estamos aqui para ajudar sua empresa a crescer. 🎉
+          </p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+    `;
+
+    const html = this.getBaseTemplate(content, '#f0fdf4');
+
+    await this.transporter.sendMail({
+      from: process.env.SMTP_FROM || 'Pavisoft Sistemas <noreply@pavisoft.com>',
+      to: config.to,
+      subject: `✅ ${config.packageName} Ativado - Recibo de Pagamento`,
       html,
     });
   }
@@ -300,121 +418,94 @@ export class EmailService {
     resetByAdmin: string;
     resetDate: string;
   }) {
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f3f4f6; }
-          .email-wrapper { width: 100%; background-color: #f3f4f6; padding: 40px 20px; }
-          .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-          .banner { width: 100%; height: 180px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-          .banner img { width: 100%; height: 100%; object-fit: cover; }
-          .banner-content { text-align: center; color: white; }
-          .logo-text { font-size: 36px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
-          .logo-subtitle { font-size: 14px; opacity: 0.95; letter-spacing: 2px; text-transform: uppercase; }
-          .content { padding: 40px 30px; }
-          .greeting { font-size: 18px; color: #374151; margin-bottom: 20px; }
-          .message { color: #4b5563; font-size: 15px; line-height: 1.8; margin-bottom: 20px; }
-          .alert-box { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border-left: 4px solid #ef4444; padding: 20px; border-radius: 8px; margin: 25px 0; }
-          .alert-box-icon { font-size: 48px; text-align: center; margin-bottom: 10px; }
-          .alert-box-text { color: #991b1b; font-size: 16px; text-align: center; font-weight: 600; }
-          .info-grid { background: #f9fafb; border: 2px solid #e5e7eb; padding: 20px; border-radius: 8px; margin: 25px 0; }
-          .info-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
-          .info-item:last-child { border-bottom: none; }
-          .info-label { color: #6b7280; font-size: 14px; }
-          .info-value { color: #111827; font-weight: 600; font-size: 14px; }
-          .security-note { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 6px; margin: 20px 0; }
-          .security-note p { color: #92400e; font-size: 14px; margin: 0; display: flex; align-items: flex-start; }
-          .security-note p::before { content: "🔒"; margin-right: 10px; font-size: 18px; flex-shrink: 0; }
-          .footer { background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb; }
-          .footer-logo { font-size: 20px; font-weight: bold; color: #ef4444; margin-bottom: 8px; }
-          .footer-text { color: #6b7280; font-size: 13px; line-height: 1.8; }
-          .footer-divider { width: 50px; height: 2px; background: #ef4444; margin: 15px auto; }
-          @media only screen and (max-width: 600px) {
-            .email-wrapper { padding: 20px 10px; }
-            .content { padding: 30px 20px; }
-            .logo-text { font-size: 28px; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="email-wrapper">
-          <div class="container">
-            <!-- Banner com Logo -->
-            <div class="banner">
-              <div class="banner-content">
-                <div class="logo-text">PAVISOFT</div>
-                <div class="logo-subtitle">Sistemas de Gestão</div>
-              </div>
-            </div>
+    const content = `
+<tr>
+  <td style="padding: 48px 40px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td>
+          <p style="font-size: 18px; color: #1e293b; margin: 0 0 8px 0; font-weight: 600;">
+            Olá, ${config.userName}! 👋
+          </p>
 
-            <!-- Conteúdo -->
-            <div class="content">
-              <div class="greeting">Olá, <strong>${config.userName}</strong>! 👋</div>
-
-              <!-- Alerta de Segurança -->
-              <div class="alert-box">
-                <div class="alert-box-icon">🔐</div>
-                <div class="alert-box-text">Sua senha foi redefinida</div>
-              </div>
-              
-              <p class="message">
-                Informamos que sua senha de acesso ao sistema Pavisoft foi redefinida pelo administrador da conta.
-              </p>
-
-              <!-- Detalhes da Alteração -->
-              <div class="info-grid">
-                <div class="info-item">
-                  <span class="info-label">Redefinido por</span>
-                  <span class="info-value">${config.resetByAdmin}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">Data e Hora</span>
-                  <span class="info-value">${config.resetDate}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">Email da conta</span>
-                  <span class="info-value">${config.to}</span>
-                </div>
-              </div>
-
-              <!-- Nota de Segurança -->
-              <div class="security-note">
-                <p>
-                  <strong>Por segurança, recomendamos que você altere sua senha no primeiro acesso.</strong> 
-                  Vá em Configurações → Alterar Senha após fazer login.
+          <!-- Alerta de Segurança -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+            <tr>
+              <td style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 2px solid #ef4444; border-radius: 12px; padding: 28px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 12px;">🔐</div>
+                <p style="color: #991b1b; font-size: 18px; font-weight: 700; margin: 0;">
+                  Sua Senha Foi Redefinida
                 </p>
-              </div>
+              </td>
+            </tr>
+          </table>
+          
+          <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
+            Informamos que sua senha de acesso ao sistema Pavisoft foi redefinida pelo administrador da sua conta por motivos de segurança.
+          </p>
 
-              <p class="message" style="margin-top: 30px;">
-                Se você não solicitou esta alteração ou não reconhece esta atividade, 
-                entre em contato com o administrador da sua conta imediatamente.
-              </p>
-            </div>
+          <!-- Detalhes da Alteração -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 28px; margin: 32px 0;">
+            <tr>
+              <td>
+                <p style="color: #1e293b; font-size: 15px; font-weight: 700; margin: 0 0 20px 0;">
+                  Detalhes da Alteração
+                </p>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <span style="color: #64748b; font-size: 14px;">Redefinido por</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <strong style="color: #1e293b; font-size: 14px;">${config.resetByAdmin}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <span style="color: #64748b; font-size: 14px;">Data e Hora</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <strong style="color: #1e293b; font-size: 14px;">${config.resetDate}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0;">
+                      <span style="color: #64748b; font-size: 14px;">Email da Conta</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0;">
+                      <strong style="color: #1e293b; font-size: 14px;">${config.to}</strong>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
 
-            <!-- Rodapé -->
-            <div class="footer">
-              <div class="footer-logo">PAVISOFT SISTEMAS</div>
-              <div class="footer-divider"></div>
-              <p class="footer-text">
-                Sistema Completo de Gestão Empresarial<br>
-                PDV | Estoque | Financeiro | NFCe<br><br>
-                Dúvidas? Entre em contato: pavisoft.planos@gmail.com<br>
-                <em>Este é um email automático de segurança. Por favor, não responda.</em>
-              </p>
-            </div>
-          </div>
-        </div>
-      </body>
-      </html>
+          <!-- Nota de Segurança -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+            <tr>
+              <td style="background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 20px;">
+                <p style="color: #92400e; font-size: 14px; margin: 0; line-height: 1.6;">
+                  <strong>🔒 Recomendação de Segurança:</strong> Altere sua senha no primeiro acesso. Vá em <strong>Configurações → Alterar Senha</strong> após fazer login.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <p style="color: #64748b; font-size: 14px; line-height: 1.7; margin: 32px 0 0 0;">
+            Se você não reconhece esta atividade, entre em contato com o administrador da sua conta imediatamente através do email <a href="mailto:pavisoft.planos@gmail.com" style="color: #3b82f6; text-decoration: none;">pavisoft.planos@gmail.com</a>
+          </p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
     `;
 
+    const html = this.getBaseTemplate(content, '#fef2f2');
+
     await this.transporter.sendMail({
-      from: process.env.SMTP_FROM || 'noreply@pavisoft.com',
+      from: process.env.SMTP_FROM || 'Pavisoft Sistemas <noreply@pavisoft.com>',
       to: config.to,
       subject: '🔐 Senha Redefinida - Pavisoft Sistemas',
       html,
@@ -428,44 +519,94 @@ export class EmailService {
     daysWaiting: number;
     amount: number;
   }) {
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; background: #f3f4f6; }
-          .container { max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; overflow: hidden; }
-          .header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 40px; text-align: center; color: white; }
-          .content { padding: 40px 30px; }
-          .warning-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 20px 0; border-radius: 8px; }
-          .footer { background: #f9fafb; padding: 30px; text-align: center; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>⏰ Pagamento Pendente</h1>
-          </div>
-          <div class="content">
-            <p>Olá, <strong>${config.userName}</strong>!</p>
-            <div class="warning-box">
-              <p>Seu pagamento do <strong>${config.planName}</strong> está pendente há <strong>${config.daysWaiting} dias</strong>.</p>
-              <p style="margin-top: 15px;">Valor: <strong>R$ ${config.amount.toFixed(2)}</strong></p>
-            </div>
-            <p>Complete o pagamento para continuar usando todos os recursos do sistema.</p>
-          </div>
-          <div class="footer">
-            <p>PAVISOFT SISTEMAS</p>
-          </div>
-        </div>
-      </body>
-      </html>
+    const content = `
+<tr>
+  <td style="padding: 48px 40px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td>
+          <p style="font-size: 18px; color: #1e293b; margin: 0 0 8px 0; font-weight: 600;">
+            Olá, ${config.userName}! 👋
+          </p>
+
+          <!-- Warning Banner -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+            <tr>
+              <td style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 28px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 12px;">⏰</div>
+                <p style="color: #92400e; font-size: 20px; font-weight: 700; margin: 0 0 8px 0;">
+                  Pagamento Pendente
+                </p>
+                <p style="color: #92400e; font-size: 14px; margin: 0;">
+                  Aguardando há ${config.daysWaiting} dias
+                </p>
+              </td>
+            </tr>
+          </table>
+          
+          <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
+            Identificamos que o pagamento do seu plano <strong style="color: #1e40af;">${config.planName}</strong> ainda está pendente.
+          </p>
+
+          <!-- Detalhes do Pagamento -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 28px; margin: 32px 0;">
+            <tr>
+              <td>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="padding: 10px 0;">
+                      <span style="color: #92400e; font-size: 14px;">Plano</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0;">
+                      <strong style="color: #78350f; font-size: 14px;">${config.planName}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0;">
+                      <span style="color: #92400e; font-size: 14px;">Valor</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0;">
+                      <strong style="color: #f59e0b; font-size: 22px;">R$ ${config.amount.toFixed(2)}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0;">
+                      <span style="color: #92400e; font-size: 14px;">Aguardando há</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0;">
+                      <strong style="color: #78350f; font-size: 14px;">${config.daysWaiting} dias</strong>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
+            Para continuar aproveitando todos os recursos do sistema sem interrupções, complete o pagamento o quanto antes.
+          </p>
+
+          <!-- Info Box -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 32px 0;">
+            <tr>
+              <td style="background: #dbeafe; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 20px;">
+                <p style="color: #1e40af; font-size: 14px; margin: 0; line-height: 1.6;">
+                  <strong>ℹ️ Precisa de Ajuda?</strong> Nossa equipe está disponível para auxiliá-lo. Entre em contato através do email pavisoft.planos@gmail.com
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
     `;
 
+    const html = this.getBaseTemplate(content, '#fffbeb');
+
     await this.transporter.sendMail({
-      from: process.env.SMTP_FROM || 'noreply@pavisoft.com',
+      from: process.env.SMTP_FROM || 'Pavisoft Sistemas <noreply@pavisoft.com>',
       to: config.to,
       subject: '⏰ Lembrete: Pagamento Pendente - Pavisoft',
       html,
@@ -480,44 +621,109 @@ export class EmailService {
     expirationDate: string;
     amount: number;
   }) {
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; background: #f3f4f6; }
-          .container { max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; overflow: hidden; }
-          .header { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 40px; text-align: center; color: white; }
-          .content { padding: 40px 30px; }
-          .info-box { background: #dbeafe; border-left: 4px solid #3b82f6; padding: 20px; margin: 20px 0; border-radius: 8px; }
-          .footer { background: #f9fafb; padding: 30px; text-align: center; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>🔔 Seu Plano Vence em ${config.daysRemaining} Dias</h1>
-          </div>
-          <div class="content">
-            <p>Olá, <strong>${config.userName}</strong>!</p>
-            <div class="info-box">
-              <p>Seu plano <strong>${config.planName}</strong> vence em <strong>${config.expirationDate}</strong>.</p>
-              <p style="margin-top: 15px;">Renove agora por apenas <strong>R$ ${config.amount.toFixed(2)}</strong>.</p>
-            </div>
-            <p>Garanta acesso contínuo a todos os recursos do sistema.</p>
-          </div>
-          <div class="footer">
-            <p>PAVISOFT SISTEMAS</p>
-          </div>
-        </div>
-      </body>
-      </html>
+    const content = `
+<tr>
+  <td style="padding: 48px 40px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td>
+          <p style="font-size: 18px; color: #1e293b; margin: 0 0 8px 0; font-weight: 600;">
+            Olá, ${config.userName}! 👋
+          </p>
+
+          <!-- Warning Banner -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+            <tr>
+              <td style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 28px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 12px;">🔔</div>
+                <p style="color: #1e40af; font-size: 20px; font-weight: 700; margin: 0 0 8px 0;">
+                  Seu Plano Vence em ${config.daysRemaining} Dias
+                </p>
+                <p style="color: #1e40af; font-size: 14px; margin: 0;">
+                  Data de vencimento: ${config.expirationDate}
+                </p>
+              </td>
+            </tr>
+          </table>
+          
+          <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
+            Seu plano <strong style="color: #1e40af;">${config.planName}</strong> está próximo do vencimento. Renove agora para manter o acesso ininterrupto a todos os recursos do sistema.
+          </p>
+
+          <!-- Detalhes da Renovação -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #0ea5e9; border-radius: 12px; padding: 28px; margin: 32px 0;">
+            <tr>
+              <td>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="padding: 10px 0;">
+                      <span style="color: #0369a1; font-size: 14px;">Plano Atual</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0;">
+                      <strong style="color: #0c4a6e; font-size: 14px;">${config.planName}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0;">
+                      <span style="color: #0369a1; font-size: 14px;">Vence em</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0;">
+                      <strong style="color: #0c4a6e; font-size: 14px;">${config.daysRemaining} dias</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0;">
+                      <span style="color: #0369a1; font-size: 14px;">Data de Vencimento</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0;">
+                      <strong style="color: #0c4a6e; font-size: 14px;">${config.expirationDate}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 16px 0 0 0;">
+                      <span style="color: #0369a1; font-size: 14px;">Valor da Renovação</span>
+                    </td>
+                    <td align="right" style="padding: 16px 0 0 0;">
+                      <strong style="color: #0ea5e9; font-size: 22px;">R$ ${config.amount.toFixed(2)}</strong>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Benefícios -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+            <tr>
+              <td style="background: #ecfdf5; border-left: 4px solid #10b981; border-radius: 8px; padding: 20px;">
+                <p style="color: #065f46; font-size: 14px; margin: 0 0 12px 0; font-weight: 600;">
+                  ✨ Ao renovar, você continua com acesso a:
+                </p>
+                <ul style="color: #065f46; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
+                  <li>PDV Completo com NFCe</li>
+                  <li>Gestão de Estoque em Tempo Real</li>
+                  <li>Controle Financeiro Avançado</li>
+                  <li>Relatórios Detalhados</li>
+                  <li>Suporte Técnico Especializado</li>
+                </ul>
+              </td>
+            </tr>
+          </table>
+
+          <p style="color: #64748b; font-size: 14px; line-height: 1.7; margin: 32px 0 0 0;">
+            Para renovar ou esclarecer dúvidas, entre em contato conosco através do email <a href="mailto:pavisoft.planos@gmail.com" style="color: #3b82f6; text-decoration: none;">pavisoft.planos@gmail.com</a>
+          </p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
     `;
 
+    const html = this.getBaseTemplate(content, '#eff6ff');
+
     await this.transporter.sendMail({
-      from: process.env.SMTP_FROM || 'noreply@pavisoft.com',
+      from: process.env.SMTP_FROM || 'Pavisoft Sistemas <noreply@pavisoft.com>',
       to: config.to,
       subject: `🔔 Seu plano vence em ${config.daysRemaining} dias - Pavisoft`,
       html,
@@ -531,44 +737,98 @@ export class EmailService {
     daysOverdue: number;
     amount: number;
   }) {
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; background: #f3f4f6; }
-          .container { max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; overflow: hidden; }
-          .header { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 40px; text-align: center; color: white; }
-          .content { padding: 40px 30px; }
-          .alert-box { background: #fee2e2; border-left: 4px solid #ef4444; padding: 20px; margin: 20px 0; border-radius: 8px; }
-          .footer { background: #f9fafb; padding: 30px; text-align: center; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>⚠️ Pagamento Atrasado</h1>
-          </div>
-          <div class="content">
-            <p>Olá, <strong>${config.userName}</strong>!</p>
-            <div class="alert-box">
-              <p><strong>ATENÇÃO:</strong> Seu pagamento está atrasado há <strong>${config.daysOverdue} dias</strong>.</p>
-              <p style="margin-top: 15px;">Valor: <strong>R$ ${config.amount.toFixed(2)}</strong></p>
-            </div>
-            <p>Regularize sua situação para evitar bloqueio da conta.</p>
-          </div>
-          <div class="footer">
-            <p>PAVISOFT SISTEMAS</p>
-          </div>
-        </div>
-      </body>
-      </html>
+    const content = `
+<tr>
+  <td style="padding: 48px 40px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td>
+          <p style="font-size: 18px; color: #1e293b; margin: 0 0 8px 0; font-weight: 600;">
+            Olá, ${config.userName}! 👋
+          </p>
+
+          <!-- Alert Banner -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+            <tr>
+              <td style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 2px solid #ef4444; border-radius: 12px; padding: 28px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 12px;">⚠️</div>
+                <p style="color: #991b1b; font-size: 20px; font-weight: 700; margin: 0 0 8px 0;">
+                  Pagamento Atrasado
+                </p>
+                <p style="color: #991b1b; font-size: 14px; margin: 0;">
+                  ${config.daysOverdue} dias de atraso
+                </p>
+              </td>
+            </tr>
+          </table>
+          
+          <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
+            <strong style="color: #ef4444;">ATENÇÃO:</strong> O pagamento do seu plano <strong style="color: #1e40af;">${config.planName}</strong> está atrasado há ${config.daysOverdue} dias.
+          </p>
+
+          <!-- Detalhes do Pagamento -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid #ef4444; border-radius: 12px; padding: 28px; margin: 32px 0;">
+            <tr>
+              <td>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="padding: 10px 0;">
+                      <span style="color: #991b1b; font-size: 14px;">Plano</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0;">
+                      <strong style="color: #7f1d1d; font-size: 14px;">${config.planName}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0;">
+                      <span style="color: #991b1b; font-size: 14px;">Dias de Atraso</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0;">
+                      <strong style="color: #7f1d1d; font-size: 14px;">${config.daysOverdue} dias</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 16px 0 0 0;">
+                      <span style="color: #991b1b; font-size: 14px;">Valor em Aberto</span>
+                    </td>
+                    <td align="right" style="padding: 16px 0 0 0;">
+                      <strong style="color: #ef4444; font-size: 22px;">R$ ${config.amount.toFixed(2)}</strong>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Warning Box -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+            <tr>
+              <td style="background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 20px;">
+                <p style="color: #92400e; font-size: 14px; margin: 0; line-height: 1.6;">
+                  <strong>⚠️ Ação Necessária:</strong> Regularize sua situação o quanto antes para evitar o bloqueio temporário da sua conta e perda de dados.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
+            Caso tenha dúvidas ou precise de suporte para realizar o pagamento, nossa equipe está à disposição.
+          </p>
+
+          <p style="color: #64748b; font-size: 14px; line-height: 1.7; margin: 32px 0 0 0;">
+            Entre em contato: <a href="mailto:pavisoft.planos@gmail.com" style="color: #3b82f6; text-decoration: none; font-weight: 600;">pavisoft.planos@gmail.com</a>
+          </p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
     `;
 
+    const html = this.getBaseTemplate(content, '#fef2f2');
+
     await this.transporter.sendMail({
-      from: process.env.SMTP_FROM || 'noreply@pavisoft.com',
+      from: process.env.SMTP_FROM || 'Pavisoft Sistemas <noreply@pavisoft.com>',
       to: config.to,
       subject: '⚠️ URGENTE: Pagamento Atrasado - Pavisoft',
       html,
@@ -580,192 +840,82 @@ export class EmailService {
     userName: string;
     planName: string;
   }) {
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; background: #f3f4f6; }
-          .container { max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; overflow: hidden; }
-          .header { background: #991b1b; padding: 40px; text-align: center; color: white; }
-          .content { padding: 40px 30px; }
-          .footer { background: #f9fafb; padding: 30px; text-align: center; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>🔒 Conta Bloqueada</h1>
-          </div>
-          <div class="content">
-            <p>Olá, <strong>${config.userName}</strong>,</p>
-            <p style="margin-top: 20px;">Sua conta foi bloqueada por falta de pagamento do plano <strong>${config.planName}</strong>.</p>
-            <p style="margin-top: 20px;">Entre em contato com nosso suporte para regularizar sua situação.</p>
-          </div>
-          <div class="footer">
-            <p>PAVISOFT SISTEMAS<br>pavisoft.planos@gmail.com</p>
-          </div>
-        </div>
-      </body>
-      </html>
+    const content = `
+<tr>
+  <td style="padding: 48px 40px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td>
+          <p style="font-size: 18px; color: #1e293b; margin: 0 0 8px 0; font-weight: 600;">
+            Olá, ${config.userName}
+          </p>
+
+          <!-- Alert Banner -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+            <tr>
+              <td style="background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%); border: 2px solid #7f1d1d; border-radius: 12px; padding: 32px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 12px;">🔒</div>
+                <p style="color: #ffffff; font-size: 22px; font-weight: 700; margin: 0 0 8px 0;">
+                  Conta Bloqueada
+                </p>
+                <p style="color: rgba(255, 255, 255, 0.9); font-size: 14px; margin: 0;">
+                  Acesso temporariamente suspenso
+                </p>
+              </td>
+            </tr>
+          </table>
+          
+          <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
+            Informamos que sua conta foi bloqueada devido à falta de pagamento do plano <strong style="color: #991b1b;">${config.planName}</strong>.
+          </p>
+
+          <!-- Info Box -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 28px; margin: 32px 0;">
+            <tr>
+              <td>
+                <p style="color: #1e293b; font-size: 15px; font-weight: 700; margin: 0 0 16px 0;">
+                  O que acontece agora?
+                </p>
+                <ul style="color: #64748b; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
+                  <li style="margin-bottom: 8px;">Seu acesso ao sistema foi temporariamente suspenso</li>
+                  <li style="margin-bottom: 8px;">Seus dados permanecem seguros em nossos servidores</li>
+                  <li style="margin-bottom: 8px;">Após regularização, o acesso será restaurado imediatamente</li>
+                  <li>Dados podem ser perdidos após período prolongado de inatividade</li>
+                </ul>
+              </td>
+            </tr>
+          </table>
+
+          <!-- CTA Box -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+            <tr>
+              <td style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-left: 4px solid #3b82f6; border-radius: 8px; padding: 24px;">
+                <p style="color: #1e40af; font-size: 15px; margin: 0 0 12px 0; font-weight: 600;">
+                  💡 Como Reativar Sua Conta
+                </p>
+                <p style="color: #1e40af; font-size: 14px; margin: 0; line-height: 1.6;">
+                  Entre em contato com nossa equipe através do email <a href="mailto:pavisoft.planos@gmail.com" style="color: #3b82f6; text-decoration: none; font-weight: 600;">pavisoft.planos@gmail.com</a> para regularizar sua situação e reativar sua conta.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <p style="color: #64748b; font-size: 14px; line-height: 1.7; margin: 32px 0 0 0;">
+            Nossa equipe está pronta para ajudá-lo a resolver esta situação o mais rápido possível. Aguardamos seu contato.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
     `;
 
-    await this.transporter.sendMail({
-      from: process.env.SMTP_FROM || 'noreply@pavisoft.com',
-      to: config.to,
-      subject: '🔒 Conta Bloqueada - Pavisoft Sistemas',
-      html,
-    });
-  }
-
-  async sendEmployeePackageActivated(config: {
-    to: string;
-    userName: string;
-    packageName: string;
-    quantity: number;
-    newLimit: number;
-    price: number;
-  }) {
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f3f4f6; }
-          .email-wrapper { width: 100%; background-color: #f3f4f6; padding: 40px 20px; }
-          .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-          .banner { width: 100%; height: 180px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); position: relative; display: flex; align-items: center; justify-content: center; }
-          .banner-content { text-align: center; color: white; }
-          .logo-text { font-size: 36px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
-          .logo-subtitle { font-size: 14px; opacity: 0.95; letter-spacing: 2px; text-transform: uppercase; }
-          .content { padding: 40px 30px; }
-          .greeting { font-size: 18px; color: #374151; margin-bottom: 20px; }
-          .message { color: #4b5563; font-size: 15px; line-height: 1.8; margin-bottom: 20px; }
-          .success-banner { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-left: 4px solid #10b981; padding: 20px; border-radius: 8px; margin: 25px 0; text-align: center; }
-          .success-banner-icon { font-size: 48px; margin-bottom: 10px; }
-          .success-banner-text { color: #065f46; font-size: 18px; font-weight: 600; }
-          .receipt-box { background: #f9fafb; border: 2px solid #e5e7eb; padding: 25px; border-radius: 8px; margin: 25px 0; }
-          .receipt-title { color: #1f2937; font-size: 16px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; }
-          .receipt-title::before { content: "📋"; margin-right: 10px; font-size: 20px; }
-          .receipt-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb; }
-          .receipt-item:last-child { border-bottom: none; padding-bottom: 0; }
-          .receipt-label { color: #6b7280; font-size: 14px; }
-          .receipt-value { color: #111827; font-weight: 600; font-size: 14px; }
-          .highlight-value { color: #10b981; font-size: 18px; font-weight: bold; }
-          .action-box { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid #2563eb; padding: 20px; border-radius: 8px; margin: 25px 0; }
-          .action-box p { color: #1e40af; font-size: 15px; margin: 0; display: flex; align-items: center; }
-          .action-box p::before { content: "🚀"; margin-right: 10px; font-size: 20px; }
-          .footer { background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb; }
-          .footer-logo { font-size: 20px; font-weight: bold; color: #10b981; margin-bottom: 8px; }
-          .footer-text { color: #6b7280; font-size: 13px; line-height: 1.8; }
-          .footer-divider { width: 50px; height: 2px; background: #10b981; margin: 15px auto; }
-          .note { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 6px; margin: 20px 0; }
-          .note p { color: #92400e; font-size: 13px; margin: 0; display: flex; align-items: flex-start; }
-          .note p::before { content: "📌"; margin-right: 10px; font-size: 16px; flex-shrink: 0; }
-          @media only screen and (max-width: 600px) {
-            .email-wrapper { padding: 20px 10px; }
-            .content { padding: 30px 20px; }
-            .logo-text { font-size: 28px; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="email-wrapper">
-          <div class="container">
-            <!-- Banner com Logo -->
-            <div class="banner">
-              <div class="banner-content">
-                <div class="logo-text">PAVISOFT</div>
-                <div class="logo-subtitle">Sistemas de Gestão</div>
-              </div>
-            </div>
-
-            <!-- Conteúdo -->
-            <div class="content">
-              <div class="greeting">Olá, <strong>${config.userName}</strong>! 👋</div>
-
-              <!-- Banner de Sucesso -->
-              <div class="success-banner">
-                <div class="success-banner-icon">✅</div>
-                <div class="success-banner-text">Pagamento Confirmado com Sucesso!</div>
-              </div>
-              
-              <p class="message">
-                Temos o prazer de informar que seu pagamento foi processado e confirmado. 
-                <strong>Seu limite de funcionários foi aumentado imediatamente!</strong>
-              </p>
-
-              <!-- Recibo da Transação -->
-              <div class="receipt-box">
-                <div class="receipt-title">Recibo da Transação</div>
-                <div class="receipt-item">
-                  <span class="receipt-label">Pacote Adquirido</span>
-                  <span class="receipt-value">${config.packageName}</span>
-                </div>
-                <div class="receipt-item">
-                  <span class="receipt-label">Funcionários Adicionados</span>
-                  <span class="receipt-value">+${config.quantity} colaboradores</span>
-                </div>
-                <div class="receipt-item">
-                  <span class="receipt-label">Novo Limite Total</span>
-                  <span class="highlight-value">${config.newLimit} funcionários</span>
-                </div>
-                <div class="receipt-item">
-                  <span class="receipt-label">Valor Pago</span>
-                  <span class="receipt-value">R$ ${config.price.toFixed(2)}</span>
-                </div>
-                <div class="receipt-item">
-                  <span class="receipt-label">Data da Ativação</span>
-                  <span class="receipt-value">${new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
-                </div>
-              </div>
-
-              <!-- Call to Action -->
-              <div class="action-box">
-                <p>
-                  <strong>Você já pode cadastrar novos funcionários no sistema! Acesse o painel administrativo e comece agora mesmo.</strong>
-                </p>
-              </div>
-
-              <!-- Nota -->
-              <div class="note">
-                <p>
-                  Guarde este email como comprovante da sua transação. 
-                  Ele contém todas as informações importantes sobre sua compra.
-                </p>
-              </div>
-
-              <p class="message" style="margin-top: 30px;">
-                Obrigado por escolher o Pavisoft Sistemas! Estamos aqui para ajudar sua empresa a crescer.
-              </p>
-            </div>
-
-            <!-- Rodapé -->
-            <div class="footer">
-              <div class="footer-logo">PAVISOFT SISTEMAS</div>
-              <div class="footer-divider"></div>
-              <p class="footer-text">
-                Sistema Completo de Gestão Empresarial<br>
-                PDV | Estoque | Financeiro | NFCe<br><br>
-                Dúvidas? Entre em contato: pavisoft.planos@gmail.com<br>
-                <em>Este é um email automático. Por favor, não responda.</em>
-              </p>
-            </div>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
+    const html = this.getBaseTemplate(content, '#fef2f2');
 
     await this.transporter.sendMail({
-      from: process.env.SMTP_FROM || 'noreply@pavisoft.com',
+      from: process.env.SMTP_FROM || 'Pavisoft Sistemas <noreply@pavisoft.com>',
       to: config.to,
-      subject: `✅ ${config.packageName} Ativado - Recibo`,
+      subject: '🔒 Conta Bloqueada - Ação Necessária - Pavisoft',
       html,
     });
   }

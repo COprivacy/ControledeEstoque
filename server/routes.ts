@@ -1949,6 +1949,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dataVencimento.setFullYear(dataVencimento.getFullYear() + 1);
       }
 
+      // Calcular prazo limite para pagamento (7 dias após criação)
+      const prazoLimitePagamento = new Date();
+      prazoLimitePagamento.setDate(prazoLimitePagamento.getDate() + 7);
+
       // Criar registro de assinatura
       const subscription = await storage.createSubscription({
         user_id: user.id,
@@ -1956,6 +1960,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "pendente",
         valor: planoValues[plano as keyof typeof planoValues],
         data_vencimento: dataVencimento.toISOString(),
+        prazo_limite_pagamento: prazoLimitePagamento.toISOString(),
+        tentativas_cobranca: 0,
         mercadopago_preference_id: preference.id,
         forma_pagamento: formaPagamento,
         status_pagamento: "pending",

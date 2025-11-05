@@ -101,10 +101,18 @@ export class PaymentReminderService {
     const user = (await storage.getUsers()).find(u => u.id === subscription.user_id);
     if (!user) return;
 
-    const daysSinceCreation = this.getDaysDifference(new Date(subscription.data_criacao), new Date());
+    const now = new Date();
+    const daysSinceCreation = this.getDaysDifference(new Date(subscription.data_criacao), now);
+    
+    // Calcular prazo limite se não existir
+    const prazoLimite = subscription.prazo_limite_pagamento 
+      ? new Date(subscription.prazo_limite_pagamento)
+      : new Date(new Date(subscription.data_criacao).getTime() + 7 * 24 * 60 * 60 * 1000);
+    
+    const daysUntilDeadline = this.getDaysDifference(now, prazoLimite);
 
-    // Enviar lembrete após 2, 5 e 10 dias de pendência
-    if ([2, 5, 10].includes(daysSinceCreation)) {
+    // Enviar lembrete após 2, 5 dias e quando faltar 1 dia para o prazo
+    if ([2, 5].includes(daysSinceCreation) || daysUntilDeadline === 1) {
       await this.emailService.sendPaymentPendingReminder({
         to: user.email,
         userName: user.nome,
@@ -113,22 +121,41 @@ export class PaymentReminderService {
         amount: subscription.valor,
       });
 
+      // Incrementar tentativas de cobrança
+      await storage.updateSubscription(subscription.id, {
+        tentativas_cobranca: (subscription.tentativas_cobranca || 0) + 1,
+        data_atualizacao: new Date().toISOString(),
+      });
+
       logger.info('Lembrete de pagamento pendente enviado', 'PAYMENT_REMINDER', {
         userId: user.id,
         subscriptionId: subscription.id,
         days: daysSinceCreation,
+        daysUntilDeadline,
+        tentativas: (subscription.tentativas_cobranca || 0) + 1,
       });
     }
 
-    // Cancelar automaticamente após 15 dias
-    if (daysSinceCreation >= 15) {
+    // Cancelar automaticamente após o prazo limite
+    if (daysUntilDeadline < 0) {
       await storage.updateSubscription(subscription.id, {
         status: 'cancelado',
-        status_pagamento: 'CANCELLED',
+        status_pagamento: 'cancelled',
+        motivo_cancelamento: `Cancelado automaticamente - prazo de ${Math.abs(daysUntilDeadline)} dia(s) expirado sem pagamento`,
+        data_atualizacao: new Date().toISOString(),
       });
 
-      logger.warn('Assinatura cancelada por pendência prolongada', 'PAYMENT_REMINDER', {
+      // Enviar email de cancelamento
+      await this.emailService.sendAccountBlocked({
+        to: user.email,
+        userName: user.nome,
+        planName: subscription.plano,
+      });
+
+      logger.warn('Assinatura cancelada automaticamente por prazo expirado', 'PAYMENT_REMINDER', {
         subscriptionId: subscription.id,
+        userId: user.id,
+        diasAposLimite: Math.abs(daysUntilDeadline),
       });
     }
   }

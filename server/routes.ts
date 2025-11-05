@@ -1205,6 +1205,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/clientes", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
+      
+      if (req.body.cpf_cnpj) {
+        const allClientes = await storage.getClientes();
+        const clienteExistente = allClientes.find(
+          c => c.user_id === effectiveUserId && 
+               c.cpf_cnpj && 
+               c.cpf_cnpj === req.body.cpf_cnpj
+        );
+        
+        if (clienteExistente) {
+          return res.status(400).json({ 
+            error: "Já existe um cliente cadastrado com este CPF/CNPJ" 
+          });
+        }
+      }
+      
       const clienteData = {
         ...req.body,
         user_id: effectiveUserId,
@@ -1212,7 +1228,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       const cliente = await storage.createCliente(clienteData);
       res.json(cliente);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message && error.message.includes('duplicate key')) {
+        return res.status(400).json({ 
+          error: "Já existe um cliente cadastrado com este CPF/CNPJ" 
+        });
+      }
       res.status(500).json({ error: "Erro ao criar cliente" });
     }
   });
@@ -1230,11 +1251,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Cliente não encontrado" });
       }
 
+      if (req.body.cpf_cnpj) {
+        const allClientes = await storage.getClientes();
+        const cpfDuplicado = allClientes.find(
+          c => c.user_id === effectiveUserId && 
+               c.id !== parseInt(id) && 
+               c.cpf_cnpj && 
+               c.cpf_cnpj === req.body.cpf_cnpj
+        );
+        
+        if (cpfDuplicado) {
+          return res.status(400).json({ 
+            error: "Já existe outro cliente cadastrado com este CPF/CNPJ" 
+          });
+        }
+      }
+
       const cliente = await storage.updateCliente(id, req.body);
       console.log(`✅ [UPDATE CLIENTE] Cliente atualizado com sucesso:`, JSON.stringify(cliente, null, 2));
       res.json(cliente);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ [UPDATE CLIENTE] Erro ao atualizar cliente:`, error);
+      if (error.message && error.message.includes('duplicate key')) {
+        return res.status(400).json({ 
+          error: "Já existe outro cliente cadastrado com este CPF/CNPJ" 
+        });
+      }
       res.status(500).json({ error: "Erro ao atualizar cliente" });
     }
   });

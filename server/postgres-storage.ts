@@ -97,7 +97,25 @@ export class PostgresStorage implements IStorage {
     return await this.db.select().from(users);
   }
 
-  async getUserByEmail(email: string): Promise<User | null> {
+  async getUserById(userId: string): Promise<User | undefined> {
+    try {
+      const result = await this.db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      
+      return result[0];
+    } catch (error: any) {
+      logger.error('[DB] Erro ao buscar usuário por ID:', {
+        userId,
+        error: error.message
+      });
+      throw error;
+    }
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
     try {
       logger.info('[DB] Buscando usuário por email:', { email });
 
@@ -112,7 +130,7 @@ export class PostgresStorage implements IStorage {
         usuario: result[0] ? { id: result[0].id, email: result[0].email, nome: result[0].nome } : null
       });
 
-      return result[0] || null;
+      return result[0];
     } catch (error: any) {
       logger.error('[DB] Erro ao buscar usuário por email:', {
         email,

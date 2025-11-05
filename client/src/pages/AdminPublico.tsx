@@ -1682,11 +1682,13 @@ export default function AdminPublico() {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              if (pag.usuario) {
-                                updateUserPlanMutation.mutate({
-                                  userId: pag.usuario.id,
-                                  plano: "free"
-                                });
+                              if (confirm("Tem certeza que deseja suspender este usuário e cancelar a assinatura?")) {
+                                if (pag.usuario) {
+                                  updateUserPlanMutation.mutate({
+                                    userId: pag.usuario.id,
+                                    plano: "free"
+                                  });
+                                }
                               }
                             }}
                             className="flex-1 text-red-600 hover:text-red-700"

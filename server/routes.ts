@@ -140,15 +140,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user) {
         // Comparação de senha segura
         const senhaMatch = user.senha === senha;
-        
+
         if (senhaMatch) {
           console.log(`✅ Login bem-sucedido para usuário: ${user.email}`);
-          
+
           // Atualizar último acesso
           await storage.updateUser(user.id, {
             ultimo_acesso: new Date().toISOString()
           });
-          
+
           return res.json({
             id: user.id,
             email: user.email,
@@ -303,12 +303,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Garantir que o usuário master existe
       const masterEmail = "pavisoft.suporte@gmail.com";
       let masterUser = await storage.getUserByEmail(masterEmail);
-      
+
       if (!masterUser) {
         console.log("🔧 Criando usuário master automaticamente...");
         const dataExpiracao = new Date();
         dataExpiracao.setFullYear(dataExpiracao.getFullYear() + 10);
-        
+
         masterUser = await storage.createUser({
           nome: "Pavisoft",
           email: masterEmail,
@@ -330,9 +330,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const defaultPassword = "PAVISOFT.SISTEMASLTDA";
         const hashedPassword = await bcrypt.hash(defaultPassword, 10);
         await storage.setSystemConfig("master_password", hashedPassword);
-        
+
         const isValid = await bcrypt.compare(password, hashedPassword);
-        
+
         // Registrar tentativa
         if (!isValid) {
           const currentAttempts = masterPasswordAttempts.get(clientKey);
@@ -345,13 +345,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           masterPasswordAttempts.delete(clientKey);
           logger.info('Acesso admin master autorizado', 'SECURITY', { userEmail });
         }
-        
+
         return res.json({ valid: isValid });
       }
 
       // Verificar senha fornecida com hash armazenado
       const isValid = await bcrypt.compare(password, masterPasswordConfig.valor);
-      
+
       // Registrar tentativa
       if (!isValid) {
         const currentAttempts = masterPasswordAttempts.get(clientKey);
@@ -367,7 +367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         masterPasswordAttempts.delete(clientKey);
         logger.info('Acesso admin master autorizado', 'SECURITY', { userEmail });
       }
-      
+
       res.json({ valid: isValid });
 
     } catch (error) {
@@ -607,7 +607,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { MercadoPagoService } = await import('./mercadopago');
-      const mercadopago = new MercadoPagoService({ accessToken: access_token });
+      const mercadopago = new MercadoPagoService({accessToken: access_token});
       const result = await mercadopago.testConnection();
 
       if (result.success) {
@@ -625,7 +625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const subscriptions = await storage.getSubscriptions();
       const users = await storage.getUsers();
-      
+
       // Calcular métricas
       const assinaturasAtivas = subscriptions.filter(s => s.status === "ativo").length;
       const assinaturasPendentes = subscriptions.filter(s => s.status === "pendente").length;
@@ -635,26 +635,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const receitaPendente = subscriptions
         .filter(s => s.status === "pendente")
         .reduce((sum, s) => sum + s.valor, 0);
-      
+
       // Taxa de conversão
       const taxaConversao = subscriptions.length > 0 
         ? (assinaturasAtivas / subscriptions.length) * 100 
         : 0;
-      
+
       // Churn rate
       const cancelados = users.filter(u => u.status === "cancelado").length;
       const taxaChurn = users.length > 0 ? (cancelados / users.length) * 100 : 0;
-      
+
       // Ticket médio
       const ticketMedio = assinaturasAtivas > 0 ? receitaMensal / assinaturasAtivas : 0;
-      
+
       // Métodos de pagamento
       const metodosPagamento = {
         cartao: subscriptions.filter(s => s.forma_pagamento === "CREDIT_CARD").length,
         boleto: subscriptions.filter(s => s.forma_pagamento === "BOLETO").length,
         pix: subscriptions.filter(s => s.forma_pagamento === "PIX").length,
       };
-      
+
       res.json({
         metricas: {
           assinaturasAtivas,
@@ -679,7 +679,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/payments/:paymentId/retry", requireAdmin, async (req, res) => {
     try {
       const { paymentId } = req.params;
-      
+
       const config = await storage.getConfigMercadoPago();
       if (!config || !config.access_token) {
         return res.status(500).json({ error: "Mercado Pago não configurado" });
@@ -687,17 +687,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { MercadoPagoService } = await import('./mercadopago');
       const mercadopago = new MercadoPagoService({ accessToken: config.access_token });
-      
+
       // Buscar pagamento
       const payment = await mercadopago.getPayment(paymentId);
-      
+
       if (payment.status === 'approved') {
         return res.json({ message: "Pagamento já aprovado", status: payment.status });
       }
-      
+
       // Lógica de retry (recriar preferência)
       logger.info("[PAYMENT_RETRY] Tentando reprocessar pagamento", { paymentId });
-      
+
       res.json({ 
         success: true, 
         message: "Cobrança reenviada com sucesso",
@@ -714,15 +714,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const subscriptions = await storage.getSubscriptions();
       const users = await storage.getUsers();
-      
+
       // Criar CSV
       let csv = "ID,Cliente,Email,Plano,Valor,Status,Forma Pagamento,Data Vencimento\n";
-      
+
       for (const sub of subscriptions) {
         const user = users.find(u => u.id === sub.user_id);
-        csv += `${sub.id},"${user?.nome || '-'}","${user?.email || '-'}",${sub.plano},${sub.valor},${sub.status},${sub.forma_pagamento || '-'},${sub.data_vencimento || '-'}\n`;
+        csv += `${sub.id},"${user?.nome || '-'}","${user?.email || '-'}","${sub.plano}",${sub.valor},${sub.status},${sub.forma_pagamento || '-'},${sub.data_vencimento || '-'}\n`;
       }
-      
+
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=relatorio-assinaturas.csv');
       res.send(csv);
@@ -1460,7 +1460,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/clientes", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers['effective-user-id'] as string;
-      
+
       if (req.body.cpf_cnpj) {
         const allClientes = await storage.getClientes();
         const clienteExistente = allClientes.find(
@@ -1468,14 +1468,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                c.cpf_cnpj && 
                c.cpf_cnpj === req.body.cpf_cnpj
         );
-        
+
         if (clienteExistente) {
           return res.status(400).json({ 
             error: "Já existe um cliente cadastrado com este CPF/CNPJ" 
           });
         }
       }
-      
+
       const clienteData = {
         ...req.body,
         user_id: effectiveUserId,
@@ -1514,7 +1514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                c.cpf_cnpj && 
                c.cpf_cnpj === req.body.cpf_cnpj
         );
-        
+
         if (cpfDuplicado) {
           return res.status(400).json({ 
             error: "Já existe outro cliente cadastrado com este CPF/CNPJ" 
@@ -2189,18 +2189,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Buscar usuário atual para garantir que existe
       const users = await storage.getUsers();
       const user = users.find(u => u.id === targetId);
-      
+
       if (!user) {
         return res.status(404).json({ error: "Usuário não encontrado" });
       }
 
       // Atualizar usando a sintaxe correta do PostgreSQL
       const metaValue = parseFloat(meta_mensal);
-      
+
       // Como meta_mensal não existe no schema, vamos armazenar em outro campo ou criar
       // Por enquanto, vamos apenas retornar sucesso sem salvar no banco
       // TODO: Adicionar campo meta_mensal ao schema se necessário
-      
+
       console.log(`✅ Meta MRR definida - User: ${targetId}, Meta: R$ ${metaValue.toFixed(2)}`);
 
       res.json({ 
@@ -2357,13 +2357,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/webhook/mercadopago', async (req, res) => {
     try {
       const { type, data } = req.body;
-      
+
       console.log('📥 Webhook Mercado Pago recebido:', { type, data });
-      
+
       // Processar notificação de pagamento
       if (type === 'payment') {
         const paymentId = data.id;
-        
+
         // Buscar detalhes do pagamento
         const config = await storage.getConfigMercadoPago();
         if (!config || !config.access_token) {
@@ -2372,44 +2372,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const { MercadoPagoService } = await import('./mercadopago');
-        const mercadopago = new MercadoPagoService({ accessToken: config.access_token });
-        
+        const mercadopago = new MercadoPagoService({accessToken: config.access_token});
+
         // Buscar informações do pagamento
         const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
           headers: {
             'Authorization': `Bearer ${config.access_token}`,
           },
         });
-        
+
         if (!response.ok) {
           console.error('❌ Erro ao buscar pagamento do Mercado Pago');
           return res.status(500).json({ error: 'Erro ao buscar pagamento' });
         }
-        
+
         const paymentData = await response.json();
         const externalReference = paymentData.external_reference;
         const status = paymentData.status;
-        
+
         console.log('💳 Dados do pagamento:', { 
           id: paymentId, 
           status, 
           externalReference 
         });
-        
+
         // Encontrar assinatura pelo external_reference
         const subscriptions = await storage.getSubscriptions();
         const subscription = subscriptions.find(s => s.external_reference === externalReference);
-        
+
         if (!subscription) {
           console.log('⚠️ Assinatura não encontrada para referência:', externalReference);
           return res.status(404).json({ error: 'Assinatura não encontrada' });
         }
-        
+
         // Processar status do pagamento
         if (status === 'approved') {
           // Pagamento aprovado
           console.log('✅ Pagamento aprovado - Ativando assinatura:', subscription.id);
-          
+
           await storage.updateSubscription(subscription.id, {
             status: 'ativo',
             status_pagamento: 'approved',
@@ -2417,25 +2417,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             data_inicio: new Date().toISOString(),
             data_atualizacao: new Date().toISOString(),
           });
-          
+
           // Atualizar plano do usuário
           await storage.updateUser(subscription.user_id, {
             plano: subscription.plano,
             data_expiracao_plano: subscription.data_vencimento,
             status: 'ativo',
           });
-          
+
           console.log(`✅ Assinatura ${subscription.id} ativada com sucesso!`);
           logger.info('Pagamento aprovado via webhook', 'MERCADOPAGO_WEBHOOK', {
             subscriptionId: subscription.id,
             userId: subscription.user_id,
             plano: subscription.plano,
           });
-          
+
         } else if (status === 'rejected' || status === 'cancelled') {
           // Pagamento recusado ou cancelado
           console.log('❌ Pagamento recusado/cancelado:', subscription.id);
-          
+
           await storage.updateSubscription(subscription.id, {
             status: 'cancelado',
             status_pagamento: status,
@@ -2443,16 +2443,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             motivo_cancelamento: `Pagamento ${status} pelo Mercado Pago`,
             data_atualizacao: new Date().toISOString(),
           });
-          
+
           logger.warn('Pagamento recusado/cancelado via webhook', 'MERCADOPAGO_WEBHOOK', {
             subscriptionId: subscription.id,
             status,
           });
-          
+
         } else if (status === 'pending' || status === 'in_process') {
           // Pagamento pendente
           console.log('⏳ Pagamento pendente:', subscription.id);
-          
+
           await storage.updateSubscription(subscription.id, {
             status_pagamento: status,
             mercadopago_payment_id: paymentId.toString(),
@@ -2460,9 +2460,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
-      
+
       res.json({ success: true, message: 'Webhook processado com sucesso' });
-      
+
     } catch (error: any) {
       console.error('❌ Erro ao processar webhook Mercado Pago:', error);
       logger.error('Erro no webhook Mercado Pago', 'MERCADOPAGO_WEBHOOK', { error });

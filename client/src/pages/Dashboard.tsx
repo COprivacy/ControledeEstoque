@@ -1,3 +1,4 @@
+replit_final_file>
 import StatsCards from "@/components/StatsCards";
 import ProductCard from "@/components/ProductCard";
 import { Crown, TrendingUp, TrendingDown, Package, Target, Calendar } from "lucide-react";
@@ -19,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
@@ -614,3 +616,4 @@ export default function Dashboard() {
     </div>
   );
 }
+</replit_final_file>

@@ -255,12 +255,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers['x-user-id'] as string;
       const userEmail = req.headers['x-user-email'] as string;
 
+      console.log(`🔐 [MASTER PASSWORD] Tentativa de acesso:`, {
+        userId,
+        userEmail,
+        hasPassword: !!password
+      });
+
       // VALIDAÇÃO 1: Apenas usuário master pode tentar
       if (userEmail !== "pavisoft.suporte@gmail.com") {
         logger.warn('Tentativa de acesso não autorizada ao admin master', 'SECURITY', { 
           attemptedBy: userEmail || 'unknown',
           ip: req.ip 
         });
+        console.log(`❌ [MASTER PASSWORD] Email não autorizado: ${userEmail}`);
         return res.status(403).json({ error: "Acesso não autorizado" });
       }
 

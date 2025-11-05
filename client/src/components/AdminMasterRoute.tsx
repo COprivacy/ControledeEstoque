@@ -72,6 +72,7 @@ export function AdminMasterRoute({ children }: AdminMasterRouteProps) {
           "Content-Type": "application/json",
           "x-user-id": user?.id || "",
           "x-user-email": user?.email || "",
+          "x-is-admin": user?.is_admin || "false",
         },
         body: JSON.stringify({ password }),
       });

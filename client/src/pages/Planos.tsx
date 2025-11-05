@@ -50,6 +50,9 @@ export default function Planos() {
       // Limpar URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+
+    // NOTA: Página de planos é acessível mesmo para usuários bloqueados
+    // Isso permite que eles façam upgrade e reativem a conta
   }, [toast]);
 
   const handleBackToSystem = () => {

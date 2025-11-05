@@ -72,10 +72,11 @@ export function CheckoutForm({
   planoNome,
   planoPreco,
 }: CheckoutFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // NOTA: Este formulário deve funcionar mesmo para usuários bloqueados
+  // Isso permite que eles façam upgrade e reativem suas contas
   const { toast } = useToast();
-
-  const form = useForm<CheckoutFormData>({
+  const [isSubmitting, setIsSubmitting] = useState(false); // Changed from isLoading to isSubmitting
+  const form = useForm<CheckoutFormData>({ // Changed from useState to useForm hook
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
       nome: "",

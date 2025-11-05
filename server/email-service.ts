@@ -1,4 +1,3 @@
-
 import nodemailer from 'nodemailer';
 import fs from 'fs';
 import path from 'path';
@@ -24,7 +23,7 @@ export class EmailService {
       console.warn('⚠️ Logo não encontrado, usando banner padrão');
       this.logoBase64 = '';
     }
-    
+
     // Configurar com variáveis de ambiente
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -35,7 +34,7 @@ export class EmailService {
         pass: process.env.SMTP_PASS || 'bwks idip qyen kbnd',
       },
     });
-    
+
     // Verificar conexão SMTP ao inicializar
     this.transporter.verify((error, success) => {
       if (error) {
@@ -67,7 +66,7 @@ export class EmailService {
     <tr>
       <td align="center">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); overflow: hidden;">
-          
+
           <!-- Header com Logo -->
           <tr>
             <td style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 48px 40px; text-align: center;">
@@ -323,7 +322,7 @@ export class EmailService {
               </td>
             </tr>
           </table>
-          
+
           <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
             Temos o prazer de informar que seu pagamento foi processado e confirmado. <strong style="color: #10b981;">Seu limite de funcionários foi aumentado imediatamente!</strong>
           </p>
@@ -439,7 +438,7 @@ export class EmailService {
               </td>
             </tr>
           </table>
-          
+
           <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
             Informamos que sua senha de acesso ao sistema Pavisoft foi redefinida pelo administrador da sua conta por motivos de segurança.
           </p>
@@ -543,7 +542,7 @@ export class EmailService {
               </td>
             </tr>
           </table>
-          
+
           <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
             Identificamos que o pagamento do seu plano <strong style="color: #1e40af;">${config.planName}</strong> ainda está pendente.
           </p>
@@ -645,7 +644,7 @@ export class EmailService {
               </td>
             </tr>
           </table>
-          
+
           <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
             Seu plano <strong style="color: #1e40af;">${config.planName}</strong> está próximo do vencimento. Renove agora para manter o acesso ininterrupto a todos os recursos do sistema.
           </p>
@@ -761,7 +760,7 @@ export class EmailService {
               </td>
             </tr>
           </table>
-          
+
           <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
             <strong style="color: #ef4444;">ATENÇÃO:</strong> O pagamento do seu plano <strong style="color: #1e40af;">${config.planName}</strong> está atrasado há ${config.daysOverdue} dias.
           </p>
@@ -864,7 +863,7 @@ export class EmailService {
               </td>
             </tr>
           </table>
-          
+
           <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
             Informamos que sua conta foi bloqueada devido à falta de pagamento do plano <strong style="color: #991b1b;">${config.planName}</strong>.
           </p>
@@ -894,14 +893,20 @@ export class EmailService {
                   💡 Como Reativar Sua Conta
                 </p>
                 <p style="color: #1e40af; font-size: 14px; margin: 0; line-height: 1.6;">
-                  Entre em contato com nossa equipe através do email <a href="mailto:pavisoft.planos@gmail.com" style="color: #3b82f6; text-decoration: none; font-weight: 600;">pavisoft.planos@gmail.com</a> para regularizar sua situação e reativar sua conta.
+                  Para reativar sua conta, consulte nossos planos e faça o upgrade. Clique no botão abaixo para ver os detalhes:
                 </p>
+                <a href="https://www.pavisoft.com.br/plans" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 15px; margin-top: 20px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); transition: all 0.3s;">
+                  💰 Ver Planos e Fazer Upgrade
+                </a>
               </td>
             </tr>
           </table>
 
           <p style="color: #64748b; font-size: 14px; line-height: 1.7; margin: 32px 0 0 0;">
             Nossa equipe está pronta para ajudá-lo a resolver esta situação o mais rápido possível. Aguardamos seu contato.
+          </p>
+          <p style="color: #64748b; font-size: 14px; line-height: 1.7; margin-top: 8px;">
+            Você também pode entrar em contato diretamente pelo email: <a href="mailto:pavisoft.planos@gmail.com" style="color: #3b82f6; text-decoration: none; font-weight: 600;">pavisoft.planos@gmail.com</a>
           </p>
         </td>
       </tr>

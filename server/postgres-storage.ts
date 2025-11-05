@@ -76,8 +76,9 @@ export class PostgresStorage implements IStorage {
     this.db = drizzle(pool);
     console.log('✅ PostgreSQL conectado com sucesso');
 
-    // Testar conexão imediatamente
+    // Testar conexão e seed de dados
     this.testConnection();
+    this.seedInitialData();
   }
 
   private async testConnection() {
@@ -88,6 +89,85 @@ export class PostgresStorage implements IStorage {
       });
     } catch (error: any) {
       logger.error('[DB] Erro no teste de conexão:', {
+        error: error.message,
+        stack: error.stack
+      });
+    }
+  }
+
+  private async seedInitialData() {
+    try {
+      // Verificar se já existem usuários
+      const existingUsers = await this.db.select().from(users).limit(1);
+      
+      if (existingUsers.length > 0) {
+        console.log('✅ Banco de dados já possui usuários');
+        return;
+      }
+
+      console.log('🌱 Populando banco de dados com usuários iniciais...');
+
+      // Tentar carregar users.json
+      try {
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        const usersJsonPath = path.join(__dirname, 'users.json');
+        const usersData = await fs.readFile(usersJsonPath, 'utf-8');
+        const usersFromFile = JSON.parse(usersData);
+
+        for (const user of usersFromFile) {
+          await this.db.insert(users).values({
+            id: user.id || randomUUID(),
+            email: user.email,
+            senha: user.senha,
+            nome: user.nome,
+            plano: user.plano || 'free',
+            is_admin: user.is_admin || 'false',
+            data_criacao: user.data_criacao || new Date().toISOString(),
+            status: user.status || 'ativo',
+            max_funcionarios: user.max_funcionarios || 1,
+          }).onConflictDoNothing();
+          
+          console.log(`✅ Usuário criado: ${user.email}`);
+        }
+      } catch (fileError) {
+        console.log('⚠️ Arquivo users.json não encontrado, criando usuários padrão...');
+        
+        // Criar usuários padrão se o arquivo não existir
+        const defaultUsers = [
+          {
+            id: randomUUID(),
+            email: 'pavisoft.suporte@gmail.com',
+            senha: 'Pavisoft@140319',
+            nome: 'Admin Master',
+            plano: 'premium',
+            is_admin: 'true',
+            status: 'ativo',
+            max_funcionarios: 999,
+            data_criacao: new Date().toISOString(),
+          },
+          {
+            id: randomUUID(),
+            email: 'demo@example.com',
+            senha: 'demo123',
+            nome: 'Loja Demo',
+            plano: 'free',
+            is_admin: 'false',
+            status: 'ativo',
+            max_funcionarios: 5,
+            data_criacao: new Date().toISOString(),
+          },
+        ];
+
+        for (const user of defaultUsers) {
+          await this.db.insert(users).values(user).onConflictDoNothing();
+          console.log(`✅ Usuário padrão criado: ${user.email}`);
+        }
+      }
+
+      console.log('✅ Seed de dados concluído');
+    } catch (error: any) {
+      logger.error('[DB] Erro ao fazer seed de dados:', {
         error: error.message,
         stack: error.stack
       });

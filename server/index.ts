@@ -7,12 +7,6 @@ import compression from "compression";
 import { backupManager } from './backup';
 import { logger } from './logger';
 
-// Placeholder for neonConfig and ws if they are used elsewhere and not defined in this snippet
-// Assuming neonConfig and ws are defined in another import or globally available
-// For the purpose of this example, let's assume they exist or are not critical for this change.
-const neonConfig = {}; // Placeholder
-const ws = {}; // Placeholder
-
 const app = express();
 
 app.use(compression({

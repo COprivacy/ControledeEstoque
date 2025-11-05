@@ -56,7 +56,7 @@ import {
 import type { IStorage } from './storage';
 import { randomUUID } from 'crypto';
 import ws from 'ws';
-import { logger } from '@shared/logger';
+import { logger } from './logger';
 
 
 neonConfig.webSocketConstructor = ws;

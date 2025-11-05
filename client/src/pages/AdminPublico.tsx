@@ -895,33 +895,25 @@ export default function AdminPublico() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
-      <div className="max-w-[1600px] mx-auto p-6 space-y-8">
-        {/* Header Profissional com Glassmorphism */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900/90 via-blue-900/50 to-slate-900/90 backdrop-blur-xl border border-white/10 shadow-2xl">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PHBhdGggZD0iTTM2IDM0djItaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6bTAtNHYyaDJ2LTJoLTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30"></div>
-
-          <div className="relative p-8">
+      <div className="max-w-[1600px] mx-auto p-4 space-y-4">
+        {/* Header Compacto */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-900/90 via-blue-900/50 to-slate-900/90 backdrop-blur-xl border border-white/10 shadow-xl">
+          <div className="relative p-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4">
                 <Link href="/dashboard">
-                  <Button variant="ghost" size="icon" className="hover:bg-white/10 rounded-full" data-testid="button-voltar-dashboard">
-                    <ArrowLeft className="h-5 w-5 text-slate-300" />
+                  <Button variant="ghost" size="icon" className="hover:bg-white/10 rounded-full h-8 w-8" data-testid="button-voltar-dashboard">
+                    <ArrowLeft className="h-4 w-4 text-slate-300" />
                   </Button>
                 </Link>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl shadow-lg shadow-cyan-500/20">
-                      <Shield className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-cyan-200 to-blue-300 bg-clip-text text-transparent">
-                        Painel Master
-                      </h1>
-                      <p className="text-slate-400 mt-1 flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-cyan-400" />
-                        Gestão Empresarial de Clientes e Assinaturas
-                      </p>
-                    </div>
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg">
+                    <Shield className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-white via-cyan-200 to-blue-300 bg-clip-text text-transparent">
+                      Painel Master
+                    </h1>
                   </div>
                 </div>
               </div>
@@ -931,94 +923,71 @@ export default function AdminPublico() {
                   queryClient.invalidateQueries({ queryKey: ["/api/users"] });
                   queryClient.invalidateQueries({ queryKey: ["/api/clientes"] });
                 }}
-                className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border-0 shadow-lg shadow-cyan-500/20"
+                size="sm"
+                className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border-0"
                 data-testid="button-atualizar"
               >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Atualizar Dados
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Atualizar
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Cards de Estatísticas Premium */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-900/40 to-emerald-950/40 border-emerald-500/20 backdrop-blur-sm hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300" data-testid="card-assinaturas-ativas">
-            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 bg-emerald-500/10 rounded-full blur-2xl"></div>
-            <CardContent className="pt-6 relative">
+        {/* Cards de Estatísticas Compactos */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-900/40 to-emerald-950/40 border-emerald-500/20 backdrop-blur-sm" data-testid="card-assinaturas-ativas">
+            <CardContent className="pt-3 pb-3 relative">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-emerald-300/70 text-sm font-medium mb-1">Assinaturas Ativas</p>
-                  <p className="text-4xl font-bold text-emerald-100 mb-1">{assinaturasAtivas}</p>
-                  <p className="text-emerald-400/60 text-xs">Clientes pagantes ativos</p>
+                  <p className="text-emerald-300/70 text-xs font-medium mb-0.5">Assinaturas Ativas</p>
+                  <p className="text-2xl font-bold text-emerald-100">{assinaturasAtivas}</p>
                 </div>
-                <div className="p-4 bg-emerald-500/20 rounded-2xl backdrop-blur-sm">
-                  <Users className="h-8 w-8 text-emerald-400" />
+                <div className="p-2 bg-emerald-500/20 rounded-lg">
+                  <Users className="h-5 w-5 text-emerald-400" />
                 </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2 text-xs">
-                <TrendingUp className="h-3 w-3 text-emerald-400" />
-                <span className="text-emerald-300/70">Base sólida de clientes</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden bg-gradient-to-br from-blue-900/40 to-blue-950/40 border-blue-500/20 backdrop-blur-sm hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300" data-testid="card-receita-mensal">
-            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 bg-blue-500/10 rounded-full blur-2xl"></div>
-            <CardContent className="pt-6 relative">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-blue-900/40 to-blue-950/40 border-blue-500/20 backdrop-blur-sm" data-testid="card-receita-mensal">
+            <CardContent className="pt-3 pb-3 relative">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-300/70 text-sm font-medium mb-1">Receita Mensal (MRR)</p>
-                  <p className="text-4xl font-bold text-blue-100 mb-1">{formatCurrency(receitaMensal)}</p>
-                  <p className="text-blue-400/60 text-xs">Recorrente confirmada</p>
+                  <p className="text-blue-300/70 text-xs font-medium mb-0.5">MRR</p>
+                  <p className="text-2xl font-bold text-blue-100">{formatCurrency(receitaMensal)}</p>
                 </div>
-                <div className="p-4 bg-blue-500/20 rounded-2xl backdrop-blur-sm">
-                  <DollarSign className="h-8 w-8 text-blue-400" />
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-blue-400" />
                 </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2 text-xs">
-                <Activity className="h-3 w-3 text-blue-400" />
-                <span className="text-blue-300/70">Receita recorrente estável</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden bg-gradient-to-br from-amber-900/40 to-amber-950/40 border-amber-500/20 backdrop-blur-sm hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-300" data-testid="card-pendentes">
-            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 bg-amber-500/10 rounded-full blur-2xl"></div>
-            <CardContent className="pt-6 relative">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-amber-900/40 to-amber-950/40 border-amber-500/20 backdrop-blur-sm" data-testid="card-pendentes">
+            <CardContent className="pt-3 pb-3 relative">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-amber-300/70 text-sm font-medium mb-1">Pagamentos Pendentes</p>
-                  <p className="text-4xl font-bold text-amber-100 mb-1">{assinaturasPendentes}</p>
-                  <p className="text-amber-400/60 text-xs">{formatCurrency(receitaPendente)} aguardando</p>
+                  <p className="text-amber-300/70 text-xs font-medium mb-0.5">Pendentes</p>
+                  <p className="text-2xl font-bold text-amber-100">{assinaturasPendentes}</p>
                 </div>
-                <div className="p-4 bg-amber-500/20 rounded-2xl backdrop-blur-sm">
-                  <Clock className="h-8 w-8 text-amber-400" />
+                <div className="p-2 bg-amber-500/20 rounded-lg">
+                  <Clock className="h-5 w-5 text-amber-400" />
                 </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2 text-xs">
-                <AlertCircle className="h-3 w-3 text-amber-400" />
-                <span className="text-amber-300/70">Requer acompanhamento</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-950/40 border-purple-500/20 backdrop-blur-sm hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300" data-testid="card-total-clientes">
-            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 bg-purple-500/10 rounded-full blur-2xl"></div>
-            <CardContent className="pt-6 relative">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-950/40 border-purple-500/20 backdrop-blur-sm" data-testid="card-total-clientes">
+            <CardContent className="pt-3 pb-3 relative">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-purple-300/70 text-sm font-medium mb-1">Total de Clientes</p>
-                  <p className="text-4xl font-bold text-purple-100 mb-1">{users.length}</p>
-                  <p className="text-purple-400/60 text-xs">{clientesComPlanos.length} com planos pagos</p>
+                  <p className="text-purple-300/70 text-xs font-medium mb-0.5">Total Clientes</p>
+                  <p className="text-2xl font-bold text-purple-100">{users.length}</p>
                 </div>
-                <div className="p-4 bg-purple-500/20 rounded-2xl backdrop-blur-sm">
-                  <TrendingUp className="h-8 w-8 text-purple-400" />
+                <div className="p-2 bg-purple-500/20 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-purple-400" />
                 </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2 text-xs">
-                <BarChart3 className="h-3 w-3 text-purple-400" />
-                <span className="text-purple-300/70">Base de usuários crescente</span>
               </div>
             </CardContent>
           </Card>

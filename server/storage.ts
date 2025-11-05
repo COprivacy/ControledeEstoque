@@ -115,6 +115,10 @@ export interface IStorage {
   getMovimentacoesCaixa?(caixaId: number): Promise<any[]>;
   createMovimentacaoCaixa?(movimentacao: any): Promise<any>;
   limparHistoricoCaixas?(userId: string): Promise<{ deletedCount: number }>;
+
+  // Métodos para Configurações do Sistema
+  getSystemConfig?(chave: string): Promise<{ chave: string; valor: string; updated_at: string } | undefined>;
+  setSystemConfig?(chave: string, valor: string): Promise<void>;
 }
 
 export abstract class Storage {

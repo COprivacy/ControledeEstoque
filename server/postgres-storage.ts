@@ -19,6 +19,7 @@ import {
   contasReceber,
   caixas,
   movimentacoesCaixa,
+  systemConfig,
   type User,
   type InsertUser,
   type Produto,
@@ -609,5 +610,27 @@ export class PostgresStorage implements IStorage {
       .returning();
 
     return { deletedCount: result.length };
+  }
+
+  async getSystemConfig(chave: string): Promise<{ chave: string; valor: string; updated_at: string } | undefined> {
+    const result = await this.db.select().from(systemConfig).where(eq(systemConfig.chave, chave));
+    return result[0];
+  }
+
+  async setSystemConfig(chave: string, valor: string): Promise<void> {
+    const existing = await this.getSystemConfig(chave);
+    const now = new Date().toISOString();
+
+    if (existing) {
+      await this.db.update(systemConfig)
+        .set({ valor, updated_at: now })
+        .where(eq(systemConfig.chave, chave));
+    } else {
+      await this.db.insert(systemConfig).values({
+        chave,
+        valor,
+        updated_at: now
+      });
+    }
   }
 }

@@ -12,7 +12,6 @@ interface AdminMasterRouteProps {
   children: ReactNode;
 }
 
-const ADMIN_MASTER_PASSWORD = "PAVISOFT.SISTEMASLTDA";
 const AUTHORIZED_EMAIL = "pavisoft.suporte@gmail.com";
 
 export function AdminMasterRoute({ children }: AdminMasterRouteProps) {
@@ -62,12 +61,22 @@ export function AdminMasterRoute({ children }: AdminMasterRouteProps) {
     };
   }, [user, setLocation]);
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    setTimeout(() => {
-      if (password === ADMIN_MASTER_PASSWORD) {
+    try {
+      const response = await fetch("/api/auth/verify-master-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      const result = await response.json();
+
+      if (result.valid) {
         setIsAuthenticated(true);
         sessionStorage.setItem("admin_master_auth", "true");
         toast({
@@ -81,9 +90,17 @@ export function AdminMasterRoute({ children }: AdminMasterRouteProps) {
           variant: "destructive",
         });
       }
+    } catch (error) {
+      console.error("Erro ao verificar senha:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível verificar a senha. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
       setPassword("");
-    }, 500);
+    }
   };
 
   // Mostra loading enquanto verifica autenticação

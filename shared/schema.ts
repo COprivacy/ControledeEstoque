@@ -116,6 +116,13 @@ export const contasReceber = pgTable("contas_receber", {
   data_cadastro: text("data_cadastro").notNull(),
 });
 
+export const systemConfig = pgTable("system_config", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  chave: text("chave").notNull().unique(),
+  valor: text("valor").notNull(),
+  updated_at: text("updated_at").notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
 });
@@ -241,6 +248,10 @@ export const insertContasReceberSchema = createInsertSchema(contasReceber).omit(
   data_cadastro: true,
 });
 
+export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({
+  id: true,
+});
+
 export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
   id: true,
   data_criacao: true,
@@ -346,6 +357,8 @@ export type InsertContasPagar = z.infer<typeof insertContasPagarSchema>;
 export type ContasPagar = typeof contasPagar.$inferSelect;
 export type InsertContasReceber = z.infer<typeof insertContasReceberSchema>;
 export type ContasReceber = typeof contasReceber.$inferSelect;
+export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
+export type SystemConfig = typeof systemConfig.$inferSelect;
 
 export function hasPermission(user: User, permission: string): boolean {
   // Admin sempre tem todas as permissões

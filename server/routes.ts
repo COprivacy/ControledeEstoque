@@ -12,6 +12,7 @@ import { FocusNFeService } from "./focusnfe";
 import { z } from "zod";
 import { logger, LogLevel } from "./logger";
 import { backupManager } from "./backup";
+import bcrypt from "bcryptjs";
 
 // Middleware para verificar se o usuário é admin
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -231,6 +232,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao processar solicitação:", error);
       res.status(500).json({ error: "Erro ao processar solicitação" });
+    }
+  });
+
+  // Rota para verificar senha master
+  app.post("/api/auth/verify-master-password", async (req, res) => {
+    try {
+      const { password } = req.body;
+
+      if (!password) {
+        return res.status(400).json({ error: "Senha é obrigatória" });
+      }
+
+      // Buscar senha master do banco
+      const masterPasswordConfig = await storage.getSystemConfig("master_password");
+
+      if (!masterPasswordConfig) {
+        // Se não existir, criar com senha padrão hasheada
+        const defaultPassword = "PAVISOFT.SISTEMASLTDA";
+        const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+        
+        await storage.setSystemConfig("master_password", hashedPassword);
+        
+        // Verificar com a senha padrão
+        const isValid = await bcrypt.compare(password, hashedPassword);
+        return res.json({ valid: isValid });
+      }
+
+      // Verificar senha fornecida com hash armazenado
+      const isValid = await bcrypt.compare(password, masterPasswordConfig.valor);
+      res.json({ valid: isValid });
+
+    } catch (error) {
+      console.error("Erro ao verificar senha master:", error);
+      res.status(500).json({ error: "Erro ao verificar senha" });
     }
   });
 

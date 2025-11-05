@@ -2414,7 +2414,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers['x-user-id'] as string;
       const isAdmin = req.headers['x-is-admin'] as string;
 
+      console.log('🔍 [CANCELAMENTO] Headers recebidos:', {
+        'x-user-id': userId,
+        'x-is-admin': isAdmin,
+        'user-agent': req.headers['user-agent']?.substring(0, 50),
+        allHeaders: Object.keys(req.headers).filter(h => h.startsWith('x-'))
+      });
+
       if (!userId) {
+        console.log('❌ [CANCELAMENTO] Erro: x-user-id não encontrado nos headers');
         return res.status(401).json({ error: "Autenticação necessária" });
       }
 

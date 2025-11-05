@@ -3,7 +3,7 @@ import { Check, Shield, Lock, CheckCircle, Mail, Package, CreditCard, ArrowLeft 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckoutForm } from "@/components/CheckoutForm";
-import { Link, navigate, useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/hooks/use-toast";
 
@@ -293,13 +293,15 @@ export default function Planos() {
                 <p className="text-gray-300 mb-2">
                   Tem dúvidas sobre segurança ou pagamento?
                 </p>
-                <a 
-                  href="mailto:pavisoft.suporte@gmail.com"
-                  className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors font-semibold"
+                <Button
+                  variant="default"
+                  className="inline-flex items-center gap-2"
+                  onClick={() => window.location.href = 'mailto:pavisoft.suporte@gmail.com'}
+                  data-testid="button-email-suporte"
                 >
                   <Mail className="h-4 w-4" />
-                  pavisoft.suporte@gmail.com
-                </a>
+                  Clique aqui
+                </Button>
               </div>
             </CardContent>
           </Card>

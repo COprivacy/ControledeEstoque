@@ -11,7 +11,6 @@ import { nfceSchema } from "@shared/nfce-schema";
 import { FocusNFeService } from "./focusnfe";
 import { z } from "zod";
 import { logger, LogLevel } from "./logger";
-import { backupManager } from "./backup";
 import bcrypt from "bcryptjs";
 
 // Middleware para verificar se o usuário é admin
@@ -704,46 +703,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Backups - Listar backups disponíveis
-  app.get("/api/backups", requireAdmin, async (req, res) => {
-    try {
-      const backups = await backupManager.listBackups();
-      res.json(backups);
-    } catch (error) {
-      logger.error('Erro ao listar backups', 'API', { error });
-      res.status(500).json({ error: "Erro ao listar backups" });
-    }
-  });
-
-  // Backups - Criar backup manual
-  app.post("/api/backups/create", requireAdmin, async (req, res) => {
-    try {
-      const backupPath = await backupManager.createBackup();
-      logger.info('Backup manual criado', 'API', { backupPath });
-      res.json({ success: true, backupPath });
-    } catch (error) {
-      logger.error('Erro ao criar backup', 'API', { error });
-      res.status(500).json({ error: "Erro ao criar backup" });
-    }
-  });
-
-  // Backups - Restaurar backup
-  app.post("/api/backups/restore", requireAdmin, async (req, res) => {
-    try {
-      const { backupFileName } = req.body;
-
-      if (!backupFileName) {
-        return res.status(400).json({ error: "Nome do arquivo de backup é obrigatório" });
-      }
-
-      await backupManager.restoreBackup(backupFileName);
-      logger.warn('Backup restaurado', 'API', { backupFileName });
-      res.json({ success: true, message: "Backup restaurado com sucesso" });
-    } catch (error) {
-      logger.error('Erro ao restaurar backup', 'API', { error });
-      res.status(500).json({ error: "Erro ao restaurar backup" });
-    }
-  });
+  // Backups não são mais necessários - usando backups nativos do Neon PostgreSQL
 
   app.post("/api/logs-admin", async (req, res) => {
     try {

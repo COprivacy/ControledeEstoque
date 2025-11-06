@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   ChartContainer,
   ChartTooltip,
@@ -38,14 +38,14 @@ export default function Dashboard() {
       try {
         const userStr = localStorage.getItem("user");
         if (!userStr) return;
-        
+
         const user = JSON.parse(userStr);
         const response = await fetch(`/api/users`, {
           headers: {
             "x-user-id": user.id,
           },
         });
-        
+
         if (response.ok) {
           const users = await response.json();
           const currentUser = users.find((u: any) => u.id === user.id);

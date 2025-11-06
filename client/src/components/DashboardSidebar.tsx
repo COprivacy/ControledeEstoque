@@ -1,5 +1,5 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { Home, Package, ClipboardList, FileText, Settings, CreditCard, Users, DollarSign, TrendingUp, BarChart3, Crown, Lock, LineChart, Scan, Wallet, ShoppingCart } from "lucide-react";
+import { Home, Package, ClipboardList, FileText, Settings, CreditCard, Users, DollarSign, TrendingUp, BarChart3, Crown, Lock, LineChart, Scan, Wallet, ShoppingCart, PackageX } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useUser } from "@/hooks/use-user";
@@ -19,6 +19,7 @@ const generalMenuItems: MenuItem[] = [
 const inventoryMenuItems: MenuItem[] = [
   { title: "Produtos", url: "/produtos", icon: Package, permission: "produtos" },
   { title: "Inventário", url: "/inventario", icon: ClipboardList, permission: "inventario" },
+  { title: "Devoluções", url: "/devolucoes", icon: PackageX, permission: "inventario" },
   { title: "Fornecedores", url: "/fornecedores", icon: Package, permission: "fornecedores" },
   { title: "Clientes", url: "/clientes", icon: Users, permission: "clientes" },
 ];

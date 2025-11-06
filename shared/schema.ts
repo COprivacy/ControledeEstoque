@@ -332,6 +332,21 @@ export const movimentacoesCaixa = pgTable("movimentacoes_caixa", {
   data: text("data").notNull(),
 });
 
+export const devolucoes = pgTable("devolucoes", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  user_id: text("user_id").notNull(),
+  venda_id: integer("venda_id"),
+  produto_id: integer("produto_id").notNull(),
+  produto_nome: text("produto_nome").notNull(),
+  quantidade: integer("quantidade").notNull(),
+  valor_total: real("valor_total").notNull(),
+  motivo: text("motivo").notNull(),
+  status: text("status").notNull().default("pendente"),
+  data_devolucao: text("data_devolucao").notNull(),
+  observacoes: text("observacoes"),
+  cliente_nome: text("cliente_nome"),
+});
+
 export const insertCaixaSchema = createInsertSchema(caixas).omit({
   id: true,
 }).extend({
@@ -345,10 +360,20 @@ export const insertMovimentacaoCaixaSchema = createInsertSchema(movimentacoesCai
   tipo: z.enum(["suprimento", "retirada"]),
 });
 
+export const insertDevolucaoSchema = createInsertSchema(devolucoes).omit({
+  id: true,
+}).extend({
+  quantidade: z.coerce.number().int().positive(),
+  valor_total: z.coerce.number().positive(),
+  status: z.enum(["pendente", "aprovada", "rejeitada"]).default("pendente"),
+});
+
 export type Caixa = typeof caixas.$inferSelect;
 export type InsertCaixa = z.infer<typeof insertCaixaSchema>;
 export type MovimentacaoCaixa = typeof movimentacoesCaixa.$inferSelect;
 export type InsertMovimentacaoCaixa = z.infer<typeof insertMovimentacaoCaixaSchema>;
+export type Devolucao = typeof devolucoes.$inferSelect;
+export type InsertDevolucao = z.infer<typeof insertDevolucaoSchema>;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;

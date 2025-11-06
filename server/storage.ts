@@ -27,7 +27,9 @@ import {
   type Caixa,
   type InsertCaixa,
   type MovimentacaoCaixa,
-  type InsertMovimentacaoCaixa
+  type InsertMovimentacaoCaixa,
+  type Devolucao,
+  type InsertDevolucao
 } from "@shared/schema";
 
 export interface IStorage {
@@ -112,6 +114,13 @@ export interface IStorage {
   getSystemConfig?(chave: string): Promise<{ chave: string; valor: string; updated_at: string } | undefined>;
   setSystemConfig?(chave: string, valor: string): Promise<void>;
   upsertSystemConfig?(chave: string, valor: string): Promise<{ chave: string; valor: string; updated_at: string }>;
+
+  // Métodos para Devoluções
+  getDevolucoes?(): Promise<Devolucao[]>;
+  getDevolucao?(id: number): Promise<Devolucao | undefined>;
+  createDevolucao?(devolucao: InsertDevolucao): Promise<Devolucao>;
+  updateDevolucao?(id: number, updates: Partial<Devolucao>): Promise<Devolucao | undefined>;
+  deleteDevolucao?(id: number): Promise<boolean>;
 }
 
 export abstract class Storage {

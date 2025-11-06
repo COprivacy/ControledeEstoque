@@ -2965,6 +2965,153 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/devolucoes", getUserId, async (req, res) => {
+    try {
+      const userId = req.headers['effective-user-id'] as string;
+      
+      if (!storage.getDevolucoes) {
+        return res.status(501).json({ error: "Método getDevolucoes não implementado" });
+      }
+
+      const allDevolucoes = await storage.getDevolucoes();
+      const devolucoes = allDevolucoes.filter(d => d.user_id === userId);
+      
+      console.log(`✅ Devoluções buscadas - User: ${userId}, Total: ${devolucoes.length}`);
+      res.json(devolucoes);
+    } catch (error) {
+      console.error("Erro ao buscar devoluções:", error);
+      res.status(500).json({ error: "Erro ao buscar devoluções" });
+    }
+  });
+
+  app.get("/api/devolucoes/:id", getUserId, async (req, res) => {
+    try {
+      const userId = req.headers['effective-user-id'] as string;
+      const id = parseInt(req.params.id);
+
+      if (!storage.getDevolucao) {
+        return res.status(501).json({ error: "Método getDevolucao não implementado" });
+      }
+
+      const devolucao = await storage.getDevolucao(id);
+
+      if (!devolucao || devolucao.user_id !== userId) {
+        return res.status(404).json({ error: "Devolução não encontrada" });
+      }
+
+      res.json(devolucao);
+    } catch (error) {
+      console.error("Erro ao buscar devolução:", error);
+      res.status(500).json({ error: "Erro ao buscar devolução" });
+    }
+  });
+
+  app.post("/api/devolucoes", getUserId, async (req, res) => {
+    try {
+      const userId = req.headers['effective-user-id'] as string;
+
+      if (!storage.createDevolucao) {
+        return res.status(501).json({ error: "Método createDevolucao não implementado" });
+      }
+
+      const { insertDevolucaoSchema } = await import("@shared/schema");
+      const validatedData = insertDevolucaoSchema.parse({
+        ...req.body,
+        user_id: userId,
+        data_devolucao: new Date().toISOString(),
+      });
+
+      const devolucao = await storage.createDevolucao(validatedData);
+
+      if (devolucao.status === 'aprovada' && devolucao.produto_id) {
+        const produto = await storage.getProduto(devolucao.produto_id);
+        if (produto) {
+          await storage.updateProduto(devolucao.produto_id, {
+            quantidade: produto.quantidade + devolucao.quantidade
+          });
+        }
+      }
+
+      console.log(`✅ Devolução criada - ID: ${devolucao.id}, Produto: ${devolucao.produto_nome}`);
+      res.json(devolucao);
+    } catch (error) {
+      console.error("Erro ao criar devolução:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Dados inválidos", details: error.errors });
+      }
+      res.status(500).json({ error: "Erro ao criar devolução" });
+    }
+  });
+
+  app.put("/api/devolucoes/:id", getUserId, async (req, res) => {
+    try {
+      const userId = req.headers['effective-user-id'] as string;
+      const id = parseInt(req.params.id);
+
+      if (!storage.getDevolucao || !storage.updateDevolucao) {
+        return res.status(501).json({ error: "Métodos de devolução não implementados" });
+      }
+
+      const devolucaoExistente = await storage.getDevolucao(id);
+
+      if (!devolucaoExistente || devolucaoExistente.user_id !== userId) {
+        return res.status(404).json({ error: "Devolução não encontrada" });
+      }
+
+      const { insertDevolucaoSchema } = await import("@shared/schema");
+      const updateSchema = insertDevolucaoSchema.partial();
+      const validatedData = updateSchema.parse(req.body);
+
+      const statusAnterior = devolucaoExistente.status;
+      const novoStatus = validatedData.status || devolucaoExistente.status;
+      const novaQuantidade = validatedData.quantidade !== undefined ? validatedData.quantidade : devolucaoExistente.quantidade;
+
+      const devolucao = await storage.updateDevolucao(id, validatedData);
+
+      if (statusAnterior !== 'aprovada' && novoStatus === 'aprovada' && devolucaoExistente.produto_id) {
+        const produto = await storage.getProduto(devolucaoExistente.produto_id);
+        if (produto) {
+          await storage.updateProduto(devolucaoExistente.produto_id, {
+            quantidade: produto.quantidade + novaQuantidade
+          });
+        }
+      }
+
+      console.log(`✅ Devolução atualizada - ID: ${id}, Status: ${novoStatus}, Quantidade: ${novaQuantidade}`);
+      res.json(devolucao);
+    } catch (error) {
+      console.error("Erro ao atualizar devolução:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Dados inválidos", details: error.errors });
+      }
+      res.status(500).json({ error: "Erro ao atualizar devolução" });
+    }
+  });
+
+  app.delete("/api/devolucoes/:id", getUserId, async (req, res) => {
+    try {
+      const userId = req.headers['effective-user-id'] as string;
+      const id = parseInt(req.params.id);
+
+      if (!storage.getDevolucao || !storage.deleteDevolucao) {
+        return res.status(501).json({ error: "Métodos de devolução não implementados" });
+      }
+
+      const devolucao = await storage.getDevolucao(id);
+
+      if (!devolucao || devolucao.user_id !== userId) {
+        return res.status(404).json({ error: "Devolução não encontrada" });
+      }
+
+      await storage.deleteDevolucao(id);
+      console.log(`✅ Devolução deletada - ID: ${id}`);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Erro ao deletar devolução:", error);
+      res.status(500).json({ error: "Erro ao deletar devolução" });
+    }
+  });
+
   app.get("/api/system-config/:key", async (req, res) => {
     try {
       const { key } = req.params;

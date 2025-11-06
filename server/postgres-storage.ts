@@ -20,6 +20,7 @@ import {
   caixas,
   movimentacoesCaixa,
   systemConfig,
+  devolucoes,
   type User,
   type InsertUser,
   type Produto,
@@ -53,6 +54,8 @@ import {
   type InsertContasPagar,
   type ContasReceber,
   type InsertContasReceber,
+  type Devolucao,
+  type InsertDevolucao,
 } from '@shared/schema';
 import type { IStorage } from './storage';
 import { randomUUID } from 'crypto';
@@ -698,5 +701,34 @@ export class PostgresStorage implements IStorage {
       throw new Error('Erro ao salvar configuração');
     }
     return result;
+  }
+
+  async getDevolucoes(): Promise<Devolucao[]> {
+    return await this.db.select().from(devolucoes).orderBy(desc(devolucoes.id));
+  }
+
+  async getDevolucao(id: number): Promise<Devolucao | undefined> {
+    const result = await this.db.select().from(devolucoes).where(eq(devolucoes.id, id));
+    return result[0];
+  }
+
+  async createDevolucao(devolucao: InsertDevolucao): Promise<Devolucao> {
+    const result = await this.db.insert(devolucoes).values(devolucao).returning();
+    return result[0];
+  }
+
+  async updateDevolucao(id: number, updates: Partial<Devolucao>): Promise<Devolucao | undefined> {
+    const result = await this.db.update(devolucoes)
+      .set(updates)
+      .where(eq(devolucoes.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteDevolucao(id: number): Promise<boolean> {
+    const result = await this.db.delete(devolucoes)
+      .where(eq(devolucoes.id, id))
+      .returning();
+    return result.length > 0;
   }
 }

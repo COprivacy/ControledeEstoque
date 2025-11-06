@@ -30,6 +30,7 @@ import Caixa from "@/pages/Caixa";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import AdminPublico from "@/pages/AdminPublico";
 import Planos from "@/pages/Planos";
+import Devolucoes from "@/pages/Devolucoes";
 
 function Router() {
   return (
@@ -79,6 +80,15 @@ function Router() {
           <DashboardLayout>
             <ProtectedRoute requiredPermission="inventario">
               <Inventory />
+            </ProtectedRoute>
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/devolucoes">
+        {() => (
+          <DashboardLayout>
+            <ProtectedRoute requiredPermission="inventario">
+              <Devolucoes />
             </ProtectedRoute>
           </DashboardLayout>
         )}

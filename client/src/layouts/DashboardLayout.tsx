@@ -54,8 +54,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             
             {/* Botão do WhatsApp - não aparece em Caixa e PDV */}
             <WhatsAppButton 
-              phoneNumber="5598984155909"
-              message="Olá! Gostaria de tirar uma dúvida sobre o SmartEstoque."
+              phoneNumber="+5598984267488"
+              message="Olá! Gostaria de tirar uma dúvida sobre o Pavisoft Sistemas."
             />
 
             <footer className="mt-8 pt-6 border-t border-border">

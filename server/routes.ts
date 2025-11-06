@@ -114,88 +114,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/login", async (req, res) => {
     try {
-      let { email, senha } = req.body;
-
-      // Sanitização de entrada
-      email = email?.toString().trim().toLowerCase().substring(0, 254);
-      senha = senha?.toString();
-
+      const { email, senha } = req.body;
       console.log(`🔐 Tentativa de login - Email: ${email}`);
 
-      if (!email || !senha) {
-        return res.status(400).json({ error: "Email e senha são obrigatórios" });
-      }
-
-      // Validação de formato de email
-      const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      if (!emailRegex.test(email) || email.length > 254) {
-        return res.status(400).json({ error: "Email inválido" });
-      }
-
-      // Primeiro tenta autenticar como usuário principal
+      // Busca o usuário pelo email (sem validação de senha ainda)
       const user = await storage.getUserByEmail(email);
 
-      console.log(`📋 Usuário encontrado:`, user ? `Sim (${user.email})` : 'Não');
+      console.log(`📋 Usuário encontrado: ${user ? `Sim (${user.email})` : 'Não'}`);
 
-      if (user) {
-        // Comparação de senha segura
-        const senhaMatch = user.senha === senha;
-
-        if (senhaMatch) {
-          console.log(`✅ Login bem-sucedido para usuário: ${user.email}`);
-
-          // Atualizar último acesso
-          await storage.updateUser(user.id, {
-            ultimo_acesso: new Date().toISOString()
-          });
-
-          return res.json({
-            id: user.id,
-            email: user.email,
-            nome: user.nome,
-            plano: user.plano,
-            is_admin: user.is_admin,
-            data_expiracao_trial: user.data_expiracao_trial,
-            data_expiracao_plano: user.data_expiracao_plano,
-            permissoes: user.permissoes,
-            max_funcionarios: user.max_funcionarios,
-            meta_mensal: user.meta_mensal,
-            status: user.status,
-            tipo: "usuario"
-          });
-        }
+      if (!user) {
+        console.log(`❌ Falha de login para: ${email} - Usuário não encontrado`);
+        return res.status(401).json({ error: "Email ou senha inválidos" });
       }
 
-      // Se não encontrou, tenta autenticar como funcionário
-      try {
-        const funcionarios = await storage.getFuncionarios();
-        const funcionario = funcionarios.find(f => 
-          f.email.toLowerCase() === email && 
-          f.senha === senha &&
-          f.status === "ativo"
-        );
+      // Debug: mostrar senhas (remover em produção)
+      console.log(`🔑 Senha fornecida: ${senha}`);
+      console.log(`🔑 Senha no banco: ${user.senha}`);
+      console.log(`🔍 Senhas são iguais? ${user.senha === senha}`);
 
-        if (funcionario) {
-          console.log(`✅ Login bem-sucedido para funcionário: ${funcionario.email}`);
-          return res.json({
-            id: funcionario.id,
-            email: funcionario.email,
-            nome: funcionario.nome,
-            plano: "free",
-            is_admin: "false",
-            tipo: "funcionario",
-            conta_id: funcionario.conta_id,
-            cargo: funcionario.cargo || "Funcionário"
-          });
-        }
-      } catch (funcError) {
-        console.log("Nenhum funcionário encontrado, continuando...");
+      // Comparação direta de senha (sem hash)
+      if (user.senha !== senha) {
+        console.log(`❌ Falha de login para: ${email} - Senha incorreta`);
+        return res.status(401).json({ error: "Email ou senha inválidos" });
       }
 
-      console.log(`❌ Falha de login para: ${email}`);
-      return res.status(401).json({ error: "Email ou senha inválidos" });
-    } catch (error) {
-      console.error("Erro ao fazer login:", error);
+      console.log(`✅ Login bem-sucedido para usuário: ${email}`);
+
+      // Login bem-sucedido
+      const userResponse = {
+        ...user,
+        tipo: 'usuario'
+      };
+
+      res.json(userResponse);
+    } catch (error: any) {
+      console.error('Erro no login:', error);
       res.status(500).json({ error: "Erro ao fazer login" });
     }
   });
@@ -2201,7 +2154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Atualizar meta_mensal no banco de dados
       const metaValue = parseFloat(meta_mensal);
-      
+
       const updatedUser = await storage.updateUser(targetId, {
         meta_mensal: metaValue
       });
@@ -3055,13 +3008,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/system-config/:key", async (req, res) => {
     try {
       const { key } = req.params;
-      
+
       if (!storage.getSystemConfig) {
         return res.status(501).json({ error: "Método getSystemConfig não implementado" });
       }
 
       const config = await storage.getSystemConfig(key);
-      
+
       if (!config) {
         return res.status(404).json({ error: "Configuração não encontrada" });
       }

@@ -4,22 +4,24 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: text("email").notNull().unique(),
+  id: text("id").primaryKey(),
+  email: text("email").unique().notNull(),
   senha: text("senha").notNull(),
   nome: text("nome").notNull(),
-  plano: text("plano").notNull().default("free"),
-  is_admin: text("is_admin").notNull().default("false"),
+  plano: text("plano").default("free"),
+  is_admin: text("is_admin").default("false"),
   data_criacao: text("data_criacao"),
   data_expiracao_trial: text("data_expiracao_trial"),
   data_expiracao_plano: text("data_expiracao_plano"),
-  ultimo_acesso: text("ultimo_acesso"),
-  status: text("status").notNull().default("ativo"),
-  mercadopago_customer_id: text("mercadopago_customer_id"),
-  conta_id: text("conta_id"),
+  status: text("status").default("ativo"),
+  cpf_cnpj: text("cpf_cnpj"),
+  telefone: text("telefone"),
+  endereco: text("endereco"),
+  asaas_customer_id: text("asaas_customer_id"),
   permissoes: text("permissoes"),
-  max_funcionarios: integer("max_funcionarios").notNull().default(1),
-  meta_mensal: real("meta_mensal"),
+  ultimo_acesso: text("ultimo_acesso"),
+  max_funcionarios: integer("max_funcionarios").default(1),
+  meta_mensal: real("meta_mensal").default(15000),
 });
 
 export const produtos = pgTable("produtos", {

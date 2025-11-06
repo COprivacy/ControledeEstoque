@@ -30,10 +30,36 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [metaMensal, setMetaMensal] = useState<number>(() => {
-    const savedMeta = localStorage.getItem("meta_mensal");
-    return savedMeta ? parseFloat(savedMeta) : META_MENSAL_PADRAO;
-  });
+  const [metaMensal, setMetaMensal] = useState<number>(META_MENSAL_PADRAO);
+
+  // Buscar meta do usuário do banco de dados
+  useEffect(() => {
+    const fetchUserMeta = async () => {
+      try {
+        const userStr = localStorage.getItem("user");
+        if (!userStr) return;
+        
+        const user = JSON.parse(userStr);
+        const response = await fetch(`/api/users`, {
+          headers: {
+            "x-user-id": user.id,
+          },
+        });
+        
+        if (response.ok) {
+          const users = await response.json();
+          const currentUser = users.find((u: any) => u.id === user.id);
+          if (currentUser?.meta_mensal) {
+            setMetaMensal(currentUser.meta_mensal);
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao buscar meta do usuário:", error);
+      }
+    };
+
+    fetchUserMeta();
+  }, []);
   const [editMetaDialogOpen, setEditMetaDialogOpen] = useState(false);
   const [novaMeta, setNovaMeta] = useState<string>("");
 
@@ -214,7 +240,6 @@ export default function Dashboard() {
     },
     onSuccess: (data) => {
       setMetaMensal(data.meta_mensal);
-      localStorage.setItem("meta_mensal", data.meta_mensal.toString());
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
         title: "Meta atualizada",

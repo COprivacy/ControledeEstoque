@@ -2194,14 +2194,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Usuário não encontrado" });
       }
 
-      // Atualizar usando a sintaxe correta do PostgreSQL
+      // Atualizar meta_mensal no banco de dados
       const metaValue = parseFloat(meta_mensal);
+      
+      const updatedUser = await storage.updateUser(targetId, {
+        meta_mensal: metaValue
+      });
 
-      // Como meta_mensal não existe no schema, vamos armazenar em outro campo ou criar
-      // Por enquanto, vamos apenas retornar sucesso sem salvar no banco
-      // TODO: Adicionar campo meta_mensal ao schema se necessário
+      if (!updatedUser) {
+        return res.status(500).json({ error: "Erro ao salvar meta no banco de dados" });
+      }
 
-      console.log(`✅ Meta MRR definida - User: ${targetId}, Meta: R$ ${metaValue.toFixed(2)}`);
+      console.log(`✅ Meta MRR salva no banco - User: ${targetId}, Meta: R$ ${metaValue.toFixed(2)}`);
+      logger.info('Meta de vendas atualizada', 'USER_META', {
+        userId: targetId,
+        meta_mensal: metaValue
+      });
 
       res.json({ 
         success: true, 
@@ -2210,6 +2218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Erro ao definir meta:", error);
+      logger.error('Erro ao salvar meta de vendas', 'USER_META', { error: error.message });
       res.status(500).json({ error: error.message || "Erro ao definir meta" });
     }
   });

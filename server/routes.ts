@@ -3052,6 +3052,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/system-config/:key", async (req, res) => {
+    try {
+      const { key } = req.params;
+      
+      if (!storage.getSystemConfig) {
+        return res.status(501).json({ error: "Método getSystemConfig não implementado" });
+      }
+
+      const config = await storage.getSystemConfig(key);
+      
+      if (!config) {
+        return res.status(404).json({ error: "Configuração não encontrada" });
+      }
+
+      res.json(config);
+    } catch (error) {
+      console.error("Erro ao buscar configuração:", error);
+      res.status(500).json({ error: "Erro ao buscar configuração" });
+    }
+  });
+
+  app.post("/api/system-config", requireAdmin, async (req, res) => {
+    try {
+      const { chave, valor } = req.body;
+
+      if (!chave || !valor) {
+        return res.status(400).json({ error: "Chave e valor são obrigatórios" });
+      }
+
+      if (!storage.upsertSystemConfig) {
+        return res.status(501).json({ error: "Método upsertSystemConfig não implementado" });
+      }
+
+      const config = await storage.upsertSystemConfig(chave, valor);
+      console.log(`✅ Configuração salva - Chave: ${chave}`);
+      res.json(config);
+    } catch (error) {
+      console.error("Erro ao salvar configuração:", error);
+      res.status(500).json({ error: "Erro ao salvar configuração" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

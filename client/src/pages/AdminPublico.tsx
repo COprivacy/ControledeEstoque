@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -172,9 +172,7 @@ export default function AdminPublico() {
   });
 
   const [testEmail, setTestEmail] = useState("");
-  const [whatsappNumber, setWhatsappNumber] = useState(() => {
-    return localStorage.getItem('whatsapp_number') || '+55 98 98426-7488';
-  });
+  const [whatsappNumber, setWhatsappNumber] = useState('+55 98 98426-7488');
 
   const { data: subscriptions = [], isLoading: isLoadingSubscriptions } = useQuery<Subscription[]>({
     queryKey: ["/api/subscriptions"],
@@ -190,6 +188,17 @@ export default function AdminPublico() {
 
   const { data: configMercadoPago } = useQuery({
     queryKey: ["/api/config-mercadopago"],
+  });
+
+  const { data: whatsappConfig } = useQuery({
+    queryKey: ["/api/system-config", "whatsapp_number"],
+    queryFn: async () => {
+      const response = await fetch("/api/system-config/whatsapp_number");
+      if (!response.ok) {
+        return null;
+      }
+      return response.json();
+    },
   });
 
   const apiRequest = async (method: string, url: string, body?: any) => {
@@ -311,6 +320,36 @@ export default function AdminPublico() {
       setTestingMercadoPago(false);
     }
   };
+
+  const saveWhatsappMutation = useMutation({
+    mutationFn: async (numero: string) => {
+      const response = await apiRequest("POST", "/api/system-config", {
+        chave: "whatsapp_number",
+        valor: numero,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/system-config", "whatsapp_number"] });
+      toast({
+        title: "Salvo com sucesso!",
+        description: "Número do WhatsApp atualizado.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar o número",
+        variant: "destructive",
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (whatsappConfig?.valor) {
+      setWhatsappNumber(whatsappConfig.valor);
+    }
+  }, [whatsappConfig]);
 
   const createClientWithMercadoPagoMutation = useMutation({
     mutationFn: async (clientData: typeof newClientForm) => {
@@ -2086,16 +2125,12 @@ export default function AdminPublico() {
                         className="bg-slate-800 border-slate-700 text-white"
                       />
                       <Button
-                        onClick={() => {
-                          localStorage.setItem('whatsapp_number', whatsappNumber);
-                          toast({
-                            title: "Salvo com sucesso!",
-                            description: "Número do WhatsApp atualizado.",
-                          });
-                        }}
+                        onClick={() => saveWhatsappMutation.mutate(whatsappNumber)}
+                        disabled={saveWhatsappMutation.isPending}
                         className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500"
+                        data-testid="button-save-whatsapp"
                       >
-                        Salvar
+                        {saveWhatsappMutation.isPending ? "Salvando..." : "Salvar"}
                       </Button>
                     </div>
                     <p className="text-xs text-slate-500 mt-2">

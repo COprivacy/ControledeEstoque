@@ -119,6 +119,7 @@ export interface IStorage {
   // Métodos para Configurações do Sistema
   getSystemConfig?(chave: string): Promise<{ chave: string; valor: string; updated_at: string } | undefined>;
   setSystemConfig?(chave: string, valor: string): Promise<void>;
+  upsertSystemConfig?(chave: string, valor: string): Promise<{ chave: string; valor: string; updated_at: string }>;
 }
 
 export abstract class Storage {

@@ -736,4 +736,27 @@ export class PostgresStorage implements IStorage {
       });
     }
   }
+
+  async upsertSystemConfig(chave: string, valor: string): Promise<{ chave: string; valor: string; updated_at: string }> {
+    const existing = await this.getSystemConfig(chave);
+    const now = new Date().toISOString();
+
+    if (existing) {
+      await this.db.update(systemConfig)
+        .set({ valor, updated_at: now })
+        .where(eq(systemConfig.chave, chave));
+    } else {
+      await this.db.insert(systemConfig).values({
+        chave,
+        valor,
+        updated_at: now
+      });
+    }
+
+    const result = await this.getSystemConfig(chave);
+    if (!result) {
+      throw new Error('Erro ao salvar configuração');
+    }
+    return result;
+  }
 }

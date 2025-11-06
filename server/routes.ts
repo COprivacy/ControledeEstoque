@@ -906,6 +906,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Criar permissões padrão (todas desabilitadas)
       await storage.savePermissoesFuncionario(funcionario.id, {
+        dashboard: "false",
         pdv: "false",
         caixa: "false",
         produtos: "false",
@@ -915,7 +916,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fornecedores: "false",
         financeiro: "false",
         config_fiscal: "false",
-        historico_caixas: "false", // Nova permissão adicionada
+        historico_caixas: "false",
+        configuracoes: "false",
       });
 
       res.json(funcionario);
@@ -999,7 +1001,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!permissoes) {
         return res.json({
+          dashboard: "false",
           pdv: "false",
+          caixa: "false",
           produtos: "false",
           inventario: "false",
           relatorios: "false",
@@ -1007,9 +1011,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fornecedores: "false",
           financeiro: "false",
           config_fiscal: "false",
-          dashboard: "false",
-          caixa: "false",
-          historico_caixas: "false", // Nova permissão adicionada
+          historico_caixas: "false",
           configuracoes: "false",
         });
       }

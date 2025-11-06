@@ -290,6 +290,7 @@ export const permissoesFuncionarios = pgTable("permissoes_funcionarios", {
   funcionario_id: text("funcionario_id").notNull(),
   dashboard: text("dashboard").notNull().default("false"),
   pdv: text("pdv").notNull().default("false"),
+  caixa: text("caixa").notNull().default("false"),
   produtos: text("produtos").notNull().default("false"),
   inventario: text("inventario").notNull().default("false"),
   relatorios: text("relatorios").notNull().default("false"),
@@ -297,6 +298,7 @@ export const permissoesFuncionarios = pgTable("permissoes_funcionarios", {
   fornecedores: text("fornecedores").notNull().default("false"),
   financeiro: text("financeiro").notNull().default("false"),
   config_fiscal: text("config_fiscal").notNull().default("false"),
+  historico_caixas: text("historico_caixas").notNull().default("false"),
   configuracoes: text("configuracoes").notNull().default("false"),
 });
 

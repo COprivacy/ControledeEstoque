@@ -169,21 +169,13 @@ export abstract class Storage {
   abstract saveConfigFiscal(insertConfig: InsertConfigFiscal): Promise<ConfigFiscal>;
 }
 
-export class MemStorage implements Storage { // Changed to implement Storage interface
-  private users: Map<string, User>;
-  private produtos: Map<number, Produto>;
-  private vendas: Map<number, Venda>;
-  private fornecedores: Map<number, Fornecedor>;
-  private clientes: Map<number, Cliente>;
-  private compras: Map<number, Compra>;
-  private nextProdutoId: number;
-  private nextVendaId: number;
-  private nextFornecedorId: number;
-  private nextClienteId: number;
-  private nextCompraId: number;
-  private logsAdmin: LogAdmin[] = [];
-  private subscriptions: Map<number, Subscription>;
-  private nextSubscriptionId: number;
+// MemStorage removido - usar apenas PostgresStorage
+// A classe MemStorage foi descontinuada após migração para PostgreSQL
+
+/*
+export class MemStorage implements Storage {
+  // Código removido - usar PostgresStorage
+*/
 
   private usersPath: string;
   private produtosPath: string;

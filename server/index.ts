@@ -4,7 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import compression from "compression";
-import { backupManager } from './backup';
+// Backup local do SQLite removido - usando backups do Neon PostgreSQL
 import { logger } from './logger';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { Pool, neonConfig } from '@neondatabase/serverless';

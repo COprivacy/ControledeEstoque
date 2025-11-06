@@ -1,10 +1,14 @@
+// MIGRAÇÃO CONCLUÍDA - Este arquivo pode ser removido futuramente
+// A migração do SQLite para PostgreSQL já foi realizada com sucesso
+
+/*
 import { SQLiteStorage } from './sqlite-storage';
 import { PostgresStorage } from './postgres-storage';
 import { logger } from './logger';
 
 async function migrateSQLiteToPostgres() {
   logger.info('[MIGRAÇÃO] Iniciando migração do SQLite para PostgreSQL...');
-  
+
   const sqliteStorage = new SQLiteStorage();
   const postgresStorage = new PostgresStorage();
 
@@ -226,7 +230,7 @@ async function migrateSQLiteToPostgres() {
 
     logger.info('[MIGRAÇÃO] ✅ Migração concluída com sucesso!');
     logger.info('[MIGRAÇÃO] Todos os dados foram transferidos do SQLite para o PostgreSQL');
-    
+
     process.exit(0);
   } catch (error: any) {
     logger.error('[MIGRAÇÃO] ❌ Erro durante a migração:', { error: error.message, stack: error.stack });
@@ -235,3 +239,6 @@ async function migrateSQLiteToPostgres() {
 }
 
 migrateSQLiteToPostgres();
+*/
+
+console.log('⚠️ Arquivo de migração desativado. A migração já foi concluída.');

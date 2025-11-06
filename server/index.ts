@@ -6,6 +6,72 @@ import rateLimit from "express-rate-limit";
 import compression from "compression";
 import { backupManager } from './backup';
 import { logger } from './logger';
+import { drizzle } from 'drizzle-orm';
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import { sql } from 'drizzle-orm';
+import ws from 'ws';
+
+neonConfig.webSocketConstructor = ws;
+
+// Função para verificar e corrigir schema automaticamente
+async function autoFixDatabaseSchema() {
+  if (!process.env.DATABASE_URL) {
+    logger.error('[AUTO-FIX] DATABASE_URL não encontrado');
+    return;
+  }
+
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const db = drizzle(pool);
+
+  try {
+    logger.info('[AUTO-FIX] Verificando schema do banco de dados...');
+
+    const result = await db.execute(sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'users'
+    `);
+
+    const existingColumns = new Set(result.rows.map((row: any) => row.column_name));
+
+    const requiredColumns = [
+      { name: 'cpf_cnpj', type: 'TEXT', default: null },
+      { name: 'telefone', type: 'TEXT', default: null },
+      { name: 'endereco', type: 'TEXT', default: null },
+      { name: 'asaas_customer_id', type: 'TEXT', default: null },
+      { name: 'permissoes', type: 'TEXT', default: null },
+      { name: 'ultimo_acesso', type: 'TEXT', default: null },
+      { name: 'max_funcionarios', type: 'INTEGER', default: 1 },
+      { name: 'meta_mensal', type: 'REAL', default: 15000 },
+    ];
+
+    let fixed = false;
+    for (const col of requiredColumns) {
+      if (!existingColumns.has(col.name)) {
+        logger.info(`[AUTO-FIX] Adicionando coluna ${col.name}...`);
+
+        let alterQuery = `ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`;
+        if (col.default !== null) {
+          alterQuery += ` DEFAULT ${typeof col.default === 'string' ? `'${col.default}'` : col.default}`;
+        }
+
+        await db.execute(sql.raw(alterQuery));
+        fixed = true;
+      }
+    }
+
+    if (fixed) {
+      logger.info('[AUTO-FIX] ✅ Schema corrigido automaticamente!');
+    } else {
+      logger.info('[AUTO-FIX] ✅ Schema já está correto');
+    }
+
+  } catch (error: any) {
+    logger.error('[AUTO-FIX] Erro ao verificar schema:', { error: error.message });
+  } finally {
+    await pool.end();
+  }
+}
 
 const app = express();
 
@@ -91,6 +157,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Verificar e corrigir schema automaticamente antes de iniciar
+  await autoFixDatabaseSchema();
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -136,11 +205,11 @@ app.use((req, res, next) => {
   // Sistema de backup automático desativado - usando backups do Neon PostgreSQL
   // backupManager.startAutoBackup();
   logger.info('[BACKUP] Sistema de backup local desativado. Usando backups do Neon PostgreSQL.');
-  
+
   // Sistema de lembretes de pagamento
   const { paymentReminderService } = await import('./payment-reminder');
   paymentReminderService.startAutoCheck();
-  
+
   logger.info('Servidor iniciado', 'STARTUP', { port, env: app.get("env") });
 
   // Limpar logs antigos a cada 24h

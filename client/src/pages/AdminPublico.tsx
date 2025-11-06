@@ -172,6 +172,9 @@ export default function AdminPublico() {
   });
 
   const [testEmail, setTestEmail] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState(() => {
+    return localStorage.getItem('whatsapp_number') || '+55 98 98426-7488';
+  });
 
   const { data: subscriptions = [], isLoading: isLoadingSubscriptions } = useQuery<Subscription[]>({
     queryKey: ["/api/subscriptions"],

@@ -6,7 +6,7 @@ import rateLimit from "express-rate-limit";
 import compression from "compression";
 import { backupManager } from './backup';
 import { logger } from './logger';
-import { drizzle } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/neon-serverless';
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { sql } from 'drizzle-orm';
 import ws from 'ws';

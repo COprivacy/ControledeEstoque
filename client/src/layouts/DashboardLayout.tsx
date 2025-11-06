@@ -3,6 +3,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { TrialExpiredModal } from "@/components/TrialExpiredModal";
+import WhatsAppButton from "@/components/WhatsAppButton";
 import { useLocation } from "wouter";
 
 interface DashboardLayoutProps {
@@ -50,6 +51,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
           <main className="flex-1 overflow-auto p-6 bg-background">
             {children}
+            
+            {/* Botão do WhatsApp - não aparece em Caixa e PDV */}
+            <WhatsAppButton 
+              phoneNumber="5598984155909"
+              message="Olá! Gostaria de tirar uma dúvida sobre o SmartEstoque."
+            />
+
             <footer className="mt-8 pt-6 border-t border-border">
               <p className="text-center text-xs text-muted-foreground">
                 Desenvolvido por <span className="font-medium text-foreground">Pavisoft Sistemas</span>

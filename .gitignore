@@ -8,3 +8,13 @@ server/database.db-wal
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Arquivos com dados sensíveis
+server/users.json
+server/produtos.json
+server/vendas.json

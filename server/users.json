@@ -1,15 +1,2 @@
 
-[
-  {
-    "email": "pavisoft.suporte@gmail.com",
-    "senha": "Pavisoft@140319",
-    "nome": "Pavisoft",
-    "id": "pavisoft-admin-001",
-    "plano": "premium",
-    "is_admin": "true",
-    "data_criacao": "2025-01-01T00:00:00.000Z",
-    "data_expiracao_trial": null,
-    "data_expiracao_plano": "2026-12-31T23:59:59.000Z",
-    "status": "ativo"
-  }
-]
+[]

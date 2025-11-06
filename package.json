@@ -13,7 +13,10 @@
     "start:win": "set NODE_ENV=production && node dist/index.js",
     "check": "tsc",
     "db:push": "drizzle-kit push",
-    "install:all": "npm install"
+    "install:all": "npm install",
+    "db:verify": "tsx server/verify-database.ts",
+    "db:check": "tsx server/verify-database.ts",
+    "seed": "tsx server/seed-database.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

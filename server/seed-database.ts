@@ -1,75 +1,79 @@
-
-import { PostgresStorage } from './postgres-storage';
-import { logger } from './logger';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import { users } from '../shared/schema';
+import { eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
+import ws from 'ws';
+
+neonConfig.webSocketConstructor = ws;
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
+const db = drizzle(pool);
 
 async function seedDatabase() {
-  logger.info('[SEED] Iniciando seed do banco de dados PostgreSQL...');
-  
-  const storage = new PostgresStorage();
-
   try {
-    // Verificar se já existe um usuário admin
-    const adminEmail = 'pavisoft.suporte@gmail.com';
-    const existingAdmin = await storage.getUserByEmail(adminEmail);
+    console.log('🌱 Verificando e populando banco de dados...\n');
 
-    if (existingAdmin) {
-      logger.info('[SEED] Usuário admin já existe, pulando criação...');
-      return;
+    // Verificar usuários existentes
+    const existingUsers = await db.select().from(users);
+    console.log(`📊 Usuários existentes no banco: ${existingUsers.length}`);
+
+    // Criar usuário Admin Master se não existir
+    const adminExists = await db.select().from(users)
+      .where(eq(users.email, 'pavisoft.suporte@gmail.com'))
+      .limit(1);
+
+    if (adminExists.length === 0) {
+      await db.insert(users).values({
+        id: randomUUID(),
+        email: 'pavisoft.suporte@gmail.com',
+        senha: 'Pavisoft@140319',
+        nome: 'Admin Master',
+        plano: 'premium',
+        is_admin: 'true',
+        status: 'ativo',
+        max_funcionarios: 999,
+        data_criacao: new Date().toISOString(),
+      });
+      console.log('✅ Usuário Admin Master criado');
+    } else {
+      console.log('⏭️  Admin Master já existe');
     }
 
-    // Criar usuário admin padrão
-    logger.info('[SEED] Criando usuário admin padrão...');
-    const adminUser = await storage.createUser({
-      email: adminEmail,
-      senha: 'Pavisoft@140319', // Senha que você está tentando usar
-      nome: 'Pavisoft Admin',
-      is_admin: 'true',
-      plano: 'premium',
-      data_expiracao_trial: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 ano
-      data_expiracao_plano: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-      permissoes: JSON.stringify({
-        produtos: true,
-        vendas: true,
-        relatorios: true,
-        configuracoes: true,
-        clientes: true,
-        fornecedores: true,
-        fiscal: true,
-        funcionarios: true,
-        caixa: true,
-        financeiro: true
-      })
-    });
+    // Criar usuário Demo se não existir
+    const demoExists = await db.select().from(users)
+      .where(eq(users.email, 'demo@example.com'))
+      .limit(1);
 
-    logger.info('[SEED] ✅ Usuário admin criado com sucesso!', {
-      id: adminUser.id,
-      email: adminUser.email,
-      nome: adminUser.nome
-    });
+    if (demoExists.length === 0) {
+      await db.insert(users).values({
+        id: randomUUID(),
+        email: 'demo@example.com',
+        senha: 'demo123',
+        nome: 'Loja Demo',
+        plano: 'free',
+        is_admin: 'false',
+        status: 'ativo',
+        max_funcionarios: 5,
+        data_criacao: new Date().toISOString(),
+      });
+      console.log('✅ Usuário Demo criado');
+    } else {
+      console.log('⏭️  Usuário Demo já existe');
+    }
 
-    logger.info('[SEED] ✅ Seed concluído com sucesso!');
-    
+    // Mostrar total de usuários
+    const finalUsers = await db.select().from(users);
+    console.log(`\n📊 Total de usuários no banco: ${finalUsers.length}`);
+    console.log('✅ Seed concluído com sucesso!\n');
+
+    await pool.end();
+    process.exit(0);
   } catch (error: any) {
-    logger.error('[SEED] ❌ Erro ao executar seed:', {
-      error: error.message,
-      stack: error.stack
-    });
-    throw error;
+    console.error('❌ Erro ao popular banco:', error.message);
+    await pool.end();
+    process.exit(1);
   }
 }
 
-// Executar seed se chamado diretamente
-if (require.main === module) {
-  seedDatabase()
-    .then(() => {
-      console.log('✅ Seed executado com sucesso!');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('❌ Erro ao executar seed:', error);
-      process.exit(1);
-    });
-}
-
-export { seedDatabase };
+seedDatabase();

@@ -53,10 +53,10 @@ export default function WhatsAppButton({
           <MessageCircle className="h-5 w-5" />
         </div>
       ) : (
-        // Estado de confirmação: mostra "Fale Conosco?"
+        // Estado de confirmação: mostra "Fale Conosco!"
         <div className="flex items-center gap-2 px-4 py-2 animate-in fade-in slide-in-from-right-2">
           <MessageCircle className="h-4 w-4" />
-          <span className="font-medium text-sm whitespace-nowrap">Fale Conosco?</span>
+          <span className="font-medium text-sm whitespace-nowrap">Fale Conosco!</span>
         </div>
       )}
 

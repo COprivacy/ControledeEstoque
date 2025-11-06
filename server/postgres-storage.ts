@@ -97,38 +97,17 @@ export class PostgresStorage implements IStorage {
 
   private async seedInitialData() {
     try {
-      // Verificar se já existem usuários
       const existingUsers = await this.db.select().from(users);
-      
-      if (existingUsers.length > 0) {
-        console.log(`✅ Banco de dados já possui ${existingUsers.length} usuário(s)`);
-        // Listar emails dos usuários existentes
-        existingUsers.forEach(user => {
-          console.log(`   - ${user.email} (${user.plano})`);
-        });
-        return;
+
+      // Apenas logar quantos usuários existem, não criar nenhum automaticamente
+      console.log(`📊 Usuários existentes no banco: ${existingUsers.length}`);
+
+      if (existingUsers.length === 0) {
+        console.log('ℹ️  Banco vazio. Use o script seed-database.ts para criar usuários iniciais se necessário.');
       }
 
-      console.log('🌱 Banco vazio - Criando usuário Admin Master...');
-
-      // Criar apenas o usuário Admin Master
-      const adminUser = {
-        id: randomUUID(),
-        email: 'pavisoft.suporte@gmail.com',
-        senha: 'Pavisoft@140319',
-        nome: 'Admin Master',
-        plano: 'premium',
-        is_admin: 'true',
-        status: 'ativo',
-        max_funcionarios: 999,
-        data_criacao: new Date().toISOString(),
-      };
-
-      await this.db.insert(users).values(adminUser).onConflictDoNothing();
-      console.log(`✅ Usuário Admin Master criado: ${adminUser.email}`);
-      console.log('✅ Seed de dados concluído');
     } catch (error: any) {
-      logger.error('[DB] Erro ao fazer seed de dados:', {
+      logger.error('[DB] Erro ao verificar dados:', {
         error: error.message,
         stack: error.stack
       });
@@ -146,7 +125,7 @@ export class PostgresStorage implements IStorage {
         .from(users)
         .where(eq(users.id, userId))
         .limit(1);
-      
+
       return result[0];
     } catch (error: any) {
       logger.error('[DB] Erro ao buscar usuário por ID:', {
@@ -209,7 +188,7 @@ export class PostgresStorage implements IStorage {
         .set(cleanUpdates)
         .where(eq(users.id, id))
         .returning();
-      
+
       return result[0];
     } catch (error: any) {
       logger.error('[DB] Erro ao atualizar usuário:', {

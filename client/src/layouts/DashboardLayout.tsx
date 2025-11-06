@@ -54,7 +54,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             
             {/* Botão do WhatsApp - não aparece em Caixa e PDV */}
             <WhatsAppButton 
-              phoneNumber="+5598984267488"
+              phoneNumber={localStorage.getItem('whatsapp_number') || "+5598984267488"}
               message="Olá! Gostaria de tirar uma dúvida sobre o Pavisoft Sistemas."
             />
 

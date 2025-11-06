@@ -192,7 +192,7 @@ export default function AdminPublico() {
   const apiRequest = async (method: string, url: string, body?: any) => {
     const userStr = localStorage.getItem("user");
     const user = userStr ? JSON.parse(userStr) : null;
-    
+
     const response = await fetch(url, {
       method,
       headers: { 
@@ -1142,7 +1142,7 @@ export default function AdminPublico() {
               Assinaturas ({filteredSubscriptions.length})
             </TabsTrigger>
             <TabsTrigger
-              value="configuracao"
+              value="config"
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600 data-[state=active]:to-red-600 data-[state=active]:text-white rounded-lg transition-all duration-300"
               data-testid="tab-configuracao"
             >
@@ -1516,7 +1516,7 @@ export default function AdminPublico() {
           </TabsContent>
 
           {/* Tab Configuração */}
-          <TabsContent value="configuracao" className="space-y-6">
+          <TabsContent value="config" className="space-y-6">
             {/* Métricas Financeiras em Tempo Real */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
               <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-200 dark:border-blue-800">
@@ -1699,7 +1699,7 @@ export default function AdminPublico() {
                                     userId: pag.usuario.id,
                                     plano: "free"
                                   });
-                                  
+
                                   // Cancelar a assinatura
                                   const subscription = subscriptions.find(s => s.user_id === pag.usuario?.id && s.status === "pendente");
                                   if (subscription) {
@@ -1708,7 +1708,7 @@ export default function AdminPublico() {
                                       reason: "Suspensão por pagamento pendente"
                                     });
                                   }
-                                  
+
                                   // Recarregar dados
                                   queryClient.invalidateQueries({ queryKey: ["/api/subscriptions"] });
                                   queryClient.invalidateQueries({ queryKey: ["/api/users"] });
@@ -2053,6 +2053,53 @@ export default function AdminPublico() {
                     Senha Redefinida, Pagamento Pendente, Aviso de Vencimento, Pagamento Atrasado e Conta Bloqueada.
                   </AlertDescription>
                 </Alert>
+              </CardContent>
+            </Card>
+
+            {/* Adicionar Aba de Configurações com edição do WhatsApp */}
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <Settings className="h-5 w-5" />
+                  Configurações Gerais
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Gerencie configurações gerais do sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="whatsapp" className="text-white">Número do WhatsApp para Contato</Label>
+                    <p className="text-sm text-slate-400 mb-2">
+                      Número exibido no botão flutuante para contato rápido dos clientes
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        id="whatsapp"
+                        value={whatsappNumber}
+                        onChange={(e) => setWhatsappNumber(e.target.value)}
+                        placeholder="+55 98 98426-7488"
+                        className="bg-slate-800 border-slate-700 text-white"
+                      />
+                      <Button
+                        onClick={() => {
+                          localStorage.setItem('whatsapp_number', whatsappNumber);
+                          toast({
+                            title: "Salvo com sucesso!",
+                            description: "Número do WhatsApp atualizado.",
+                          });
+                        }}
+                        className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500"
+                      >
+                        Salvar
+                      </Button>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2">
+                      Formato recomendado: +55 DDD + número (exemplo: +5598984267488)
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

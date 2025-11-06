@@ -49,14 +49,14 @@ export default function WhatsAppButton({
     >
       {!showConfirmation ? (
         // Estado inicial: apenas o ícone do WhatsApp
-        <div className="flex items-center justify-center w-14 h-14">
-          <MessageCircle className="h-6 w-6" />
+        <div className="flex items-center justify-center w-12 h-12">
+          <MessageCircle className="h-5 w-5" />
         </div>
       ) : (
         // Estado de confirmação: mostra "Fale Conosco?"
-        <div className="flex items-center gap-2 px-5 py-3 animate-in fade-in slide-in-from-right-2">
-          <MessageCircle className="h-5 w-5" />
-          <span className="font-semibold whitespace-nowrap">Fale Conosco?</span>
+        <div className="flex items-center gap-2 px-4 py-2 animate-in fade-in slide-in-from-right-2">
+          <MessageCircle className="h-4 w-4" />
+          <span className="font-medium text-sm whitespace-nowrap">Fale Conosco?</span>
         </div>
       )}
 

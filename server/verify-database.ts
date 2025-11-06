@@ -1,66 +1,71 @@
 
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { Pool, neonConfig } from '@neondatabase/serverless';
-import { users } from '../shared/schema';
 import ws from 'ws';
+import { sql } from 'drizzle-orm';
 
 neonConfig.webSocketConstructor = ws;
 
-async function verifyDatabase() {
-  if (!process.env.DATABASE_URL) {
-    console.error('❌ DATABASE_URL não encontrado nas variáveis de ambiente!');
-    console.log('💡 Adicione DATABASE_URL nos Secrets do Replit');
-    process.exit(1);
-  }
+const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
+const db = drizzle(pool);
 
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  const db = drizzle(pool);
+async function verifyAndFixDatabase() {
+  console.log('🔍 Verificando schema do banco de dados...');
 
   try {
-    console.log('🔍 Verificando conexão com o banco de dados...\n');
+    // Verificar se as colunas existem na tabela users
+    const result = await db.execute(sql`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'users'
+    `);
 
-    // Testar conexão
-    const testResult = await db.select().from(users).limit(1);
-    console.log('✅ Conexão estabelecida com sucesso!\n');
+    const existingColumns = new Set(result.rows.map((row: any) => row.column_name));
+    console.log('✅ Colunas existentes na tabela users:', Array.from(existingColumns));
 
-    // Listar todos os usuários
-    const allUsers = await db.select().from(users);
-    
-    if (allUsers.length === 0) {
-      console.log('⚠️  Nenhum usuário encontrado no banco de dados.');
-      console.log('💡 Execute: npm run seed para popular o banco com dados iniciais\n');
-    } else {
-      console.log(`📊 Total de usuários no banco: ${allUsers.length}\n`);
-      console.log('👤 Usuários cadastrados:');
-      console.log('─'.repeat(80));
-      
-      allUsers.forEach((user, index) => {
-        console.log(`${index + 1}. ${user.nome}`);
-        console.log(`   📧 Email: ${user.email}`);
-        console.log(`   📦 Plano: ${user.plano}`);
-        console.log(`   👔 Admin: ${user.is_admin === 'true' ? 'Sim' : 'Não'}`);
-        console.log(`   📅 Criado em: ${new Date(user.data_criacao).toLocaleString('pt-BR')}`);
-        console.log(`   📊 Status: ${user.status}`);
-        console.log('─'.repeat(80));
-      });
+    // Colunas que devem existir
+    const requiredColumns = [
+      { name: 'cpf_cnpj', type: 'TEXT', default: null },
+      { name: 'telefone', type: 'TEXT', default: null },
+      { name: 'endereco', type: 'TEXT', default: null },
+      { name: 'asaas_customer_id', type: 'TEXT', default: null },
+      { name: 'permissoes', type: 'TEXT', default: null },
+      { name: 'ultimo_acesso', type: 'TEXT', default: null },
+      { name: 'max_funcionarios', type: 'INTEGER', default: 1 },
+      { name: 'meta_mensal', type: 'REAL', default: 15000 },
+    ];
+
+    // Adicionar colunas faltantes
+    for (const col of requiredColumns) {
+      if (!existingColumns.has(col.name)) {
+        console.log(`➕ Adicionando coluna ${col.name}...`);
+        
+        let alterQuery = `ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`;
+        if (col.default !== null) {
+          alterQuery += ` DEFAULT ${typeof col.default === 'string' ? `'${col.default}'` : col.default}`;
+        }
+        
+        await db.execute(sql.raw(alterQuery));
+        console.log(`✅ Coluna ${col.name} adicionada com sucesso!`);
+      }
     }
 
-    console.log('\n✅ Verificação concluída!\n');
+    console.log('✅ Schema do banco de dados verificado e corrigido!');
     
+  } catch (error) {
+    console.error('❌ Erro ao verificar/corrigir banco de dados:', error);
+    throw error;
+  } finally {
     await pool.end();
-    process.exit(0);
-  } catch (error: any) {
-    console.error('\n❌ Erro ao verificar banco de dados:');
-    console.error(error.message);
-    
-    if (error.message.includes('relation') && error.message.includes('does not exist')) {
-      console.log('\n💡 As tabelas do banco não existem.');
-      console.log('   Execute: npm run db:push para criar as tabelas\n');
-    }
-    
-    await pool.end();
-    process.exit(1);
   }
 }
 
-verifyDatabase();
+verifyAndFixDatabase()
+  .then(() => {
+    console.log('🎉 Processo concluído!');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('💥 Falha no processo:', error);
+    process.exit(1);
+  });

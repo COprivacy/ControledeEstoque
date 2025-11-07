@@ -733,6 +733,8 @@ export default function Caixa() {
                     <TableHead>Saldo Inicial</TableHead>
                     <TableHead>Vendas</TableHead>
                     <TableHead>Saldo Final</TableHead>
+                    <TableHead>Obs. Abertura</TableHead>
+                    <TableHead>Obs. Fechamento</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -755,6 +757,16 @@ export default function Caixa() {
                       <TableCell className="text-green-600">R$ {(caixa.total_vendas || 0).toFixed(2)}</TableCell>
                       <TableCell className="font-semibold">
                         {caixa.saldo_final ? `R$ ${caixa.saldo_final.toFixed(2)}` : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground max-w-[200px] truncate block" title={caixa.observacoes_abertura || ""}>
+                          {caixa.observacoes_abertura || "-"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground max-w-[200px] truncate block" title={caixa.observacoes_fechamento || ""}>
+                          {caixa.observacoes_fechamento || "-"}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <Badge variant={caixa.status === "aberto" ? "default" : "secondary"}>

@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PackageX, Plus, Search, CheckCircle2, XCircle, Clock, Edit, Trash2, Package, FileDown, TrendingUp, TrendingDown, Filter, X } from "lucide-react";
+import { PackageX, Plus, Search, CheckCircle2, XCircle, Clock, Edit, Trash2, Package, FileDown, TrendingUp, TrendingDown, Filter, X, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -169,10 +168,10 @@ export default function Devolucoes() {
 
   const getFilteredByPeriod = (devolucao: Devolucao) => {
     if (filterPeriodo === "all") return true;
-    
+
     const hoje = new Date();
     const dataDevolucao = new Date(devolucao.data_devolucao);
-    
+
     switch (filterPeriodo) {
       case "hoje":
         return dataDevolucao.toDateString() === hoje.toDateString();
@@ -195,14 +194,14 @@ export default function Devolucoes() {
     const matchesStatus = filterStatus === "all" || d.status === filterStatus;
     const matchesPeriodo = getFilteredByPeriod(d);
     const matchesMotivo = filterMotivo === "all" || d.motivo === filterMotivo;
-    
+
     // Filtro por categoria do produto
     let matchesCategoria = true;
     if (filterCategoria !== "all") {
       const produto = produtos.find(p => p.id === d.produto_id);
       matchesCategoria = produto?.categoria === filterCategoria;
     }
-    
+
     return matchesSearch && matchesStatus && matchesPeriodo && matchesMotivo && matchesCategoria;
   });
 
@@ -217,7 +216,7 @@ export default function Devolucoes() {
   const hoje = new Date();
   const mesPassado = new Date(hoje);
   mesPassado.setMonth(hoje.getMonth() - 1);
-  
+
   const devolucoesEsteMes = devolucoes.filter(d => new Date(d.data_devolucao) >= mesPassado).length;
   const doisMesesAtras = new Date(hoje);
   doisMesesAtras.setMonth(hoje.getMonth() - 2);
@@ -225,7 +224,7 @@ export default function Devolucoes() {
     const data = new Date(d.data_devolucao);
     return data >= doisMesesAtras && data < mesPassado;
   }).length;
-  
+
   const tendencia = devolucoesEsteMes > devolucoesUltimoMes ? "up" : "down";
   const percentualTendencia = devolucoesUltimoMes > 0 
     ? Math.abs(((devolucoesEsteMes - devolucoesUltimoMes) / devolucoesUltimoMes) * 100).toFixed(1)
@@ -283,7 +282,7 @@ export default function Devolucoes() {
     date.setMonth(date.getMonth() - i);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-    
+
     const devolucoesDoMes = devolucoes.filter(d => {
       const dDate = new Date(d.data_devolucao);
       return `${dDate.getFullYear()}-${String(dDate.getMonth() + 1).padStart(2, '0')}` === monthKey;
@@ -339,7 +338,7 @@ export default function Devolucoes() {
     const ws = XLSX.utils.json_to_sheet(dataToExport);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Devoluções");
-    
+
     // Ajustar largura das colunas
     const colWidths = [
       { wch: 12 }, // Data
@@ -354,7 +353,7 @@ export default function Devolucoes() {
     ws['!cols'] = colWidths;
 
     XLSX.writeFile(wb, `Devolucoes_${new Date().toISOString().split('T')[0]}.xlsx`);
-    
+
     toast({
       title: "Exportação concluída!",
       description: "O arquivo Excel foi baixado com sucesso",
@@ -400,7 +399,7 @@ export default function Devolucoes() {
             <FileDown className="h-4 w-4 mr-2" />
             Exportar Excel
           </Button>
-          
+
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button
@@ -790,7 +789,7 @@ export default function Devolucoes() {
               </Select>
             </div>
           </div>
-          
+
           {/* Chips de Filtros Ativos */}
           {hasActiveFilters && (
             <div className="flex flex-wrap gap-2 mt-4">

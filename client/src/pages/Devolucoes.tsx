@@ -18,9 +18,12 @@ import { cn } from "@/lib/utils";
 
 export default function Devolucoes() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedDevolucao, setSelectedDevolucao] = useState<Devolucao | null>(null);
   const [editingDevolucao, setEditingDevolucao] = useState<Devolucao | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterPeriodo, setFilterPeriodo] = useState<string>("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -154,11 +157,39 @@ export default function Devolucoes() {
     setDialogOpen(true);
   };
 
+  const handleViewDetails = (devolucao: Devolucao) => {
+    setSelectedDevolucao(devolucao);
+    setDetailsDialogOpen(true);
+  };
+
+  const getFilteredByPeriod = (devolucao: Devolucao) => {
+    if (filterPeriodo === "all") return true;
+    
+    const hoje = new Date();
+    const dataDevolucao = new Date(devolucao.data_devolucao);
+    
+    switch (filterPeriodo) {
+      case "hoje":
+        return dataDevolucao.toDateString() === hoje.toDateString();
+      case "semana":
+        const umaSemanaAtras = new Date(hoje);
+        umaSemanaAtras.setDate(hoje.getDate() - 7);
+        return dataDevolucao >= umaSemanaAtras;
+      case "mes":
+        const umMesAtras = new Date(hoje);
+        umMesAtras.setMonth(hoje.getMonth() - 1);
+        return dataDevolucao >= umMesAtras;
+      default:
+        return true;
+    }
+  };
+
   const filteredDevolucoes = devolucoes.filter(d => {
     const matchesSearch = d.produto_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           d.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === "all" || d.status === filterStatus;
-    return matchesSearch && matchesStatus;
+    const matchesPeriodo = getFilteredByPeriod(d);
+    return matchesSearch && matchesStatus && matchesPeriodo;
   });
 
   const totalDevolucoes = devolucoes.length;
@@ -167,6 +198,18 @@ export default function Devolucoes() {
   const devolucoesValor = devolucoes
     .filter(d => d.status === "aprovada")
     .reduce((sum, d) => sum + d.valor_total, 0);
+
+  const getMotivoLabel = (motivo: string) => {
+    const motivos: Record<string, string> = {
+      "defeito": "Produto com defeito",
+      "insatisfacao": "Insatisfação",
+      "vencido": "Produto vencido",
+      "errado": "Produto errado",
+      "danificado": "Produto danificado",
+      "outro": "Outro motivo"
+    };
+    return motivos[motivo] || motivo;
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -440,7 +483,7 @@ export default function Devolucoes() {
                 Visualize e gerencie todas as devoluções de produtos
               </CardDescription>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex gap-2 w-full sm:w-auto flex-wrap">
               <div className="relative flex-1 sm:flex-initial">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -453,13 +496,24 @@ export default function Devolucoes() {
               </div>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger className="w-[140px]" data-testid="select-filter-status">
-                  <SelectValue />
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="all">Todos Status</SelectItem>
                   <SelectItem value="pendente">Pendente</SelectItem>
                   <SelectItem value="aprovada">Aprovada</SelectItem>
                   <SelectItem value="rejeitada">Rejeitada</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterPeriodo} onValueChange={setFilterPeriodo}>
+                <SelectTrigger className="w-[140px]" data-testid="select-filter-periodo">
+                  <SelectValue placeholder="Período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos Períodos</SelectItem>
+                  <SelectItem value="hoje">Hoje</SelectItem>
+                  <SelectItem value="semana">Última Semana</SelectItem>
+                  <SelectItem value="mes">Último Mês</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -509,7 +563,7 @@ export default function Devolucoes() {
                         R$ {devolucao.valor_total.toFixed(2)}
                       </TableCell>
                       <TableCell data-testid={`text-motivo-${devolucao.id}`}>
-                        <span className="capitalize">{devolucao.motivo.replace("_", " ")}</span>
+                        <span className="text-sm">{getMotivoLabel(devolucao.motivo)}</span>
                       </TableCell>
                       <TableCell>
                         {getStatusBadge(devolucao.status)}
@@ -519,9 +573,20 @@ export default function Devolucoes() {
                           <Button
                             size="icon"
                             variant="outline"
+                            onClick={() => handleViewDetails(devolucao)}
+                            data-testid={`button-view-${devolucao.id}`}
+                            className="h-8 w-8"
+                            title="Ver detalhes"
+                          >
+                            <Search className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="outline"
                             onClick={() => handleEdit(devolucao)}
                             data-testid={`button-edit-${devolucao.id}`}
                             className="h-8 w-8"
+                            title="Editar"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -531,6 +596,7 @@ export default function Devolucoes() {
                             onClick={() => handleDelete(devolucao.id)}
                             data-testid={`button-delete-${devolucao.id}`}
                             className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                            title="Excluir"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -544,6 +610,84 @@ export default function Devolucoes() {
           )}
         </CardContent>
       </Card>
+
+      {/* Diálogo de Detalhes da Devolução */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Detalhes da Devolução</DialogTitle>
+            <DialogDescription>
+              Informações completas da devolução
+            </DialogDescription>
+          </DialogHeader>
+          {selectedDevolucao && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Data da Devolução</Label>
+                  <p className="font-medium">{formatDate(selectedDevolucao.data_devolucao)}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Status</Label>
+                  <div>{getStatusBadge(selectedDevolucao.status)}</div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Produto</Label>
+                <p className="font-medium text-lg">{selectedDevolucao.produto_nome}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Quantidade</Label>
+                  <p className="font-medium">{selectedDevolucao.quantidade} unidades</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Valor Total</Label>
+                  <p className="font-medium text-lg">R$ {selectedDevolucao.valor_total.toFixed(2)}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Cliente</Label>
+                <p className="font-medium">{selectedDevolucao.cliente_nome || "Não informado"}</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Motivo</Label>
+                <p className="font-medium">{getMotivoLabel(selectedDevolucao.motivo)}</p>
+              </div>
+
+              {selectedDevolucao.observacoes && (
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Observações</Label>
+                  <p className="text-sm bg-muted p-3 rounded-md">{selectedDevolucao.observacoes}</p>
+                </div>
+              )}
+
+              <div className="flex gap-2 justify-end pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setDetailsDialogOpen(false)}
+                >
+                  Fechar
+                </Button>
+                <Button
+                  onClick={() => {
+                    setDetailsDialogOpen(false);
+                    handleEdit(selectedDevolucao);
+                  }}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

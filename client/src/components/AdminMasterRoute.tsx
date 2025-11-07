@@ -12,7 +12,7 @@ interface AdminMasterRouteProps {
   children: ReactNode;
 }
 
-const AUTHORIZED_EMAIL = "pavisoft.suporte@gmail.com";
+const AUTHORIZED_EMAIL = import.meta.env.VITE_MASTER_USER_EMAIL || "pavisoft.suporte@gmail.com";
 
 export function AdminMasterRoute({ children }: AdminMasterRouteProps) {
   const { user } = useUser();

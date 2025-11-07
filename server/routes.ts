@@ -240,7 +240,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const publicAdminConfig = await storage.getSystemConfig("public_admin_password");
       
       if (!publicAdminConfig) {
-        const defaultPassword = "Pavisoft@2025#Admin";
+        const defaultPassword = process.env.PUBLIC_ADMIN_PASSWORD || "SENHA_NAO_CONFIGURADA";
+        if (defaultPassword === "SENHA_NAO_CONFIGURADA") {
+          logger.error('PUBLIC_ADMIN_PASSWORD não configurada nas variáveis de ambiente', 'SECURITY');
+          return res.status(500).json({ error: "Configuração de segurança incompleta" });
+        }
         const hashedPassword = await bcrypt.hash(defaultPassword, 10);
         await storage.setSystemConfig("public_admin_password", hashedPassword);
         
@@ -341,18 +345,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Garantir que o usuário master existe
-      const masterEmail = "pavisoft.suporte@gmail.com";
+      const masterEmail = process.env.MASTER_USER_EMAIL || "pavisoft.suporte@gmail.com";
       let masterUser = await storage.getUserByEmail(masterEmail);
 
       if (!masterUser) {
         console.log("🔧 Criando usuário master automaticamente...");
+        const masterPassword = process.env.MASTER_USER_PASSWORD;
+        if (!masterPassword) {
+          logger.error('MASTER_USER_PASSWORD não configurada nas variáveis de ambiente', 'SECURITY');
+          return res.status(500).json({ error: "Configuração de segurança incompleta" });
+        }
+        
         const dataExpiracao = new Date();
         dataExpiracao.setFullYear(dataExpiracao.getFullYear() + 10);
 
         masterUser = await storage.createUser({
           nome: "Pavisoft",
           email: masterEmail,
-          senha: "Pavisoft@140319",
+          senha: masterPassword,
           plano: "premium",
           is_admin: "true",
           status: "ativo",
@@ -367,7 +377,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const masterPasswordConfig = await storage.getSystemConfig("master_password");
 
       if (!masterPasswordConfig) {
-        const defaultPassword = "PAVISOFT.SISTEMASLTDA";
+        const defaultPassword = process.env.MASTER_ADMIN_PASSWORD || "SENHA_NAO_CONFIGURADA";
+        if (defaultPassword === "SENHA_NAO_CONFIGURADA") {
+          logger.error('MASTER_ADMIN_PASSWORD não configurada nas variáveis de ambiente', 'SECURITY');
+          return res.status(500).json({ error: "Configuração de segurança incompleta" });
+        }
         const hashedPassword = await bcrypt.hash(defaultPassword, 10);
         await storage.setSystemConfig("master_password", hashedPassword);
 

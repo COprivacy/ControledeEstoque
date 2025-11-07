@@ -198,8 +198,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Rate limiting para tentativas de senha master
   const masterPasswordAttempts = new Map<string, { count: number; lastAttempt: number }>();
+  const publicAdminAttempts = new Map<string, { count: number; lastAttempt: number }>();
   const MAX_ATTEMPTS = 3;
   const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutos
+
+  // Rota para verificar senha do painel público admin (COM RATE LIMITING)
+  app.post("/api/auth/verify-public-admin", async (req, res) => {
+    try {
+      const { password } = req.body;
+      const clientKey = req.ip || 'unknown';
+      const now = Date.now();
+
+      console.log(`🔐 [PUBLIC ADMIN] Tentativa de acesso do IP: ${req.ip}`);
+
+      if (!password) {
+        return res.status(400).json({ error: "Senha é obrigatória" });
+      }
+
+      // Rate limiting
+      const attempts = publicAdminAttempts.get(clientKey);
+      
+      if (attempts) {
+        if (attempts.count >= MAX_ATTEMPTS && (now - attempts.lastAttempt) < LOCKOUT_TIME) {
+          const remainingTime = Math.ceil((LOCKOUT_TIME - (now - attempts.lastAttempt)) / 60000);
+          logger.warn('Tentativa bloqueada por rate limit (public admin)', 'SECURITY', { 
+            clientKey, 
+            attempts: attempts.count,
+            remainingMinutes: remainingTime 
+          });
+          return res.status(429).json({ 
+            error: `Muitas tentativas. Tente novamente em ${remainingTime} minutos.` 
+          });
+        }
+
+        if ((now - attempts.lastAttempt) >= LOCKOUT_TIME) {
+          publicAdminAttempts.delete(clientKey);
+        }
+      }
+
+      // Buscar senha do painel público do banco
+      const publicAdminConfig = await storage.getSystemConfig("public_admin_password");
+      
+      if (!publicAdminConfig) {
+        const defaultPassword = "Pavisoft@2025#Admin";
+        const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+        await storage.setSystemConfig("public_admin_password", hashedPassword);
+        
+        const isValid = await bcrypt.compare(password, hashedPassword);
+        
+        if (!isValid) {
+          const currentAttempts = publicAdminAttempts.get(clientKey);
+          publicAdminAttempts.set(clientKey, {
+            count: (currentAttempts?.count || 0) + 1,
+            lastAttempt: now
+          });
+          logger.warn('Senha public admin incorreta', 'SECURITY', { clientKey });
+          return res.json({ valid: false });
+        } else {
+          publicAdminAttempts.delete(clientKey);
+          logger.info('Acesso public admin autorizado', 'SECURITY', { ip: req.ip });
+          return res.json({ valid: true });
+        }
+      }
+
+      // Verificar senha fornecida com hash armazenado
+      const isValid = await bcrypt.compare(password, publicAdminConfig.valor);
+      
+      if (!isValid) {
+        const currentAttempts = publicAdminAttempts.get(clientKey);
+        publicAdminAttempts.set(clientKey, {
+          count: (currentAttempts?.count || 0) + 1,
+          lastAttempt: now
+        });
+        logger.warn('Senha public admin incorreta', 'SECURITY', { 
+          clientKey, 
+          attempts: (currentAttempts?.count || 0) + 1 
+        });
+      } else {
+        publicAdminAttempts.delete(clientKey);
+        logger.info('Acesso public admin autorizado', 'SECURITY', { ip: req.ip });
+      }
+
+      res.json({ valid: isValid });
+
+    } catch (error) {
+      console.error("Erro ao verificar senha public admin:", error);
+      logger.error('Erro ao verificar senha public admin', 'SECURITY', { error });
+      res.status(500).json({ error: "Erro ao verificar senha" });
+    }
+  });
 
   // Rota para verificar senha master (COM RATE LIMITING)
   app.post("/api/auth/verify-master-password", async (req, res) => {

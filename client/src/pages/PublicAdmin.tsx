@@ -51,8 +51,6 @@ import {
 } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer } from "recharts";
 
-// Senha mais forte
-const ADMIN_PASSWORD = "Pavisoft@2025#Admin";
 const SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutos
 
 const COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
@@ -154,20 +152,52 @@ export default function PublicAdmin() {
     };
   }, [isAuthenticated, toast]);
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem("admin_auth", "authenticated");
-      sessionStorage.setItem("admin_auth_time", Date.now().toString());
-      toast({
-        title: "Acesso concedido",
-        description: "Bem-vindo ao painel administrativo",
+    
+    try {
+      const response = await fetch("/api/auth/verify-public-admin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password }),
       });
-    } else {
+
+      if (response.status === 429) {
+        const result = await response.json();
+        toast({
+          title: "Bloqueado temporariamente",
+          description: result.error,
+          variant: "destructive",
+        });
+        setPassword("");
+        return;
+      }
+
+      const result = await response.json();
+
+      if (result.valid) {
+        setIsAuthenticated(true);
+        sessionStorage.setItem("admin_auth", "authenticated");
+        sessionStorage.setItem("admin_auth_time", Date.now().toString());
+        toast({
+          title: "Acesso concedido",
+          description: "Bem-vindo ao painel administrativo",
+        });
+      } else {
+        toast({
+          title: "Senha incorreta",
+          description: "Tente novamente",
+          variant: "destructive",
+        });
+      }
+      setPassword("");
+    } catch (error) {
+      console.error("Erro ao verificar senha:", error);
       toast({
-        title: "Senha incorreta",
-        description: "Tente novamente",
+        title: "Erro",
+        description: "Não foi possível verificar a senha. Tente novamente.",
         variant: "destructive",
       });
       setPassword("");
@@ -572,9 +602,10 @@ export default function PublicAdmin() {
                   placeholder="Digite a senha"
                   autoFocus
                   className="h-12 text-base"
+                  data-testid="input-admin-password"
                 />
               </div>
-              <Button type="submit" className="w-full h-12 text-base font-semibold">
+              <Button type="submit" className="w-full h-12 text-base font-semibold" data-testid="button-access-panel">
                 <Key className="h-5 w-5 mr-2" />
                 Acessar Painel
               </Button>
@@ -583,6 +614,7 @@ export default function PublicAdmin() {
                 variant="outline"
                 className="w-full h-12"
                 onClick={() => setLocation("/")}
+                data-testid="button-back-home"
               >
                 Voltar ao Site
               </Button>

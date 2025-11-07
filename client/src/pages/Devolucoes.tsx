@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PackageX, Plus, Search, CheckCircle2, XCircle, Clock, Edit, Trash2, Package } from "lucide-react";
+import { PackageX, Plus, Search, CheckCircle2, XCircle, Clock, Edit, Trash2, Package, FileDown, TrendingUp, TrendingDown, Filter, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,8 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Devolucao, Produto } from "@shared/schema";
 import { formatDate } from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
+import * as XLSX from "xlsx";
 
 export default function Devolucoes() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -24,6 +27,7 @@ export default function Devolucoes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterPeriodo, setFilterPeriodo] = useState<string>("all");
+  const [filterMotivo, setFilterMotivo] = useState<string>("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -189,7 +193,8 @@ export default function Devolucoes() {
                           d.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === "all" || d.status === filterStatus;
     const matchesPeriodo = getFilteredByPeriod(d);
-    return matchesSearch && matchesStatus && matchesPeriodo;
+    const matchesMotivo = filterMotivo === "all" || d.motivo === filterMotivo;
+    return matchesSearch && matchesStatus && matchesPeriodo && matchesMotivo;
   });
 
   const totalDevolucoes = devolucoes.length;
@@ -198,6 +203,57 @@ export default function Devolucoes() {
   const devolucoesValor = devolucoes
     .filter(d => d.status === "aprovada")
     .reduce((sum, d) => sum + d.valor_total, 0);
+
+  // Calcular tendências
+  const hoje = new Date();
+  const mesPassado = new Date(hoje);
+  mesPassado.setMonth(hoje.getMonth() - 1);
+  
+  const devolucoesEsteMes = devolucoes.filter(d => new Date(d.data_devolucao) >= mesPassado).length;
+  const doisMesesAtras = new Date(hoje);
+  doisMesesAtras.setMonth(hoje.getMonth() - 2);
+  const devolucoesUltimoMes = devolucoes.filter(d => {
+    const data = new Date(d.data_devolucao);
+    return data >= doisMesesAtras && data < mesPassado;
+  }).length;
+  
+  const tendencia = devolucoesEsteMes > devolucoesUltimoMes ? "up" : "down";
+  const percentualTendencia = devolucoesUltimoMes > 0 
+    ? Math.abs(((devolucoesEsteMes - devolucoesUltimoMes) / devolucoesUltimoMes) * 100).toFixed(1)
+    : "0";
+
+  // Dados para gráfico por motivo
+  const motivoCounts: Record<string, number> = {};
+  devolucoes.forEach(d => {
+    motivoCounts[d.motivo] = (motivoCounts[d.motivo] || 0) + 1;
+  });
+
+  const chartDataMotivo = Object.entries(motivoCounts).map(([motivo, count]) => ({
+    motivo: getMotivoLabel(motivo),
+    quantidade: count,
+  }));
+
+  // Dados para gráfico de tendência mensal
+  const last6Months = [];
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date();
+    date.setMonth(date.getMonth() - i);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+    
+    const devolucoesDoMes = devolucoes.filter(d => {
+      const dDate = new Date(d.data_devolucao);
+      return `${dDate.getFullYear()}-${String(dDate.getMonth() + 1).padStart(2, '0')}` === monthKey;
+    });
+
+    last6Months.push({
+      mes: monthName,
+      total: devolucoesDoMes.length,
+      aprovadas: devolucoesDoMes.filter(d => d.status === "aprovada").length,
+      rejeitadas: devolucoesDoMes.filter(d => d.status === "rejeitada").length,
+      valor: devolucoesDoMes.reduce((sum, d) => sum + (d.status === "aprovada" ? d.valor_total : 0), 0),
+    });
+  }
 
   const getMotivoLabel = (motivo: string) => {
     const motivos: Record<string, string> = {
@@ -237,6 +293,52 @@ export default function Devolucoes() {
     }
   };
 
+  const handleExportExcel = () => {
+    const dataToExport = filteredDevolucoes.map(d => ({
+      "Data": formatDate(d.data_devolucao),
+      "Produto": d.produto_nome,
+      "Cliente": d.cliente_nome || "-",
+      "Quantidade": d.quantidade,
+      "Valor Total": `R$ ${d.valor_total.toFixed(2)}`,
+      "Motivo": getMotivoLabel(d.motivo),
+      "Status": d.status,
+      "Observações": d.observacoes || "-",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Devoluções");
+    
+    // Ajustar largura das colunas
+    const colWidths = [
+      { wch: 12 }, // Data
+      { wch: 30 }, // Produto
+      { wch: 25 }, // Cliente
+      { wch: 10 }, // Quantidade
+      { wch: 12 }, // Valor Total
+      { wch: 25 }, // Motivo
+      { wch: 12 }, // Status
+      { wch: 40 }, // Observações
+    ];
+    ws['!cols'] = colWidths;
+
+    XLSX.writeFile(wb, `Devolucoes_${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    toast({
+      title: "Exportação concluída!",
+      description: "O arquivo Excel foi baixado com sucesso",
+    });
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setFilterStatus("all");
+    setFilterPeriodo("all");
+    setFilterMotivo("all");
+  };
+
+  const hasActiveFilters = searchTerm !== "" || filterStatus !== "all" || filterPeriodo !== "all" || filterMotivo !== "all";
+
   if (loadingDevolucoes || loadingProdutos) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -257,155 +359,166 @@ export default function Devolucoes() {
           </p>
         </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              onClick={handleNewDevolucao}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-              data-testid="button-new-devolucao"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Devolução
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>
-                {editingDevolucao ? "Editar Devolução" : "Nova Devolução"}
-              </DialogTitle>
-              <DialogDescription>
-                {editingDevolucao
-                  ? "Atualize as informações da devolução"
-                  : "Preencha os dados para registrar uma nova devolução"}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="produto_id">Produto *</Label>
-                <Select
-                  name="produto_id"
-                  defaultValue={editingDevolucao?.produto_id?.toString()}
-                  required
-                >
-                  <SelectTrigger data-testid="select-produto">
-                    <SelectValue placeholder="Selecione o produto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {produtos.map((produto) => (
-                      <SelectItem key={produto.id} value={produto.id.toString()}>
-                        {produto.nome} - R$ {produto.preco.toFixed(2)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExportExcel}
+            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white border-0"
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            Exportar Excel
+          </Button>
+          
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                onClick={handleNewDevolucao}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                data-testid="button-new-devolucao"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Devolução
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingDevolucao ? "Editar Devolução" : "Nova Devolução"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingDevolucao
+                    ? "Atualize as informações da devolução"
+                    : "Preencha os dados para registrar uma nova devolução"}
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="produto_id">Produto *</Label>
+                  <Select
+                    name="produto_id"
+                    defaultValue={editingDevolucao?.produto_id?.toString()}
+                    required
+                  >
+                    <SelectTrigger data-testid="select-produto">
+                      <SelectValue placeholder="Selecione o produto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {produtos.map((produto) => (
+                        <SelectItem key={produto.id} value={produto.id.toString()}>
+                          {produto.nome} - R$ {produto.preco.toFixed(2)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="quantidade">Quantidade *</Label>
-                <Input
-                  id="quantidade"
-                  name="quantidade"
-                  type="number"
-                  min="1"
-                  defaultValue={editingDevolucao?.quantidade}
-                  required
-                  data-testid="input-quantidade"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quantidade">Quantidade *</Label>
+                  <Input
+                    id="quantidade"
+                    name="quantidade"
+                    type="number"
+                    min="1"
+                    defaultValue={editingDevolucao?.quantidade}
+                    required
+                    data-testid="input-quantidade"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="cliente_nome">Nome do Cliente</Label>
-                <Input
-                  id="cliente_nome"
-                  name="cliente_nome"
-                  defaultValue={editingDevolucao?.cliente_nome || ""}
-                  data-testid="input-cliente-nome"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cliente_nome">Nome do Cliente</Label>
+                  <Input
+                    id="cliente_nome"
+                    name="cliente_nome"
+                    defaultValue={editingDevolucao?.cliente_nome || ""}
+                    data-testid="input-cliente-nome"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="motivo">Motivo *</Label>
-                <Select
-                  name="motivo"
-                  defaultValue={editingDevolucao?.motivo || "defeito"}
-                  required
-                >
-                  <SelectTrigger data-testid="select-motivo">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="defeito">Produto com defeito</SelectItem>
-                    <SelectItem value="insatisfacao">Insatisfação com o produto</SelectItem>
-                    <SelectItem value="vencido">Produto vencido</SelectItem>
-                    <SelectItem value="errado">Produto errado</SelectItem>
-                    <SelectItem value="danificado">Produto danificado</SelectItem>
-                    <SelectItem value="outro">Outro motivo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="motivo">Motivo *</Label>
+                  <Select
+                    name="motivo"
+                    defaultValue={editingDevolucao?.motivo || "defeito"}
+                    required
+                  >
+                    <SelectTrigger data-testid="select-motivo">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="defeito">Produto com defeito</SelectItem>
+                      <SelectItem value="insatisfacao">Insatisfação com o produto</SelectItem>
+                      <SelectItem value="vencido">Produto vencido</SelectItem>
+                      <SelectItem value="errado">Produto errado</SelectItem>
+                      <SelectItem value="danificado">Produto danificado</SelectItem>
+                      <SelectItem value="outro">Outro motivo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="status">Status *</Label>
-                <Select
-                  name="status"
-                  defaultValue={editingDevolucao?.status || "pendente"}
-                  required
-                >
-                  <SelectTrigger data-testid="select-status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pendente">Pendente</SelectItem>
-                    <SelectItem value="aprovada">Aprovada</SelectItem>
-                    <SelectItem value="rejeitada">Rejeitada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status *</Label>
+                  <Select
+                    name="status"
+                    defaultValue={editingDevolucao?.status || "pendente"}
+                    required
+                  >
+                    <SelectTrigger data-testid="select-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pendente">Pendente</SelectItem>
+                      <SelectItem value="aprovada">Aprovada</SelectItem>
+                      <SelectItem value="rejeitada">Rejeitada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="observacoes">Observações</Label>
-                <Textarea
-                  id="observacoes"
-                  name="observacoes"
-                  rows={3}
-                  defaultValue={editingDevolucao?.observacoes || ""}
-                  placeholder="Adicione observações adicionais..."
-                  data-testid="textarea-observacoes"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="observacoes">Observações</Label>
+                  <Textarea
+                    id="observacoes"
+                    name="observacoes"
+                    rows={3}
+                    defaultValue={editingDevolucao?.observacoes || ""}
+                    placeholder="Adicione observações adicionais..."
+                    data-testid="textarea-observacoes"
+                  />
+                </div>
 
-              <div className="flex gap-2 justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setDialogOpen(false);
-                    setEditingDevolucao(null);
-                  }}
-                  data-testid="button-cancel"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                  data-testid="button-save"
-                >
-                  {createMutation.isPending || updateMutation.isPending
-                    ? "Salvando..."
-                    : editingDevolucao
-                    ? "Atualizar"
-                    : "Cadastrar"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setDialogOpen(false);
+                      setEditingDevolucao(null);
+                    }}
+                    data-testid="button-cancel"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={createMutation.isPending || updateMutation.isPending}
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                    data-testid="button-save"
+                  >
+                    {createMutation.isPending || updateMutation.isPending
+                      ? "Salvando..."
+                      : editingDevolucao
+                      ? "Atualizar"
+                      : "Cadastrar"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-0 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent">
+        <Card className="border-0 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total de Devoluções
@@ -416,13 +529,23 @@ export default function Devolucoes() {
             <div className="text-2xl font-bold text-foreground" data-testid="text-total-devolucoes">
               {totalDevolucoes}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Todas as devoluções registradas
-            </p>
+            <div className="flex items-center gap-1 mt-1">
+              {tendencia === "up" ? (
+                <TrendingUp className="h-3 w-3 text-red-500" />
+              ) : (
+                <TrendingDown className="h-3 w-3 text-green-500" />
+              )}
+              <p className={cn(
+                "text-xs font-medium",
+                tendencia === "up" ? "text-red-500" : "text-green-500"
+              )}>
+                {percentualTendencia}% vs mês anterior
+              </p>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent">
+        <Card className="border-0 bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Devoluções Aprovadas
@@ -434,12 +557,12 @@ export default function Devolucoes() {
               {devolucoesAprovadas}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Devoluções processadas
+              {totalDevolucoes > 0 ? Math.round((devolucoesAprovadas / totalDevolucoes) * 100) : 0}% do total
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent">
+        <Card className="border-0 bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Devoluções Rejeitadas
@@ -451,12 +574,12 @@ export default function Devolucoes() {
               {devolucoesRejeitadas}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Não processadas
+              {totalDevolucoes > 0 ? Math.round((devolucoesRejeitadas / totalDevolucoes) * 100) : 0}% do total
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent">
+        <Card className="border-0 bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Valor Total Devolvido
@@ -470,6 +593,60 @@ export default function Devolucoes() {
             <p className="text-xs text-muted-foreground mt-1">
               Devoluções aprovadas
             </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Gráficos de Análise */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="border-0 bg-card/50 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">Devoluções por Motivo</CardTitle>
+            <CardDescription>Distribuição das causas de devolução</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartDataMotivo}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="motivo" className="text-xs" angle={-45} textAnchor="end" height={100} />
+                <YAxis className="text-xs" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px'
+                  }} 
+                />
+                <Bar dataKey="quantidade" fill="#6366f1" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 bg-card/50 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">Tendência Mensal</CardTitle>
+            <CardDescription>Evolução das devoluções nos últimos 6 meses</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={last6Months}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="mes" className="text-xs" />
+                <YAxis className="text-xs" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px'
+                  }} 
+                />
+                <Legend />
+                <Line type="monotone" dataKey="total" stroke="#6366f1" strokeWidth={2} name="Total" />
+                <Line type="monotone" dataKey="aprovadas" stroke="#22c55e" strokeWidth={2} name="Aprovadas" />
+                <Line type="monotone" dataKey="rejeitadas" stroke="#ef4444" strokeWidth={2} name="Rejeitadas" />
+              </LineChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
@@ -505,6 +682,20 @@ export default function Devolucoes() {
                   <SelectItem value="rejeitada">Rejeitada</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={filterMotivo} onValueChange={setFilterMotivo}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Motivo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos Motivos</SelectItem>
+                  <SelectItem value="defeito">Defeito</SelectItem>
+                  <SelectItem value="insatisfacao">Insatisfação</SelectItem>
+                  <SelectItem value="vencido">Vencido</SelectItem>
+                  <SelectItem value="errado">Errado</SelectItem>
+                  <SelectItem value="danificado">Danificado</SelectItem>
+                  <SelectItem value="outro">Outro</SelectItem>
+                </SelectContent>
+              </Select>
               <Select value={filterPeriodo} onValueChange={setFilterPeriodo}>
                 <SelectTrigger className="w-[140px]" data-testid="select-filter-periodo">
                   <SelectValue placeholder="Período" />
@@ -518,19 +709,70 @@ export default function Devolucoes() {
               </Select>
             </div>
           </div>
+          
+          {/* Chips de Filtros Ativos */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {searchTerm && (
+                <Badge variant="outline" className="gap-1">
+                  Busca: {searchTerm}
+                  <X 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                    onClick={() => setSearchTerm("")}
+                  />
+                </Badge>
+              )}
+              {filterStatus !== "all" && (
+                <Badge variant="outline" className="gap-1">
+                  Status: {filterStatus}
+                  <X 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                    onClick={() => setFilterStatus("all")}
+                  />
+                </Badge>
+              )}
+              {filterMotivo !== "all" && (
+                <Badge variant="outline" className="gap-1">
+                  Motivo: {getMotivoLabel(filterMotivo)}
+                  <X 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                    onClick={() => setFilterMotivo("all")}
+                  />
+                </Badge>
+              )}
+              {filterPeriodo !== "all" && (
+                <Badge variant="outline" className="gap-1">
+                  Período: {filterPeriodo}
+                  <X 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                    onClick={() => setFilterPeriodo("all")}
+                  />
+                </Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="h-6 px-2 text-xs"
+              >
+                <Filter className="h-3 w-3 mr-1" />
+                Limpar filtros
+              </Button>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           {filteredDevolucoes.length === 0 ? (
             <div className="text-center py-12">
               <PackageX className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
               <p className="mt-4 text-muted-foreground">
-                {searchTerm || filterStatus !== "all"
+                {hasActiveFilters
                   ? "Nenhuma devolução encontrada com os filtros aplicados"
                   : "Nenhuma devolução registrada ainda"}
               </p>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -546,7 +788,11 @@ export default function Devolucoes() {
                 </TableHeader>
                 <TableBody>
                   {filteredDevolucoes.map((devolucao) => (
-                    <TableRow key={devolucao.id} data-testid={`row-devolucao-${devolucao.id}`}>
+                    <TableRow 
+                      key={devolucao.id} 
+                      data-testid={`row-devolucao-${devolucao.id}`}
+                      className="hover:bg-muted/50 transition-colors"
+                    >
                       <TableCell className="font-medium" data-testid={`text-data-${devolucao.id}`}>
                         {formatDate(devolucao.data_devolucao)}
                       </TableCell>

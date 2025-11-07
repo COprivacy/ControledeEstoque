@@ -222,6 +222,19 @@ export default function Devolucoes() {
     ? Math.abs(((devolucoesEsteMes - devolucoesUltimoMes) / devolucoesUltimoMes) * 100).toFixed(1)
     : "0";
 
+  // Função auxiliar para traduzir motivos
+  const getMotivoLabel = (motivo: string) => {
+    const motivos: Record<string, string> = {
+      "defeito": "Produto com defeito",
+      "insatisfacao": "Insatisfação",
+      "vencido": "Produto vencido",
+      "errado": "Produto errado",
+      "danificado": "Produto danificado",
+      "outro": "Outro motivo"
+    };
+    return motivos[motivo] || motivo;
+  };
+
   // Dados para gráfico por motivo
   const motivoCounts: Record<string, number> = {};
   devolucoes.forEach(d => {
@@ -254,18 +267,6 @@ export default function Devolucoes() {
       valor: devolucoesDoMes.reduce((sum, d) => sum + (d.status === "aprovada" ? d.valor_total : 0), 0),
     });
   }
-
-  const getMotivoLabel = (motivo: string) => {
-    const motivos: Record<string, string> = {
-      "defeito": "Produto com defeito",
-      "insatisfacao": "Insatisfação",
-      "vencido": "Produto vencido",
-      "errado": "Produto errado",
-      "danificado": "Produto danificado",
-      "outro": "Outro motivo"
-    };
-    return motivos[motivo] || motivo;
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {

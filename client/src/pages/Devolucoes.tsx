@@ -28,6 +28,7 @@ export default function Devolucoes() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterPeriodo, setFilterPeriodo] = useState<string>("all");
   const [filterMotivo, setFilterMotivo] = useState<string>("all");
+  const [filterCategoria, setFilterCategoria] = useState<string>("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -194,7 +195,15 @@ export default function Devolucoes() {
     const matchesStatus = filterStatus === "all" || d.status === filterStatus;
     const matchesPeriodo = getFilteredByPeriod(d);
     const matchesMotivo = filterMotivo === "all" || d.motivo === filterMotivo;
-    return matchesSearch && matchesStatus && matchesPeriodo && matchesMotivo;
+    
+    // Filtro por categoria do produto
+    let matchesCategoria = true;
+    if (filterCategoria !== "all") {
+      const produto = produtos.find(p => p.id === d.produto_id);
+      matchesCategoria = produto?.categoria === filterCategoria;
+    }
+    
+    return matchesSearch && matchesStatus && matchesPeriodo && matchesMotivo && matchesCategoria;
   });
 
   const totalDevolucoes = devolucoes.length;
@@ -245,6 +254,27 @@ export default function Devolucoes() {
     motivo: getMotivoLabel(motivo),
     quantidade: count,
   }));
+
+  // Análise de produtos mais devolvidos
+  const produtosDevolucoes: Record<string, { quantidade: number; vezes: number; valor: number }> = {};
+  devolucoes.forEach(d => {
+    if (d.status === "aprovada") {
+      if (!produtosDevolucoes[d.produto_nome]) {
+        produtosDevolucoes[d.produto_nome] = { quantidade: 0, vezes: 0, valor: 0 };
+      }
+      produtosDevolucoes[d.produto_nome].quantidade += d.quantidade;
+      produtosDevolucoes[d.produto_nome].vezes += 1;
+      produtosDevolucoes[d.produto_nome].valor += d.valor_total;
+    }
+  });
+
+  const topProdutosDevolucoes = Object.entries(produtosDevolucoes)
+    .map(([nome, stats]) => ({ nome, ...stats }))
+    .sort((a, b) => b.quantidade - a.quantidade)
+    .slice(0, 5);
+
+  // Categorias únicas dos produtos
+  const categoriasDisponiveis = Array.from(new Set(produtos.map(p => p.categoria)));
 
   // Dados para gráfico de tendência mensal
   const last6Months = [];
@@ -336,9 +366,10 @@ export default function Devolucoes() {
     setFilterStatus("all");
     setFilterPeriodo("all");
     setFilterMotivo("all");
+    setFilterCategoria("all");
   };
 
-  const hasActiveFilters = searchTerm !== "" || filterStatus !== "all" || filterPeriodo !== "all" || filterMotivo !== "all";
+  const hasActiveFilters = searchTerm !== "" || filterStatus !== "all" || filterPeriodo !== "all" || filterMotivo !== "all" || filterCategoria !== "all";
 
   if (loadingDevolucoes || loadingProdutos) {
     return (
@@ -598,6 +629,44 @@ export default function Devolucoes() {
         </Card>
       </div>
 
+      {/* Análise de Produtos Mais Devolvidos */}
+      {topProdutosDevolucoes.length > 0 && (
+        <Card className="border-0 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              Produtos Mais Devolvidos
+            </CardTitle>
+            <CardDescription>Top 5 produtos com mais devoluções aprovadas</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {topProdutosDevolucoes.map((item, index) => (
+                <div key={item.nome} className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center">
+                    <span className="text-sm font-bold text-amber-700 dark:text-amber-300">
+                      {index + 1}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{item.nome}</p>
+                    <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                      <span>{item.quantidade} un. devolvidas</span>
+                      <span>•</span>
+                      <span>{item.vezes}x devolvido</span>
+                      <span>•</span>
+                      <span className="text-red-600 dark:text-red-400 font-medium">
+                        -R$ {item.valor.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Gráficos de Análise */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="border-0 bg-card/50 backdrop-blur-sm">
@@ -697,6 +766,17 @@ export default function Devolucoes() {
                   <SelectItem value="outro">Outro</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={filterCategoria} onValueChange={setFilterCategoria}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas Categorias</SelectItem>
+                  {categoriasDisponiveis.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select value={filterPeriodo} onValueChange={setFilterPeriodo}>
                 <SelectTrigger className="w-[140px]" data-testid="select-filter-periodo">
                   <SelectValue placeholder="Período" />
@@ -738,6 +818,15 @@ export default function Devolucoes() {
                   <X 
                     className="h-3 w-3 cursor-pointer hover:text-destructive" 
                     onClick={() => setFilterMotivo("all")}
+                  />
+                </Badge>
+              )}
+              {filterCategoria !== "all" && (
+                <Badge variant="outline" className="gap-1">
+                  Categoria: {filterCategoria}
+                  <X 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                    onClick={() => setFilterCategoria("all")}
                   />
                 </Badge>
               )}

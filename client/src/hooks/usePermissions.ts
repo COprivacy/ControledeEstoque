@@ -14,6 +14,9 @@ interface Permissions {
   financeiro: string;
   config_fiscal: string;
   configuracoes: string;
+  devolucoes: string;
+  contas_pagar: string;
+  contas_receber: string;
 }
 
 const defaultPermissions: Permissions = {
@@ -29,6 +32,9 @@ const defaultPermissions: Permissions = {
   financeiro: "false",
   config_fiscal: "false",
   configuracoes: "false",
+  devolucoes: "false",
+  contas_pagar: "false",
+  contas_receber: "false",
 };
 
 export function usePermissions() {

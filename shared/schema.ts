@@ -300,6 +300,9 @@ export const permissoesFuncionarios = pgTable("permissoes_funcionarios", {
   config_fiscal: text("config_fiscal").notNull().default("false"),
   historico_caixas: text("historico_caixas").notNull().default("false"),
   configuracoes: text("configuracoes").notNull().default("false"),
+  devolucoes: text("devolucoes").notNull().default("false"),
+  contas_pagar: text("contas_pagar").notNull().default("false"),
+  contas_receber: text("contas_receber").notNull().default("false"),
 });
 
 export const insertPermissaoFuncionarioSchema = createInsertSchema(permissoesFuncionarios);

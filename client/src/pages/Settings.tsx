@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Crown, Upload, Palette, Save, RotateCcw, Monitor, Bell, Globe, Gauge, AlertTriangle } from "lucide-react";
+import { Crown, Upload, Palette, Save, RotateCcw, Monitor, Bell, Globe, Gauge, AlertTriangle, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 // Função para converter HEX para HSL
@@ -887,7 +888,7 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          
+
 
 
           {/* Botões de Ação Modernos */}

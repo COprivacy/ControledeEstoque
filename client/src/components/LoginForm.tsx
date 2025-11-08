@@ -33,7 +33,6 @@ export default function LoginForm({
     if (onLogin) {
       onLogin(email, password);
     }
-    console.log("Login tentado:", { email, password });
   };
 
   return (

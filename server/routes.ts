@@ -114,30 +114,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, senha } = req.body;
-      console.log(`🔐 Tentativa de login - Email: ${email}`);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔐 Tentativa de login - Email: ${email}`);
+      }
 
       // Busca o usuário pelo email (sem validação de senha ainda)
       const user = await storage.getUserByEmail(email);
 
-      console.log(`📋 Usuário encontrado: ${user ? `Sim (${user.email})` : 'Não'}`);
-
       if (!user) {
-        console.log(`❌ Falha de login para: ${email} - Usuário não encontrado`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`❌ Falha de login - Usuário não encontrado`);
+        }
         return res.status(401).json({ error: "Email ou senha inválidos" });
       }
-
-      // Debug: mostrar senhas (remover em produção)
-      console.log(`🔑 Senha fornecida: ${senha}`);
-      console.log(`🔑 Senha no banco: ${user.senha}`);
-      console.log(`🔍 Senhas são iguais? ${user.senha === senha}`);
 
       // Comparação direta de senha (sem hash)
       if (user.senha !== senha) {
-        console.log(`❌ Falha de login para: ${email} - Senha incorreta`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`❌ Falha de login - Senha incorreta`);
+        }
         return res.status(401).json({ error: "Email ou senha inválidos" });
       }
 
-      console.log(`✅ Login bem-sucedido para usuário: ${email}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`✅ Login bem-sucedido para usuário: ${email}`);
+      }
 
       // Login bem-sucedido
       const userResponse = {
@@ -179,12 +181,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           code,
         });
 
-        console.log(`📧 Código de verificação enviado para ${email}: ${code}`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`📧 Código de verificação enviado para ${email}: ${code}`);
+        }
 
         res.json({
           success: true,
           message: "Código enviado com sucesso",
-          code, // Em produção, NÃO retorne o código. Aqui é só para demonstração
+          // SECURITY: Código NÃO é retornado - apenas enviado por email
+          ...(process.env.NODE_ENV === 'development' && { code }) // Apenas em dev para testes
         });
       } catch (emailError) {
         console.error("❌ Erro ao enviar email:", emailError);

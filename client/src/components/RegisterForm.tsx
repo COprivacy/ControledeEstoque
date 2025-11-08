@@ -22,7 +22,6 @@ export default function RegisterForm({ onRegister, onLoginClick, isLoading }: Re
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (onRegister && name && email && password) {
-      console.log("Registro tentado:", { name, email, password });
       onRegister(name, email, password);
     }
   };

@@ -298,22 +298,26 @@ export default function Settings() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent animate-in slide-in-from-left duration-700">
-            Configurações
-          </h1>
-          <p className="text-sm text-muted-foreground animate-in slide-in-from-left duration-700 delay-100">
-            Personalize seu sistema com estilo
-          </p>
+    <div className="space-y-8 animate-in fade-in duration-500 px-1">
+      {/* Header Moderno */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 p-8 text-white shadow-2xl">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="relative z-10 flex items-center justify-between">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold tracking-tight animate-in slide-in-from-left duration-700">
+              Configurações
+            </h1>
+            <p className="text-lg text-white/90 animate-in slide-in-from-left duration-700 delay-100">
+              Personalize cada detalhe do seu sistema
+            </p>
+          </div>
+          {isPremium && (
+            <Badge className="bg-white/20 backdrop-blur-md text-white border border-white/30 shadow-lg px-4 py-2 text-base animate-in zoom-in duration-500">
+              <Crown className="h-5 w-5 mr-2 animate-pulse" />
+              Premium
+            </Badge>
+          )}
         </div>
-        {isPremium && (
-          <Badge className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 animate-in zoom-in duration-500">
-            <Crown className="h-3 w-3 mr-1 animate-pulse" />
-            Premium
-          </Badge>
-        )}
       </div>
 
       {!isPremium && (
@@ -338,13 +342,16 @@ export default function Settings() {
       {isPremium && (
         <>
           {/* Marca e Identidade Visual */}
-          <Card className="backdrop-blur-sm bg-card/80 border-2 border-primary/10 shadow-xl hover:shadow-2xl transition-all duration-500 hover:border-primary/30 animate-in slide-in-from-bottom duration-700">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-t-lg">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Upload className="h-5 w-5 text-primary animate-pulse" />
+          <Card className="modern-card glass-card border-0 shadow-xl overflow-hidden animate-in slide-in-from-bottom duration-700">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+            <CardHeader className="bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-950/30 dark:to-purple-950/30 backdrop-blur-sm border-b border-border/50">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg">
+                  <Upload className="h-5 w-5" />
+                </div>
                 Marca e Identidade Visual
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-base">
                 Personalize a logo e nome da sua empresa
               </CardDescription>
             </CardHeader>
@@ -441,13 +448,16 @@ export default function Settings() {
           </Card>
 
           {/* Cores do Sistema */}
-          <Card className="backdrop-blur-sm bg-card/80 border-2 border-accent/10 shadow-xl hover:shadow-2xl transition-all duration-500 hover:border-accent/30 animate-in slide-in-from-bottom duration-700 delay-100">
-            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-t-lg">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Palette className="h-5 w-5 text-accent animate-pulse" />
+          <Card className="modern-card glass-card border-0 shadow-xl overflow-hidden animate-in slide-in-from-bottom duration-700 delay-100">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500"></div>
+            <CardHeader className="bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-950/30 dark:to-pink-950/30 backdrop-blur-sm border-b border-border/50">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 text-white shadow-lg">
+                  <Palette className="h-5 w-5" />
+                </div>
                 Paleta de Cores
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-base">
                 Personalize as cores principais do sistema
               </CardDescription>
             </CardHeader>
@@ -874,13 +884,23 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-3 animate-in slide-in-from-bottom duration-700 delay-400">
-            <Button onClick={handleReset} variant="outline" size="lg" className="hover:scale-105 transition-all duration-300 hover:shadow-lg">
-              <RotateCcw className="h-4 w-4 mr-2" />
+          {/* Botões de Ação Modernos */}
+          <div className="flex justify-end gap-4 animate-in slide-in-from-bottom duration-700 delay-400">
+            <Button 
+              onClick={handleReset} 
+              variant="outline" 
+              size="lg" 
+              className="px-8 py-6 text-base font-semibold border-2 hover:scale-105 transition-all duration-300 hover:shadow-xl hover:border-primary"
+            >
+              <RotateCcw className="h-5 w-5 mr-2" />
               Restaurar Padrão
             </Button>
-            <Button onClick={handleSave} size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
-              <Save className="h-4 w-4 mr-2" />
+            <Button 
+              onClick={handleSave} 
+              size="lg" 
+              className="px-8 py-6 text-base font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl border-0 animate-gradient-rotate"
+            >
+              <Save className="h-5 w-5 mr-2" />
               Salvar Configurações
             </Button>
           </div>

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { LogOut, User, KeyRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -218,10 +219,13 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
     <header className="border-b bg-background">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
+          <SidebarTrigger data-testid="button-sidebar-toggle" />
           {config.logoUrl && (
             <img src={config.logoUrl} alt="Logo" className="h-8 w-auto object-contain" />
           )}
-          <h1 className="text-xl font-bold text-foreground">{config.storeName}</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-400 dark:from-blue-400 dark:via-cyan-300 dark:to-blue-300 bg-clip-text text-transparent animate-gradient-x tracking-tight">
+            {config.storeName}
+          </h1>
         </div>
         <div className="flex items-center gap-4">
           <ThemeToggle />

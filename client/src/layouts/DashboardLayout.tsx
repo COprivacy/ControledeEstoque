@@ -46,9 +46,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <DashboardSidebar />
         <div className="flex flex-col flex-1 overflow-hidden">
           {!isPDVPage && <DashboardHeader userEmail={userEmail} onLogout={handleLogout} />}
-          <div className="flex items-center gap-2 px-6 py-3 border-b bg-background">
-            <SidebarTrigger data-testid="button-sidebar-toggle" />
-          </div>
           <main className="flex-1 overflow-auto p-6 bg-background">
             {children}
             

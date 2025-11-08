@@ -1032,22 +1032,9 @@ export default function Inventory() {
                         const contagem = parseInt(contagemValue) || 0;
                         const diferenca = contagem - produto.quantidade;
 
-                        // Verificar se produto tem alta taxa de devolução
-                        const temAltaDevolucao = produtosAltaDevolucao.some(p => p.produto_id === produto.id);
-
                         return (
-                          <TableRow key={produto.id} data-testid={`row-produto-${produto.id}`} className={temAltaDevolucao ? 'bg-orange-50 dark:bg-orange-950' : ''}>
-                            <TableCell className="font-medium">
-                              <div className="flex items-center gap-2">
-                                {produto.nome}
-                                {temAltaDevolucao && (
-                                  <Badge variant="destructive" className="text-xs">
-                                    <AlertTriangle className="h-3 w-3 mr-1" />
-                                    Alta devolução
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
+                          <TableRow key={produto.id} data-testid={`row-produto-${produto.id}`}>
+                            <TableCell className="font-medium">{produto.nome}</TableCell>
                             <TableCell>{produto.categoria}</TableCell>
                             <TableCell className="text-center font-semibold">{produto.quantidade}</TableCell>
                             <TableCell className="text-center">
@@ -1121,65 +1108,6 @@ export default function Inventory() {
               </ol>
             </CardContent>
           </Card>
-
-          {/* Alerta de Produtos com Alta Taxa de Devolução */}
-          {produtosAltaDevolucao.length > 0 && (
-            <Card className="border-orange-200 bg-orange-50/50">
-              <CardHeader>
-                <CardTitle className="text-orange-900 flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5" />
-                  ⚠️ Produtos com Alta Taxa de Devolução
-                </CardTitle>
-                <CardDescription className="text-orange-700">
-                  Estes produtos têm taxas de devolução elevadas e merecem atenção especial
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border border-orange-200">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Produto</TableHead>
-                        <TableHead>Categoria</TableHead>
-                        <TableHead className="text-center">Vezes Devolvido</TableHead>
-                        <TableHead className="text-center">Qtd Devolvida</TableHead>
-                        <TableHead className="text-center">Em Estoque</TableHead>
-                        <TableHead className="text-right">Taxa de Devolução</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {produtosAltaDevolucao.map((item) => (
-                        <TableRow key={item.produto_id} className="bg-orange-50">
-                          <TableCell className="font-medium">{item.nome}</TableCell>
-                          <TableCell>{item.categoria}</TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant="destructive">
-                              {item.vezes_devolvido}x
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-center">{item.quantidade_devolvida}</TableCell>
-                          <TableCell className="text-center">{item.quantidade_estoque}</TableCell>
-                          <TableCell className="text-right">
-                            <Badge
-                              variant="destructive"
-                              className={item.taxa_devolucao >= 50 ? 'bg-red-600' : 'bg-orange-600'}
-                            >
-                              {item.taxa_devolucao.toFixed(1)}%
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-                <div className="mt-4 p-3 bg-orange-100 rounded-lg border border-orange-300">
-                  <p className="text-sm text-orange-900">
-                    💡 <strong>Recomendação:</strong> Verifique a qualidade destes produtos, revise fornecedores ou considere descontinuar itens com taxas muito altas de devolução.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
 
         <TabsContent value="rotativo" className="space-y-6 mt-6">

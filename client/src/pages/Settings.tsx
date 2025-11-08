@@ -20,8 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
-import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox
-import { Shield } from "lucide-react"; // Import Shield
+
 
 // Função para converter HEX para HSL
 function hexToHSL(hex: string): string {
@@ -89,7 +88,6 @@ export default function Settings() {
   const [isEncerrando, setIsEncerrando] = useState(false);
 
   const [config, setConfig] = useState(DEFAULT_CONFIG);
-  const [permissoes, setPermissoes] = useState({}); // Estado para gerenciar permissões
 
   // Carregar configurações salvas quando o componente montar
   useEffect(() => {
@@ -120,31 +118,7 @@ export default function Settings() {
       }
     }
 
-    // Carregar permissões salvas
-    const savedPermissions = localStorage.getItem("userPermissions");
-    if (savedPermissions) {
-      setPermissoes(JSON.parse(savedPermissions));
-    } else {
-      // Definir permissões padrão se não houver nada salvo
-      setPermissoes({
-        dashboard: "true",
-        pdv: "true",
-        caixa: "true",
-        historico_caixas: "true",
-        produtos: "true",
-        inventario: "true",
-        relatorios: "true",
-        clientes: "true",
-        fornecedores: "true",
-        financeiro: "true",
-        devolucoes: "false", // Nova permissão
-        contas_pagar: "false", // Nova permissão
-        contas_receber: "false", // Nova permissão
-        config_fiscal: "true",
-        configuracoes: "true",
-      });
-    }
-  }, []);
+    }, []);
 
   const applyThemeColors = (customization: any) => {
     if (customization.primaryColor) {
@@ -256,8 +230,6 @@ export default function Settings() {
 
     // Salvar configurações no localStorage
     localStorage.setItem("customization", JSON.stringify(config));
-    // Salvar permissões no localStorage
-    localStorage.setItem("userPermissions", JSON.stringify(permissoes));
 
     // Aplicar customizações
     applyThemeColors(config);
@@ -278,24 +250,6 @@ export default function Settings() {
     applyBorderRadius(DEFAULT_CONFIG.borderRadius);
     applyInterfaceSettings();
     localStorage.removeItem("customization");
-    localStorage.removeItem("userPermissions"); // Remover permissões salvas
-    setPermissoes({ // Resetar permissões para o padrão
-      dashboard: "true",
-      pdv: "true",
-      caixa: "true",
-      historico_caixas: "true",
-      produtos: "true",
-      inventario: "true",
-      relatorios: "true",
-      clientes: "true",
-      fornecedores: "true",
-      financeiro: "true",
-      devolucoes: "false",
-      contas_pagar: "false",
-      contas_receber: "false",
-      config_fiscal: "true",
-      configuracoes: "true",
-    });
 
 
     toast({
@@ -933,336 +887,7 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          {/* Permissões de Funcionário */}
-          <Card className="backdrop-blur-sm bg-card/80 border-2 border-gray-500/10 shadow-xl hover:shadow-2xl transition-all duration-500 hover:border-gray-500/30 animate-in slide-in-from-bottom duration-700 delay-350">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-950/20 dark:to-gray-900/20 rounded-t-lg">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Shield className="h-5 w-5 text-gray-600 animate-pulse" /> {/* Ícone de escudo */}
-                Permissões de Funcionário
-              </CardTitle>
-              <CardDescription>
-                Defina as permissões de acesso para cada funcionário
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6 pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="dashboard"
-                    checked={permissoes.dashboard === "true"}
-                    onCheckedChange={(checked) =>
-                      setPermissoes({ ...permissoes, dashboard: checked ? "true" : "false" })
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="dashboard"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Dashboard
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Acessar página principal do sistema
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="pdv"
-                    checked={permissoes.pdv === "true"}
-                    onCheckedChange={(checked) =>
-                      setPermissoes({ ...permissoes, pdv: checked ? "true" : "false" })
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="pdv"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      PDV / Caixa
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Realizar vendas e gerenciar caixa
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="caixa"
-                    checked={permissoes.caixa === "true"}
-                    onCheckedChange={(checked) =>
-                      setPermissoes({ ...permissoes, caixa: checked ? "true" : "false" })
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="caixa"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Caixa
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Abrir e fechar caixa
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="historico_caixas"
-                    checked={permissoes.historico_caixas === "true"}
-                    onCheckedChange={(checked) =>
-                      setPermissoes({ ...permissoes, historico_caixas: checked ? "true" : "false" })
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="historico_caixas"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Histórico de Caixas
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Visualizar histórico de caixas anteriores
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="produtos"
-                    checked={permissoes.produtos === "true"}
-                    onCheckedChange={(checked) =>
-                      setPermissoes({ ...permissoes, produtos: checked ? "true" : "false" })
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="produtos"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Produtos
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Cadastrar e editar produtos
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="inventario"
-                    checked={permissoes.inventario === "true"}
-                    onCheckedChange={(checked) =>
-                      setPermissoes({ ...permissoes, inventario: checked ? "true" : "false" })
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="inventario"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Inventário
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Gerenciar estoque
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="relatorios"
-                    checked={permissoes.relatorios === "true"}
-                    onCheckedChange={(checked) =>
-                      setPermissoes({ ...permissoes, relatorios: checked ? "true" : "false" })
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="relatorios"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Relatórios
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Visualizar relatórios de vendas
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="clientes"
-                    checked={permissoes.clientes === "true"}
-                    onCheckedChange={(checked) =>
-                      setPermissoes({ ...permissoes, clientes: checked ? "true" : "false" })
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="clientes"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Clientes
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Gerenciar cadastro de clientes
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="fornecedores"
-                    checked={permissoes.fornecedores === "true"}
-                    onCheckedChange={(checked) =>
-                      setPermissoes({ ...permissoes, fornecedores: checked ? "true" : "false" })
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="fornecedores"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Fornecedores
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Gerenciar fornecedores
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="financeiro"
-                    checked={permissoes.financeiro === "true"}
-                    onCheckedChange={(checked) =>
-                      setPermissoes({ ...permissoes, financeiro: checked ? "true" : "false" })
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="financeiro"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Financeiro
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Acessar contas a pagar/receber
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="devolucoes"
-                    checked={permissoes.devolucoes === "true"}
-                    onCheckedChange={(checked) =>
-                      setPermissoes({ ...permissoes, devolucoes: checked ? "true" : "false" })
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="devolucoes"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Devoluções
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Gerenciar devoluções de produtos
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="contas_pagar"
-                    checked={permissoes.contas_pagar === "true"}
-                    onCheckedChange={(checked) =>
-                      setPermissoes({ ...permissoes, contas_pagar: checked ? "true" : "false" })
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="contas_pagar"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Contas a Pagar
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Gerenciar contas a pagar
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="contas_receber"
-                    checked={permissoes.contas_receber === "true"}
-                    onCheckedChange={(checked) =>
-                      setPermissoes({ ...permissoes, contas_receber: checked ? "true" : "false" })
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="contas_receber"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Contas a Receber
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Gerenciar contas a receber
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="config_fiscal"
-                    checked={permissoes.config_fiscal === "true"}
-                    onCheckedChange={(checked) =>
-                      setPermissoes({ ...permissoes, config_fiscal: checked ? "true" : "false" })
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="config_fiscal"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Config. Fiscal
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Configurações fiscais e NF-e
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="configuracoes"
-                    checked={permissoes.configuracoes === "true"}
-                    onCheckedChange={(checked) =>
-                      setPermissoes({ ...permissoes, configuracoes: checked ? "true" : "false" })
-                    }
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="configuracoes"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Configurações
-                    </label>
-                    <p className="text-sm text-muted-foreground">
-                      Acessar configurações do sistema
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          
 
 
           {/* Botões de Ação Modernos */}

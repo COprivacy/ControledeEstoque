@@ -989,6 +989,9 @@ export default function Admin() {
                       { key: 'financeiro', label: 'Financeiro', description: 'Acessar contas a pagar/receber' },
                       { key: 'config_fiscal', label: 'Config. Fiscal', description: 'Configurações fiscais e NF-e' },
                       { key: 'configuracoes', label: 'Configurações', description: 'Acessar configurações do sistema' },
+                      { key: 'devolucoes', label: 'Devoluções', description: 'Gerenciar devoluções de produtos' },
+                      { key: 'contas_pagar', label: 'Contas a Pagar', description: 'Gerenciar contas a pagar' },
+                      { key: 'contas_receber', label: 'Contas a Receber', description: 'Gerenciar contas a receber' },
                     ].map((perm) => (
                       <Card key={perm.key} className="cursor-pointer" onClick={() => togglePermission(editPermissionsUser, perm.key as keyof Permission)}>
                         <CardContent className="p-4">

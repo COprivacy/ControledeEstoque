@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Download, Package, DollarSign, TrendingUp, ClipboardList, RefreshCw, FileText, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Calendar, Download, Package, DollarSign, TrendingUp, ClipboardList, RefreshCw, FileText, AlertTriangle, CheckCircle2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type ContagemDivergencia = {
   produto_id: number;
@@ -28,6 +29,118 @@ type ContagemDivergencia = {
   data_contagem: string;
 };
 
+// Mock components and types used in the changes snippet
+type ProductCardProps = {
+  product: Produto;
+  onUpdate: (id: number, quantity: number) => void;
+  onDelete: (id: number) => void;
+};
+
+const ProductCard: React.FC<ProductCardProps> = ({ product, onUpdate, onDelete }) => {
+  const [quantity, setQuantity] = useState(product.quantidade.toString());
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleUpdateClick = () => {
+    const newQuantity = parseInt(quantity);
+    if (!isNaN(newQuantity) && newQuantity >= 0) {
+      onUpdate(product.id, newQuantity);
+      setIsEditing(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setQuantity(product.quantidade.toString());
+    setIsEditing(false);
+  };
+
+  return (
+    <Card className="p-4 flex flex-col justify-between">
+      <div>
+        <CardHeader className="p-0 mb-3">
+          <CardTitle>{product.nome}</CardTitle>
+          <CardDescription>{product.categoria}</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <p className="text-sm font-medium">Estoque: {product.quantidade}</p>
+          <p className="text-sm">Preço: R$ {product.preco.toFixed(2)}</p>
+          <p className="text-sm">Cód. Barras: {product.codigo_barras || 'N/A'}</p>
+        </CardContent>
+      </div>
+      <CardFooter className="p-0 mt-4 flex items-center gap-2">
+        {isEditing ? (
+          <>
+            <Input
+              type="number"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              min="0"
+              className="h-8 w-20"
+            />
+            <Button onClick={handleUpdateClick} size="sm" className="h-8">Salvar</Button>
+            <Button onClick={handleCancelEdit} size="sm" variant="outline" className="h-8">Cancelar</Button>
+          </>
+        ) : (
+          <>
+            <Button onClick={() => setIsEditing(true)} size="sm" variant="outline" className="h-8">Editar</Button>
+            <Button onClick={() => onDelete(product.id)} size="sm" variant="destructive" className="h-8">Excluir</Button>
+          </>
+        )}
+      </CardFooter>
+    </Card>
+  );
+};
+
+// Mock component for ExpiringProductsReport
+const ExpiringProductsReport: React.FC<{ products: Produto[] }> = ({ products }) => {
+  const expiringSoon = products.filter(p => p.vencimento && new Date(p.vencimento) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+  const expired = products.filter(p => p.vencimento && new Date(p.vencimento) < new Date());
+
+  return (
+    <div className="grid gap-4 md:grid-cols-3">
+      <Card className="border-red-200 bg-red-50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium text-red-900 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Produtos Vencidos
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-red-600">{expired.length}</div>
+          <p className="text-xs text-red-700 mt-1">
+            Valor: R$ {expired.reduce((sum, p) => sum + (p.preco * p.quantidade), 0).toFixed(2)}
+          </p>
+        </CardContent>
+      </Card>
+      <Card className="border-yellow-200 bg-yellow-50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium text-yellow-900 flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            A Vencer (30 dias)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-yellow-600">{expiringSoon.length}</div>
+          <p className="text-xs text-yellow-700 mt-1">
+            Valor: R$ {expiringSoon.reduce((sum, p) => sum + (p.preco * p.quantidade), 0).toFixed(2)}
+          </p>
+        </CardContent>
+      </Card>
+      <Card className="border-green-200 bg-green-50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium text-green-900">
+            Produtos OK
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-green-600">{products.length - expired.length - expiringSoon.length}</div>
+          <p className="text-xs text-green-700 mt-1">Dentro do prazo</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+
 export default function Inventory() {
   const [viewType, setViewType] = useState<"semanal" | "mensal">("mensal");
   const [rotativeDialogOpen, setRotativeDialogOpen] = useState(false);
@@ -38,12 +151,16 @@ export default function Inventory() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Mock state and handlers for search and category filter in the original 'all' tab
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+
   const { data: produtos = [], isLoading: loadingProdutos } = useQuery<Produto[]>({
     queryKey: ["/api/produtos"],
   });
 
   const today = new Date();
-  const startDate = viewType === "semanal" 
+  const startDate = viewType === "semanal"
     ? new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     : new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
   const endDate = today.toISOString().split('T')[0];
@@ -118,8 +235,8 @@ export default function Inventory() {
 
   const categorias = Array.from(new Set(produtos.map(p => p.categoria)));
 
-  const produtosFiltrados = selectedCategory === "all" 
-    ? produtos 
+  const produtosFiltrados = selectedCategory === "all"
+    ? produtos
     : produtos.filter(p => p.categoria === selectedCategory);
 
   const totalProdutos = produtos.length;
@@ -135,7 +252,7 @@ export default function Inventory() {
   const produtosVencimento = useMemo(() => {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
-    
+
     const vencidos = produtos.filter(p => {
       if (!p.vencimento) return false;
       const dataVencimento = new Date(p.vencimento);
@@ -156,10 +273,10 @@ export default function Inventory() {
 
   // Análise de produtos com alta taxa de devolução
   const produtosAltaDevolucao = useMemo(() => {
-    const produtosDevolucoes: Record<number, { 
-      nome: string; 
+    const produtosDevolucoes: Record<number, {
+      nome: string;
       categoria: string;
-      quantidade_devolvida: number; 
+      quantidade_devolvida: number;
       vezes_devolvido: number;
       quantidade_estoque: number;
       taxa_devolucao: number;
@@ -189,7 +306,7 @@ export default function Inventory() {
         const produto = produtos.find(p => p.id === parseInt(id));
         const totalVendido = stats.quantidade_devolvida + (produto?.quantidade || 0);
         const taxaDevolucao = totalVendido > 0 ? (stats.quantidade_devolvida / totalVendido) * 100 : 0;
-        
+
         return {
           produto_id: parseInt(id),
           ...stats,
@@ -200,6 +317,16 @@ export default function Inventory() {
       .sort((a, b) => b.taxa_devolucao - a.taxa_devolucao)
       .slice(0, 5);
   }, [produtos, devolucoes]);
+
+  // Filter products based on search term and category filter
+  const filteredProducts = useMemo(() => {
+    return produtos.filter(product => {
+      const matchesSearch = product.nome.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = categoryFilter === "all" || product.categoria === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [produtos, searchTerm, categoryFilter]);
+
 
   const handleContagemRotativaChange = (produtoId: number, value: string) => {
     setContagemRotativa(prev => ({
@@ -223,7 +350,7 @@ export default function Inventory() {
     if (!produto) return;
 
     const diferenca = novaQuantidade - produto.quantidade;
-    
+
     // Registrar divergência se houver
     if (diferenca !== 0) {
       const novaDivergencia: ContagemDivergencia = {
@@ -294,7 +421,7 @@ export default function Inventory() {
     const totalPrejuizo = divergencias
       .filter(d => d.diferenca < 0)
       .reduce((sum, d) => sum + Math.abs(d.valor_divergencia), 0);
-    
+
     const totalGanho = divergencias
       .filter(d => d.diferenca > 0)
       .reduce((sum, d) => sum + d.valor_divergencia, 0);
@@ -621,7 +748,7 @@ export default function Inventory() {
     doc.text(`Valor Total em Estoque: R$ ${valorTotalEstoque.toFixed(2)}`, 15, yPosition);
     yPosition += 6;
     doc.text(`Saídas no Período: ${totalSaidas} unidades`, 15, yPosition);
-    yPosition += 10;
+    yPosition += 15;
 
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
@@ -675,6 +802,15 @@ export default function Inventory() {
       description: `Relatório ${viewType} baixado com sucesso`,
     });
   };
+
+  const handleUpdate = (id: number, quantity: number) => {
+    updateProductMutation.mutate({ id, quantidade: quantity });
+  };
+
+  const handleDelete = (id: number) => {
+    deleteProductMutation.mutate(id);
+  };
+
 
   if (loadingProdutos || loadingVendas) {
     return (
@@ -842,6 +978,30 @@ export default function Inventory() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="flex gap-2 mb-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Buscar produto..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as Categorias</SelectItem>
+                    {categorias.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
@@ -871,10 +1031,10 @@ export default function Inventory() {
                         const contagemValue = contagemRotativa[produto.id] || "";
                         const contagem = parseInt(contagemValue) || 0;
                         const diferenca = contagem - produto.quantidade;
-                        
+
                         // Verificar se produto tem alta taxa de devolução
                         const temAltaDevolucao = produtosAltaDevolucao.some(p => p.produto_id === produto.id);
-                        
+
                         return (
                           <TableRow key={produto.id} data-testid={`row-produto-${produto.id}`} className={temAltaDevolucao ? 'bg-orange-50 dark:bg-orange-950' : ''}>
                             <TableCell className="font-medium">
@@ -1000,8 +1160,8 @@ export default function Inventory() {
                           <TableCell className="text-center">{item.quantidade_devolvida}</TableCell>
                           <TableCell className="text-center">{item.quantidade_estoque}</TableCell>
                           <TableCell className="text-right">
-                            <Badge 
-                              variant="destructive" 
+                            <Badge
+                              variant="destructive"
                               className={item.taxa_devolucao >= 50 ? 'bg-red-600' : 'bg-orange-600'}
                             >
                               {item.taxa_devolucao.toFixed(1)}%
@@ -1060,7 +1220,7 @@ export default function Inventory() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-purple-800 mb-3">
-                O inventário rotativo permite fazer contagens parciais periódicas, focando em categorias específicas ou grupos de produtos. 
+                O inventário rotativo permite fazer contagens parciais periódicas, focando em categorias específicas ou grupos de produtos.
                 Isso facilita a gestão do estoque sem precisar parar as operações para um inventário completo.
               </p>
               <ul className="list-disc list-inside space-y-1 text-sm text-purple-800">
@@ -1245,8 +1405,8 @@ export default function Inventory() {
                   </CardHeader>
                   <CardContent>
                     <div className={`text-2xl font-bold ${
-                      divergencias.reduce((sum, d) => sum + d.valor_divergencia, 0) < 0 
-                        ? 'text-red-600' 
+                      divergencias.reduce((sum, d) => sum + d.valor_divergencia, 0) < 0
+                        ? 'text-red-600'
                         : 'text-green-600'
                     }`}>
                       R$ {divergencias

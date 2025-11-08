@@ -64,7 +64,7 @@ export default function DashboardHeader({ userEmail = "usuario@email.com", onLog
   const { toast } = useToast();
   const [config, setConfig] = useState({
     logoUrl: "",
-    storeName: "Controle de Estoque Simples"
+    storeName: "Pavisoft Sistemas"
   });
   const [userName, setUserName] = useState("");
   const [userCargo, setUserCargo] = useState("");

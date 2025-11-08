@@ -202,9 +202,12 @@ export default function Devolucoes() {
     setDialogOpen(true);
   };
 
+  const [itensSelecionados, setItensSelecionados] = useState<{[key: string]: number}>({});
+
   const handleDevolverVenda = (venda: any) => {
     setVendaSelecionada(venda);
     setEditingDevolucao(null);
+    setItensSelecionados({});
     setVendasDialogOpen(false);
     setDialogOpen(true);
   };
@@ -553,19 +556,56 @@ export default function Devolucoes() {
               </DialogHeader>
               
               {vendaSelecionada && (
-                <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg border border-blue-200 dark:border-blue-800 space-y-1">
-                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                    Devolução de Venda #{vendaSelecionada.id}
-                  </p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
-                    Data: {formatDate(vendaSelecionada.data)}
-                  </p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
-                    Produto: {vendaSelecionada.produto}
-                  </p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
-                    Valor: R$ {(vendaSelecionada.valor_total || 0).toFixed(2)}
-                  </p>
+                <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800 space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                      Devolução de Venda #{vendaSelecionada.id}
+                    </p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      Data: {formatDate(vendaSelecionada.data)}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                      Selecione os itens para devolver:
+                    </Label>
+                    <div className="bg-white dark:bg-blue-900 rounded-md border border-blue-200 dark:border-blue-700 p-3 space-y-2">
+                      <div className="flex items-center justify-between pb-2 border-b">
+                        <span className="text-xs font-medium text-blue-900 dark:text-blue-100">
+                          {vendaSelecionada.produto || 'Produto'}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="qtd-devolver" className="text-xs text-blue-700 dark:text-blue-300">
+                            Qtd a devolver:
+                          </Label>
+                          <Input
+                            id="qtd-devolver"
+                            type="number"
+                            min="0"
+                            max={vendaSelecionada.quantidade_vendida || 1}
+                            value={itensSelecionados['item-principal'] || 0}
+                            onChange={(e) => {
+                              const valor = parseInt(e.target.value) || 0;
+                              setItensSelecionados({ 'item-principal': Math.min(valor, vendaSelecionada.quantidade_vendida || 1) });
+                            }}
+                            className="w-20 h-8 text-center"
+                          />
+                          <span className="text-xs text-blue-700 dark:text-blue-300">
+                            de {vendaSelecionada.quantidade_vendida || 1}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-blue-600 dark:text-blue-400">
+                        Valor unitário: R$ {((vendaSelecionada.valor_total || 0) / (vendaSelecionada.quantidade_vendida || 1)).toFixed(2)}
+                      </p>
+                      {itensSelecionados['item-principal'] > 0 && (
+                        <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 pt-1 border-t">
+                          Valor a devolver: R$ {(((vendaSelecionada.valor_total || 0) / (vendaSelecionada.quantidade_vendida || 1)) * itensSelecionados['item-principal']).toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -596,24 +636,28 @@ export default function Devolucoes() {
                   <input type="hidden" name="venda_id" value={vendaSelecionada.id} />
                 )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="quantidade">Quantidade *</Label>
-                  <Input
-                    id="quantidade"
-                    name="quantidade"
-                    type="number"
-                    min="1"
-                    max={vendaSelecionada?.quantidade_vendida}
-                    defaultValue={editingDevolucao?.quantidade || vendaSelecionada?.quantidade_vendida || 1}
-                    required
-                    data-testid="input-quantidade"
+                {!vendaSelecionada && (
+                  <div className="space-y-2">
+                    <Label htmlFor="quantidade">Quantidade *</Label>
+                    <Input
+                      id="quantidade"
+                      name="quantidade"
+                      type="number"
+                      min="1"
+                      defaultValue={editingDevolucao?.quantidade || 1}
+                      required
+                      data-testid="input-quantidade"
+                    />
+                  </div>
+                )}
+
+                {vendaSelecionada && (
+                  <input 
+                    type="hidden" 
+                    name="quantidade" 
+                    value={itensSelecionados['item-principal'] || 0}
                   />
-                  {vendaSelecionada && (
-                    <p className="text-xs text-muted-foreground">
-                      Máximo: {vendaSelecionada.quantidade_vendida} unidade(s)
-                    </p>
-                  )}
-                </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="cliente_nome">Nome do Cliente</Label>
@@ -684,6 +728,7 @@ export default function Devolucoes() {
                       setDialogOpen(false);
                       setEditingDevolucao(null);
                       setVendaSelecionada(null);
+                      setItensSelecionados({});
                     }}
                     data-testid="button-cancel"
                   >
@@ -691,7 +736,11 @@ export default function Devolucoes() {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={createMutation.isPending || updateMutation.isPending}
+                    disabled={
+                      createMutation.isPending || 
+                      updateMutation.isPending ||
+                      (vendaSelecionada && (!itensSelecionados['item-principal'] || itensSelecionados['item-principal'] === 0))
+                    }
                     className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                     data-testid="button-save"
                   >
@@ -699,8 +748,13 @@ export default function Devolucoes() {
                       ? "Salvando..."
                       : editingDevolucao
                       ? "Atualizar"
-                      : "Cadastrar"}
+                      : "Cadastrar Devolução"}
                   </Button>
+                  {vendaSelecionada && (!itensSelecionados['item-principal'] || itensSelecionados['item-principal'] === 0) && (
+                    <p className="text-xs text-red-600 text-center col-span-2">
+                      Selecione a quantidade a devolver
+                    </p>
+                  )}
                 </div>
               </form>
             </DialogContent>

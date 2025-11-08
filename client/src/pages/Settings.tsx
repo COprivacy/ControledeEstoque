@@ -50,7 +50,7 @@ const DEFAULT_CONFIG = {
   secondaryColor: "#10B981",
   accentColor: "#F59E0B",
   backgroundColor: "#000000",
-  storeName: "Controle de Estoque",
+  storeName: "Pavisoft Sistemas",
   fontSize: "medium",
   borderRadius: "medium",
   language: "pt-BR",

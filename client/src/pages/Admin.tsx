@@ -966,7 +966,7 @@ export default function Admin() {
           </Dialog>
 
           <Dialog open={editPermissionsUser !== null} onOpenChange={(open) => !open && setEditPermissionsUser(null)}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
               <DialogHeader>
                 <DialogTitle>Gerenciar Permissões</DialogTitle>
                 <DialogDescription>
@@ -974,47 +974,52 @@ export default function Admin() {
                 </DialogDescription>
               </DialogHeader>
               {editPermissionsUser && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    {[
-                      { key: 'dashboard', label: 'Dashboard', description: 'Acessar página principal do sistema' },
-                      { key: 'pdv', label: 'PDV / Caixa', description: 'Realizar vendas e gerenciar caixa' },
-                      { key: 'caixa', label: 'Caixa', description: 'Abrir e fechar caixa' },
-                      { key: 'historico_caixas', label: 'Histórico de Caixas', description: 'Visualizar histórico de caixas anteriores' },
-                      { key: 'produtos', label: 'Produtos', description: 'Cadastrar e editar produtos' },
-                      { key: 'inventario', label: 'Inventário', description: 'Gerenciar estoque' },
-                      { key: 'relatorios', label: 'Relatórios', description: 'Visualizar relatórios de vendas' },
-                      { key: 'clientes', label: 'Clientes', description: 'Gerenciar cadastro de clientes' },
-                      { key: 'fornecedores', label: 'Fornecedores', description: 'Gerenciar fornecedores' },
-                      { key: 'financeiro', label: 'Financeiro', description: 'Acessar contas a pagar/receber' },
-                      { key: 'config_fiscal', label: 'Config. Fiscal', description: 'Configurações fiscais e NF-e' },
-                      { key: 'configuracoes', label: 'Configurações', description: 'Acessar configurações do sistema' },
-                      { key: 'devolucoes', label: 'Devoluções', description: 'Gerenciar devoluções de produtos' },
-                      { key: 'contas_pagar', label: 'Contas a Pagar', description: 'Gerenciar contas a pagar' },
-                      { key: 'contas_receber', label: 'Contas a Receber', description: 'Gerenciar contas a receber' },
-                    ].map((perm) => (
-                      <Card key={perm.key} className="cursor-pointer" onClick={() => togglePermission(editPermissionsUser, perm.key as keyof Permission)}>
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-medium">{perm.label}</h4>
-                              <p className="text-xs text-muted-foreground mt-1">{perm.description}</p>
+                <div className="flex flex-col flex-1 min-h-0">
+                  <div className="flex-1 overflow-y-auto pr-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-4">
+                      {[
+                        { key: 'dashboard', label: 'Dashboard', description: 'Acessar página principal do sistema' },
+                        { key: 'pdv', label: 'PDV / Caixa', description: 'Realizar vendas e gerenciar caixa' },
+                        { key: 'caixa', label: 'Caixa', description: 'Abrir e fechar caixa' },
+                        { key: 'historico_caixas', label: 'Histórico de Caixas', description: 'Visualizar histórico de caixas anteriores' },
+                        { key: 'produtos', label: 'Produtos', description: 'Cadastrar e editar produtos' },
+                        { key: 'inventario', label: 'Inventário', description: 'Gerenciar estoque' },
+                        { key: 'relatorios', label: 'Relatórios', description: 'Visualizar relatórios de vendas' },
+                        { key: 'clientes', label: 'Clientes', description: 'Gerenciar cadastro de clientes' },
+                        { key: 'fornecedores', label: 'Fornecedores', description: 'Gerenciar fornecedores' },
+                        { key: 'financeiro', label: 'Financeiro', description: 'Acessar contas a pagar/receber' },
+                        { key: 'config_fiscal', label: 'Config. Fiscal', description: 'Configurações fiscais e NF-e' },
+                        { key: 'configuracoes', label: 'Configurações', description: 'Acessar configurações do sistema' },
+                        { key: 'devolucoes', label: 'Devoluções', description: 'Gerenciar devoluções de produtos' },
+                        { key: 'contas_pagar', label: 'Contas a Pagar', description: 'Gerenciar contas a pagar' },
+                        { key: 'contas_receber', label: 'Contas a Receber', description: 'Gerenciar contas a receber' },
+                      ].map((perm) => (
+                        <Card 
+                          key={perm.key} 
+                          className="cursor-pointer hover-elevate transition-all" 
+                          onClick={() => togglePermission(editPermissionsUser, perm.key as keyof Permission)}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-sm leading-tight">{perm.label}</h4>
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{perm.description}</p>
+                              </div>
+                              <div className="flex-shrink-0">
+                                <Switch
+                                  checked={(permissions[editPermissionsUser]?.[perm.key as keyof Permission] || allPermissions[editPermissionsUser]?.[perm.key as keyof Permission] || "false") === "true"}
+                                  onCheckedChange={() => togglePermission(editPermissionsUser, perm.key as keyof Permission)}
+                                  data-testid={`switch-permission-${perm.key}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
                             </div>
-                            <div className="ml-2">
-                              <input
-                                type="checkbox"
-                                checked={(permissions[editPermissionsUser]?.[perm.key as keyof Permission] || allPermissions[editPermissionsUser]?.[perm.key as keyof Permission] || "false") === "true"}
-                                onChange={() => {}}
-                                className="h-4 w-4"
-                                data-testid={`checkbox-permission-${perm.key}`}
-                              />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex gap-2 pt-4">
+                  <div className="flex gap-2 pt-4 border-t">
                     <Button 
                       onClick={() => savePermissions(editPermissionsUser)} 
                       className="flex-1"

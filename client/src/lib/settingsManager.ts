@@ -1,4 +1,3 @@
-
 export interface AppSettings {
   logoUrl: string;
   pdvBackgroundUrl: string;
@@ -31,7 +30,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   secondaryColor: "#10B981",
   accentColor: "#F59E0B",
   backgroundColor: "#000000",
-  storeName: "Controle de Estoque",
+  storeName: "Pavisoft Sistemas",
   fontSize: "medium",
   borderRadius: "medium",
   language: "pt-BR",
@@ -98,7 +97,7 @@ export class SettingsManager {
   formatCurrency(value: number): string {
     const currency = this.settings.currency;
     const locale = this.settings.language;
-    
+
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,
@@ -108,11 +107,11 @@ export class SettingsManager {
   formatDate(date: Date | string): string {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
     const format = this.settings.dateFormat;
-    
+
     const day = String(dateObj.getDate()).padStart(2, '0');
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
     const year = dateObj.getFullYear();
-    
+
     switch (format) {
       case 'DD/MM/YYYY':
         return `${day}/${month}/${year}`;

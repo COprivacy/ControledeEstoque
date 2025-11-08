@@ -387,7 +387,7 @@ export default function Inventory() {
 
     const doc = new jsPDF();
     const customization = localStorage.getItem("customization");
-    let storeName = "Controle de Estoque Premium";
+    let storeName = "Pavisoft Sistemas";
 
     if (customization) {
       try {
@@ -505,7 +505,7 @@ export default function Inventory() {
 
     const doc = new jsPDF();
     const customization = localStorage.getItem("customization");
-    let storeName = "Controle de Estoque Premium";
+    let storeName = "Pavisoft Sistemas";
 
     if (customization) {
       try {
@@ -620,7 +620,7 @@ export default function Inventory() {
     const doc = new jsPDF();
 
     const customization = localStorage.getItem("customization");
-    let storeName = "Controle de Estoque Premium";
+    let storeName = "Pavisoft Sistemas";
 
     if (customization) {
       try {
@@ -706,7 +706,7 @@ export default function Inventory() {
     const doc = new jsPDF();
 
     const customization = localStorage.getItem("customization");
-    let storeName = "Controle de Estoque Premium";
+    let storeName = "Pavisoft Sistemas";
 
     if (customization) {
       try {

@@ -130,22 +130,22 @@ export default function Devolucoes() {
 
     if (vendaSelecionada) {
       // Validar quantidade selecionada dos itens
-      const quantidadeItem = itensSelecionados['item-principal'] || 0;
-      quantidade = quantidadeItem;
+      quantidade = itensSelecionados['item-principal'] || 0;
       
-      if (!quantidade || quantidade === 0) {
+      if (!quantidade || quantidade <= 0) {
         toast({
           title: "Erro",
-          description: "Selecione a quantidade a devolver",
+          description: "Informe a quantidade a devolver (deve ser maior que 0)",
           variant: "destructive",
         });
         return;
       }
 
-      if (quantidade > (vendaSelecionada.quantidade_vendida || 0)) {
+      const quantidadeVendida = vendaSelecionada.quantidade_vendida || 0;
+      if (quantidade > quantidadeVendida) {
         toast({
           title: "Erro",
-          description: "Quantidade não pode ser maior que a quantidade vendida",
+          description: `Quantidade não pode ser maior que ${quantidadeVendida} (quantidade vendida)`,
           variant: "destructive",
         });
         return;
@@ -240,13 +240,14 @@ export default function Devolucoes() {
     }
   };
 
+  const [itensSelecionados, setItensSelecionados] = useState<{[key: string]: number}>({});
+
   const handleNewDevolucao = () => {
     setEditingDevolucao(null);
     setVendaSelecionada(null);
+    setItensSelecionados({});
     setDialogOpen(true);
   };
-
-  const [itensSelecionados, setItensSelecionados] = useState<{[key: string]: number}>({});
 
   const handleDevolverVenda = (venda: any) => {
     setVendaSelecionada(venda);
@@ -626,15 +627,16 @@ export default function Devolucoes() {
                           <Input
                             id="qtd-devolver"
                             type="number"
-                            min="1"
+                            min="0"
                             max={vendaSelecionada.quantidade_vendida || 1}
-                            value={itensSelecionados['item-principal'] || ''}
+                            value={itensSelecionados['item-principal'] || 0}
                             onChange={(e) => {
-                              const valor = parseInt(e.target.value) || 0;
-                              if (valor > 0) {
-                                setItensSelecionados({ 'item-principal': Math.min(valor, vendaSelecionada.quantidade_vendida || 1) });
-                              } else {
-                                setItensSelecionados({});
+                              const valor = parseInt(e.target.value);
+                              if (!isNaN(valor) && valor >= 0) {
+                                const qtdMaxima = vendaSelecionada.quantidade_vendida || 1;
+                                setItensSelecionados({ 
+                                  'item-principal': Math.min(Math.max(0, valor), qtdMaxima)
+                                });
                               }
                             }}
                             className="w-20 h-8 text-center"
@@ -648,14 +650,14 @@ export default function Devolucoes() {
                       <p className="text-xs text-blue-600 dark:text-blue-400">
                         Valor unitário: R$ {((vendaSelecionada.valor_total || 0) / (vendaSelecionada.quantidade_vendida || 1)).toFixed(2)}
                       </p>
-                      {itensSelecionados['item-principal'] > 0 ? (
+                      {itensSelecionados['item-principal'] && itensSelecionados['item-principal'] > 0 ? (
                         <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 pt-1 border-t">
                           Valor a devolver: R$ {(((vendaSelecionada.valor_total || 0) / (vendaSelecionada.quantidade_vendida || 1)) * itensSelecionados['item-principal']).toFixed(2)}
                         </p>
                       ) : (
                         <p className="text-xs text-amber-600 dark:text-amber-400 pt-1 border-t flex items-center gap-1">
                           <AlertTriangle className="h-3 w-3" />
-                          Informe a quantidade para devolver
+                          Informe a quantidade para devolver (maior que 0)
                         </p>
                       )}
                     </div>
@@ -793,7 +795,7 @@ export default function Devolucoes() {
                     disabled={
                       createMutation.isPending || 
                       updateMutation.isPending ||
-                      (vendaSelecionada && (!itensSelecionados['item-principal'] || itensSelecionados['item-principal'] === 0))
+                      (vendaSelecionada && (!itensSelecionados['item-principal'] || itensSelecionados['item-principal'] <= 0))
                     }
                     className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                     data-testid="button-save"
@@ -804,9 +806,9 @@ export default function Devolucoes() {
                       ? "Atualizar"
                       : "Cadastrar Devolução"}
                   </Button>
-                  {vendaSelecionada && (!itensSelecionados['item-principal'] || itensSelecionados['item-principal'] === 0) && (
-                    <p className="text-xs text-red-600 text-center col-span-2">
-                      Selecione a quantidade a devolver
+                  {vendaSelecionada && (!itensSelecionados['item-principal'] || itensSelecionados['item-principal'] <= 0) && (
+                    <p className="text-xs text-red-600 text-center w-full mt-2">
+                      ⚠️ Informe a quantidade a devolver (deve ser maior que 0)
                     </p>
                   )}
                 </div>

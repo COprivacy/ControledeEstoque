@@ -2189,6 +2189,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Encerramento de Conta
+  app.post("/api/encerrar-conta", async (req, res) => {
+    try {
+      const { userId, userEmail, userName, motivo } = req.body;
+
+      if (!userId || !userEmail || !userName || !motivo) {
+        return res.status(400).json({ error: "Dados incompletos" });
+      }
+
+      // Enviar email para o admin master
+      try {
+        const { EmailService } = await import('./email-service');
+        const emailService = new EmailService();
+
+        await emailService.sendAccountClosureRequest({
+          userId,
+          userEmail,
+          userName,
+          motivo,
+        });
+
+        console.log(`📧 Solicitação de encerramento enviada - User: ${userEmail}, Motivo: ${motivo.substring(0, 50)}...`);
+        logger.info('Solicitação de encerramento de conta enviada', 'ACCOUNT_CLOSURE', {
+          userId,
+          userEmail,
+          motivo: motivo.substring(0, 100)
+        });
+
+        res.json({
+          success: true,
+          message: "Solicitação enviada com sucesso"
+        });
+      } catch (emailError) {
+        console.error("❌ Erro ao enviar email de encerramento:", emailError);
+        logger.error('Erro ao enviar email de encerramento', 'ACCOUNT_CLOSURE', { error: emailError });
+        res.status(500).json({ error: "Erro ao enviar solicitação" });
+      }
+    } catch (error: any) {
+      console.error("Erro ao processar solicitação de encerramento:", error);
+      logger.error('Erro ao processar encerramento', 'ACCOUNT_CLOSURE', { error: error.message });
+      res.status(500).json({ error: error.message || "Erro ao processar solicitação" });
+    }
+  });
+
   // Meta de Vendas - Salvar/Atualizar
   app.post("/api/user/meta-vendas", async (req, res) => {
     try {

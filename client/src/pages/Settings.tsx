@@ -5,12 +5,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Crown, Upload, Palette, Save, RotateCcw, Monitor, Bell, Globe, Gauge } from "lucide-react";
+import { Crown, Upload, Palette, Save, RotateCcw, Monitor, Bell, Globe, Gauge, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { apiRequest } from "@/lib/queryClient";
 
 // Função para converter HEX para HSL
 function hexToHSL(hex: string): string {
@@ -73,6 +82,9 @@ export default function Settings() {
   const [, setLocation] = useLocation();
   const [isPremium] = useState(true);
   const [checkoutOpen, setCheckoutOpen] = useState(false); // Estado para controlar a abertura do modal de checkout
+  const [encerrarContaOpen, setEncerrarContaOpen] = useState(false);
+  const [motivoEncerramento, setMotivoEncerramento] = useState("");
+  const [isEncerrando, setIsEncerrando] = useState(false);
 
   const [config, setConfig] = useState(DEFAULT_CONFIG);
 
@@ -241,6 +253,48 @@ export default function Settings() {
       title: "Configurações restauradas!",
       description: "As configurações padrão foram aplicadas",
     });
+  };
+
+  const handleEncerrarConta = async () => {
+    if (!motivoEncerramento.trim()) {
+      toast({
+        title: "Motivo obrigatório",
+        description: "Por favor, informe o motivo do encerramento",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsEncerrando(true);
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      
+      const response = await apiRequest("POST", "/api/encerrar-conta", {
+        userId: user.id,
+        userEmail: user.email,
+        userName: user.nome,
+        motivo: motivoEncerramento,
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Solicitação enviada!",
+          description: "Sua solicitação de encerramento foi enviada ao suporte. Entraremos em contato em breve.",
+        });
+        setEncerrarContaOpen(false);
+        setMotivoEncerramento("");
+      } else {
+        throw new Error("Erro ao enviar solicitação");
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao enviar solicitação",
+        description: "Não foi possível enviar sua solicitação. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEncerrando(false);
+    }
   };
 
   return (
@@ -790,7 +844,37 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-3 animate-in slide-in-from-bottom duration-700 delay-350">
+          {/* Encerramento de Conta */}
+          <Card className="backdrop-blur-sm bg-card/80 border-2 border-red-500/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:border-red-500/50 animate-in slide-in-from-bottom duration-700 delay-350">
+            <CardHeader className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-lg text-red-700 dark:text-red-400">
+                <AlertTriangle className="h-5 w-5 animate-pulse" />
+                Zona de Perigo
+              </CardTitle>
+              <CardDescription>
+                Ações irreversíveis relacionadas à sua conta
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              <div className="p-4 rounded-lg border-2 border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20">
+                <h3 className="font-semibold text-red-800 dark:text-red-300 mb-2">Encerrar Conta</h3>
+                <p className="text-sm text-red-700 dark:text-red-400 mb-4">
+                  Ao solicitar o encerramento da conta, seus dados serão preservados por 30 dias para possível recuperação.
+                  Após esse período, todos os dados serão permanentemente excluídos.
+                </p>
+                <Button
+                  variant="destructive"
+                  onClick={() => setEncerrarContaOpen(true)}
+                  className="w-full sm:w-auto"
+                >
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Solicitar Encerramento de Conta
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end gap-3 animate-in slide-in-from-bottom duration-700 delay-400">
             <Button onClick={handleReset} variant="outline" size="lg" className="hover:scale-105 transition-all duration-300 hover:shadow-lg">
               <RotateCcw className="h-4 w-4 mr-2" />
               Restaurar Padrão
@@ -800,6 +884,60 @@ export default function Settings() {
               Salvar Configurações
             </Button>
           </div>
+
+          {/* Modal de Encerramento de Conta */}
+          <Dialog open={encerrarContaOpen} onOpenChange={setEncerrarContaOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-red-600">
+                  <AlertTriangle className="h-5 w-5" />
+                  Encerramento de Conta
+                </DialogTitle>
+                <DialogDescription>
+                  Lamentamos ver você partir. Por favor, nos conte o motivo para que possamos melhorar nossos serviços.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="motivo-encerramento">
+                    Motivo do Encerramento <span className="text-red-500">*</span>
+                  </Label>
+                  <Textarea
+                    id="motivo-encerramento"
+                    placeholder="Por favor, descreva o motivo pelo qual deseja encerrar sua conta..."
+                    value={motivoEncerramento}
+                    onChange={(e) => setMotivoEncerramento(e.target.value)}
+                    rows={5}
+                    className="resize-none"
+                  />
+                </div>
+                <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                    <strong>Importante:</strong> Sua solicitação será enviada ao suporte. Entraremos em contato para confirmar o encerramento. Seus dados serão mantidos por 30 dias para possível recuperação.
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEncerrarContaOpen(false);
+                    setMotivoEncerramento("");
+                  }}
+                  disabled={isEncerrando}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleEncerrarConta}
+                  disabled={isEncerrando || !motivoEncerramento.trim()}
+                >
+                  {isEncerrando ? "Enviando..." : "Confirmar Encerramento"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Componente de Checkout (exemplo, precisa ser implementado) */}
           {/* {checkoutOpen && <CheckoutForm onClose={() => setCheckoutOpen(false)} />} */}

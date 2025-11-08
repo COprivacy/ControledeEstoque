@@ -834,6 +834,126 @@ export class EmailService {
     });
   }
 
+  async sendAccountClosureRequest(config: {
+    userEmail: string;
+    userName: string;
+    userId: string;
+    motivo: string;
+  }) {
+    const content = `
+<tr>
+  <td style="padding: 48px 40px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td>
+          <!-- Alert Banner -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+            <tr>
+              <td style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 28px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 12px;">⚠️</div>
+                <p style="color: #92400e; font-size: 20px; font-weight: 700; margin: 0 0 8px 0;">
+                  Solicitação de Encerramento de Conta
+                </p>
+                <p style="color: #92400e; font-size: 14px; margin: 0;">
+                  Ação necessária do administrador
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 24px 0;">
+            Um usuário solicitou o encerramento de sua conta no sistema Pavisoft. Veja os detalhes abaixo:
+          </p>
+
+          <!-- Detalhes do Usuário -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 28px; margin: 32px 0;">
+            <tr>
+              <td>
+                <p style="color: #1e293b; font-size: 15px; font-weight: 700; margin: 0 0 20px 0;">
+                  Informações do Usuário
+                </p>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <span style="color: #64748b; font-size: 14px;">Nome</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <strong style="color: #1e293b; font-size: 14px;">${config.userName}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <span style="color: #64748b; font-size: 14px;">Email</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">
+                      <strong style="color: #1e293b; font-size: 14px;">${config.userEmail}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0;">
+                      <span style="color: #64748b; font-size: 14px;">ID do Usuário</span>
+                    </td>
+                    <td align="right" style="padding: 10px 0;">
+                      <strong style="color: #1e293b; font-size: 14px;">${config.userId}</strong>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Motivo do Encerramento -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 28px; margin: 32px 0;">
+            <tr>
+              <td>
+                <p style="color: #92400e; font-size: 15px; font-weight: 700; margin: 0 0 12px 0;">
+                  Motivo do Encerramento:
+                </p>
+                <p style="color: #78350f; font-size: 14px; margin: 0; line-height: 1.6; white-space: pre-wrap;">
+                  ${config.motivo}
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Ações Recomendadas -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+            <tr>
+              <td style="background: #dbeafe; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 20px;">
+                <p style="color: #1e40af; font-size: 14px; margin: 0 0 12px 0; font-weight: 600;">
+                  📋 Próximas Ações:
+                </p>
+                <ul style="color: #1e40af; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
+                  <li>Entrar em contato com o usuário para confirmar</li>
+                  <li>Oferecer suporte caso haja problemas</li>
+                  <li>Processar o encerramento se confirmado</li>
+                  <li>Manter dados por 30 dias para recuperação</li>
+                </ul>
+              </td>
+            </tr>
+          </table>
+
+          <p style="color: #64748b; font-size: 14px; line-height: 1.7; margin: 32px 0 0 0;">
+            <strong>Data da Solicitação:</strong> ${new Date().toLocaleString('pt-BR')}
+          </p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+    `;
+
+    const html = this.getBaseTemplate(content, '#fffbeb');
+
+    await this.transporter.sendMail({
+      from: process.env.SMTP_FROM || 'Pavisoft Sistemas <noreply@pavisoft.com>',
+      to: 'pavisoft.suporte@gmail.com',
+      subject: '⚠️ Solicitação de Encerramento de Conta - Pavisoft',
+      html,
+      replyTo: config.userEmail,
+    });
+  }
+
   async sendAccountBlocked(config: {
     to: string;
     userName: string;

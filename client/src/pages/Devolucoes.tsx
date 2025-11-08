@@ -834,21 +834,23 @@ export default function Devolucoes() {
             <CardDescription>Distribuição das causas de devolução</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartDataMotivo}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="motivo" className="text-xs" angle={-45} textAnchor="end" height={100} />
-                <YAxis className="text-xs" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
-                  }} 
-                />
-                <Bar dataKey="quantidade" fill="#6366f1" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: 300 }}>
+              <ResponsiveContainer>
+                <BarChart data={chartDataMotivo}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="motivo" className="text-xs" angle={-45} textAnchor="end" height={100} />
+                  <YAxis className="text-xs" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }} 
+                  />
+                  <Bar dataKey="quantidade" fill="#6366f1" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -858,24 +860,26 @@ export default function Devolucoes() {
             <CardDescription>Evolução das devoluções nos últimos 6 meses</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={last6Months}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="mes" className="text-xs" />
-                <YAxis className="text-xs" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
-                  }} 
-                />
-                <Legend />
-                <Line type="monotone" dataKey="total" stroke="#6366f1" strokeWidth={2} name="Total" />
-                <Line type="monotone" dataKey="aprovadas" stroke="#22c55e" strokeWidth={2} name="Aprovadas" />
-                <Line type="monotone" dataKey="rejeitadas" stroke="#ef4444" strokeWidth={2} name="Rejeitadas" />
-              </LineChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: 300 }}>
+              <ResponsiveContainer>
+                <LineChart data={last6Months}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="mes" className="text-xs" />
+                  <YAxis className="text-xs" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }} 
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="total" stroke="#6366f1" strokeWidth={2} name="Total" />
+                  <Line type="monotone" dataKey="aprovadas" stroke="#22c55e" strokeWidth={2} name="Aprovadas" />
+                  <Line type="monotone" dataKey="rejeitadas" stroke="#ef4444" strokeWidth={2} name="Rejeitadas" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>

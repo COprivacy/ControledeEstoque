@@ -314,7 +314,6 @@ export default function Inventory() {
         };
       })
       .filter(p => p.taxa_devolucao >= 20 || p.vezes_devolvido >= 3) // Alta taxa: 20% ou 3+ devoluções
-      .sort((a, b) => b.taxa_devolucao - a.taxa_devolucao)
       .slice(0, 5);
   }, [produtos, devolucoes]);
 
@@ -1034,7 +1033,9 @@ export default function Inventory() {
 
                         return (
                           <TableRow key={produto.id} data-testid={`row-produto-${produto.id}`}>
-                            <TableCell className="font-medium">{produto.nome}</TableCell>
+                            <TableCell className="font-medium" data-testid={`text-nome-${produto.id}`}>
+                              {produto.nome}
+                            </TableCell>
                             <TableCell>{produto.categoria}</TableCell>
                             <TableCell className="text-center font-semibold">{produto.quantidade}</TableCell>
                             <TableCell className="text-center">

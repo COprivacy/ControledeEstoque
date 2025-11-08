@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PackageX, Plus, Search, CheckCircle2, XCircle, Clock, Edit, Trash2, Package, FileDown, TrendingUp, TrendingDown, Filter, X, AlertTriangle } from "lucide-react";
+import { PackageX, Plus, Search, CheckCircle2, XCircle, Clock, Edit, Trash2, Package, FileDown, TrendingUp, TrendingDown, Filter, X, AlertTriangle, ShoppingCart, Undo2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -17,17 +17,21 @@ import { formatDate } from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
 import * as XLSX from "xlsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Devolucoes() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [vendasDialogOpen, setVendasDialogOpen] = useState(false);
   const [selectedDevolucao, setSelectedDevolucao] = useState<Devolucao | null>(null);
   const [editingDevolucao, setEditingDevolucao] = useState<Devolucao | null>(null);
+  const [vendaSelecionada, setVendaSelecionada] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterPeriodo, setFilterPeriodo] = useState<string>("all");
   const [filterMotivo, setFilterMotivo] = useState<string>("all");
   const [filterCategoria, setFilterCategoria] = useState<string>("all");
+  const [searchVendas, setSearchVendas] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -37,6 +41,10 @@ export default function Devolucoes() {
 
   const { data: produtos = [], isLoading: loadingProdutos } = useQuery<Produto[]>({
     queryKey: ["/api/produtos"],
+  });
+
+  const { data: vendas = [], isLoading: loadingVendas } = useQuery<any[]>({
+    queryKey: ["/api/vendas"],
   });
 
   const createMutation = useMutation({
@@ -53,6 +61,7 @@ export default function Devolucoes() {
       });
       setDialogOpen(false);
       setEditingDevolucao(null);
+      setVendaSelecionada(null);
     },
     onError: (error: any) => {
       toast({
@@ -112,24 +121,50 @@ export default function Devolucoes() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const produtoId = parseInt(formData.get("produto_id") as string);
-    const produto = produtos.find(p => p.id === produtoId);
+    
+    let produtoId: number;
+    let produto: Produto | undefined;
+    let produtoNome: string;
+    let valorUnitario: number;
 
-    if (!produto) {
-      toast({
-        title: "Erro",
-        description: "Produto não encontrado",
-        variant: "destructive",
-      });
-      return;
+    if (vendaSelecionada) {
+      // Buscar produto pelo nome da venda ou usar dados da venda
+      const produtoEncontrado = produtos.find(p => 
+        p.nome.toLowerCase() === vendaSelecionada.produto?.toLowerCase()
+      );
+      
+      if (produtoEncontrado) {
+        produtoId = produtoEncontrado.id;
+        produto = produtoEncontrado;
+        produtoNome = produtoEncontrado.nome;
+        valorUnitario = produtoEncontrado.preco;
+      } else {
+        // Se não encontrar o produto, usar dados da venda
+        produtoNome = vendaSelecionada.produto;
+        valorUnitario = vendaSelecionada.valor_total / vendaSelecionada.quantidade_vendida;
+      }
+    } else {
+      produtoId = parseInt(formData.get("produto_id") as string);
+      produto = produtos.find(p => p.id === produtoId);
+
+      if (!produto) {
+        toast({
+          title: "Erro",
+          description: "Produto não encontrado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      produtoNome = produto.nome;
+      valorUnitario = produto.preco;
     }
 
     const quantidade = parseInt(formData.get("quantidade") as string);
-    const valorTotal = produto.preco * quantidade;
+    const valorTotal = valorUnitario * quantidade;
 
-    const data = {
-      produto_id: produtoId,
-      produto_nome: produto.nome,
+    const data: any = {
+      produto_nome: produtoNome,
       quantidade,
       valor_total: valorTotal,
       motivo: formData.get("motivo") as string,
@@ -137,6 +172,11 @@ export default function Devolucoes() {
       observacoes: formData.get("observacoes") as string || null,
       cliente_nome: formData.get("cliente_nome") as string || null,
     };
+
+    // Adicionar produto_id se disponível
+    if (produto) {
+      data.produto_id = produto.id;
+    }
 
     if (editingDevolucao) {
       updateMutation.mutate({ id: editingDevolucao.id, data });
@@ -158,6 +198,14 @@ export default function Devolucoes() {
 
   const handleNewDevolucao = () => {
     setEditingDevolucao(null);
+    setVendaSelecionada(null);
+    setDialogOpen(true);
+  };
+
+  const handleDevolverVenda = (venda: any) => {
+    setVendaSelecionada(venda);
+    setEditingDevolucao(null);
+    setVendasDialogOpen(false);
     setDialogOpen(true);
   };
 
@@ -400,6 +448,85 @@ export default function Devolucoes() {
             Exportar Excel
           </Button>
 
+          <Dialog open={vendasDialogOpen} onOpenChange={setVendasDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white border-0"
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Devolver Venda
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Selecionar Venda para Devolução</DialogTitle>
+                <DialogDescription>
+                  Escolha uma venda para criar a devolução automaticamente
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por produto..."
+                    value={searchVendas}
+                    onChange={(e) => setSearchVendas(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <div className="border rounded-md max-h-[400px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Produto(s)</TableHead>
+                        <TableHead className="text-center">Qtd</TableHead>
+                        <TableHead className="text-right">Valor</TableHead>
+                        <TableHead className="text-center">Ação</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {vendas
+                        .filter(v => 
+                          !searchVendas || 
+                          v.produto?.toLowerCase().includes(searchVendas.toLowerCase())
+                        )
+                        .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+                        .slice(0, 50)
+                        .map((venda) => (
+                          <TableRow key={venda.id}>
+                            <TableCell className="text-sm">
+                              {formatDate(venda.data)}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {venda.produto || 'N/A'}
+                            </TableCell>
+                            <TableCell className="text-center text-sm">
+                              {venda.quantidade_vendida || 0}
+                            </TableCell>
+                            <TableCell className="text-right text-sm font-semibold">
+                              R$ {(venda.valor_total || 0).toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Button
+                                size="sm"
+                                onClick={() => handleDevolverVenda(venda)}
+                                className="h-8"
+                              >
+                                <Undo2 className="h-3 w-3 mr-1" />
+                                Devolver
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button
@@ -414,34 +541,60 @@ export default function Devolucoes() {
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
                 <DialogTitle>
-                  {editingDevolucao ? "Editar Devolução" : "Nova Devolução"}
+                  {editingDevolucao ? "Editar Devolução" : vendaSelecionada ? "Devolver Venda" : "Nova Devolução"}
                 </DialogTitle>
                 <DialogDescription>
                   {editingDevolucao
                     ? "Atualize as informações da devolução"
+                    : vendaSelecionada
+                    ? "Preencha os dados para devolver esta venda"
                     : "Preencha os dados para registrar uma nova devolução"}
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="produto_id">Produto *</Label>
-                  <Select
-                    name="produto_id"
-                    defaultValue={editingDevolucao?.produto_id?.toString()}
-                    required
-                  >
-                    <SelectTrigger data-testid="select-produto">
-                      <SelectValue placeholder="Selecione o produto" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {produtos.map((produto) => (
-                        <SelectItem key={produto.id} value={produto.id.toString()}>
-                          {produto.nome} - R$ {produto.preco.toFixed(2)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              
+              {vendaSelecionada && (
+                <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg border border-blue-200 dark:border-blue-800 space-y-1">
+                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                    Devolução de Venda #{vendaSelecionada.id}
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    Data: {formatDate(vendaSelecionada.data)}
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    Produto: {vendaSelecionada.produto}
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    Valor: R$ {(vendaSelecionada.valor_total || 0).toFixed(2)}
+                  </p>
                 </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {!vendaSelecionada && (
+                  <div className="space-y-2">
+                    <Label htmlFor="produto_id">Produto *</Label>
+                    <Select
+                      name="produto_id"
+                      defaultValue={editingDevolucao?.produto_id?.toString()}
+                      required
+                    >
+                      <SelectTrigger data-testid="select-produto">
+                        <SelectValue placeholder="Selecione o produto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {produtos.map((produto) => (
+                          <SelectItem key={produto.id} value={produto.id.toString()}>
+                            {produto.nome} - R$ {produto.preco.toFixed(2)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {vendaSelecionada && (
+                  <input type="hidden" name="venda_id" value={vendaSelecionada.id} />
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="quantidade">Quantidade *</Label>
@@ -450,10 +603,16 @@ export default function Devolucoes() {
                     name="quantidade"
                     type="number"
                     min="1"
-                    defaultValue={editingDevolucao?.quantidade}
+                    max={vendaSelecionada?.quantidade_vendida}
+                    defaultValue={editingDevolucao?.quantidade || vendaSelecionada?.quantidade_vendida || 1}
                     required
                     data-testid="input-quantidade"
                   />
+                  {vendaSelecionada && (
+                    <p className="text-xs text-muted-foreground">
+                      Máximo: {vendaSelecionada.quantidade_vendida} unidade(s)
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -524,6 +683,7 @@ export default function Devolucoes() {
                     onClick={() => {
                       setDialogOpen(false);
                       setEditingDevolucao(null);
+                      setVendaSelecionada(null);
                     }}
                     data-testid="button-cancel"
                   >

@@ -7,7 +7,7 @@ import { Calendar, Download, Package, DollarSign, TrendingUp, ClipboardList, Ref
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import type { Produto, Venda } from "@shared/schema";
+import type { Produto, Venda, Devolucao } from "@shared/schema";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -128,7 +128,7 @@ export default function Inventory() {
 
   // Produtos vencidos e a vencer
   // Buscar devoluções para análise
-  const { data: devolucoes = [] } = useQuery({
+  const { data: devolucoes = [] } = useQuery<Devolucao[]>({
     queryKey: ["/api/devolucoes"],
   });
 
@@ -166,8 +166,8 @@ export default function Inventory() {
     }> = {};
 
     devolucoes
-      .filter(d => d.status === 'aprovada')
-      .forEach(d => {
+      .filter((d: Devolucao) => d.status === 'aprovada')
+      .forEach((d: Devolucao) => {
         if (!produtosDevolucoes[d.produto_id]) {
           const produto = produtos.find(p => p.id === d.produto_id);
           produtosDevolucoes[d.produto_id] = {
@@ -176,6 +176,7 @@ export default function Inventory() {
             quantidade_devolvida: 0,
             vezes_devolvido: 0,
             quantidade_estoque: produto?.quantidade || 0,
+            taxa_devolucao: 0,
           };
         }
         produtosDevolucoes[d.produto_id].quantidade_devolvida += d.quantidade;

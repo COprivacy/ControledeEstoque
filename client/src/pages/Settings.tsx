@@ -21,6 +21,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
 import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox
+import { Shield } from "lucide-react"; // Import Shield
 
 // Função para converter HEX para HSL
 function hexToHSL(hex: string): string {

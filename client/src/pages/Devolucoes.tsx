@@ -122,12 +122,34 @@ export default function Devolucoes() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
-    let produtoId: number;
+    let produtoId: number | undefined;
     let produto: Produto | undefined;
     let produtoNome: string;
     let valorUnitario: number;
+    let quantidade: number;
 
     if (vendaSelecionada) {
+      // Validar quantidade selecionada
+      quantidade = parseInt(formData.get("quantidade") as string);
+      
+      if (!quantidade || quantidade === 0) {
+        toast({
+          title: "Erro",
+          description: "Selecione a quantidade a devolver",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (quantidade > (vendaSelecionada.quantidade_vendida || 0)) {
+        toast({
+          title: "Erro",
+          description: "Quantidade não pode ser maior que a quantidade vendida",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Buscar produto pelo nome da venda ou usar dados da venda
       const produtoEncontrado = produtos.find(p => 
         p.nome.toLowerCase() === vendaSelecionada.produto?.toLowerCase()
@@ -158,9 +180,18 @@ export default function Devolucoes() {
 
       produtoNome = produto.nome;
       valorUnitario = produto.preco;
+      quantidade = parseInt(formData.get("quantidade") as string);
+
+      if (!quantidade || quantidade <= 0) {
+        toast({
+          title: "Erro",
+          description: "Quantidade inválida",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
-    const quantidade = parseInt(formData.get("quantidade") as string);
     const valorTotal = valorUnitario * quantidade;
 
     const data: any = {
@@ -174,8 +205,8 @@ export default function Devolucoes() {
     };
 
     // Adicionar produto_id se disponível
-    if (produto) {
-      data.produto_id = produto.id;
+    if (produtoId) {
+      data.produto_id = produtoId;
     }
 
     if (editingDevolucao) {
@@ -582,14 +613,19 @@ export default function Devolucoes() {
                           <Input
                             id="qtd-devolver"
                             type="number"
-                            min="0"
+                            min="1"
                             max={vendaSelecionada.quantidade_vendida || 1}
-                            value={itensSelecionados['item-principal'] || 0}
+                            value={itensSelecionados['item-principal'] || ''}
                             onChange={(e) => {
                               const valor = parseInt(e.target.value) || 0;
-                              setItensSelecionados({ 'item-principal': Math.min(valor, vendaSelecionada.quantidade_vendida || 1) });
+                              if (valor > 0) {
+                                setItensSelecionados({ 'item-principal': Math.min(valor, vendaSelecionada.quantidade_vendida || 1) });
+                              } else {
+                                setItensSelecionados({});
+                              }
                             }}
                             className="w-20 h-8 text-center"
+                            placeholder="0"
                           />
                           <span className="text-xs text-blue-700 dark:text-blue-300">
                             de {vendaSelecionada.quantidade_vendida || 1}
@@ -599,9 +635,14 @@ export default function Devolucoes() {
                       <p className="text-xs text-blue-600 dark:text-blue-400">
                         Valor unitário: R$ {((vendaSelecionada.valor_total || 0) / (vendaSelecionada.quantidade_vendida || 1)).toFixed(2)}
                       </p>
-                      {itensSelecionados['item-principal'] > 0 && (
+                      {itensSelecionados['item-principal'] > 0 ? (
                         <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 pt-1 border-t">
                           Valor a devolver: R$ {(((vendaSelecionada.valor_total || 0) / (vendaSelecionada.quantidade_vendida || 1)) * itensSelecionados['item-principal']).toFixed(2)}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 pt-1 border-t flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          Informe a quantidade para devolver
                         </p>
                       )}
                     </div>

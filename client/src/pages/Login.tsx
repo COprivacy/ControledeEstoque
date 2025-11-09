@@ -41,7 +41,6 @@ export default function Login() {
         setLocation("/pdv");
         return;
       }
-      }
 
       // Donos de conta vão para o dashboard
       setLocation("/dashboard");

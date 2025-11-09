@@ -1134,6 +1134,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data_criacao: new Date().toISOString(),
       });
 
+      console.log(`✅ Funcionário criado no banco - ID: ${funcionario.id}, Nome: ${funcionario.nome}, Email: ${funcionario.email}, Conta: ${funcionario.conta_id}`);
+
       // Criar permissões padrão (todas desabilitadas)
       await storage.savePermissoesFuncionario(funcionario.id, {
         dashboard: "false",
@@ -1149,6 +1151,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         historico_caixas: "false",
         configuracoes: "false",
       });
+
+      console.log(`✅ Permissões padrão criadas para funcionário ID: ${funcionario.id}`);
 
       res.json(funcionario);
     } catch (error: any) {

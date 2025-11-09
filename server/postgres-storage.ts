@@ -502,7 +502,19 @@ export class PostgresStorage implements IStorage {
       id: funcionario.id || randomUUID(),
       data_criacao: new Date().toISOString(),
     };
+    
+    console.log(`📝 [DB] Inserindo funcionário no banco:`, {
+      id: newFunc.id,
+      nome: newFunc.nome,
+      email: newFunc.email,
+      conta_id: newFunc.conta_id,
+      status: newFunc.status
+    });
+    
     const result = await this.db.insert(funcionarios).values(newFunc).returning();
+    
+    console.log(`✅ [DB] Funcionário inserido com sucesso - ID: ${result[0].id}`);
+    
     return result[0];
   }
 

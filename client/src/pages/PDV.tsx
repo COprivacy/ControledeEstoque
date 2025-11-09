@@ -415,13 +415,13 @@ export default function PDV() {
         {/* Overlay para melhor legibilidade */}
         <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-black/15 to-black/20 backdrop-blur-[1px]"></div>
 
-        {/* Botão flutuante para mostrar/ocultar sidebar */}
+        {/* Botão discreto para mostrar/ocultar sidebar */}
         <button
           onClick={toggleSidebar}
-          className="fixed top-4 left-4 z-50 p-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110 border border-white/20"
+          className="fixed top-4 left-4 z-50 p-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm rounded-lg shadow-sm hover:bg-white/80 dark:hover:bg-gray-900/80 transition-all duration-200 border border-white/10 opacity-50 hover:opacity-100"
           aria-label="Toggle Sidebar"
         >
-          <Menu className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+          <Menu className="h-4 w-4 text-gray-600 dark:text-gray-400" />
         </button>
 
         <div className="relative z-10 h-full p-4">

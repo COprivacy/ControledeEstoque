@@ -8,7 +8,7 @@ import { useLocation } from 'wouter';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredPermission: "dashboard" | "pdv" | "caixa" | "historico_caixas" | "produtos" | "inventario" | "relatorios" | "clientes" | "fornecedores" | "financeiro" | "config_fiscal" | "configuracoes";
+  requiredPermission: "dashboard" | "pdv" | "caixa" | "historico_caixas" | "produtos" | "inventario" | "relatorios" | "clientes" | "fornecedores" | "financeiro" | "config_fiscal" | "configuracoes" | "devolucoes" | "contas_pagar" | "contas_receber";
 }
 
 export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteProps) {

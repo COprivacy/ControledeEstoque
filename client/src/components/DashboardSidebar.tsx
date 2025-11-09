@@ -8,33 +8,33 @@ type MenuItem = {
   title: string;
   url: string;
   icon: any;
-  permission?: "dashboard" | "pdv" | "produtos" | "inventario" | "relatorios" | "clientes" | "fornecedores" | "financeiro" | "config_fiscal" | "configuracoes" | "caixa";
+  permission?: "dashboard" | "pdv" | "produtos" | "inventario" | "relatorios" | "clientes" | "fornecedores" | "financeiro" | "config_fiscal" | "configuracoes" | "caixa" | "devolucoes" | "contas_pagar" | "contas_receber" | "historico_caixas";
   adminOnly?: boolean;
 };
 
 const generalMenuItems: MenuItem[] = [
-  { title: "Dashboard", url: "/dashboard", icon: Home, permission: "dashboard" },
+  { title: "Dashboard", url: "/dashboard", icon: Home, permission: "dashboard", adminOnly: true },
 ];
 
 const inventoryMenuItems: MenuItem[] = [
   { title: "Produtos", url: "/produtos", icon: Package, permission: "produtos" },
   { title: "Inventário", url: "/inventario", icon: ClipboardList, permission: "inventario" },
-  { title: "Devoluções", url: "/devolucoes", icon: PackageX, permission: "inventario" },
+  { title: "Devoluções", url: "/devolucoes", icon: PackageX, permission: "devolucoes" },
   { title: "Fornecedores", url: "/fornecedores", icon: Package, permission: "fornecedores" },
   { title: "Clientes", url: "/clientes", icon: Users, permission: "clientes" },
 ];
 
 const financeMenuItems: MenuItem[] = [
-  { title: "Contas a Pagar", url: "/financeiro/contas-pagar", icon: CreditCard, permission: "financeiro" },
-  { title: "Contas a Receber", url: "/financeiro/contas-receber", icon: DollarSign, permission: "financeiro" },
-  { title: "Fluxo de Caixa", url: "/financeiro/fluxo-pdv", icon: TrendingUp, permission: "financeiro" },
-  { title: "DRE Simplificado", url: "/financeiro/dre", icon: LineChart, permission: "financeiro" },
-  { title: "Relatórios", url: "/relatorios", icon: BarChart3, permission: "relatorios" },
+  { title: "Contas a Pagar", url: "/financeiro/contas-pagar", icon: CreditCard, permission: "contas_pagar" },
+  { title: "Contas a Receber", url: "/financeiro/contas-receber", icon: DollarSign, permission: "contas_receber" },
+  { title: "Fluxo de Caixa", url: "/financeiro/fluxo-pdv", icon: TrendingUp, permission: "financeiro", adminOnly: true },
+  { title: "DRE Simplificado", url: "/financeiro/dre", icon: LineChart, permission: "financeiro", adminOnly: true },
+  { title: "Relatórios", url: "/relatorios", icon: BarChart3, permission: "relatorios", adminOnly: true },
 ];
 
 const configMenuItems: MenuItem[] = [
-  { title: "Configurações", url: "/configuracoes", icon: Settings, permission: "configuracoes" },
-  { title: "Config. Fiscal", url: "/config-fiscal", icon: FileText, permission: "config_fiscal" },
+  { title: "Configurações", url: "/configuracoes", icon: Settings, permission: "configuracoes", adminOnly: true },
+  { title: "Config. Fiscal", url: "/config-fiscal", icon: FileText, permission: "config_fiscal", adminOnly: true },
 ];
 
 export default function DashboardSidebar() {

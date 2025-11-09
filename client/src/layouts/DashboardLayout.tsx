@@ -5,6 +5,9 @@ import DashboardHeader from "@/components/DashboardHeader";
 import { TrialExpiredModal } from "@/components/TrialExpiredModal";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { useLocation } from "wouter";
+import { RotateCcw, Truck, FileText } from "lucide-react"; // Added FileText import
+import { SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"; // Added SidebarMenuItem and SidebarMenuButton imports
+import { Link } from "wouter-preact"; // Added Link import
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -43,14 +46,88 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <SidebarProvider style={style as React.CSSProperties}>
       <TrialExpiredModal />
       <div className="flex h-screen w-full">
-        <DashboardSidebar />
+        <DashboardSidebar>
+          {/* Dashboard Sidebar Content */}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link to="/dashboard" className="flex items-center gap-2">
+                {/* Add dashboard icon here if needed */}
+                <span>Dashboard</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link to="/vendas" className="flex items-center gap-2">
+                {/* Add sales icon here if needed */}
+                <span>Vendas</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link to="/clientes" className="flex items-center gap-2">
+                {/* Add clients icon here if needed */}
+                <span>Clientes</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link to="/produtos" className="flex items-center gap-2">
+                {/* Add products icon here if needed */}
+                <span>Produtos</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link to="/pdv" className="flex items-center gap-2">
+                {/* Add POS icon here if needed */}
+                <span>PDV</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link to="/devolucoes" className="flex items-center gap-2">
+                <RotateCcw className="h-4 w-4" />
+                <span>Devoluções</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link to="/orcamentos" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                <span>Orçamentos</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link to="/fornecedores" className="flex items-center gap-2">
+                <Truck className="h-4 w-4" />
+                <span>Fornecedores</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          {/* Add other sidebar items here */}
+        </DashboardSidebar>
         <div className="flex flex-col flex-1 overflow-hidden">
           {!isPDVPage && <DashboardHeader userEmail={userEmail} onLogout={handleLogout} />}
           <main className="flex-1 overflow-auto p-6 bg-background">
             {children}
-            
+
             {/* Botão do WhatsApp - não aparece em Caixa e PDV */}
-            <WhatsAppButton 
+            <WhatsAppButton
               phoneNumber={localStorage.getItem('whatsapp_number') || "+5598984267488"}
               message="Olá! Gostaria de tirar uma dúvida sobre o Pavisoft Sistemas."
             />

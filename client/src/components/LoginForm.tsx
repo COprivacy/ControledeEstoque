@@ -10,11 +10,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Mail, Lock, UserPlus, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, UserPlus, Eye, EyeOff, Users, User } from "lucide-react";
 import backgroundImage from "@assets/generated_images/Pavisoft_Sistemas_tech_background_61320ac2.png";
 
 interface LoginFormProps {
-  onLogin?: (email: string, password: string) => void;
+  onLogin?: (email: string, password: string, isFuncionario: boolean) => void;
   onRegisterClick?: () => void;
   isLoading?: boolean;
 }
@@ -27,11 +27,12 @@ export default function LoginForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isFuncionario, setIsFuncionario] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (onLogin) {
-      onLogin(email, password);
+      onLogin(email, password, isFuncionario);
     }
   };
 
@@ -58,6 +59,26 @@ export default function LoginForm({
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={!isFuncionario ? "default" : "outline"}
+                className="flex-1"
+                onClick={() => setIsFuncionario(false)}
+              >
+                <User className="h-4 w-4 mr-2" />
+                Dono da Conta
+              </Button>
+              <Button
+                type="button"
+                variant={isFuncionario ? "default" : "outline"}
+                className="flex-1"
+                onClick={() => setIsFuncionario(true)}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Funcionário
+              </Button>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">

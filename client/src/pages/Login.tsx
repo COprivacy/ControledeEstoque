@@ -9,51 +9,41 @@ export default function Login() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async (email: string, password: string) => {
+  const handleLogin = async (email: string, password: string, isFuncionario: boolean) => {
     setIsLoading(true);
     try {
-      // Tenta fazer login como usuário comum primeiro
-      const response = await apiRequest("POST", "/api/auth/login", {
+      // Escolhe a rota correta baseado no tipo de usuário
+      const endpoint = isFuncionario ? "/api/auth/login-funcionario" : "/api/auth/login";
+      
+      const response = await apiRequest("POST", endpoint, {
         email,
         senha: password
       });
 
       if (!response.ok) {
-        // Se falhar, tenta fazer login como funcionário
-        const funcionarioResponse = await apiRequest("POST", "/api/auth/login-funcionario", {
-          email,
-          senha: password
-        });
-        if (!funcionarioResponse.ok) {
-          throw new Error("Email ou senha inválidos");
-        }
-        const funcionario = await funcionarioResponse.json();
-        localStorage.setItem("user", JSON.stringify(funcionario));
-
-        toast({
-          title: "Login realizado com sucesso!",
-          description: `Bem-vindo, ${funcionario.nome}`,
-        });
-        
-        // Aguarda um pouco para garantir que o localStorage foi atualizado
-        await new Promise(resolve => setTimeout(resolve, 100));
-        setLocation("/pdv");
-        return;
+        throw new Error("Email ou senha inválidos");
       }
 
-      const user = await response.json();
-      localStorage.setItem("user", JSON.stringify(user));
-      console.log("🔄 Atualizando localStorage do usuário logado:", user);
+      const userData = await response.json();
+      localStorage.setItem("user", JSON.stringify(userData));
+      console.log("🔄 Atualizando localStorage do usuário logado:", userData);
 
       toast({
         title: "Login realizado com sucesso!",
-        description: `Bem-vindo, ${user.nome}`,
+        description: `Bem-vindo, ${userData.nome}`,
       });
 
       // Aguarda um pouco para garantir que o localStorage foi atualizado
       await new Promise(resolve => setTimeout(resolve, 100));
       
-      // Todos os usuários vão para o dashboard após login
+      // Funcionários vão para PDV, donos vão para Dashboard
+      if (isFuncionario) {
+        setLocation("/pdv");
+        return;
+      }
+      }
+
+      // Donos de conta vão para o dashboard
       setLocation("/dashboard");
 
     } catch (error) {

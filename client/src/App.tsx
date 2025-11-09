@@ -31,6 +31,7 @@ import DashboardLayout from "@/layouts/DashboardLayout";
 import AdminPublico from "@/pages/AdminPublico";
 import Planos from "@/pages/Planos";
 import Devolucoes from "@/pages/Devolucoes";
+import Orcamentos from "@/pages/Orcamentos";
 
 function Router() {
   return (
@@ -89,6 +90,15 @@ function Router() {
           <DashboardLayout>
             <ProtectedRoute requiredPermission="devolucoes">
               <Devolucoes />
+            </ProtectedRoute>
+          </DashboardLayout>
+        )}
+      </Route>
+      <Route path="/orcamentos">
+        {() => (
+          <DashboardLayout>
+            <ProtectedRoute requiredPermission="orcamentos">
+              <Orcamentos />
             </ProtectedRoute>
           </DashboardLayout>
         )}

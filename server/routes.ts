@@ -6,6 +6,7 @@ import {
   insertProdutoSchema,
   insertVendaSchema,
   insertConfigFiscalSchema,
+  insertOrcamentoSchema, // Importar schema de orçamento
 } from "@shared/schema";
 import { nfceSchema } from "@shared/nfce-schema";
 import { FocusNFeService } from "./focusnfe";
@@ -28,6 +29,11 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
   }
 
   next();
+}
+
+// Helper para obter effectiveUserId de forma segura
+function getEffectiveUserId(req: Request): string | null {
+  return req.headers["effective-user-id"] as string;
 }
 
 // Middleware para extrair e validar user_id (lida com funcionários)
@@ -3800,6 +3806,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rotas de orçamentos
   app.get("/api/orcamentos", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers["effective-user-id"] as string;

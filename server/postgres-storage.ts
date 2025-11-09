@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { Pool, neonConfig } from '@neondatabase/serverless';
-import { eq, and, gte, lte, desc } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
 import {
   users,
   produtos,
@@ -505,7 +505,7 @@ export class PostgresStorage implements IStorage {
       id: funcionario.id || randomUUID(),
       data_criacao: new Date().toISOString(),
     };
-    
+
     console.log(`📝 [DB] Inserindo funcionário no banco:`, {
       id: newFunc.id,
       nome: newFunc.nome,
@@ -513,11 +513,11 @@ export class PostgresStorage implements IStorage {
       conta_id: newFunc.conta_id,
       status: newFunc.status
     });
-    
+
     const result = await this.db.insert(funcionarios).values(newFunc).returning();
-    
+
     console.log(`✅ [DB] Funcionário inserido com sucesso - ID: ${result[0].id}`);
-    
+
     return result[0];
   }
 
@@ -616,7 +616,7 @@ export class PostgresStorage implements IStorage {
         .limit(1);
       return result[0];
     }
-    
+
     // Se for dono da conta, busca caixa sem funcionário_id
     const result = await this.db.select().from(caixas)
       .where(and(
@@ -769,32 +769,139 @@ export class PostgresStorage implements IStorage {
     return result.length > 0;
   }
 
-  async getOrcamentos(): Promise<Orcamento[]> {
-    return await this.db.select().from(orcamentos).orderBy(desc(orcamentos.id));
+  // Métodos de Orçamentos
+  async getOrcamentos(userId: string): Promise<Orcamento[]> {
+    const result = await this.db
+      .select()
+      .from(orcamentos)
+      .where(eq(orcamentos.userId, userId))
+      .orderBy(desc(orcamentos.dataEmissao));
+    return result;
   }
 
-  async getOrcamento(id: number): Promise<Orcamento | undefined> {
-    const result = await this.db.select().from(orcamentos).where(eq(orcamentos.id, id));
+  async getOrcamento(id: number, userId: string): Promise<Orcamento | undefined> {
+    const result = await this.db
+      .select()
+      .from(orcamentos)
+      .where(and(eq(orcamentos.id, id), eq(orcamentos.userId, userId)))
+      .limit(1);
     return result[0];
   }
 
-  async createOrcamento(orcamento: InsertOrcamento): Promise<Orcamento> {
-    const result = await this.db.insert(orcamentos).values(orcamento).returning();
-    return result[0];
-  }
+  async createOrcamento(userId: string, data: any): Promise<Orcamento> {
+    const user = await this.getUserById(userId);
+    const numeroOrcamento = `ORC-${Date.now()}`;
 
-  async updateOrcamento(id: number, updates: Partial<Orcamento>): Promise<Orcamento | undefined> {
-    const result = await this.db.update(orcamentos)
-      .set(updates)
-      .where(eq(orcamentos.id, id))
+    const [orcamento] = await this.db
+      .insert(orcamentos)
+      .values({
+        userId,
+        numeroOrcamento,
+        dataEmissao: new Date(),
+        dataValidade: data.dataValidade ? new Date(data.dataValidade) : null,
+        clienteId: data.clienteId || null,
+        clienteNome: data.clienteNome || null,
+        clienteEmail: data.clienteEmail || null,
+        clienteTelefone: data.clienteTelefone || null,
+        status: 'pendente',
+        itens: data.itens,
+        subtotal: data.subtotal,
+        desconto: data.desconto || 0,
+        total: data.total,
+        observacoes: data.observacoes || null,
+        criadoPor: user?.nome || user?.email || userId,
+      })
       .returning();
-    return result[0];
+
+    return orcamento;
   }
 
-  async deleteOrcamento(id: number): Promise<boolean> {
-    const result = await this.db.delete(orcamentos)
-      .where(eq(orcamentos.id, id))
+  async updateOrcamento(id: number, userId: string, data: any): Promise<Orcamento> {
+    const [orcamento] = await this.db
+      .update(orcamentos)
+      .set({
+        dataValidade: data.dataValidade ? new Date(data.dataValidade) : null,
+        clienteId: data.clienteId,
+        clienteNome: data.clienteNome,
+        clienteEmail: data.clienteEmail,
+        clienteTelefone: data.clienteTelefone,
+        status: data.status,
+        itens: data.itens,
+        subtotal: data.subtotal,
+        desconto: data.desconto,
+        total: data.total,
+        observacoes: data.observacoes,
+        atualizadoEm: new Date(),
+      })
+      .where(and(eq(orcamentos.id, id), eq(orcamentos.userId, userId)))
       .returning();
-    return result.length > 0;
+
+    return orcamento;
+  }
+
+  async deleteOrcamento(id: number, userId: string): Promise<void> {
+    await this.db
+      .delete(orcamentos)
+      .where(and(eq(orcamentos.id, id), eq(orcamentos.userId, userId)));
+  }
+
+  async converterOrcamentoEmVenda(id: number, userId: string): Promise<Venda> {
+    const orcamento = await this.getOrcamento(id, userId);
+
+    if (!orcamento) {
+      throw new Error("Orçamento não encontrado");
+    }
+
+    if (orcamento.status === 'convertido') {
+      throw new Error("Este orçamento já foi convertido em venda");
+    }
+
+    // Criar venda baseada no orçamento
+    const [venda] = await this.db
+      .insert(vendas)
+      .values({
+        userId,
+        data: new Date(),
+        total: orcamento.total,
+        metodoPagamento: 'dinheiro',
+        itens: orcamento.itens,
+        clienteId: orcamento.clienteId,
+        observacoes: `Convertido do orçamento ${orcamento.numeroOrcamento}`,
+      })
+      .returning();
+
+    // Atualizar produtos (reduzir estoque)
+    const itensOrcamento = orcamento.itens as any[];
+    for (const item of itensOrcamento) {
+      const produto = await this.db
+        .select()
+        .from(produtos)
+        .where(and(eq(produtos.id, item.produto_id), eq(produtos.userId, userId)))
+        .limit(1);
+
+      if (produto[0]) {
+        await this.db
+          .update(produtos)
+          .set({
+            quantidade: produto[0].quantidade - item.quantidade,
+          })
+          .where(eq(produtos.id, item.produto_id));
+      }
+    }
+
+    // Marcar orçamento como convertido
+    await this.db
+      .update(orcamentos)
+      .set({
+        status: 'convertido',
+        atualizadoEm: new Date(),
+      })
+      .where(eq(orcamentos.id, id));
+
+    return venda;
+  }
+
+  async getDevolucoes(userId: string): Promise<Devolucao[]> {
+    return await this.db.select().from(devolucoes).where(eq(devolucoes.userId, userId)).orderBy(desc(devolucoes.data));
   }
 }

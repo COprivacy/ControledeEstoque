@@ -300,8 +300,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const publicAdminConfig = await storage.getSystemConfig("public_admin_password");
       
       if (!publicAdminConfig) {
-        const defaultPassword = process.env.PUBLIC_ADMIN_PASSWORD || "SENHA_NAO_CONFIGURADA";
-        if (defaultPassword === "SENHA_NAO_CONFIGURADA") {
+        const defaultPassword = process.env.PUBLIC_ADMIN_PASSWORD;
+        if (!defaultPassword) {
           logger.error('PUBLIC_ADMIN_PASSWORD não configurada nas variáveis de ambiente', 'SECURITY');
           return res.status(500).json({ error: "Configuração de segurança incompleta" });
         }
@@ -359,19 +359,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers['x-user-id'] as string;
       const userEmail = req.headers['x-user-email'] as string;
 
-      console.log(`🔐 [MASTER PASSWORD] Tentativa de acesso:`, {
-        userId,
-        userEmail,
-        hasPassword: !!password
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔐 [MASTER PASSWORD] Tentativa de acesso`);
+      }
 
       // VALIDAÇÃO 1: Apenas usuário master pode tentar
-      if (userEmail !== "pavisoft.suporte@gmail.com") {
+      const authorizedEmail = process.env.MASTER_USER_EMAIL;
+      if (!authorizedEmail) {
+        logger.error('MASTER_USER_EMAIL não configurada', 'SECURITY');
+        return res.status(500).json({ error: "Configuração de segurança incompleta" });
+      }
+
+      if (userEmail !== authorizedEmail) {
         logger.warn('Tentativa de acesso não autorizada ao admin master', 'SECURITY', { 
-          attemptedBy: userEmail || 'unknown',
           ip: req.ip 
         });
-        console.log(`❌ [MASTER PASSWORD] Email não autorizado: ${userEmail}`);
         return res.status(403).json({ error: "Acesso não autorizado" });
       }
 
@@ -405,11 +407,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Garantir que o usuário master existe
-      const masterEmail = process.env.MASTER_USER_EMAIL || "pavisoft.suporte@gmail.com";
+      const masterEmail = process.env.MASTER_USER_EMAIL;
+      if (!masterEmail) {
+        logger.error('MASTER_USER_EMAIL não configurada nas variáveis de ambiente', 'SECURITY');
+        return res.status(500).json({ error: "Configuração de segurança incompleta" });
+      }
+
       let masterUser = await storage.getUserByEmail(masterEmail);
 
       if (!masterUser) {
-        console.log("🔧 Criando usuário master automaticamente...");
+        if (process.env.NODE_ENV === 'development') {
+          console.log("🔧 Criando usuário master automaticamente...");
+        }
         const masterPassword = process.env.MASTER_USER_PASSWORD;
         if (!masterPassword) {
           logger.error('MASTER_USER_PASSWORD não configurada nas variáveis de ambiente', 'SECURITY');
@@ -420,7 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dataExpiracao.setFullYear(dataExpiracao.getFullYear() + 10);
 
         masterUser = await storage.createUser({
-          nome: "Pavisoft",
+          nome: "Admin Master",
           email: masterEmail,
           senha: masterPassword,
           plano: "premium",
@@ -430,15 +439,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           data_criacao: new Date().toISOString(),
           data_expiracao_plano: dataExpiracao.toISOString(),
         });
-        console.log("✅ Usuário master criado com sucesso");
+        if (process.env.NODE_ENV === 'development') {
+          console.log("✅ Usuário master criado com sucesso");
+        }
       }
 
       // Buscar senha master do banco
       const masterPasswordConfig = await storage.getSystemConfig("master_password");
 
       if (!masterPasswordConfig) {
-        const defaultPassword = process.env.MASTER_ADMIN_PASSWORD || "SENHA_NAO_CONFIGURADA";
-        if (defaultPassword === "SENHA_NAO_CONFIGURADA") {
+        const defaultPassword = process.env.MASTER_ADMIN_PASSWORD;
+        if (!defaultPassword) {
           logger.error('MASTER_ADMIN_PASSWORD não configurada nas variáveis de ambiente', 'SECURITY');
           return res.status(500).json({ error: "Configuração de segurança incompleta" });
         }

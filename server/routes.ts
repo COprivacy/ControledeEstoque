@@ -1449,9 +1449,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/vendas", getUserId, async (req, res) => {
     try {
       const userId = req.headers["effective-user-id"] as string;
+      const funcionarioId = req.headers["funcionario-id"] as string;
       const { itens, cliente_id, forma_pagamento } = req.body;
 
-      const caixaAberto = await storage.getCaixaAberto?.(userId);
+      const caixaAberto = await storage.getCaixaAberto?.(userId, funcionarioId || undefined);
       if (!caixaAberto) {
         return res
           .status(400)
@@ -3318,6 +3319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/caixas/aberto", getUserId, async (req, res) => {
     try {
       const userId = req.headers["effective-user-id"] as string;
+      const funcionarioId = req.headers["funcionario-id"] as string;
 
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
@@ -3329,7 +3331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ error: "Método getCaixaAberto não implementado" });
       }
 
-      const caixaAberto = await storage.getCaixaAberto(userId);
+      const caixaAberto = await storage.getCaixaAberto(userId, funcionarioId || undefined);
 
       if (caixaAberto) {
         let operadorNome = "Sistema";
@@ -3415,9 +3417,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ error: "Métodos de caixa não implementados" });
       }
 
-      const caixaAberto = await storage.getCaixaAberto(userId);
+      // Verificar se JÁ existe um caixa aberto para este funcionário ou dono
+      const caixaAberto = await storage.getCaixaAberto(userId, funcionarioId || undefined);
       if (caixaAberto) {
-        return res.status(400).json({ error: "Já existe um caixa aberto" });
+        const operadorNome = userType === "funcionario" ? "Este funcionário" : "Você";
+        return res.status(400).json({ error: `${operadorNome} já possui um caixa aberto (ID: ${caixaAberto.id})` });
       }
 
       const saldoInicial = parseFloat(req.body.saldo_inicial);

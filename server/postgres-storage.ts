@@ -601,9 +601,26 @@ export class PostgresStorage implements IStorage {
     return await this.db.select().from(caixas).where(eq(caixas.user_id, userId)).orderBy(desc(caixas.id));
   }
 
-  async getCaixaAberto(userId: string): Promise<Caixa | undefined> {
+  async getCaixaAberto(userId: string, funcionarioId?: string): Promise<Caixa | undefined> {
+    // Se for funcionário, busca o caixa específico dele
+    if (funcionarioId) {
+      const result = await this.db.select().from(caixas)
+        .where(and(
+          eq(caixas.user_id, userId),
+          eq(caixas.funcionario_id, funcionarioId),
+          eq(caixas.status, 'aberto')
+        ))
+        .limit(1);
+      return result[0];
+    }
+    
+    // Se for dono da conta, busca caixa sem funcionário_id
     const result = await this.db.select().from(caixas)
-      .where(and(eq(caixas.user_id, userId), eq(caixas.status, 'aberto')))
+      .where(and(
+        eq(caixas.user_id, userId),
+        sql`${caixas.funcionario_id} IS NULL`,
+        eq(caixas.status, 'aberto')
+      ))
       .limit(1);
     return result[0];
   }

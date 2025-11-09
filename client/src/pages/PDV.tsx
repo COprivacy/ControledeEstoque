@@ -5,8 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import PDVScanner from "@/components/PDVScanner";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Crown, FileText, Loader2, ExternalLink, Copy, CheckCircle, Receipt, Printer, Wallet } from "lucide-react";
+import { Crown, FileText, Loader2, ExternalLink, Copy, CheckCircle, Receipt, Printer, Wallet, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSidebar } from "@/components/ui/sidebar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,7 @@ import type { ConfigFiscal } from "@shared/schema";
 export default function PDV() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { toggleSidebar } = useSidebar();
   const [showNFDialog, setShowNFDialog] = useState(false);
   const [showManualNFDialog, setShowManualNFDialog] = useState(false);
   const [showCupomNaoFiscal, setShowCupomNaoFiscal] = useState(false);
@@ -402,7 +404,7 @@ export default function PDV() {
       )}
 
       <div 
-        className="space-y-3 animate-in fade-in duration-500 max-h-screen overflow-hidden relative"
+        className="space-y-3 animate-in fade-in duration-500 h-screen overflow-hidden relative"
         style={{
           backgroundImage: pdvBackground ? `url(${pdvBackground})` : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           backgroundSize: 'cover',
@@ -413,26 +415,18 @@ export default function PDV() {
         {/* Overlay para melhor legibilidade */}
         <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-black/15 to-black/20 backdrop-blur-[1px]"></div>
 
-        <div className="relative z-10 space-y-3 p-4">
-          <div className="flex items-center justify-between gap-2 py-2 px-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-xl">
-            <div className="space-y-0">
-              <h1 className="text-2xl font-black bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent drop-shadow-lg">
-                💳 PDV - Ponto de Venda
-              </h1>
-              <p className="text-sm text-white/90 font-medium drop-shadow">
-                {caixaAberto 
-                  ? "✨ Sistema pronto para vendas - Escaneie os produtos"
-                  : "⚠️ Abra o caixa para começar a vender"}
-              </p>
-            </div>
-            <Badge className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 h-8 px-4 animate-pulse">
-              <Crown className="h-4 w-4 mr-1" />
-              Premium
-            </Badge>
-          </div>
+        {/* Botão flutuante para mostrar/ocultar sidebar */}
+        <button
+          onClick={toggleSidebar}
+          className="fixed top-4 left-4 z-50 p-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110 border border-white/20"
+          aria-label="Toggle Sidebar"
+        >
+          <Menu className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+        </button>
 
+        <div className="relative z-10 h-full p-4">
           <div className={cn(
-            "backdrop-blur-md bg-white/70 dark:bg-gray-900/70 rounded-2xl border-2 border-white/30 shadow-2xl transition-all duration-500 p-4",
+            "h-full backdrop-blur-md bg-white/70 dark:bg-gray-900/70 rounded-2xl border-2 border-white/30 shadow-2xl transition-all duration-500 p-4",
             !caixaAberto && "opacity-60 pointer-events-none border-yellow-400/50 dark:border-yellow-600/50"
           )}>
             <PDVScanner

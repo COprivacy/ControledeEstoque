@@ -978,18 +978,15 @@ export default function Admin() {
                   <div className="flex-1 overflow-y-auto pr-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-4">
                       {[
-                        { key: 'dashboard', label: 'Dashboard', description: 'Acessar página principal do sistema' },
                         { key: 'pdv', label: 'PDV / Caixa', description: 'Realizar vendas e gerenciar caixa' },
                         { key: 'caixa', label: 'Caixa', description: 'Abrir e fechar caixa' },
                         { key: 'historico_caixas', label: 'Histórico de Caixas', description: 'Visualizar histórico de caixas anteriores' },
                         { key: 'produtos', label: 'Produtos', description: 'Cadastrar e editar produtos' },
                         { key: 'inventario', label: 'Inventário', description: 'Gerenciar estoque' },
-                        { key: 'relatorios', label: 'Relatórios', description: 'Visualizar relatórios de vendas' },
                         { key: 'clientes', label: 'Clientes', description: 'Gerenciar cadastro de clientes' },
                         { key: 'fornecedores', label: 'Fornecedores', description: 'Gerenciar fornecedores' },
-                        { key: 'financeiro', label: 'Financeiro', description: 'Acessar contas a pagar/receber' },
+                        { key: 'financeiro', label: 'Financeiro', description: 'Acessar módulo financeiro' },
                         { key: 'config_fiscal', label: 'Config. Fiscal', description: 'Configurações fiscais e NF-e' },
-                        { key: 'configuracoes', label: 'Configurações', description: 'Acessar configurações do sistema' },
                         { key: 'devolucoes', label: 'Devoluções', description: 'Gerenciar devoluções de produtos' },
                         { key: 'contas_pagar', label: 'Contas a Pagar', description: 'Gerenciar contas a pagar' },
                         { key: 'contas_receber', label: 'Contas a Receber', description: 'Gerenciar contas a receber' },

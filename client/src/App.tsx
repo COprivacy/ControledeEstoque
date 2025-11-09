@@ -87,7 +87,7 @@ function Router() {
       <Route path="/devolucoes">
         {() => (
           <DashboardLayout>
-            <ProtectedRoute requiredPermission="inventario">
+            <ProtectedRoute requiredPermission="devolucoes">
               <Devolucoes />
             </ProtectedRoute>
           </DashboardLayout>
@@ -150,7 +150,7 @@ function Router() {
       <Route path="/financeiro/contas-pagar">
         {() => (
           <DashboardLayout>
-            <ProtectedRoute requiredPermission="financeiro">
+            <ProtectedRoute requiredPermission="contas_pagar">
               <ContasPagar />
             </ProtectedRoute>
           </DashboardLayout>
@@ -159,7 +159,7 @@ function Router() {
       <Route path="/financeiro/contas-receber">
         {() => (
           <DashboardLayout>
-            <ProtectedRoute requiredPermission="financeiro">
+            <ProtectedRoute requiredPermission="contas_receber">
               <ContasReceber />
             </ProtectedRoute>
           </DashboardLayout>

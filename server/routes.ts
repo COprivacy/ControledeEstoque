@@ -3800,6 +3800,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/orcamentos", getUserId, async (req, res) => {
+    try {
+      const effectiveUserId = req.headers["effective-user-id"] as string;
+      const allOrcamentos = await storage.getOrcamentos();
+      const orcamentos = allOrcamentos.filter((o) => o.user_id === effectiveUserId);
+      console.log(`✅ Orçamentos buscados - User: ${effectiveUserId}, Total: ${orcamentos.length}`);
+      res.json(orcamentos);
+    } catch (error) {
+      console.error("Erro ao buscar orçamentos:", error);
+      res.status(500).json({ error: "Erro ao buscar orçamentos" });
+    }
+  });
+
+  app.get("/api/orcamentos/:id", getUserId, async (req, res) => {
+    try {
+      const userId = req.headers["effective-user-id"] as string;
+      const id = parseInt(req.params.id);
+
+      const orcamento = await storage.getOrcamento(id);
+
+      if (!orcamento || orcamento.user_id !== userId) {
+        return res.status(404).json({ error: "Orçamento não encontrado" });
+      }
+
+      res.json(orcamento);
+    } catch (error) {
+      console.error("Erro ao buscar orçamento:", error);
+      res.status(500).json({ error: "Erro ao buscar orçamento" });
+    }
+  });
+
+  app.post("/api/orcamentos", getUserId, async (req, res) => {
+    try {
+      const userId = req.headers["effective-user-id"] as string;
+
+      const { insertOrcamentoSchema } = await import("@shared/schema");
+      const validatedData = insertOrcamentoSchema.parse({
+        ...req.body,
+        user_id: userId,
+        data_criacao: new Date().toISOString(),
+        data_atualizacao: new Date().toISOString(),
+      });
+
+      const orcamento = await storage.createOrcamento(validatedData);
+
+      console.log(`✅ Orçamento criado - ID: ${orcamento.id}, Número: ${orcamento.numero}, Cliente: ${orcamento.cliente_nome}`);
+      res.json(orcamento);
+    } catch (error) {
+      console.error("Erro ao criar orçamento:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Dados inválidos", details: error.errors });
+      }
+      res.status(500).json({ error: "Erro ao criar orçamento" });
+    }
+  });
+
+  app.put("/api/orcamentos/:id", getUserId, async (req, res) => {
+    try {
+      const userId = req.headers["effective-user-id"] as string;
+      const id = parseInt(req.params.id);
+
+      const orcamentoExistente = await storage.getOrcamento(id);
+
+      if (!orcamentoExistente || orcamentoExistente.user_id !== userId) {
+        return res.status(404).json({ error: "Orçamento não encontrado" });
+      }
+
+      const { insertOrcamentoSchema } = await import("@shared/schema");
+      const updateSchema = insertOrcamentoSchema.partial();
+      const validatedData = updateSchema.parse({
+        ...req.body,
+        data_atualizacao: new Date().toISOString(),
+      });
+
+      const orcamento = await storage.updateOrcamento(id, validatedData);
+
+      console.log(`✅ Orçamento atualizado - ID: ${id}, Status: ${orcamento?.status}`);
+      res.json(orcamento);
+    } catch (error) {
+      console.error("Erro ao atualizar orçamento:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Dados inválidos", details: error.errors });
+      }
+      res.status(500).json({ error: "Erro ao atualizar orçamento" });
+    }
+  });
+
+  app.delete("/api/orcamentos/:id", getUserId, async (req, res) => {
+    try {
+      const userId = req.headers["effective-user-id"] as string;
+      const id = parseInt(req.params.id);
+
+      const orcamento = await storage.getOrcamento(id);
+
+      if (!orcamento || orcamento.user_id !== userId) {
+        return res.status(404).json({ error: "Orçamento não encontrado" });
+      }
+
+      await storage.deleteOrcamento(id);
+      console.log(`✅ Orçamento deletado - ID: ${id}`);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Erro ao deletar orçamento:", error);
+      res.status(500).json({ error: "Erro ao deletar orçamento" });
+    }
+  });
+
   app.get("/api/system-config/:key", async (req, res) => {
     try {
       const { key } = req.params;

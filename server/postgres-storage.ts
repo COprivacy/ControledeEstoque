@@ -21,6 +21,7 @@ import {
   movimentacoesCaixa,
   systemConfig,
   devolucoes,
+  orcamentos,
   type User,
   type InsertUser,
   type Produto,
@@ -56,6 +57,8 @@ import {
   type InsertContasReceber,
   type Devolucao,
   type InsertDevolucao,
+  type Orcamento,
+  type InsertOrcamento,
 } from '@shared/schema';
 import type { IStorage } from './storage';
 import { randomUUID } from 'crypto';
@@ -762,6 +765,35 @@ export class PostgresStorage implements IStorage {
   async deleteDevolucao(id: number): Promise<boolean> {
     const result = await this.db.delete(devolucoes)
       .where(eq(devolucoes.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getOrcamentos(): Promise<Orcamento[]> {
+    return await this.db.select().from(orcamentos).orderBy(desc(orcamentos.id));
+  }
+
+  async getOrcamento(id: number): Promise<Orcamento | undefined> {
+    const result = await this.db.select().from(orcamentos).where(eq(orcamentos.id, id));
+    return result[0];
+  }
+
+  async createOrcamento(orcamento: InsertOrcamento): Promise<Orcamento> {
+    const result = await this.db.insert(orcamentos).values(orcamento).returning();
+    return result[0];
+  }
+
+  async updateOrcamento(id: number, updates: Partial<Orcamento>): Promise<Orcamento | undefined> {
+    const result = await this.db.update(orcamentos)
+      .set(updates)
+      .where(eq(orcamentos.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteOrcamento(id: number): Promise<boolean> {
+    const result = await this.db.delete(orcamentos)
+      .where(eq(orcamentos.id, id))
       .returning();
     return result.length > 0;
   }

@@ -303,6 +303,7 @@ export const permissoesFuncionarios = pgTable("permissoes_funcionarios", {
   devolucoes: text("devolucoes").notNull().default("false"),
   contas_pagar: text("contas_pagar").notNull().default("false"),
   contas_receber: text("contas_receber").notNull().default("false"),
+  orcamentos: text("orcamentos").notNull().default("false"),
 });
 
 export const insertPermissaoFuncionarioSchema = createInsertSchema(permissoesFuncionarios);
@@ -350,6 +351,33 @@ export const devolucoes = pgTable("devolucoes", {
   cliente_nome: text("cliente_nome"),
 });
 
+export const orcamentos = pgTable("orcamentos", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  user_id: text("user_id").notNull(),
+  numero: text("numero").notNull(),
+  cliente_id: integer("cliente_id"),
+  cliente_nome: text("cliente_nome").notNull(),
+  cliente_email: text("cliente_email"),
+  cliente_telefone: text("cliente_telefone"),
+  cliente_cpf_cnpj: text("cliente_cpf_cnpj"),
+  cliente_endereco: text("cliente_endereco"),
+  itens: text("itens", { mode: 'json' }).$type<OrcamentoItem[]>().notNull(),
+  subtotal: real("subtotal").notNull(),
+  desconto: real("desconto").notNull().default(0),
+  valor_total: real("valor_total").notNull(),
+  observacoes: text("observacoes"),
+  condicoes_pagamento: text("condicoes_pagamento"),
+  prazo_entrega: text("prazo_entrega"),
+  validade: text("validade").notNull(),
+  status: text("status").notNull().default("pendente"),
+  data_criacao: text("data_criacao").notNull(),
+  data_atualizacao: text("data_atualizacao"),
+  vendedor: text("vendedor"),
+  venda_id: integer("venda_id"),
+}, (table) => ({
+  uniqueNumero: sql`UNIQUE (user_id, numero)`,
+}));
+
 export const insertCaixaSchema = createInsertSchema(caixas).omit({
   id: true,
 }).extend({
@@ -371,12 +399,36 @@ export const insertDevolucaoSchema = createInsertSchema(devolucoes).omit({
   status: z.enum(["pendente", "aprovada", "rejeitada"]).default("pendente"),
 });
 
+export const orcamentoItemSchema = z.object({
+  produto_id: z.number().int().positive(),
+  produto_nome: z.string().min(1),
+  quantidade: z.number().int().positive(),
+  preco_unitario: z.number().positive(),
+  subtotal: z.number().positive(),
+});
+
+export type OrcamentoItem = z.infer<typeof orcamentoItemSchema>;
+
+export const insertOrcamentoSchema = createInsertSchema(orcamentos).omit({
+  id: true,
+  data_criacao: true,
+  data_atualizacao: true,
+}).extend({
+  itens: z.array(orcamentoItemSchema).min(1, "Orçamento deve ter pelo menos um item"),
+  subtotal: z.coerce.number().min(0),
+  desconto: z.coerce.number().min(0).default(0),
+  valor_total: z.coerce.number().positive(),
+  status: z.enum(["pendente", "aprovado", "rejeitado", "convertido", "expirado"]).default("pendente"),
+});
+
 export type Caixa = typeof caixas.$inferSelect;
 export type InsertCaixa = z.infer<typeof insertCaixaSchema>;
 export type MovimentacaoCaixa = typeof movimentacoesCaixa.$inferSelect;
 export type InsertMovimentacaoCaixa = z.infer<typeof insertMovimentacaoCaixaSchema>;
 export type Devolucao = typeof devolucoes.$inferSelect;
 export type InsertDevolucao = z.infer<typeof insertDevolucaoSchema>;
+export type Orcamento = typeof orcamentos.$inferSelect;
+export type InsertOrcamento = z.infer<typeof insertOrcamentoSchema>;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;

@@ -29,7 +29,9 @@ import {
   type MovimentacaoCaixa,
   type InsertMovimentacaoCaixa,
   type Devolucao,
-  type InsertDevolucao
+  type InsertDevolucao,
+  type Orcamento,
+  type InsertOrcamento
 } from "@shared/schema";
 
 export interface IStorage {
@@ -122,6 +124,13 @@ export interface IStorage {
   createDevolucao?(devolucao: InsertDevolucao): Promise<Devolucao>;
   updateDevolucao?(id: number, updates: Partial<Devolucao>): Promise<Devolucao | undefined>;
   deleteDevolucao?(id: number): Promise<boolean>;
+
+  // Métodos para Orçamentos
+  getOrcamentos?(): Promise<Orcamento[]>;
+  getOrcamento?(id: number): Promise<Orcamento | undefined>;
+  createOrcamento?(orcamento: InsertOrcamento): Promise<Orcamento>;
+  updateOrcamento?(id: number, updates: Partial<Orcamento>): Promise<Orcamento | undefined>;
+  deleteOrcamento?(id: number): Promise<boolean>;
 }
 
 export abstract class Storage {

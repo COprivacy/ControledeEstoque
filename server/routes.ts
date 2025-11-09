@@ -154,6 +154,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/auth/login-funcionario", async (req, res) => {
+    try {
+      const { email, senha } = req.body;
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔐 Tentativa de login de funcionário - Email: ${email}`);
+      }
+
+      if (!email || !senha) {
+        return res.status(400).json({ error: "Email e senha são obrigatórios" });
+      }
+
+      const funcionario = await storage.getFuncionarioByEmail(email);
+
+      if (!funcionario) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`❌ Falha de login - Funcionário não encontrado`);
+        }
+        return res.status(401).json({ error: "Email ou senha inválidos" });
+      }
+
+      if (funcionario.senha !== senha) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`❌ Falha de login - Senha incorreta`);
+        }
+        return res.status(401).json({ error: "Email ou senha inválidos" });
+      }
+
+      if (funcionario.status !== "ativo") {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`❌ Falha de login - Funcionário inativo`);
+        }
+        return res.status(401).json({ error: "Conta de funcionário inativa" });
+      }
+
+      const permissoes = await storage.getPermissoesFuncionario(funcionario.id);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`✅ Login de funcionário bem-sucedido: ${email}`);
+      }
+
+      const { senha: _, ...funcionarioSemSenha } = funcionario;
+      const funcionarioResponse = {
+        ...funcionarioSemSenha,
+        tipo: 'funcionario',
+        permissoes: permissoes || {},
+      };
+
+      res.json(funcionarioResponse);
+    } catch (error: any) {
+      console.error('Erro no login de funcionário:', error);
+      res.status(500).json({ error: "Erro ao fazer login" });
+    }
+  });
+
   // Rota para enviar código de verificação
   app.post("/api/auth/send-verification-code", async (req, res) => {
     try {

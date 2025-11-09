@@ -83,6 +83,7 @@ export interface IStorage {
   getFuncionarios(): Promise<Funcionario[]>;
   getFuncionariosByContaId(contaId: string): Promise<Funcionario[]>;
   getFuncionario(id: string): Promise<Funcionario | undefined>;
+  getFuncionarioByEmail(email: string): Promise<Funcionario | undefined>;
   createFuncionario(funcionario: InsertFuncionario): Promise<Funcionario>;
   updateFuncionario(id: string, updates: Partial<Funcionario>): Promise<Funcionario | undefined>;
   deleteFuncionario(id: string): Promise<boolean>;

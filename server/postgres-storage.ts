@@ -491,6 +491,11 @@ export class PostgresStorage implements IStorage {
     return result[0];
   }
 
+  async getFuncionarioByEmail(email: string): Promise<Funcionario | undefined> {
+    const result = await this.db.select().from(funcionarios).where(eq(funcionarios.email, email)).limit(1);
+    return result[0];
+  }
+
   async createFuncionario(funcionario: InsertFuncionario): Promise<Funcionario> {
     const newFunc = {
       ...funcionario,

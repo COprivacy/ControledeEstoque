@@ -5,7 +5,7 @@ import {
   insertUserSchema,
   insertProdutoSchema,
   insertVendaSchema,
-  insertConfigFiscalSchema
+  insertConfigFiscalSchema,
 } from "@shared/schema";
 import { nfceSchema } from "@shared/nfce-schema";
 import { FocusNFeService } from "./focusnfe";
@@ -15,11 +15,16 @@ import bcrypt from "bcryptjs";
 
 // Middleware para verificar se o usuário é admin
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const userId = req.headers['x-user-id'] as string;
-  const isAdmin = req.headers['x-is-admin'] as string;
+  const userId = req.headers["x-user-id"] as string;
+  const isAdmin = req.headers["x-is-admin"] as string;
 
   if (!userId || isAdmin !== "true") {
-    return res.status(403).json({ error: "Acesso negado. Apenas administradores podem acessar este recurso." });
+    return res
+      .status(403)
+      .json({
+        error:
+          "Acesso negado. Apenas administradores podem acessar este recurso.",
+      });
   }
 
   next();
@@ -27,46 +32,56 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 
 // Middleware para extrair e validar user_id (lida com funcionários)
 async function getUserId(req: Request, res: Response, next: NextFunction) {
-  const userId = req.headers['x-user-id'] as string;
-  const userType = req.headers['x-user-type'] as string;
-  const contaId = req.headers['x-conta-id'] as string;
+  const userId = req.headers["x-user-id"] as string;
+  const userType = req.headers["x-user-type"] as string;
+  const contaId = req.headers["x-conta-id"] as string;
 
   if (!userId) {
-    return res.status(401).json({ error: "Autenticação necessária. Header x-user-id não fornecido." });
+    return res
+      .status(401)
+      .json({
+        error: "Autenticação necessária. Header x-user-id não fornecido.",
+      });
   }
 
   // Se for funcionário, VALIDAR se o conta_id é legítimo
   if (userType === "funcionario" && contaId) {
     try {
       const allFuncionarios = await storage.getFuncionarios();
-      const funcionario = allFuncionarios.find(f => f.id === userId);
+      const funcionario = allFuncionarios.find((f) => f.id === userId);
 
       // VALIDAÇÃO CRÍTICA: Verificar se o funcionário existe e pertence à conta informada
       if (!funcionario || funcionario.conta_id !== contaId) {
-        return res.status(403).json({ error: "Acesso negado. Funcionário não autorizado para esta conta." });
+        return res
+          .status(403)
+          .json({
+            error: "Acesso negado. Funcionário não autorizado para esta conta.",
+          });
       }
 
-      req.headers['effective-user-id'] = contaId;
-      req.headers['funcionario-id'] = userId; // Armazena ID do funcionário para auditoria
+      req.headers["effective-user-id"] = contaId;
+      req.headers["funcionario-id"] = userId; // Armazena ID do funcionário para auditoria
     } catch (error) {
       console.error("Erro ao validar funcionário:", error);
       return res.status(500).json({ error: "Erro ao validar autenticação" });
     }
   } else {
-    req.headers['effective-user-id'] = userId;
+    req.headers["effective-user-id"] = userId;
   }
 
   next();
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-
   // Middleware para desabilitar cache em todas as rotas da API
-  app.use('/api', (req, res, next) => {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.setHeader('Surrogate-Control', 'no-store');
+  app.use("/api", (req, res, next) => {
+    res.setHeader(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, private, max-age=0",
+    );
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Surrogate-Control", "no-store");
     next();
   });
 
@@ -91,7 +106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data_criacao: dataCriacao,
         data_expiracao_trial: dataExpiracao.toISOString(),
         data_expiracao_plano: dataExpiracao.toISOString(),
-        status: "ativo"
+        status: "ativo",
       };
 
       const user = await storage.createUser(userWithTrial);
@@ -100,12 +115,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: user.email,
         nome: user.nome,
         data_criacao: user.data_criacao,
-        data_expiracao_trial: user.data_expiracao_trial
+        data_expiracao_trial: user.data_expiracao_trial,
       });
     } catch (error) {
       console.error("Erro ao registrar usuário:", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Dados inválidos", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Dados inválidos", details: error.errors });
       }
       res.status(500).json({ error: "Erro ao criar usuário" });
     }
@@ -114,8 +131,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, senha } = req.body;
-      
-      if (process.env.NODE_ENV === 'development') {
+
+      if (process.env.NODE_ENV === "development") {
         console.log(`🔐 Tentativa de login - Email: ${email}`);
       }
 
@@ -123,7 +140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUserByEmail(email);
 
       if (!user) {
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === "development") {
           console.log(`❌ Falha de login - Usuário não encontrado`);
         }
         return res.status(401).json({ error: "Email ou senha inválidos" });
@@ -131,25 +148,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Comparação direta de senha (sem hash)
       if (user.senha !== senha) {
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === "development") {
           console.log(`❌ Falha de login - Senha incorreta`);
         }
         return res.status(401).json({ error: "Email ou senha inválidos" });
       }
 
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") {
         console.log(`✅ Login bem-sucedido para usuário: ${email}`);
       }
 
       // Login bem-sucedido
       const userResponse = {
         ...user,
-        tipo: 'usuario'
+        tipo: "usuario",
       };
 
       res.json(userResponse);
     } catch (error: any) {
-      console.error('Erro no login:', error);
+      console.error("Erro no login:", error);
       res.status(500).json({ error: "Erro ao fazer login" });
     }
   });
@@ -158,32 +175,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, senha } = req.body;
 
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") {
         console.log(`🔐 Tentativa de login de funcionário - Email: ${email}`);
       }
 
       if (!email || !senha) {
-        return res.status(400).json({ error: "Email e senha são obrigatórios" });
+        return res
+          .status(400)
+          .json({ error: "Email e senha são obrigatórios" });
       }
 
       const funcionario = await storage.getFuncionarioByEmail(email);
 
       if (!funcionario) {
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === "development") {
           console.log(`❌ Falha de login - Funcionário não encontrado`);
         }
         return res.status(401).json({ error: "Email ou senha inválidos" });
       }
 
       if (funcionario.senha !== senha) {
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === "development") {
           console.log(`❌ Falha de login - Senha incorreta`);
         }
         return res.status(401).json({ error: "Email ou senha inválidos" });
       }
 
       if (funcionario.status !== "ativo") {
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === "development") {
           console.log(`❌ Falha de login - Funcionário inativo`);
         }
         return res.status(401).json({ error: "Conta de funcionário inativa" });
@@ -191,20 +210,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const permissoes = await storage.getPermissoesFuncionario(funcionario.id);
 
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") {
         console.log(`✅ Login de funcionário bem-sucedido: ${email}`);
       }
 
       const { senha: _, ...funcionarioSemSenha } = funcionario;
       const funcionarioResponse = {
         ...funcionarioSemSenha,
-        tipo: 'funcionario',
+        tipo: "funcionario",
         permissoes: permissoes || {},
       };
 
       res.json(funcionarioResponse);
     } catch (error: any) {
-      console.error('Erro no login de funcionário:', error);
+      console.error("Erro no login de funcionário:", error);
       res.status(500).json({ error: "Erro ao fazer login" });
     }
   });
@@ -215,7 +234,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { userId, email } = req.body;
 
       if (!userId || !email) {
-        return res.status(400).json({ error: "userId e email são obrigatórios" });
+        return res
+          .status(400)
+          .json({ error: "userId e email são obrigatórios" });
       }
 
       const user = await storage.getUserById(userId);
@@ -227,7 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
 
       try {
-        const { EmailService } = await import('./email-service');
+        const { EmailService } = await import("./email-service");
         const emailService = new EmailService();
 
         await emailService.sendVerificationCode({
@@ -236,19 +257,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           code,
         });
 
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`📧 Código de verificação enviado para ${email}: ${code}`);
+        if (process.env.NODE_ENV === "development") {
+          console.log(
+            `📧 Código de verificação enviado para ${email}: ${code}`,
+          );
         }
 
         res.json({
           success: true,
           message: "Código enviado com sucesso",
           // SECURITY: Código NÃO é retornado - apenas enviado por email
-          ...(process.env.NODE_ENV === 'development' && { code }) // Apenas em dev para testes
+          ...(process.env.NODE_ENV === "development" && { code }), // Apenas em dev para testes
         });
       } catch (emailError) {
         console.error("❌ Erro ao enviar email:", emailError);
-        res.status(500).json({ error: "Erro ao enviar código de verificação por email" });
+        res
+          .status(500)
+          .json({ error: "Erro ao enviar código de verificação por email" });
       }
     } catch (error) {
       console.error("Erro ao processar solicitação:", error);
@@ -257,8 +282,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rate limiting para tentativas de senha master
-  const masterPasswordAttempts = new Map<string, { count: number; lastAttempt: number }>();
-  const publicAdminAttempts = new Map<string, { count: number; lastAttempt: number }>();
+  const masterPasswordAttempts = new Map<
+    string,
+    { count: number; lastAttempt: number }
+  >();
+  const publicAdminAttempts = new Map<
+    string,
+    { count: number; lastAttempt: number }
+  >();
   const MAX_ATTEMPTS = 3;
   const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutos
 
@@ -266,7 +297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/verify-public-admin", async (req, res) => {
     try {
       const { password } = req.body;
-      const clientKey = req.ip || 'unknown';
+      const clientKey = req.ip || "unknown";
       const now = Date.now();
 
       console.log(`🔐 [PUBLIC ADMIN] Tentativa de acesso do IP: ${req.ip}`);
@@ -277,77 +308,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Rate limiting
       const attempts = publicAdminAttempts.get(clientKey);
-      
+
       if (attempts) {
-        if (attempts.count >= MAX_ATTEMPTS && (now - attempts.lastAttempt) < LOCKOUT_TIME) {
-          const remainingTime = Math.ceil((LOCKOUT_TIME - (now - attempts.lastAttempt)) / 60000);
-          logger.warn('Tentativa bloqueada por rate limit (public admin)', 'SECURITY', { 
-            clientKey, 
-            attempts: attempts.count,
-            remainingMinutes: remainingTime 
-          });
-          return res.status(429).json({ 
-            error: `Muitas tentativas. Tente novamente em ${remainingTime} minutos.` 
+        if (
+          attempts.count >= MAX_ATTEMPTS &&
+          now - attempts.lastAttempt < LOCKOUT_TIME
+        ) {
+          const remainingTime = Math.ceil(
+            (LOCKOUT_TIME - (now - attempts.lastAttempt)) / 60000,
+          );
+          logger.warn(
+            "Tentativa bloqueada por rate limit (public admin)",
+            "SECURITY",
+            {
+              clientKey,
+              attempts: attempts.count,
+              remainingMinutes: remainingTime,
+            },
+          );
+          return res.status(429).json({
+            error: `Muitas tentativas. Tente novamente em ${remainingTime} minutos.`,
           });
         }
 
-        if ((now - attempts.lastAttempt) >= LOCKOUT_TIME) {
+        if (now - attempts.lastAttempt >= LOCKOUT_TIME) {
           publicAdminAttempts.delete(clientKey);
         }
       }
 
       // Buscar senha do painel público do banco
-      const publicAdminConfig = await storage.getSystemConfig("public_admin_password");
-      
+      const publicAdminConfig = await storage.getSystemConfig(
+        "public_admin_password",
+      );
+
       if (!publicAdminConfig) {
         const defaultPassword = process.env.PUBLIC_ADMIN_PASSWORD;
         if (!defaultPassword) {
-          logger.error('PUBLIC_ADMIN_PASSWORD não configurada nas variáveis de ambiente', 'SECURITY');
-          return res.status(500).json({ error: "Configuração de segurança incompleta" });
+          logger.error(
+            "PUBLIC_ADMIN_PASSWORD não configurada nas variáveis de ambiente",
+            "SECURITY",
+          );
+          return res
+            .status(500)
+            .json({ error: "Configuração de segurança incompleta" });
         }
         const hashedPassword = await bcrypt.hash(defaultPassword, 10);
         await storage.setSystemConfig("public_admin_password", hashedPassword);
-        
+
         const isValid = await bcrypt.compare(password, hashedPassword);
-        
+
         if (!isValid) {
           const currentAttempts = publicAdminAttempts.get(clientKey);
           publicAdminAttempts.set(clientKey, {
             count: (currentAttempts?.count || 0) + 1,
-            lastAttempt: now
+            lastAttempt: now,
           });
-          logger.warn('Senha public admin incorreta', 'SECURITY', { clientKey });
+          logger.warn("Senha public admin incorreta", "SECURITY", {
+            clientKey,
+          });
           return res.json({ valid: false });
         } else {
           publicAdminAttempts.delete(clientKey);
-          logger.info('Acesso public admin autorizado', 'SECURITY', { ip: req.ip });
+          logger.info("Acesso public admin autorizado", "SECURITY", {
+            ip: req.ip,
+          });
           return res.json({ valid: true });
         }
       }
 
       // Verificar senha fornecida com hash armazenado
       const isValid = await bcrypt.compare(password, publicAdminConfig.valor);
-      
+
       if (!isValid) {
         const currentAttempts = publicAdminAttempts.get(clientKey);
         publicAdminAttempts.set(clientKey, {
           count: (currentAttempts?.count || 0) + 1,
-          lastAttempt: now
+          lastAttempt: now,
         });
-        logger.warn('Senha public admin incorreta', 'SECURITY', { 
-          clientKey, 
-          attempts: (currentAttempts?.count || 0) + 1 
+        logger.warn("Senha public admin incorreta", "SECURITY", {
+          clientKey,
+          attempts: (currentAttempts?.count || 0) + 1,
         });
       } else {
         publicAdminAttempts.delete(clientKey);
-        logger.info('Acesso public admin autorizado', 'SECURITY', { ip: req.ip });
+        logger.info("Acesso public admin autorizado", "SECURITY", {
+          ip: req.ip,
+        });
       }
 
       res.json({ valid: isValid });
-
     } catch (error) {
       console.error("Erro ao verificar senha public admin:", error);
-      logger.error('Erro ao verificar senha public admin', 'SECURITY', { error });
+      logger.error("Erro ao verificar senha public admin", "SECURITY", {
+        error,
+      });
       res.status(500).json({ error: "Erro ao verificar senha" });
     }
   });
@@ -356,24 +410,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/verify-master-password", async (req, res) => {
     try {
       const { password } = req.body;
-      const userId = req.headers['x-user-id'] as string;
-      const userEmail = req.headers['x-user-email'] as string;
+      const userId = req.headers["x-user-id"] as string;
+      const userEmail = req.headers["x-user-email"] as string;
 
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") {
         console.log(`🔐 [MASTER PASSWORD] Tentativa de acesso`);
       }
 
       // VALIDAÇÃO 1: Apenas usuário master pode tentar
       const authorizedEmail = process.env.MASTER_USER_EMAIL;
       if (!authorizedEmail) {
-        logger.error('MASTER_USER_EMAIL não configurada', 'SECURITY');
-        return res.status(500).json({ error: "Configuração de segurança incompleta" });
+        logger.error("MASTER_USER_EMAIL não configurada", "SECURITY");
+        return res
+          .status(500)
+          .json({ error: "Configuração de segurança incompleta" });
       }
 
       if (userEmail !== authorizedEmail) {
-        logger.warn('Tentativa de acesso não autorizada ao admin master', 'SECURITY', { 
-          ip: req.ip 
-        });
+        logger.warn(
+          "Tentativa de acesso não autorizada ao admin master",
+          "SECURITY",
+          {
+            ip: req.ip,
+          },
+        );
         return res.status(403).json({ error: "Acesso não autorizado" });
       }
 
@@ -382,26 +442,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // VALIDAÇÃO 2: Rate limiting
-      const clientKey = userId || req.ip || 'unknown';
+      const clientKey = userId || req.ip || "unknown";
       const attempts = masterPasswordAttempts.get(clientKey);
       const now = Date.now();
 
       if (attempts) {
         // Se está em período de lockout
-        if (attempts.count >= MAX_ATTEMPTS && (now - attempts.lastAttempt) < LOCKOUT_TIME) {
-          const remainingTime = Math.ceil((LOCKOUT_TIME - (now - attempts.lastAttempt)) / 60000);
-          logger.warn('Tentativa bloqueada por rate limit', 'SECURITY', { 
-            clientKey, 
+        if (
+          attempts.count >= MAX_ATTEMPTS &&
+          now - attempts.lastAttempt < LOCKOUT_TIME
+        ) {
+          const remainingTime = Math.ceil(
+            (LOCKOUT_TIME - (now - attempts.lastAttempt)) / 60000,
+          );
+          logger.warn("Tentativa bloqueada por rate limit", "SECURITY", {
+            clientKey,
             attempts: attempts.count,
-            remainingMinutes: remainingTime 
+            remainingMinutes: remainingTime,
           });
-          return res.status(429).json({ 
-            error: `Muitas tentativas. Tente novamente em ${remainingTime} minutos.` 
+          return res.status(429).json({
+            error: `Muitas tentativas. Tente novamente em ${remainingTime} minutos.`,
           });
         }
 
         // Reset se o lockout expirou
-        if ((now - attempts.lastAttempt) >= LOCKOUT_TIME) {
+        if (now - attempts.lastAttempt >= LOCKOUT_TIME) {
           masterPasswordAttempts.delete(clientKey);
         }
       }
@@ -409,22 +474,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Garantir que o usuário master existe
       const masterEmail = process.env.MASTER_USER_EMAIL;
       if (!masterEmail) {
-        logger.error('MASTER_USER_EMAIL não configurada nas variáveis de ambiente', 'SECURITY');
-        return res.status(500).json({ error: "Configuração de segurança incompleta" });
+        logger.error(
+          "MASTER_USER_EMAIL não configurada nas variáveis de ambiente",
+          "SECURITY",
+        );
+        return res
+          .status(500)
+          .json({ error: "Configuração de segurança incompleta" });
       }
 
       let masterUser = await storage.getUserByEmail(masterEmail);
 
       if (!masterUser) {
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === "development") {
           console.log("🔧 Criando usuário master automaticamente...");
         }
         const masterPassword = process.env.MASTER_USER_PASSWORD;
         if (!masterPassword) {
-          logger.error('MASTER_USER_PASSWORD não configurada nas variáveis de ambiente', 'SECURITY');
-          return res.status(500).json({ error: "Configuração de segurança incompleta" });
+          logger.error(
+            "MASTER_USER_PASSWORD não configurada nas variáveis de ambiente",
+            "SECURITY",
+          );
+          return res
+            .status(500)
+            .json({ error: "Configuração de segurança incompleta" });
         }
-        
+
         const dataExpiracao = new Date();
         dataExpiracao.setFullYear(dataExpiracao.getFullYear() + 10);
 
@@ -439,19 +514,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           data_criacao: new Date().toISOString(),
           data_expiracao_plano: dataExpiracao.toISOString(),
         });
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === "development") {
           console.log("✅ Usuário master criado com sucesso");
         }
       }
 
       // Buscar senha master do banco
-      const masterPasswordConfig = await storage.getSystemConfig("master_password");
+      const masterPasswordConfig =
+        await storage.getSystemConfig("master_password");
 
       if (!masterPasswordConfig) {
         const defaultPassword = process.env.MASTER_ADMIN_PASSWORD;
         if (!defaultPassword) {
-          logger.error('MASTER_ADMIN_PASSWORD não configurada nas variáveis de ambiente', 'SECURITY');
-          return res.status(500).json({ error: "Configuração de segurança incompleta" });
+          logger.error(
+            "MASTER_ADMIN_PASSWORD não configurada nas variáveis de ambiente",
+            "SECURITY",
+          );
+          return res
+            .status(500)
+            .json({ error: "Configuração de segurança incompleta" });
         }
         const hashedPassword = await bcrypt.hash(defaultPassword, 10);
         await storage.setSystemConfig("master_password", hashedPassword);
@@ -463,41 +544,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const currentAttempts = masterPasswordAttempts.get(clientKey);
           masterPasswordAttempts.set(clientKey, {
             count: (currentAttempts?.count || 0) + 1,
-            lastAttempt: now
+            lastAttempt: now,
           });
-          logger.warn('Senha master incorreta', 'SECURITY', { clientKey });
+          logger.warn("Senha master incorreta", "SECURITY", { clientKey });
         } else {
           masterPasswordAttempts.delete(clientKey);
-          logger.info('Acesso admin master autorizado', 'SECURITY', { userEmail });
+          logger.info("Acesso admin master autorizado", "SECURITY", {
+            userEmail,
+          });
         }
 
         return res.json({ valid: isValid });
       }
 
       // Verificar senha fornecida com hash armazenado
-      const isValid = await bcrypt.compare(password, masterPasswordConfig.valor);
+      const isValid = await bcrypt.compare(
+        password,
+        masterPasswordConfig.valor,
+      );
 
       // Registrar tentativa
       if (!isValid) {
         const currentAttempts = masterPasswordAttempts.get(clientKey);
         masterPasswordAttempts.set(clientKey, {
           count: (currentAttempts?.count || 0) + 1,
-          lastAttempt: now
+          lastAttempt: now,
         });
-        logger.warn('Senha master incorreta', 'SECURITY', { 
-          clientKey, 
-          attempts: (currentAttempts?.count || 0) + 1 
+        logger.warn("Senha master incorreta", "SECURITY", {
+          clientKey,
+          attempts: (currentAttempts?.count || 0) + 1,
         });
       } else {
         masterPasswordAttempts.delete(clientKey);
-        logger.info('Acesso admin master autorizado', 'SECURITY', { userEmail });
+        logger.info("Acesso admin master autorizado", "SECURITY", {
+          userEmail,
+        });
       }
 
       res.json({ valid: isValid });
-
     } catch (error) {
       console.error("Erro ao verificar senha master:", error);
-      logger.error('Erro ao verificar senha master', 'SECURITY', { error });
+      logger.error("Erro ao verificar senha master", "SECURITY", { error });
       res.status(500).json({ error: "Erro ao verificar senha" });
     }
   });
@@ -506,7 +593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users", async (req, res) => {
     try {
       const users = await storage.getUsers();
-      const sanitizedUsers = users.map(user => ({
+      const sanitizedUsers = users.map((user) => ({
         id: user.id,
         email: user.email,
         nome: user.nome,
@@ -521,7 +608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endereco: user.endereco || null,
         asaas_customer_id: user.asaas_customer_id || null,
         max_funcionarios: user.max_funcionarios || 1,
-        meta_mensal: user.meta_mensal || 15000
+        meta_mensal: user.meta_mensal || 15000,
       }));
       res.json(sanitizedUsers);
     } catch (error) {
@@ -543,7 +630,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Garantir que is_admin seja sempre string "true" ou "false"
       if (updates.is_admin !== undefined) {
-        updates.is_admin = updates.is_admin === "true" || updates.is_admin === true ? "true" : "false";
+        updates.is_admin =
+          updates.is_admin === "true" || updates.is_admin === true
+            ? "true"
+            : "false";
       }
 
       const updatedUser = await storage.updateUser(id, updates);
@@ -564,7 +654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data_expiracao_plano: updatedUser.data_expiracao_plano,
         ultimo_acesso: updatedUser.ultimo_acesso,
         max_funcionarios: updatedUser.max_funcionarios,
-        meta_mensal: updatedUser.meta_mensal
+        meta_mensal: updatedUser.meta_mensal,
       });
     } catch (error) {
       console.error(`❌ [UPDATE USER] Erro ao atualizar usuário:`, error);
@@ -577,7 +667,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       console.log(`🗑️ [DELETE USER] Tentando deletar usuário ID: ${id}`);
       await storage.deleteUser(id);
-      console.log(`✅ [DELETE USER] Usuário ${id} deletado com sucesso do banco de dados`);
+      console.log(
+        `✅ [DELETE USER] Usuário ${id} deletado com sucesso do banco de dados`,
+      );
       res.json({ success: true });
     } catch (error) {
       console.log(`❌ [DELETE USER] Erro ao deletar usuário ${id}:`, error);
@@ -591,14 +683,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let fixedCount = 0;
 
       for (const user of users) {
-        if (user.data_expiracao_trial && user.plano === 'free') {
+        if (user.data_expiracao_trial && user.plano === "free") {
           const expirationDate = new Date(user.data_expiracao_trial);
           const now = new Date();
 
           if (now < expirationDate) {
             await storage.updateUser(user.id, {
               plano: "trial",
-              data_expiracao_plano: user.data_expiracao_trial
+              data_expiracao_plano: user.data_expiracao_trial,
             });
             fixedCount++;
             console.log(`✅ Usuário ${user.email} corrigido para plano trial`);
@@ -609,7 +701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         message: `${fixedCount} usuário(s) trial corrigido(s)`,
-        fixedCount
+        fixedCount,
       });
     } catch (error) {
       console.error("Erro ao corrigir usuários trial:", error);
@@ -621,7 +713,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/planos", async (req, res) => {
     try {
       if (!storage.getPlanos) {
-        return res.status(501).json({ error: "Método getPlanos não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método getPlanos não implementado" });
       }
       const planos = await storage.getPlanos();
       res.json(planos);
@@ -634,7 +728,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/planos", async (req, res) => {
     try {
       if (!storage.createPlano) {
-        return res.status(501).json({ error: "Método createPlano não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método createPlano não implementado" });
       }
       const planoData = {
         ...req.body,
@@ -651,7 +747,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/planos/:id", async (req, res) => {
     try {
       if (!storage.updatePlano) {
-        return res.status(501).json({ error: "Método updatePlano não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método updatePlano não implementado" });
       }
       const id = parseInt(req.params.id);
       const plano = await storage.updatePlano(id, req.body);
@@ -668,7 +766,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/planos/:id", async (req, res) => {
     try {
       if (!storage.deletePlano) {
-        return res.status(501).json({ error: "Método deletePlano não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método deletePlano não implementado" });
       }
       const id = parseInt(req.params.id);
       const deleted = await storage.deletePlano(id);
@@ -691,11 +791,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({
         ...config,
-        access_token: config.access_token ? '***' : '',
-        public_key: config.public_key || ''
+        access_token: config.access_token ? "***" : "",
+        public_key: config.public_key || "",
       });
     } catch (error) {
-      res.status(500).json({ error: "Erro ao buscar configuração Mercado Pago" });
+      res
+        .status(500)
+        .json({ error: "Erro ao buscar configuração Mercado Pago" });
     }
   });
 
@@ -710,15 +812,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const baseUrl = process.env.REPLIT_DEV_DOMAIN
         ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-        : 'http://localhost:5000';
+        : "http://localhost:5000";
 
       res.json({
         success: true,
         message: "Configuração salva com sucesso!",
         webhook_info: {
           url: `${baseUrl}/api/webhook/mercadopago`,
-          instructions: "Configure este URL no painel do Mercado Pago"
-        }
+          instructions: "Configure este URL no painel do Mercado Pago",
+        },
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -733,12 +835,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Access Token é obrigatório" });
       }
 
-      const { MercadoPagoService } = await import('./mercadopago');
-      const mercadopago = new MercadoPagoService({accessToken: access_token});
+      const { MercadoPagoService } = await import("./mercadopago");
+      const mercadopago = new MercadoPagoService({ accessToken: access_token });
       const result = await mercadopago.testConnection();
 
       if (result.success) {
-        await storage.updateConfigMercadoPagoStatus('conectado');
+        await storage.updateConfigMercadoPagoStatus("conectado");
       }
 
       res.json(result);
@@ -754,32 +856,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const users = await storage.getUsers();
 
       // Calcular métricas
-      const assinaturasAtivas = subscriptions.filter(s => s.status === "ativo").length;
-      const assinaturasPendentes = subscriptions.filter(s => s.status === "pendente").length;
+      const assinaturasAtivas = subscriptions.filter(
+        (s) => s.status === "ativo",
+      ).length;
+      const assinaturasPendentes = subscriptions.filter(
+        (s) => s.status === "pendente",
+      ).length;
       const receitaMensal = subscriptions
-        .filter(s => s.status === "ativo")
+        .filter((s) => s.status === "ativo")
         .reduce((sum, s) => sum + s.valor, 0);
       const receitaPendente = subscriptions
-        .filter(s => s.status === "pendente")
+        .filter((s) => s.status === "pendente")
         .reduce((sum, s) => sum + s.valor, 0);
 
       // Taxa de conversão
-      const taxaConversao = subscriptions.length > 0 
-        ? (assinaturasAtivas / subscriptions.length) * 100 
-        : 0;
+      const taxaConversao =
+        subscriptions.length > 0
+          ? (assinaturasAtivas / subscriptions.length) * 100
+          : 0;
 
       // Churn rate
-      const cancelados = users.filter(u => u.status === "cancelado").length;
-      const taxaChurn = users.length > 0 ? (cancelados / users.length) * 100 : 0;
+      const cancelados = users.filter((u) => u.status === "cancelado").length;
+      const taxaChurn =
+        users.length > 0 ? (cancelados / users.length) * 100 : 0;
 
       // Ticket médio
-      const ticketMedio = assinaturasAtivas > 0 ? receitaMensal / assinaturasAtivas : 0;
+      const ticketMedio =
+        assinaturasAtivas > 0 ? receitaMensal / assinaturasAtivas : 0;
 
       // Métodos de pagamento
       const metodosPagamento = {
-        cartao: subscriptions.filter(s => s.forma_pagamento === "CREDIT_CARD").length,
-        boleto: subscriptions.filter(s => s.forma_pagamento === "BOLETO").length,
-        pix: subscriptions.filter(s => s.forma_pagamento === "PIX").length,
+        cartao: subscriptions.filter((s) => s.forma_pagamento === "CREDIT_CARD")
+          .length,
+        boleto: subscriptions.filter((s) => s.forma_pagamento === "BOLETO")
+          .length,
+        pix: subscriptions.filter((s) => s.forma_pagamento === "PIX").length,
       };
 
       res.json({
@@ -797,7 +908,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         geradoEm: new Date().toISOString(),
       });
     } catch (error: any) {
-      logger.error("[RELATORIO_FINANCEIRO] Erro ao gerar relatório", { error: error.message });
+      logger.error("[RELATORIO_FINANCEIRO] Erro ao gerar relatório", {
+        error: error.message,
+      });
       res.status(500).json({ error: error.message });
     }
   });
@@ -812,26 +925,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Mercado Pago não configurado" });
       }
 
-      const { MercadoPagoService } = await import('./mercadopago');
-      const mercadopago = new MercadoPagoService({ accessToken: config.access_token });
+      const { MercadoPagoService } = await import("./mercadopago");
+      const mercadopago = new MercadoPagoService({
+        accessToken: config.access_token,
+      });
 
       // Buscar pagamento
       const payment = await mercadopago.getPayment(paymentId);
 
-      if (payment.status === 'approved') {
-        return res.json({ message: "Pagamento já aprovado", status: payment.status });
+      if (payment.status === "approved") {
+        return res.json({
+          message: "Pagamento já aprovado",
+          status: payment.status,
+        });
       }
 
       // Lógica de retry (recriar preferência)
-      logger.info("[PAYMENT_RETRY] Tentando reprocessar pagamento", { paymentId });
+      logger.info("[PAYMENT_RETRY] Tentando reprocessar pagamento", {
+        paymentId,
+      });
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: "Cobrança reenviada com sucesso",
-        paymentId 
+        paymentId,
       });
     } catch (error: any) {
-      logger.error("[PAYMENT_RETRY] Erro ao reprocessar pagamento", { error: error.message });
+      logger.error("[PAYMENT_RETRY] Erro ao reprocessar pagamento", {
+        error: error.message,
+      });
       res.status(500).json({ error: error.message });
     }
   });
@@ -843,18 +965,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const users = await storage.getUsers();
 
       // Criar CSV
-      let csv = "ID,Cliente,Email,Plano,Valor,Status,Forma Pagamento,Data Vencimento\n";
+      let csv =
+        "ID,Cliente,Email,Plano,Valor,Status,Forma Pagamento,Data Vencimento\n";
 
       for (const sub of subscriptions) {
-        const user = users.find(u => u.id === sub.user_id);
-        csv += `${sub.id},"${user?.nome || '-'}","${user?.email || '-'}","${sub.plano}",${sub.valor},${sub.status},${sub.forma_pagamento || '-'},${sub.data_vencimento || '-'}\n`;
+        const user = users.find((u) => u.id === sub.user_id);
+        csv += `${sub.id},"${user?.nome || "-"}","${user?.email || "-"}","${sub.plano}",${sub.valor},${sub.status},${sub.forma_pagamento || "-"},${sub.data_vencimento || "-"}\n`;
       }
 
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename=relatorio-assinaturas.csv');
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=relatorio-assinaturas.csv",
+      );
       res.send(csv);
     } catch (error: any) {
-      logger.error("[EXPORT_CSV] Erro ao exportar CSV", { error: error.message });
+      logger.error("[EXPORT_CSV] Erro ao exportar CSV", {
+        error: error.message,
+      });
       res.status(500).json({ error: error.message });
     }
   });
@@ -866,11 +994,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const logs = await logger.getLogs(
         date as string,
         level as LogLevel,
-        limit ? parseInt(limit as string) : 100
+        limit ? parseInt(limit as string) : 100,
       );
       res.json(logs);
     } catch (error) {
-      logger.error('Erro ao buscar logs', 'API', { error });
+      logger.error("Erro ao buscar logs", "API", { error });
       res.status(500).json({ error: "Erro ao buscar logs" });
     }
   });
@@ -892,7 +1020,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Funcionários (multi-tenant)
   app.get("/api/funcionarios", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const contaId = req.query.conta_id as string;
 
       if (!contaId) {
@@ -908,15 +1036,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(funcionarios);
     } catch (error: any) {
       console.error("Erro ao buscar funcionários:", error);
-      res.status(500).json({ error: error.message || "Erro ao buscar funcionários" });
+      res
+        .status(500)
+        .json({ error: error.message || "Erro ao buscar funcionários" });
     }
   });
 
   app.get("/api/funcionarios/limite", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const usuario = await storage.getUserByEmail(
-        (await storage.getUsers()).find((u: any) => u.id === effectiveUserId)?.email || ""
+        (await storage.getUsers()).find((u: any) => u.id === effectiveUserId)
+          ?.email || "",
       );
 
       if (!usuario) {
@@ -924,12 +1055,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allFuncionarios = await storage.getFuncionarios();
-      const funcionariosDaConta = allFuncionarios.filter(f => f.conta_id === effectiveUserId);
+      const funcionariosDaConta = allFuncionarios.filter(
+        (f) => f.conta_id === effectiveUserId,
+      );
 
       res.json({
         max_funcionarios: usuario.max_funcionarios || 5,
         funcionarios_cadastrados: funcionariosDaConta.length,
-        funcionarios_disponiveis: (usuario.max_funcionarios || 5) - funcionariosDaConta.length
+        funcionarios_disponiveis:
+          (usuario.max_funcionarios || 5) - funcionariosDaConta.length,
       });
     } catch (error: any) {
       console.error("Erro ao buscar limite de funcionários:", error);
@@ -939,7 +1073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/funcionarios", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const { conta_id, nome, email, senha, cargo } = req.body;
 
       if (!conta_id || !nome || !email || !senha) {
@@ -953,7 +1087,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verificar limite de funcionários
       const usuario = await storage.getUserByEmail(
-        (await storage.getUsers()).find((u: any) => u.id === conta_id)?.email || ""
+        (await storage.getUsers()).find((u: any) => u.id === conta_id)?.email ||
+          "",
       );
 
       if (!usuario) {
@@ -961,25 +1096,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allFuncionarios = await storage.getFuncionarios();
-      const funcionariosDaConta = allFuncionarios.filter(f => f.conta_id === conta_id);
+      const funcionariosDaConta = allFuncionarios.filter(
+        (f) => f.conta_id === conta_id,
+      );
       const maxFuncionarios = usuario.max_funcionarios || 1;
 
       if (funcionariosDaConta.length >= maxFuncionarios) {
         return res.status(400).json({
-          error: "Limite de funcionários atingido, verifique os planos e aumente a capacidade de novos cadastros.",
+          error:
+            "Limite de funcionários atingido, verifique os planos e aumente a capacidade de novos cadastros.",
           limite_atingido: true,
           max_funcionarios: maxFuncionarios,
-          funcionarios_cadastrados: funcionariosDaConta.length
+          funcionarios_cadastrados: funcionariosDaConta.length,
         });
       }
 
       // Verificar se já existe funcionário com este email na mesma conta
       const existingFuncionario = allFuncionarios.find(
-        f => f.email === email && f.conta_id === conta_id
+        (f) => f.email === email && f.conta_id === conta_id,
       );
 
       if (existingFuncionario) {
-        return res.status(400).json({ error: "Já existe um funcionário com este email nesta conta" });
+        return res
+          .status(400)
+          .json({
+            error: "Já existe um funcionário com este email nesta conta",
+          });
       }
 
       const funcionario = await storage.createFuncionario({
@@ -1011,13 +1153,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(funcionario);
     } catch (error: any) {
       console.error("Erro ao criar funcionário:", error);
-      res.status(500).json({ error: error.message || "Erro ao criar funcionário" });
+      res
+        .status(500)
+        .json({ error: error.message || "Erro ao criar funcionário" });
     }
   });
 
   app.patch("/api/funcionarios/:id", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const { id } = req.params;
       const updates = req.body;
 
@@ -1026,7 +1170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verify funcionario belongs to this user's account
       const allFuncionarios = await storage.getFuncionarios();
-      const funcionario = allFuncionarios.find(f => f.id === id);
+      const funcionario = allFuncionarios.find((f) => f.id === id);
 
       if (!funcionario) {
         return res.status(404).json({ error: "Funcionário não encontrado" });
@@ -1045,12 +1189,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/funcionarios/:id", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const { id } = req.params;
 
       // Verify funcionario belongs to this user's account
       const allFuncionarios = await storage.getFuncionarios();
-      const funcionario = allFuncionarios.find(f => f.id === id);
+      const funcionario = allFuncionarios.find((f) => f.id === id);
 
       if (!funcionario) {
         return res.status(404).json({ error: "Funcionário não encontrado" });
@@ -1070,12 +1214,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Permissões de Funcionários
   app.get("/api/funcionarios/:id/permissoes", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const { id } = req.params;
 
       // Verify funcionario belongs to this user's account
       const allFuncionarios = await storage.getFuncionarios();
-      const funcionario = allFuncionarios.find(f => f.id === id);
+      const funcionario = allFuncionarios.find((f) => f.id === id);
 
       if (!funcionario) {
         return res.status(404).json({ error: "Funcionário não encontrado" });
@@ -1113,12 +1257,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/funcionarios/:id/permissoes", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const { id } = req.params;
 
       // Verify funcionario belongs to this user's account
       const allFuncionarios = await storage.getFuncionarios();
-      const funcionario = allFuncionarios.find(f => f.id === id);
+      const funcionario = allFuncionarios.find((f) => f.id === id);
 
       if (!funcionario) {
         return res.status(404).json({ error: "Funcionário não encontrado" });
@@ -1137,18 +1281,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/produtos", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
       const allProdutos = await storage.getProdutos();
-      let produtos = allProdutos.filter(p => p.user_id === effectiveUserId);
+      let produtos = allProdutos.filter((p) => p.user_id === effectiveUserId);
       const expiring = req.query.expiring;
 
-      if (expiring === 'soon') {
+      if (expiring === "soon") {
         const today = new Date();
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(today.getDate() + 30);
 
-        produtos = produtos.filter(p => {
+        produtos = produtos.filter((p) => {
           if (!p.vencimento) return false;
           const expiryDate = new Date(p.vencimento);
           return expiryDate <= thirtyDaysFromNow && expiryDate >= today;
@@ -1167,7 +1313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/produtos/:id", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const id = parseInt(req.params.id);
       const produto = await storage.getProduto(id);
 
@@ -1176,7 +1322,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (produto.user_id !== effectiveUserId) {
-        return res.status(403).json({ error: "Acesso negado. Este produto não pertence a você." });
+        return res
+          .status(403)
+          .json({ error: "Acesso negado. Este produto não pertence a você." });
       }
 
       res.json(produto);
@@ -1187,7 +1335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/produtos/codigo/:codigo", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const codigo = req.params.codigo;
       const produto = await storage.getProdutoByCodigoBarras(codigo);
 
@@ -1196,7 +1344,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (produto.user_id !== effectiveUserId) {
-        return res.status(403).json({ error: "Acesso negado. Este produto não pertence a você." });
+        return res
+          .status(403)
+          .json({ error: "Acesso negado. Este produto não pertence a você." });
       }
 
       res.json(produto);
@@ -1207,10 +1357,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/produtos", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const produtoData = insertProdutoSchema.parse({
         ...req.body,
-        user_id: effectiveUserId
+        user_id: effectiveUserId,
       });
 
       if (produtoData.preco <= 0) {
@@ -1218,14 +1368,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (produtoData.quantidade < 0) {
-        return res.status(400).json({ error: "Quantidade não pode ser negativa" });
+        return res
+          .status(400)
+          .json({ error: "Quantidade não pode ser negativa" });
       }
 
       const produto = await storage.createProduto(produtoData);
       res.json(produto);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Dados inválidos", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Dados inválidos", details: error.errors });
       }
       res.status(500).json({ error: "Erro ao criar produto" });
     }
@@ -1233,7 +1387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/produtos/:id", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const id = parseInt(req.params.id);
       const updates = req.body;
 
@@ -1243,7 +1397,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (produtoExistente.user_id !== effectiveUserId) {
-        return res.status(403).json({ error: "Acesso negado. Este produto não pertence a você." });
+        return res
+          .status(403)
+          .json({ error: "Acesso negado. Este produto não pertence a você." });
       }
 
       if (updates.preco !== undefined && updates.preco <= 0) {
@@ -1251,7 +1407,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (updates.quantidade !== undefined && updates.quantidade < 0) {
-        return res.status(400).json({ error: "Quantidade não pode ser negativa" });
+        return res
+          .status(400)
+          .json({ error: "Quantidade não pode ser negativa" });
       }
 
       const produto = await storage.updateProduto(id, updates);
@@ -1263,7 +1421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/produtos/:id", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const id = parseInt(req.params.id);
 
       const produtoExistente = await storage.getProduto(id);
@@ -1272,7 +1430,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (produtoExistente.user_id !== effectiveUserId) {
-        return res.status(403).json({ error: "Acesso negado. Este produto não pertence a você." });
+        return res
+          .status(403)
+          .json({ error: "Acesso negado. Este produto não pertence a você." });
       }
 
       const deleted = await storage.deleteProduto(id);
@@ -1284,31 +1444,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/vendas", getUserId, async (req, res) => {
     try {
-      const userId = req.headers['effective-user-id'] as string;
+      const userId = req.headers["effective-user-id"] as string;
       const { itens, cliente_id, forma_pagamento } = req.body;
 
       const caixaAberto = await storage.getCaixaAberto?.(userId);
       if (!caixaAberto) {
-        return res.status(400).json({ error: "Não há caixa aberto. Abra o caixa antes de registrar vendas." });
+        return res
+          .status(400)
+          .json({
+            error:
+              "Não há caixa aberto. Abra o caixa antes de registrar vendas.",
+          });
       }
 
       if (!itens || !Array.isArray(itens) || itens.length === 0) {
-        return res.status(400).json({ error: "Itens da venda são obrigatórios" });
+        return res
+          .status(400)
+          .json({ error: "Itens da venda são obrigatórios" });
       }
 
       let valorTotal = 0;
       const produtosVendidos = [];
 
       for (const item of itens) {
-        const produto = await storage.getProdutoByCodigoBarras(item.codigo_barras);
+        const produto = await storage.getProdutoByCodigoBarras(
+          item.codigo_barras,
+        );
 
         if (!produto) {
-          return res.status(404).json({ error: `Produto com código ${item.codigo_barras} não encontrado` });
+          return res
+            .status(404)
+            .json({
+              error: `Produto com código ${item.codigo_barras} não encontrado`,
+            });
         }
 
         if (produto.quantidade < item.quantidade) {
           return res.status(400).json({
-            error: `Estoque insuficiente para ${produto.nome}. Disponível: ${produto.quantidade}`
+            error: `Estoque insuficiente para ${produto.nome}. Disponível: ${produto.quantidade}`,
           });
         }
 
@@ -1316,34 +1489,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         valorTotal += subtotal;
 
         await storage.updateProduto(produto.id, {
-          quantidade: produto.quantidade - item.quantidade
+          quantidade: produto.quantidade - item.quantidade,
         });
 
         produtosVendidos.push({
           nome: produto.nome,
           quantidade: item.quantidade,
           preco_unitario: produto.preco,
-          subtotal
+          subtotal,
         });
       }
 
       const agora = new Date();
       const venda = await storage.createVenda({
         user_id: userId,
-        produto: produtosVendidos.map(p => p.nome).join(", "),
-        quantidade_vendida: produtosVendidos.reduce((sum, p) => sum + p.quantidade, 0),
+        produto: produtosVendidos.map((p) => p.nome).join(", "),
+        quantidade_vendida: produtosVendidos.reduce(
+          (sum, p) => sum + p.quantidade,
+          0,
+        ),
         valor_total: valorTotal,
         data: agora.toISOString(),
         itens: JSON.stringify(produtosVendidos),
         cliente_id: cliente_id || undefined,
-        forma_pagamento: forma_pagamento || 'dinheiro'
+        forma_pagamento: forma_pagamento || "dinheiro",
       });
 
-      await storage.atualizarTotaisCaixa?.(caixaAberto.id, 'total_vendas', valorTotal);
+      await storage.atualizarTotaisCaixa?.(
+        caixaAberto.id,
+        "total_vendas",
+        valorTotal,
+      );
 
       res.json({
         ...venda,
-        itens: produtosVendidos
+        itens: produtosVendidos,
       });
     } catch (error) {
       res.status(500).json({ error: "Erro ao registrar venda" });
@@ -1352,7 +1532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/vendas", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
 
       if (!effectiveUserId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
@@ -1362,7 +1542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endDate = req.query.end_date as string;
 
       const allVendas = await storage.getVendas(startDate, endDate);
-      const vendas = allVendas.filter(v => v.user_id === effectiveUserId);
+      const vendas = allVendas.filter((v) => v.user_id === effectiveUserId);
       res.json(vendas);
     } catch (error) {
       console.error("Erro ao buscar vendas:", error);
@@ -1372,10 +1552,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/reports/daily", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
-      const today = new Date().toISOString().split('T')[0];
+      const effectiveUserId = req.headers["effective-user-id"] as string;
+      const today = new Date().toISOString().split("T")[0];
       const allVendas = await storage.getVendas(today, today);
-      const vendas = allVendas.filter(v => v.user_id === effectiveUserId);
+      const vendas = allVendas.filter((v) => v.user_id === effectiveUserId);
       const total = vendas.reduce((sum, v) => sum + v.valor_total, 0);
 
       res.json({ date: today, total, vendas: vendas.length });
@@ -1386,16 +1566,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/reports/weekly", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const today = new Date();
       const weekAgo = new Date();
       weekAgo.setDate(today.getDate() - 7);
 
       const allVendas = await storage.getVendas(
-        weekAgo.toISOString().split('T')[0],
-        today.toISOString().split('T')[0]
+        weekAgo.toISOString().split("T")[0],
+        today.toISOString().split("T")[0],
       );
-      const vendas = allVendas.filter(v => v.user_id === effectiveUserId);
+      const vendas = allVendas.filter((v) => v.user_id === effectiveUserId);
       const total = vendas.reduce((sum, v) => sum + v.valor_total, 0);
 
       res.json({ total, vendas: vendas.length });
@@ -1406,26 +1586,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/reports/expiring", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const allProdutos = await storage.getProdutos();
-      const produtos = allProdutos.filter(p => p.user_id === effectiveUserId);
+      const produtos = allProdutos.filter((p) => p.user_id === effectiveUserId);
       const today = new Date();
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(today.getDate() + 30);
 
-      const expiringProducts = produtos.filter(p => {
-        if (!p.vencimento) return false;
-        const expiryDate = new Date(p.vencimento);
-        return expiryDate <= thirtyDaysFromNow && expiryDate >= today;
-      }).map(p => {
-        const expiryDate = new Date(p.vencimento!);
-        const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        return {
-          ...p,
-          daysUntilExpiry,
-          status: daysUntilExpiry <= 7 ? 'critical' : 'warning'
-        };
-      }).sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
+      const expiringProducts = produtos
+        .filter((p) => {
+          if (!p.vencimento) return false;
+          const expiryDate = new Date(p.vencimento);
+          return expiryDate <= thirtyDaysFromNow && expiryDate >= today;
+        })
+        .map((p) => {
+          const expiryDate = new Date(p.vencimento!);
+          const daysUntilExpiry = Math.ceil(
+            (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+          );
+          return {
+            ...p,
+            daysUntilExpiry,
+            status: daysUntilExpiry <= 7 ? "critical" : "warning",
+          };
+        })
+        .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
 
       res.json(expiringProducts);
     } catch (error) {
@@ -1435,16 +1620,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/vendas", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const allVendas = await storage.getVendas();
-      const vendasToDelete = allVendas.filter(v => v.user_id === effectiveUserId);
+      const vendasToDelete = allVendas.filter(
+        (v) => v.user_id === effectiveUserId,
+      );
 
       // Delete only vendas belonging to this user
       for (const venda of vendasToDelete) {
         await storage.deleteVenda?.(venda.id);
       }
 
-      res.json({ success: true, message: "Histórico de vendas limpo com sucesso" });
+      res.json({
+        success: true,
+        message: "Histórico de vendas limpo com sucesso",
+      });
     } catch (error) {
       res.status(500).json({ error: "Erro ao limpar histórico de vendas" });
     }
@@ -1453,9 +1643,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rotas de Fornecedores
   app.get("/api/fornecedores", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const allFornecedores = await storage.getFornecedores();
-      const fornecedores = allFornecedores.filter(f => f.user_id === effectiveUserId);
+      const fornecedores = allFornecedores.filter(
+        (f) => f.user_id === effectiveUserId,
+      );
       res.json(fornecedores);
     } catch (error) {
       res.status(500).json({ error: "Erro ao buscar fornecedores" });
@@ -1464,7 +1656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/fornecedores/:id", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const id = parseInt(req.params.id);
       const fornecedor = await storage.getFornecedor(id);
       if (!fornecedor || fornecedor.user_id !== effectiveUserId) {
@@ -1478,7 +1670,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/fornecedores", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const fornecedorData = {
         ...req.body,
         user_id: effectiveUserId,
@@ -1493,10 +1685,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/fornecedores/:id", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const id = parseInt(req.params.id);
       const fornecedorExistente = await storage.getFornecedor(id);
-      if (!fornecedorExistente || fornecedorExistente.user_id !== effectiveUserId) {
+      if (
+        !fornecedorExistente ||
+        fornecedorExistente.user_id !== effectiveUserId
+      ) {
         return res.status(404).json({ error: "Fornecedor não encontrado" });
       }
       const fornecedor = await storage.updateFornecedor(id, req.body);
@@ -1508,10 +1703,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/fornecedores/:id", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const id = parseInt(req.params.id);
       const fornecedorExistente = await storage.getFornecedor(id);
-      if (!fornecedorExistente || fornecedorExistente.user_id !== effectiveUserId) {
+      if (
+        !fornecedorExistente ||
+        fornecedorExistente.user_id !== effectiveUserId
+      ) {
         return res.status(404).json({ error: "Fornecedor não encontrado" });
       }
       const deleted = await storage.deleteFornecedor(id);
@@ -1524,9 +1722,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rotas de Clientes
   app.get("/api/clientes", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const allClientes = await storage.getClientes();
-      const clientes = allClientes.filter(c => c.user_id === effectiveUserId);
+      const clientes = allClientes.filter((c) => c.user_id === effectiveUserId);
       res.json(clientes);
     } catch (error) {
       res.status(500).json({ error: "Erro ao buscar clientes" });
@@ -1535,7 +1733,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/clientes/:id", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const id = parseInt(req.params.id);
       const cliente = await storage.getCliente(id);
       if (!cliente || cliente.user_id !== effectiveUserId) {
@@ -1549,19 +1747,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/clientes", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
 
       if (req.body.cpf_cnpj) {
         const allClientes = await storage.getClientes();
         const clienteExistente = allClientes.find(
-          c => c.user_id === effectiveUserId && 
-               c.cpf_cnpj && 
-               c.cpf_cnpj === req.body.cpf_cnpj
+          (c) =>
+            c.user_id === effectiveUserId &&
+            c.cpf_cnpj &&
+            c.cpf_cnpj === req.body.cpf_cnpj,
         );
 
         if (clienteExistente) {
-          return res.status(400).json({ 
-            error: "Já existe um cliente cadastrado com este CPF/CNPJ" 
+          return res.status(400).json({
+            error: "Já existe um cliente cadastrado com este CPF/CNPJ",
           });
         }
       }
@@ -1574,9 +1773,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cliente = await storage.createCliente(clienteData);
       res.json(cliente);
     } catch (error: any) {
-      if (error.message && error.message.includes('duplicate key')) {
-        return res.status(400).json({ 
-          error: "Já existe um cliente cadastrado com este CPF/CNPJ" 
+      if (error.message && error.message.includes("duplicate key")) {
+        return res.status(400).json({
+          error: "Já existe um cliente cadastrado com este CPF/CNPJ",
         });
       }
       res.status(500).json({ error: "Erro ao criar cliente" });
@@ -1585,10 +1784,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/clientes/:id", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const { id } = req.params;
       console.log(`🔄 [UPDATE CLIENTE] ID: ${id}`);
-      console.log(`📝 [UPDATE CLIENTE] Dados recebidos:`, JSON.stringify(req.body, null, 2));
+      console.log(
+        `📝 [UPDATE CLIENTE] Dados recebidos:`,
+        JSON.stringify(req.body, null, 2),
+      );
 
       const clienteExistente = await storage.getCliente(id);
       if (!clienteExistente || clienteExistente.user_id !== effectiveUserId) {
@@ -1599,27 +1801,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.body.cpf_cnpj) {
         const allClientes = await storage.getClientes();
         const cpfDuplicado = allClientes.find(
-          c => c.user_id === effectiveUserId && 
-               c.id !== parseInt(id) && 
-               c.cpf_cnpj && 
-               c.cpf_cnpj === req.body.cpf_cnpj
+          (c) =>
+            c.user_id === effectiveUserId &&
+            c.id !== parseInt(id) &&
+            c.cpf_cnpj &&
+            c.cpf_cnpj === req.body.cpf_cnpj,
         );
 
         if (cpfDuplicado) {
-          return res.status(400).json({ 
-            error: "Já existe outro cliente cadastrado com este CPF/CNPJ" 
+          return res.status(400).json({
+            error: "Já existe outro cliente cadastrado com este CPF/CNPJ",
           });
         }
       }
 
       const cliente = await storage.updateCliente(id, req.body);
-      console.log(`✅ [UPDATE CLIENTE] Cliente atualizado com sucesso:`, JSON.stringify(cliente, null, 2));
+      console.log(
+        `✅ [UPDATE CLIENTE] Cliente atualizado com sucesso:`,
+        JSON.stringify(cliente, null, 2),
+      );
       res.json(cliente);
     } catch (error: any) {
       console.error(`❌ [UPDATE CLIENTE] Erro ao atualizar cliente:`, error);
-      if (error.message && error.message.includes('duplicate key')) {
-        return res.status(400).json({ 
-          error: "Já existe outro cliente cadastrado com este CPF/CNPJ" 
+      if (error.message && error.message.includes("duplicate key")) {
+        return res.status(400).json({
+          error: "Já existe outro cliente cadastrado com este CPF/CNPJ",
         });
       }
       res.status(500).json({ error: "Erro ao atualizar cliente" });
@@ -1628,7 +1834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/clientes/:id", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const id = parseInt(req.params.id);
       console.log(`🗑️ [DELETE CLIENTE] Tentando deletar cliente ID: ${id}`);
 
@@ -1650,13 +1856,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rotas de Compras
   app.get("/api/compras", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
-      const fornecedorId = req.query.fornecedor_id ? parseInt(req.query.fornecedor_id as string) : undefined;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
+      const fornecedorId = req.query.fornecedor_id
+        ? parseInt(req.query.fornecedor_id as string)
+        : undefined;
       const startDate = req.query.start_date as string;
       const endDate = req.query.end_date as string;
 
-      const allCompras = await storage.getCompras(fornecedorId, startDate, endDate);
-      const compras = allCompras.filter(c => c.user_id === effectiveUserId);
+      const allCompras = await storage.getCompras(
+        fornecedorId,
+        startDate,
+        endDate,
+      );
+      const compras = allCompras.filter((c) => c.user_id === effectiveUserId);
       res.json(compras);
     } catch (error) {
       res.status(500).json({ error: "Erro ao buscar compras" });
@@ -1665,8 +1877,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/compras", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
-      const { fornecedor_id, produto_id, quantidade, valor_unitario, observacoes } = req.body;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
+      const {
+        fornecedor_id,
+        produto_id,
+        quantidade,
+        valor_unitario,
+        observacoes,
+      } = req.body;
 
       const produto = await storage.getProduto(produto_id);
       if (!produto || produto.user_id !== effectiveUserId) {
@@ -1681,7 +1899,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const valor_total = valor_unitario * quantidade;
 
       await storage.updateProduto(produto_id, {
-        quantidade: produto.quantidade + quantidade
+        quantidade: produto.quantidade + quantidade,
       });
 
       const compra = await storage.createCompra({
@@ -1703,18 +1921,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/compras/:id", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
       const id = parseInt(req.params.id);
-      const { quantidade: novaQuantidade, valor_unitario, observacoes, produto_id } = req.body;
+      const {
+        quantidade: novaQuantidade,
+        valor_unitario,
+        observacoes,
+        produto_id,
+      } = req.body;
 
       const compraExistente = await storage.getCompras();
-      const compra = compraExistente.find(c => c.id === id && c.user_id === effectiveUserId);
+      const compra = compraExistente.find(
+        (c) => c.id === id && c.user_id === effectiveUserId,
+      );
 
       if (!compra) {
         return res.status(404).json({ error: "Compra não encontrada" });
       }
 
-      if (novaQuantidade !== undefined && novaQuantidade !== compra.quantidade) {
+      if (
+        novaQuantidade !== undefined &&
+        novaQuantidade !== compra.quantidade
+      ) {
         const produto = await storage.getProduto(compra.produto_id);
         if (!produto) {
           return res.status(404).json({ error: "Produto não encontrado" });
@@ -1722,7 +1950,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const diferencaQuantidade = novaQuantidade - compra.quantidade;
         await storage.updateProduto(compra.produto_id, {
-          quantidade: produto.quantidade + diferencaQuantidade
+          quantidade: produto.quantidade + diferencaQuantidade,
         });
       }
 
@@ -1732,8 +1960,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (observacoes !== undefined) updates.observacoes = observacoes;
 
       if (novaQuantidade !== undefined || valor_unitario !== undefined) {
-        const quantidadeFinal = novaQuantidade !== undefined ? novaQuantidade : compra.quantidade;
-        const valorUnitarioFinal = valor_unitario !== undefined ? valor_unitario : compra.valor_unitario;
+        const quantidadeFinal =
+          novaQuantidade !== undefined ? novaQuantidade : compra.quantidade;
+        const valorUnitarioFinal =
+          valor_unitario !== undefined ? valor_unitario : compra.valor_unitario;
         updates.valor_total = quantidadeFinal * valorUnitarioFinal;
       }
 
@@ -1747,15 +1977,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Contas a Pagar
   app.get("/api/contas-pagar", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
 
       if (!storage.getContasPagar) {
-        return res.status(501).json({ error: "Método getContasPagar não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método getContasPagar não implementado" });
       }
 
       const contas = await storage.getContasPagar();
-      const contasFiltered = contas.filter((c: any) => c.user_id === effectiveUserId);
-      console.log(`📋 Contas a pagar retornadas: ${contasFiltered.length} para usuário ${effectiveUserId}`);
+      const contasFiltered = contas.filter(
+        (c: any) => c.user_id === effectiveUserId,
+      );
+      console.log(
+        `📋 Contas a pagar retornadas: ${contasFiltered.length} para usuário ${effectiveUserId}`,
+      );
       res.json(contasFiltered);
     } catch (error: any) {
       console.error("❌ Erro ao buscar contas a pagar:", error);
@@ -1765,10 +2001,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/contas-pagar", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
 
       if (!storage.createContaPagar) {
-        return res.status(501).json({ error: "Método createContaPagar não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método createContaPagar não implementado" });
       }
 
       const contaData = {
@@ -1779,7 +2017,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const conta = await storage.createContaPagar(contaData);
-      console.log(`✅ Conta a pagar criada: ID ${conta.id}, Descrição: ${conta.descricao}`);
+      console.log(
+        `✅ Conta a pagar criada: ID ${conta.id}, Descrição: ${conta.descricao}`,
+      );
       res.json(conta);
     } catch (error: any) {
       console.error("❌ Erro ao criar conta a pagar:", error);
@@ -1790,7 +2030,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/contas-pagar/:id", getUserId, async (req, res) => {
     try {
       if (!storage.updateContaPagar) {
-        return res.status(501).json({ error: "Método updateContaPagar não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método updateContaPagar não implementado" });
       }
 
       const id = parseInt(req.params.id);
@@ -1806,7 +2048,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/contas-pagar/:id", getUserId, async (req, res) => {
     try {
       if (!storage.deleteContaPagar) {
-        return res.status(501).json({ error: "Método deleteContaPagar não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método deleteContaPagar não implementado" });
       }
 
       const id = parseInt(req.params.id);
@@ -1823,7 +2067,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contas-pagar/:id/pagar", getUserId, async (req, res) => {
     try {
       if (!storage.updateContaPagar) {
-        return res.status(501).json({ error: "Método updateContaPagar não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método updateContaPagar não implementado" });
       }
 
       const id = parseInt(req.params.id);
@@ -1842,15 +2088,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Contas a Receber
   app.get("/api/contas-receber", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
 
       if (!storage.getContasReceber) {
-        return res.status(501).json({ error: "Método getContasReceber não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método getContasReceber não implementado" });
       }
 
       const contas = await storage.getContasReceber();
-      const contasFiltered = contas.filter((c: any) => c.user_id === effectiveUserId);
-      console.log(`📋 Contas a receber retornadas: ${contasFiltered.length} para usuário ${effectiveUserId}`);
+      const contasFiltered = contas.filter(
+        (c: any) => c.user_id === effectiveUserId,
+      );
+      console.log(
+        `📋 Contas a receber retornadas: ${contasFiltered.length} para usuário ${effectiveUserId}`,
+      );
       res.json(contasFiltered);
     } catch (error: any) {
       console.error("❌ Erro ao buscar contas a receber:", error);
@@ -1860,10 +2112,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/contas-receber", getUserId, async (req, res) => {
     try {
-      const effectiveUserId = req.headers['effective-user-id'] as string;
+      const effectiveUserId = req.headers["effective-user-id"] as string;
 
       if (!storage.createContaReceber) {
-        return res.status(501).json({ error: "Método createContaReceber não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método createContaReceber não implementado" });
       }
 
       const contaData = {
@@ -1874,7 +2128,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const conta = await storage.createContaReceber(contaData);
-      console.log(`✅ Conta a receber criada: ID ${conta.id}, Descrição: ${conta.descricao}`);
+      console.log(
+        `✅ Conta a receber criada: ID ${conta.id}, Descrição: ${conta.descricao}`,
+      );
       res.json(conta);
     } catch (error: any) {
       console.error("❌ Erro ao criar conta a receber:", error);
@@ -1885,7 +2141,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/contas-receber/:id", getUserId, async (req, res) => {
     try {
       if (!storage.updateContaReceber) {
-        return res.status(501).json({ error: "Método updateContaReceber não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método updateContaReceber não implementado" });
       }
 
       const id = parseInt(req.params.id);
@@ -1901,7 +2159,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/contas-receber/:id", getUserId, async (req, res) => {
     try {
       if (!storage.deleteContaReceber) {
-        return res.status(501).json({ error: "Método deleteContaReceber não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método deleteContaReceber não implementado" });
       }
 
       const id = parseInt(req.params.id);
@@ -1918,7 +2178,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contas-receber/:id/receber", getUserId, async (req, res) => {
     try {
       if (!storage.updateContaReceber) {
-        return res.status(501).json({ error: "Método updateContaReceber não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método updateContaReceber não implementado" });
       }
 
       const id = parseInt(req.params.id);
@@ -1945,7 +2207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         ...config,
-        focus_nfe_api_key: config.focus_nfe_api_key ? '***' : ''
+        focus_nfe_api_key: config.focus_nfe_api_key ? "***" : "",
       });
     } catch (error) {
       res.status(500).json({ error: "Erro ao buscar configuração fiscal" });
@@ -1959,11 +2221,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         ...config,
-        focus_nfe_api_key: '***'
+        focus_nfe_api_key: "***",
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Dados inválidos", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Dados inválidos", details: error.errors });
       }
       res.status(500).json({ error: "Erro ao salvar configuração fiscal" });
     }
@@ -1975,7 +2239,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!config) {
         return res.status(400).json({
-          error: "Configuração fiscal não encontrada. Configure em Config. Fiscal primeiro."
+          error:
+            "Configuração fiscal não encontrada. Configure em Config. Fiscal primeiro.",
         });
       }
 
@@ -1988,7 +2253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           error: "Dados da NFCe inválidos",
-          details: error.errors
+          details: error.errors,
         });
       }
       console.error("Erro ao emitir NFCe:", error);
@@ -2002,7 +2267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!config) {
         return res.status(400).json({
-          error: "Configuração fiscal não encontrada"
+          error: "Configuração fiscal não encontrada",
         });
       }
 
@@ -2010,7 +2275,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await focusNFe.consultarNFCe(req.params.ref);
       res.json(result);
     } catch (error: any) {
-      res.status(500).json({ error: error.message || "Erro ao consultar NFCe" });
+      res
+        .status(500)
+        .json({ error: error.message || "Erro ao consultar NFCe" });
     }
   });
 
@@ -2020,14 +2287,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!config) {
         return res.status(400).json({
-          error: "Configuração fiscal não encontrada"
+          error: "Configuração fiscal não encontrada",
         });
       }
 
       const { justificativa } = req.body;
       if (!justificativa || justificativa.length < 15) {
         return res.status(400).json({
-          error: "Justificativa deve ter no mínimo 15 caracteres"
+          error: "Justificativa deve ter no mínimo 15 caracteres",
         });
       }
 
@@ -2045,28 +2312,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!nome || !email || !plano || !formaPagamento) {
         return res.status(400).json({
-          error: "Dados incompletos. Nome, email, plano e forma de pagamento são obrigatórios."
+          error:
+            "Dados incompletos. Nome, email, plano e forma de pagamento são obrigatórios.",
         });
       }
 
       // Validar CPF/CNPJ se fornecido
       if (cpfCnpj) {
-        const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
+        const cleanCpfCnpj = cpfCnpj.replace(/\D/g, "");
         if (cleanCpfCnpj.length !== 11 && cleanCpfCnpj.length !== 14) {
           return res.status(400).json({
-            error: "CPF/CNPJ inválido. Digite apenas números."
+            error: "CPF/CNPJ inválido. Digite apenas números.",
           });
         }
       }
 
       const planoValues = {
         premium_mensal: 79.99,
-        premium_anual: 767.04
+        premium_anual: 767.04,
       };
 
       const planoNomes = {
         premium_mensal: "Premium Mensal",
-        premium_anual: "Premium Anual"
+        premium_anual: "Premium Anual",
       };
 
       if (!planoValues[plano as keyof typeof planoValues]) {
@@ -2076,35 +2344,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const config = await storage.getConfigMercadoPago();
       if (!config || !config.access_token) {
         return res.status(500).json({
-          error: "Sistema de pagamento não configurado. Entre em contato com o suporte."
+          error:
+            "Sistema de pagamento não configurado. Entre em contato com o suporte.",
         });
       }
 
-      const { MercadoPagoService } = await import('./mercadopago');
+      const { MercadoPagoService } = await import("./mercadopago");
       const mercadopago = new MercadoPagoService({
-        accessToken: config.access_token
+        accessToken: config.access_token,
       });
 
       const externalReference = `${plano}_${Date.now()}`;
 
       // Criar preferência de pagamento no Mercado Pago
       const preference = await mercadopago.createPreference({
-        items: [{
-          title: `Assinatura ${planoNomes[plano as keyof typeof planoNomes]} - Pavisoft Sistemas`,
-          quantity: 1,
-          unit_price: planoValues[plano as keyof typeof planoValues],
-          currency_id: 'BRL',
-          description: `Plano ${planoNomes[plano as keyof typeof planoNomes]}`
-        }],
+        items: [
+          {
+            title: `Assinatura ${planoNomes[plano as keyof typeof planoNomes]} - Pavisoft Sistemas`,
+            quantity: 1,
+            unit_price: planoValues[plano as keyof typeof planoValues],
+            currency_id: "BRL",
+            description: `Plano ${planoNomes[plano as keyof typeof planoNomes]}`,
+          },
+        ],
         payer: {
           email,
           name: nome,
-          identification: cpfCnpj ? {
-            type: cpfCnpj.replace(/\D/g, '').length === 11 ? 'CPF' : 'CNPJ',
-            number: cpfCnpj.replace(/\D/g, '')
-          } : undefined
+          identification: cpfCnpj
+            ? {
+                type: cpfCnpj.replace(/\D/g, "").length === 11 ? "CPF" : "CNPJ",
+                number: cpfCnpj.replace(/\D/g, ""),
+              }
+            : undefined,
         },
-        external_reference: externalReference
+        external_reference: externalReference,
       });
 
       // Criar ou atualizar usuário
@@ -2122,7 +2395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const dataVencimento = new Date();
-      if (plano === 'premium_mensal') {
+      if (plano === "premium_mensal") {
         dataVencimento.setMonth(dataVencimento.getMonth() + 1);
       } else {
         dataVencimento.setFullYear(dataVencimento.getFullYear() + 1);
@@ -2148,7 +2421,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         external_reference: externalReference,
       });
 
-      console.log(`✅ Assinatura criada com sucesso - User: ${user.email}, Plano: ${planoNomes[plano as keyof typeof planoNomes]}, Forma: ${formaPagamento}`);
+      console.log(
+        `✅ Assinatura criada com sucesso - User: ${user.email}, Plano: ${planoNomes[plano as keyof typeof planoNomes]}, Forma: ${formaPagamento}`,
+      );
 
       res.json({
         success: true,
@@ -2157,12 +2432,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: preference.id,
           init_point: preference.init_point,
         },
-        message: `Assinatura ${planoNomes[plano as keyof typeof planoNomes]} criada com sucesso! Você será redirecionado para o pagamento.`
+        message: `Assinatura ${planoNomes[plano as keyof typeof planoNomes]} criada com sucesso! Você será redirecionado para o pagamento.`,
       });
     } catch (error: any) {
       console.error("❌ Erro ao criar checkout:", error);
       res.status(500).json({
-        error: error.message || "Erro ao processar pagamento. Tente novamente ou entre em contato com o suporte."
+        error:
+          error.message ||
+          "Erro ao processar pagamento. Tente novamente ou entre em contato com o suporte.",
       });
     }
   });
@@ -2170,7 +2447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rota para compra de pacotes de funcionários
   app.post("/api/purchase-employees", async (req, res) => {
     try {
-      const userId = req.headers['x-user-id'] as string;
+      const userId = req.headers["x-user-id"] as string;
 
       if (!userId) {
         return res.status(401).json({ error: "Autenticação necessária" });
@@ -2180,13 +2457,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!pacoteId || !quantidade || !valor || !nomePacote) {
         return res.status(400).json({
-          error: "Dados incompletos. Todos os campos são obrigatórios."
+          error: "Dados incompletos. Todos os campos são obrigatórios.",
         });
       }
 
       // Buscar usuário
       const users = await storage.getUsers();
-      const user = users.find(u => u.id === userId);
+      const user = users.find((u) => u.id === userId);
       if (!user) {
         return res.status(404).json({ error: "Usuário não encontrado" });
       }
@@ -2195,36 +2472,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const config = await storage.getConfigMercadoPago();
       if (!config || !config.access_token) {
         return res.status(500).json({
-          error: "Sistema de pagamento não configurado. Entre em contato com o suporte."
+          error:
+            "Sistema de pagamento não configurado. Entre em contato com o suporte.",
         });
       }
 
-      const { MercadoPagoService } = await import('./mercadopago');
+      const { MercadoPagoService } = await import("./mercadopago");
       const mercadopago = new MercadoPagoService({
-        accessToken: config.access_token
+        accessToken: config.access_token,
       });
 
       const externalReference = `${pacoteId}_${userId}_${Date.now()}`;
 
       // Criar preferência de pagamento no Mercado Pago
       const preference = await mercadopago.createPreference({
-        items: [{
-          title: `${nomePacote} - Pavisoft Sistemas`,
-          quantity: 1,
-          unit_price: valor,
-          currency_id: 'BRL',
-          description: `Pacote com ${quantidade} funcionários adicionais`
-        }],
+        items: [
+          {
+            title: `${nomePacote} - Pavisoft Sistemas`,
+            quantity: 1,
+            unit_price: valor,
+            currency_id: "BRL",
+            description: `Pacote com ${quantidade} funcionários adicionais`,
+          },
+        ],
         payer: {
           email: user.email,
           name: user.nome,
         },
-        external_reference: externalReference
+        external_reference: externalReference,
       });
 
       // Enviar email de confirmação (opcional)
       try {
-        const { EmailService } = await import('./email-service');
+        const { EmailService } = await import("./email-service");
         const emailService = new EmailService();
 
         await emailService.sendEmployeePackagePurchased({
@@ -2242,7 +2522,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Não bloqueia a compra se o email falhar
       }
 
-      console.log(`✅ Preferência de pagamento criada - Pacote: ${nomePacote}, User: ${user.email}`);
+      console.log(
+        `✅ Preferência de pagamento criada - Pacote: ${nomePacote}, User: ${user.email}`,
+      );
 
       res.json({
         success: true,
@@ -2250,12 +2532,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: preference.id,
           init_point: preference.init_point,
         },
-        message: "✅ Pacote selecionado. Você será redirecionado para o pagamento."
+        message:
+          "✅ Pacote selecionado. Você será redirecionado para o pagamento.",
       });
     } catch (error: any) {
       console.error("❌ Erro ao processar compra de funcionários:", error);
       res.status(500).json({
-        error: error.message || "Erro ao processar compra. Tente novamente ou entre em contato com o suporte."
+        error:
+          error.message ||
+          "Erro ao processar compra. Tente novamente ou entre em contato com o suporte.",
       });
     }
   });
@@ -2271,7 +2556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Enviar email para o admin master
       try {
-        const { EmailService } = await import('./email-service');
+        const { EmailService } = await import("./email-service");
         const emailService = new EmailService();
 
         await emailService.sendAccountClosureRequest({
@@ -2281,33 +2566,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
           motivo,
         });
 
-        console.log(`📧 Solicitação de encerramento enviada - User: ${userEmail}, Motivo: ${motivo.substring(0, 50)}...`);
-        logger.info('Solicitação de encerramento de conta enviada', 'ACCOUNT_CLOSURE', {
-          userId,
-          userEmail,
-          motivo: motivo.substring(0, 100)
-        });
+        console.log(
+          `📧 Solicitação de encerramento enviada - User: ${userEmail}, Motivo: ${motivo.substring(0, 50)}...`,
+        );
+        logger.info(
+          "Solicitação de encerramento de conta enviada",
+          "ACCOUNT_CLOSURE",
+          {
+            userId,
+            userEmail,
+            motivo: motivo.substring(0, 100),
+          },
+        );
 
         res.json({
           success: true,
-          message: "Solicitação enviada com sucesso"
+          message: "Solicitação enviada com sucesso",
         });
       } catch (emailError) {
         console.error("❌ Erro ao enviar email de encerramento:", emailError);
-        logger.error('Erro ao enviar email de encerramento', 'ACCOUNT_CLOSURE', { error: emailError });
+        logger.error(
+          "Erro ao enviar email de encerramento",
+          "ACCOUNT_CLOSURE",
+          { error: emailError },
+        );
         res.status(500).json({ error: "Erro ao enviar solicitação" });
       }
     } catch (error: any) {
       console.error("Erro ao processar solicitação de encerramento:", error);
-      logger.error('Erro ao processar encerramento', 'ACCOUNT_CLOSURE', { error: error.message });
-      res.status(500).json({ error: error.message || "Erro ao processar solicitação" });
+      logger.error("Erro ao processar encerramento", "ACCOUNT_CLOSURE", {
+        error: error.message,
+      });
+      res
+        .status(500)
+        .json({ error: error.message || "Erro ao processar solicitação" });
     }
   });
 
   // Meta de Vendas - Salvar/Atualizar
   app.post("/api/user/meta-vendas", async (req, res) => {
     try {
-      const userId = req.headers['x-user-id'] as string;
+      const userId = req.headers["x-user-id"] as string;
       if (!userId) {
         return res.status(401).json({ error: "Não autorizado" });
       }
@@ -2322,7 +2621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Buscar usuário atual para garantir que existe
       const users = await storage.getUsers();
-      const user = users.find(u => u.id === targetId);
+      const user = users.find((u) => u.id === targetId);
 
       if (!user) {
         return res.status(404).json({ error: "Usuário não encontrado" });
@@ -2332,44 +2631,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const metaValue = parseFloat(meta_mensal);
 
       const updatedUser = await storage.updateUser(targetId, {
-        meta_mensal: metaValue
+        meta_mensal: metaValue,
       });
 
       if (!updatedUser) {
-        return res.status(500).json({ error: "Erro ao salvar meta no banco de dados" });
+        return res
+          .status(500)
+          .json({ error: "Erro ao salvar meta no banco de dados" });
       }
 
-      console.log(`✅ Meta MRR salva no banco - User: ${targetId}, Meta: R$ ${metaValue.toFixed(2)}`);
-      logger.info('Meta de vendas atualizada', 'USER_META', {
+      console.log(
+        `✅ Meta MRR salva no banco - User: ${targetId}, Meta: R$ ${metaValue.toFixed(2)}`,
+      );
+      logger.info("Meta de vendas atualizada", "USER_META", {
         userId: targetId,
-        meta_mensal: metaValue
+        meta_mensal: metaValue,
       });
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: "Meta definida com sucesso",
-        meta_mensal: metaValue
+        meta_mensal: metaValue,
       });
     } catch (error: any) {
       console.error("Erro ao definir meta:", error);
-      logger.error('Erro ao salvar meta de vendas', 'USER_META', { error: error.message });
+      logger.error("Erro ao salvar meta de vendas", "USER_META", {
+        error: error.message,
+      });
       res.status(500).json({ error: error.message || "Erro ao definir meta" });
     }
   });
 
   // Teste de Emails (apenas desenvolvimento)
-  app.post('/api/test/send-emails', async (req, res) => {
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(403).json({ error: 'Endpoint disponível apenas em desenvolvimento' });
+  app.post("/api/test/send-emails", async (req, res) => {
+    if (process.env.NODE_ENV === "production") {
+      return res
+        .status(403)
+        .json({ error: "Endpoint disponível apenas em desenvolvimento" });
     }
 
     try {
       const { email } = req.body;
       if (!email) {
-        return res.status(400).json({ error: 'Email é obrigatório' });
+        return res.status(400).json({ error: "Email é obrigatório" });
       }
 
-      const { EmailService } = await import('./email-service');
+      const { EmailService } = await import("./email-service");
       const emailService = new EmailService();
       const results = [];
 
@@ -2377,185 +2684,237 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         await emailService.sendVerificationCode({
           to: email,
-          userName: 'Usuário Teste',
-          code: '123456'
+          userName: "Usuário Teste",
+          code: "123456",
         });
-        results.push({ tipo: 'Código de Verificação', status: 'enviado' });
+        results.push({ tipo: "Código de Verificação", status: "enviado" });
       } catch (error) {
-        results.push({ tipo: 'Código de Verificação', status: 'erro', erro: error.message });
+        results.push({
+          tipo: "Código de Verificação",
+          status: "erro",
+          erro: error.message,
+        });
       }
 
       // 2. Email de Pacote de Funcionários Comprado
       try {
         await emailService.sendEmployeePackagePurchased({
           to: email,
-          userName: 'Usuário Teste',
-          packageName: 'Pacote 5 Funcionários',
+          userName: "Usuário Teste",
+          packageName: "Pacote 5 Funcionários",
           quantity: 5,
-          price: 25.00,
-          paymentUrl: 'https://sandbox.asaas.com/i/test123'
+          price: 25.0,
+          paymentUrl: "https://sandbox.asaas.com/i/test123",
         });
-        results.push({ tipo: 'Pacote de Funcionários - Aguardando Pagamento', status: 'enviado' });
+        results.push({
+          tipo: "Pacote de Funcionários - Aguardando Pagamento",
+          status: "enviado",
+        });
       } catch (error) {
-        results.push({ tipo: 'Pacote de Funcionários - Aguardando Pagamento', status: 'erro', erro: error.message });
+        results.push({
+          tipo: "Pacote de Funcionários - Aguardando Pagamento",
+          status: "erro",
+          erro: error.message,
+        });
       }
 
       // 3. Email de Pacote de Funcionários Ativado
       try {
         await emailService.sendEmployeePackageActivated({
           to: email,
-          userName: 'Usuário Teste',
-          packageName: 'Pacote 5 Funcionários',
+          userName: "Usuário Teste",
+          packageName: "Pacote 5 Funcionários",
           quantity: 5,
           newLimit: 10,
-          price: 25.00
+          price: 25.0,
         });
-        results.push({ tipo: 'Pacote de Funcionários - Ativado', status: 'enviado' });
+        results.push({
+          tipo: "Pacote de Funcionários - Ativado",
+          status: "enviado",
+        });
       } catch (error) {
-        results.push({ tipo: 'Pacote de Funcionários - Ativado', status: 'erro', erro: error.message });
+        results.push({
+          tipo: "Pacote de Funcionários - Ativado",
+          status: "erro",
+          erro: error.message,
+        });
       }
 
       // 4. Email de Senha Redefinida
       try {
         await emailService.sendPasswordResetConfirmation({
           to: email,
-          userName: 'Usuário Teste',
-          resetByAdmin: 'Admin Master',
-          resetDate: new Date().toLocaleString('pt-BR')
+          userName: "Usuário Teste",
+          resetByAdmin: "Admin Master",
+          resetDate: new Date().toLocaleString("pt-BR"),
         });
-        results.push({ tipo: 'Senha Redefinida', status: 'enviado' });
+        results.push({ tipo: "Senha Redefinida", status: "enviado" });
       } catch (error) {
-        results.push({ tipo: 'Senha Redefinida', status: 'erro', erro: error.message });
+        results.push({
+          tipo: "Senha Redefinida",
+          status: "erro",
+          erro: error.message,
+        });
       }
 
       // 5. Email de Pagamento Pendente
       try {
         await emailService.sendPaymentPendingReminder({
           to: email,
-          userName: 'Usuário Teste',
-          planName: 'Plano Premium Mensal',
+          userName: "Usuário Teste",
+          planName: "Plano Premium Mensal",
           daysWaiting: 5,
-          amount: 99.90
+          amount: 99.9,
         });
-        results.push({ tipo: 'Pagamento Pendente', status: 'enviado' });
+        results.push({ tipo: "Pagamento Pendente", status: "enviado" });
       } catch (error) {
-        results.push({ tipo: 'Pagamento Pendente', status: 'erro', erro: error.message });
+        results.push({
+          tipo: "Pagamento Pendente",
+          status: "erro",
+          erro: error.message,
+        });
       }
 
       // 6. Email de Aviso de Vencimento
       try {
         await emailService.sendExpirationWarning({
           to: email,
-          userName: 'Usuário Teste',
-          planName: 'Plano Premium Mensal',
+          userName: "Usuário Teste",
+          planName: "Plano Premium Mensal",
           daysRemaining: 7,
-          expirationDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR'),
-          amount: 99.90
+          expirationDate: new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000,
+          ).toLocaleDateString("pt-BR"),
+          amount: 99.9,
         });
-        results.push({ tipo: 'Aviso de Vencimento', status: 'enviado' });
+        results.push({ tipo: "Aviso de Vencimento", status: "enviado" });
       } catch (error) {
-        results.push({ tipo: 'Aviso de Vencimento', status: 'erro', erro: error.message });
+        results.push({
+          tipo: "Aviso de Vencimento",
+          status: "erro",
+          erro: error.message,
+        });
       }
 
       // 7. Email de Pagamento Atrasado
       try {
         await emailService.sendOverdueNotice({
           to: email,
-          userName: 'Usuário Teste',
-          planName: 'Plano Premium Mensal',
+          userName: "Usuário Teste",
+          planName: "Plano Premium Mensal",
           daysOverdue: 3,
-          amount: 99.90
+          amount: 99.9,
         });
-        results.push({ tipo: 'Pagamento Atrasado', status: 'enviado' });
+        results.push({ tipo: "Pagamento Atrasado", status: "enviado" });
       } catch (error) {
-        results.push({ tipo: 'Pagamento Atrasado', status: 'erro', erro: error.message });
+        results.push({
+          tipo: "Pagamento Atrasado",
+          status: "erro",
+          erro: error.message,
+        });
       }
 
       // 8. Email de Conta Bloqueada
       try {
         await emailService.sendAccountBlocked({
           to: email,
-          userName: 'Usuário Teste',
-          planName: 'Plano Premium Mensal'
+          userName: "Usuário Teste",
+          planName: "Plano Premium Mensal",
         });
-        results.push({ tipo: 'Conta Bloqueada', status: 'enviado' });
+        results.push({ tipo: "Conta Bloqueada", status: "enviado" });
       } catch (error) {
-        results.push({ tipo: 'Conta Bloqueada', status: 'erro', erro: error.message });
+        results.push({
+          tipo: "Conta Bloqueada",
+          status: "erro",
+          erro: error.message,
+        });
       }
 
-      logger.info('Emails de teste enviados', 'TEST_EMAIL', { email, results });
+      logger.info("Emails de teste enviados", "TEST_EMAIL", { email, results });
       res.json({
         success: true,
-        message: `${results.filter(r => r.status === 'enviado').length} emails enviados para ${email}`,
-        details: results
+        message: `${results.filter((r) => r.status === "enviado").length} emails enviados para ${email}`,
+        details: results,
       });
-
     } catch (error) {
-      logger.error('Erro ao enviar emails de teste', 'TEST_EMAIL', { error });
-      res.status(500).json({ error: 'Erro ao enviar emails de teste' });
+      logger.error("Erro ao enviar emails de teste", "TEST_EMAIL", { error });
+      res.status(500).json({ error: "Erro ao enviar emails de teste" });
     }
   });
 
   // Mercado Pago Webhook
-  app.post('/api/webhook/mercadopago', async (req, res) => {
+  app.post("/api/webhook/mercadopago", async (req, res) => {
     try {
       const { type, data } = req.body;
 
-      console.log('📥 Webhook Mercado Pago recebido:', { type, data });
+      console.log("📥 Webhook Mercado Pago recebido:", { type, data });
 
       // Processar notificação de pagamento
-      if (type === 'payment') {
+      if (type === "payment") {
         const paymentId = data.id;
 
         // Buscar detalhes do pagamento
         const config = await storage.getConfigMercadoPago();
         if (!config || !config.access_token) {
-          console.error('❌ Configuração do Mercado Pago não encontrada');
-          return res.status(500).json({ error: 'Configuração não encontrada' });
+          console.error("❌ Configuração do Mercado Pago não encontrada");
+          return res.status(500).json({ error: "Configuração não encontrada" });
         }
 
-        const { MercadoPagoService } = await import('./mercadopago');
-        const mercadopago = new MercadoPagoService({accessToken: config.access_token});
-
-        // Buscar informações do pagamento
-        const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-          headers: {
-            'Authorization': `Bearer ${config.access_token}`,
-          },
+        const { MercadoPagoService } = await import("./mercadopago");
+        const mercadopago = new MercadoPagoService({
+          accessToken: config.access_token,
         });
 
+        // Buscar informações do pagamento
+        const response = await fetch(
+          `https://api.mercadopago.com/v1/payments/${paymentId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${config.access_token}`,
+            },
+          },
+        );
+
         if (!response.ok) {
-          console.error('❌ Erro ao buscar pagamento do Mercado Pago');
-          return res.status(500).json({ error: 'Erro ao buscar pagamento' });
+          console.error("❌ Erro ao buscar pagamento do Mercado Pago");
+          return res.status(500).json({ error: "Erro ao buscar pagamento" });
         }
 
         const paymentData = await response.json();
         const externalReference = paymentData.external_reference;
         const status = paymentData.status;
 
-        console.log('💳 Dados do pagamento:', { 
-          id: paymentId, 
-          status, 
-          externalReference 
+        console.log("💳 Dados do pagamento:", {
+          id: paymentId,
+          status,
+          externalReference,
         });
 
         // Encontrar assinatura pelo external_reference
         const subscriptions = await storage.getSubscriptions();
-        const subscription = subscriptions.find(s => s.external_reference === externalReference);
+        const subscription = subscriptions.find(
+          (s) => s.external_reference === externalReference,
+        );
 
         if (!subscription) {
-          console.log('⚠️ Assinatura não encontrada para referência:', externalReference);
-          return res.status(404).json({ error: 'Assinatura não encontrada' });
+          console.log(
+            "⚠️ Assinatura não encontrada para referência:",
+            externalReference,
+          );
+          return res.status(404).json({ error: "Assinatura não encontrada" });
         }
 
         // Processar status do pagamento
-        if (status === 'approved') {
+        if (status === "approved") {
           // Pagamento aprovado
-          console.log('✅ Pagamento aprovado - Ativando assinatura:', subscription.id);
+          console.log(
+            "✅ Pagamento aprovado - Ativando assinatura:",
+            subscription.id,
+          );
 
           await storage.updateSubscription(subscription.id, {
-            status: 'ativo',
-            status_pagamento: 'approved',
+            status: "ativo",
+            status_pagamento: "approved",
             mercadopago_payment_id: paymentId.toString(),
             data_inicio: new Date().toISOString(),
             data_atualizacao: new Date().toISOString(),
@@ -2565,36 +2924,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updateUser(subscription.user_id, {
             plano: subscription.plano,
             data_expiracao_plano: subscription.data_vencimento,
-            status: 'ativo',
+            status: "ativo",
           });
 
           console.log(`✅ Assinatura ${subscription.id} ativada com sucesso!`);
-          logger.info('Pagamento aprovado via webhook', 'MERCADOPAGO_WEBHOOK', {
+          logger.info("Pagamento aprovado via webhook", "MERCADOPAGO_WEBHOOK", {
             subscriptionId: subscription.id,
             userId: subscription.user_id,
             plano: subscription.plano,
           });
-
-        } else if (status === 'rejected' || status === 'cancelled') {
+        } else if (status === "rejected" || status === "cancelled") {
           // Pagamento recusado ou cancelado
-          console.log('❌ Pagamento recusado/cancelado:', subscription.id);
+          console.log("❌ Pagamento recusado/cancelado:", subscription.id);
 
           await storage.updateSubscription(subscription.id, {
-            status: 'cancelado',
+            status: "cancelado",
             status_pagamento: status,
             mercadopago_payment_id: paymentId.toString(),
             motivo_cancelamento: `Pagamento ${status} pelo Mercado Pago`,
             data_atualizacao: new Date().toISOString(),
           });
 
-          logger.warn('Pagamento recusado/cancelado via webhook', 'MERCADOPAGO_WEBHOOK', {
-            subscriptionId: subscription.id,
-            status,
-          });
-
-        } else if (status === 'pending' || status === 'in_process') {
+          logger.warn(
+            "Pagamento recusado/cancelado via webhook",
+            "MERCADOPAGO_WEBHOOK",
+            {
+              subscriptionId: subscription.id,
+              status,
+            },
+          );
+        } else if (status === "pending" || status === "in_process") {
           // Pagamento pendente
-          console.log('⏳ Pagamento pendente:', subscription.id);
+          console.log("⏳ Pagamento pendente:", subscription.id);
 
           await storage.updateSubscription(subscription.id, {
             status_pagamento: status,
@@ -2604,21 +2965,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({ success: true, message: 'Webhook processado com sucesso' });
-
+      res.json({ success: true, message: "Webhook processado com sucesso" });
     } catch (error: any) {
-      console.error('❌ Erro ao processar webhook Mercado Pago:', error);
-      logger.error('Erro no webhook Mercado Pago', 'MERCADOPAGO_WEBHOOK', { error });
+      console.error("❌ Erro ao processar webhook Mercado Pago:", error);
+      logger.error("Erro no webhook Mercado Pago", "MERCADOPAGO_WEBHOOK", {
+        error,
+      });
       res.status(500).json({ error: error.message });
     }
   });
 
   // Asaas Webhook
-  app.post('/api/webhook/asaas', async (req, res) => {
-    const signature = req.headers['asaas-access-token'];
+  app.post("/api/webhook/asaas", async (req, res) => {
+    const signature = req.headers["asaas-access-token"];
     if (signature !== process.env.ASAAS_ACCESS_TOKEN) {
-      logger.warn('Webhook rejeitado - token inválido', 'WEBHOOK');
-      return res.status(401).json({ error: 'Unauthorized' });
+      logger.warn("Webhook rejeitado - token inválido", "WEBHOOK");
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     const { event, payment } = req.body;
@@ -2630,20 +2992,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     // Verificar se é um pagamento de pacote de funcionários
-    const isEmployeePackage = payment.externalReference && payment.externalReference.startsWith('pacote_');
+    const isEmployeePackage =
+      payment.externalReference &&
+      payment.externalReference.startsWith("pacote_");
 
-    if (isEmployeePackage && (event === "PAYMENT_RECEIVED" || event === "PAYMENT_CONFIRMED")) {
+    if (
+      isEmployeePackage &&
+      (event === "PAYMENT_RECEIVED" || event === "PAYMENT_CONFIRMED")
+    ) {
       // Processar pagamento de pacote de funcionários
-      const parts = payment.externalReference.split('_');
-      const pacoteId = parts[0] + '_' + parts[1]; // pacote_5, pacote_10, etc
+      const parts = payment.externalReference.split("_");
+      const pacoteId = parts[0] + "_" + parts[1]; // pacote_5, pacote_10, etc
       const userId = parts[2];
 
       // Mapear pacotes para quantidade de funcionários
       const pacoteQuantidades: Record<string, number> = {
-        'pacote_5': 5,
-        'pacote_10': 10,
-        'pacote_20': 20,
-        'pacote_50': 50,
+        pacote_5: 5,
+        pacote_10: 10,
+        pacote_20: 20,
+        pacote_50: 50,
       };
 
       const quantidadeAdicional = pacoteQuantidades[pacoteId];
@@ -2660,22 +3027,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
             max_funcionarios: novoLimite,
           });
 
-          console.log(`✅ [WEBHOOK] Pagamento confirmado - Pacote: ${pacoteId}`);
+          console.log(
+            `✅ [WEBHOOK] Pagamento confirmado - Pacote: ${pacoteId}`,
+          );
           console.log(`✅ [WEBHOOK] User: ${user.email} | ${user.nome}`);
-          console.log(`✅ [WEBHOOK] Limite anterior: ${limiteAtual} → Novo limite: ${novoLimite}`);
+          console.log(
+            `✅ [WEBHOOK] Limite anterior: ${limiteAtual} → Novo limite: ${novoLimite}`,
+          );
 
-          logger.info('Pacote de funcionários ativado', 'WEBHOOK', {
+          logger.info("Pacote de funcionários ativado", "WEBHOOK", {
             userId,
             userEmail: user.email,
             pacoteId,
             quantidadeAdicional,
             limiteAnterior: limiteAtual,
-            novoLimite
+            novoLimite,
           });
 
           // Enviar email de confirmação de ativação
           try {
-            const { EmailService } = await import('./email-service');
+            const { EmailService } = await import("./email-service");
             const emailService = new EmailService();
 
             const nomePacote = `Pacote ${quantidadeAdicional} Funcionários`;
@@ -2691,18 +3062,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             console.log(`📧 Email de ativação enviado para ${user.email}`);
           } catch (emailError) {
-            console.error("⚠️ Erro ao enviar email de ativação (não crítico):", emailError);
+            console.error(
+              "⚠️ Erro ao enviar email de ativação (não crítico):",
+              emailError,
+            );
           }
         }
       }
 
-      res.json({ success: true, message: "Webhook de pacote processado com sucesso" });
+      res.json({
+        success: true,
+        message: "Webhook de pacote processado com sucesso",
+      });
       return;
     }
 
     // Processar pagamento de assinatura normal
     const subscriptions = await storage.getSubscriptions();
-    const subscription = subscriptions?.find(s => s.asaas_payment_id === payment.id);
+    const subscription = subscriptions?.find(
+      (s) => s.asaas_payment_id === payment.id,
+    );
 
     if (!subscription) {
       console.log("Assinatura não encontrada para pagamento:", payment.id);
@@ -2766,22 +3145,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { reason } = req.body;
       const subscriptionId = parseInt(id);
-      const userId = req.headers['x-user-id'] as string;
-      const isAdmin = req.headers['x-is-admin'] as string;
+      const userId = req.headers["x-user-id"] as string;
+      const isAdmin = req.headers["x-is-admin"] as string;
 
       if (!userId) {
         return res.status(401).json({ error: "Autenticação necessária" });
       }
 
       const subscriptions = await storage.getSubscriptions();
-      const subscription = subscriptions?.find(s => s.id === subscriptionId);
+      const subscription = subscriptions?.find((s) => s.id === subscriptionId);
 
       if (!subscription) {
         return res.status(404).json({ error: "Assinatura não encontrada" });
       }
 
       if (subscription.user_id !== userId && isAdmin !== "true") {
-        return res.status(403).json({ error: "Você só pode cancelar suas próprias assinaturas" });
+        return res
+          .status(403)
+          .json({ error: "Você só pode cancelar suas próprias assinaturas" });
       }
 
       // Atualizar assinatura com status cancelado e data de atualização
@@ -2790,7 +3171,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status_pagamento: "cancelled",
         data_cancelamento: new Date().toISOString(),
         data_atualizacao: new Date().toISOString(),
-        motivo_cancelamento: reason || "Cancelado manualmente pelo administrador",
+        motivo_cancelamento:
+          reason || "Cancelado manualmente pelo administrador",
       });
 
       // Atualizar usuário para plano free
@@ -2799,30 +3181,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "ativo",
       });
 
-      console.log(`✅ Assinatura ${subscriptionId} cancelada. Motivo: ${reason || "Cancelado manualmente"}`);
-      logger.info('Assinatura cancelada', 'SUBSCRIPTION', {
+      console.log(
+        `✅ Assinatura ${subscriptionId} cancelada. Motivo: ${reason || "Cancelado manualmente"}`,
+      );
+      logger.info("Assinatura cancelada", "SUBSCRIPTION", {
         subscriptionId,
         userId: subscription.user_id,
-        reason: reason || "Cancelado manualmente"
+        reason: reason || "Cancelado manualmente",
       });
 
       res.json({
         success: true,
-        message: "Assinatura cancelada com sucesso"
+        message: "Assinatura cancelada com sucesso",
       });
     } catch (error: any) {
       console.error("Erro ao cancelar assinatura:", error);
-      logger.error('Erro ao cancelar assinatura', 'SUBSCRIPTION', { error: error.message });
-      res.status(500).json({ error: error.message || "Erro ao cancelar assinatura" });
+      logger.error("Erro ao cancelar assinatura", "SUBSCRIPTION", {
+        error: error.message,
+      });
+      res
+        .status(500)
+        .json({ error: error.message || "Erro ao cancelar assinatura" });
     }
   });
 
   // Sistema de lembretes de pagamento
   app.post("/api/payment-reminders/check", requireAdmin, async (req, res) => {
     try {
-      const { paymentReminderService } = await import('./payment-reminder');
+      const { paymentReminderService } = await import("./payment-reminder");
       await paymentReminderService.checkAndSendReminders();
-      res.json({ success: true, message: "Verificação de pagamentos executada" });
+      res.json({
+        success: true,
+        message: "Verificação de pagamentos executada",
+      });
     } catch (error) {
       console.error("Erro ao verificar pagamentos:", error);
       res.status(500).json({ error: "Erro ao verificar pagamentos" });
@@ -2838,7 +3229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const users = await storage.getUsers();
-      const user = users.find(u => u.id === userId);
+      const user = users.find((u) => u.id === userId);
 
       if (!user) {
         return res.status(404).json({ error: "Usuário não encontrado" });
@@ -2849,7 +3240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         isBlocked,
         status: user.status,
-        plano: user.plano
+        plano: user.plano,
       });
     } catch (error) {
       console.error("Erro ao verificar bloqueio:", error);
@@ -2859,7 +3250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/caixas", getUserId, async (req, res) => {
     try {
-      const userId = req.headers['effective-user-id'] as string;
+      const userId = req.headers["effective-user-id"] as string;
       const contaId = req.query.conta_id as string;
 
       if (!userId) {
@@ -2868,40 +3259,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // VALIDAÇÃO: conta_id deve ser fornecido e deve ser igual ao userId efetivo
       if (!contaId || contaId !== userId) {
-        return res.status(403).json({ error: "Acesso negado. Parâmetro conta_id inválido." });
+        return res
+          .status(403)
+          .json({ error: "Acesso negado. Parâmetro conta_id inválido." });
       }
 
       if (!storage.getCaixas) {
-        return res.status(501).json({ error: "Método getCaixas não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método getCaixas não implementado" });
       }
 
       const caixas = await storage.getCaixas(userId);
 
       // Adicionar nome do operador a cada caixa
-      const caixasComOperador = await Promise.all(caixas.map(async (caixa: any) => {
-        let operadorNome = "Sistema";
+      const caixasComOperador = await Promise.all(
+        caixas.map(async (caixa: any) => {
+          let operadorNome = "Sistema";
 
-        if (caixa.funcionario_id) {
-          // Se foi aberto por funcionário
-          const funcionario = await storage.getFuncionario(caixa.funcionario_id);
-          if (funcionario) {
-            operadorNome = funcionario.nome;
+          if (caixa.funcionario_id) {
+            // Se foi aberto por funcionário
+            const funcionario = await storage.getFuncionario(
+              caixa.funcionario_id,
+            );
+            if (funcionario) {
+              operadorNome = funcionario.nome;
+            }
+          } else {
+            // Se foi aberto pelo dono da conta
+            const usuario = await storage.getUserByEmail(
+              (await storage.getUsers()).find(
+                (u: any) => u.id === caixa.user_id,
+              )?.email || "",
+            );
+            if (usuario) {
+              operadorNome = usuario.nome;
+            }
           }
-        } else {
-          // Se foi aberto pelo dono da conta
-          const usuario = await storage.getUserByEmail(
-            (await storage.getUsers()).find((u: any) => u.id === caixa.user_id)?.email || ""
-          );
-          if (usuario) {
-            operadorNome = usuario.nome;
-          }
-        }
 
-        return {
-          ...caixa,
-          operador_nome: operadorNome
-        };
-      }));
+          return {
+            ...caixa,
+            operador_nome: operadorNome,
+          };
+        }),
+      );
 
       res.json(caixasComOperador || []);
     } catch (error) {
@@ -2912,14 +3313,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/caixas/aberto", getUserId, async (req, res) => {
     try {
-      const userId = req.headers['effective-user-id'] as string;
+      const userId = req.headers["effective-user-id"] as string;
 
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
       }
 
       if (!storage.getCaixaAberto) {
-        return res.status(501).json({ error: "Método getCaixaAberto não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método getCaixaAberto não implementado" });
       }
 
       const caixaAberto = await storage.getCaixaAberto(userId);
@@ -2929,14 +3332,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (caixaAberto.funcionario_id) {
           // Se foi aberto por funcionário
-          const funcionario = await storage.getFuncionario(caixaAberto.funcionario_id);
+          const funcionario = await storage.getFuncionario(
+            caixaAberto.funcionario_id,
+          );
           if (funcionario) {
             operadorNome = funcionario.nome;
           }
         } else {
           // Se foi aberto pelo dono da conta
           const usuario = await storage.getUserByEmail(
-            (await storage.getUsers()).find((u: any) => u.id === caixaAberto.user_id)?.email || ""
+            (await storage.getUsers()).find(
+              (u: any) => u.id === caixaAberto.user_id,
+            )?.email || "",
           );
           if (usuario) {
             operadorNome = usuario.nome;
@@ -2945,7 +3352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json({
           ...caixaAberto,
-          operador_nome: operadorNome
+          operador_nome: operadorNome,
         });
       } else {
         res.json(null);
@@ -2958,7 +3365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/caixas/:id", getUserId, async (req, res) => {
     try {
-      const userId = req.headers['effective-user-id'] as string;
+      const userId = req.headers["effective-user-id"] as string;
       const { id } = req.params;
 
       if (!userId) {
@@ -2966,7 +3373,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!storage.getCaixa) {
-        return res.status(501).json({ error: "Método getCaixa não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método getCaixa não implementado" });
       }
 
       const caixa = await storage.getCaixa(parseInt(id));
@@ -2988,16 +3397,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/caixas/abrir", getUserId, async (req, res) => {
     try {
-      const userId = req.headers['effective-user-id'] as string;
-      const funcionarioId = req.headers['funcionario-id'] as string; // Validado pelo middleware
-      const userType = req.headers['x-user-type'] as string;
+      const userId = req.headers["effective-user-id"] as string;
+      const funcionarioId = req.headers["funcionario-id"] as string; // Validado pelo middleware
+      const userType = req.headers["x-user-type"] as string;
 
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
       }
 
       if (!storage.getCaixaAberto || !storage.abrirCaixa) {
-        return res.status(501).json({ error: "Métodos de caixa não implementados" });
+        return res
+          .status(501)
+          .json({ error: "Métodos de caixa não implementados" });
       }
 
       const caixaAberto = await storage.getCaixaAberto(userId);
@@ -3023,7 +3434,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const caixa = await storage.abrirCaixa(caixaData);
-      console.log(`✅ Caixa aberto - ID: ${caixa.id}, User: ${userId}, Saldo Inicial: R$ ${saldoInicial.toFixed(2)}`);
+      console.log(
+        `✅ Caixa aberto - ID: ${caixa.id}, User: ${userId}, Saldo Inicial: R$ ${saldoInicial.toFixed(2)}`,
+      );
       res.json(caixa);
     } catch (error) {
       console.error("Erro ao abrir caixa:", error);
@@ -3033,7 +3446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/caixas/:id/fechar", getUserId, async (req, res) => {
     try {
-      const userId = req.headers['effective-user-id'] as string;
+      const userId = req.headers["effective-user-id"] as string;
       const { id } = req.params;
       const caixaId = parseInt(id);
 
@@ -3042,7 +3455,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!storage.getCaixa || !storage.fecharCaixa) {
-        return res.status(501).json({ error: "Métodos de caixa não implementados" });
+        return res
+          .status(501)
+          .json({ error: "Métodos de caixa não implementados" });
       }
 
       const caixa = await storage.getCaixa(caixaId);
@@ -3071,7 +3486,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const caixaFechado = await storage.fecharCaixa(caixaId, dadosFechamento);
-      console.log(`✅ Caixa fechado - ID: ${caixaId}, Saldo Final: R$ ${saldoFinal.toFixed(2)}`);
+      console.log(
+        `✅ Caixa fechado - ID: ${caixaId}, Saldo Final: R$ ${saldoFinal.toFixed(2)}`,
+      );
       res.json(caixaFechado);
     } catch (error) {
       console.error("Erro ao fechar caixa:", error);
@@ -3081,7 +3498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/caixas/:id/movimentacoes", getUserId, async (req, res) => {
     try {
-      const userId = req.headers['effective-user-id'] as string;
+      const userId = req.headers["effective-user-id"] as string;
       const { id } = req.params;
 
       if (!userId) {
@@ -3089,7 +3506,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!storage.getMovimentacoesCaixa) {
-        return res.status(501).json({ error: "Método getMovimentacoesCaixa não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método getMovimentacoesCaixa não implementado" });
       }
 
       const movimentacoes = await storage.getMovimentacoesCaixa(parseInt(id));
@@ -3102,7 +3521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/caixas/:id/movimentacoes", getUserId, async (req, res) => {
     try {
-      const userId = req.headers['effective-user-id'] as string;
+      const userId = req.headers["effective-user-id"] as string;
       const { id } = req.params;
       const caixaId = parseInt(id);
 
@@ -3110,8 +3529,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Usuário não autenticado" });
       }
 
-      if (!storage.getCaixa || !storage.createMovimentacaoCaixa || !storage.atualizarTotaisCaixa) {
-        return res.status(501).json({ error: "Métodos de movimentação não implementados" });
+      if (
+        !storage.getCaixa ||
+        !storage.createMovimentacaoCaixa ||
+        !storage.atualizarTotaisCaixa
+      ) {
+        return res
+          .status(501)
+          .json({ error: "Métodos de movimentação não implementados" });
       }
 
       const caixa = await storage.getCaixa(caixaId);
@@ -3124,7 +3549,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (caixa.status === "fechado") {
-        return res.status(400).json({ error: "Não é possível adicionar movimentações em caixa fechado" });
+        return res
+          .status(400)
+          .json({
+            error: "Não é possível adicionar movimentações em caixa fechado",
+          });
       }
 
       const valor = parseFloat(req.body.valor);
@@ -3133,7 +3562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const tipo = req.body.tipo;
-      if (!['suprimento', 'retirada'].includes(tipo)) {
+      if (!["suprimento", "retirada"].includes(tipo)) {
         return res.status(400).json({ error: "Tipo de movimentação inválido" });
       }
 
@@ -3146,13 +3575,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: new Date().toISOString(),
       };
 
-      const movimentacao = await storage.createMovimentacaoCaixa(movimentacaoData);
+      const movimentacao =
+        await storage.createMovimentacaoCaixa(movimentacaoData);
 
       // Atualizar totais do caixa
-      const campo = tipo === 'suprimento' ? 'total_suprimentos' : 'total_retiradas';
+      const campo =
+        tipo === "suprimento" ? "total_suprimentos" : "total_retiradas";
       await storage.atualizarTotaisCaixa(caixaId, campo, valor);
 
-      console.log(`✅ Movimentação registrada - Caixa: ${caixaId}, Tipo: ${tipo}, Valor: R$ ${valor.toFixed(2)}`);
+      console.log(
+        `✅ Movimentação registrada - Caixa: ${caixaId}, Tipo: ${tipo}, Valor: R$ ${valor.toFixed(2)}`,
+      );
       res.json(movimentacao);
     } catch (error) {
       console.error("Erro ao criar movimentação:", error);
@@ -3162,18 +3595,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/caixas/historico", getUserId, async (req, res) => {
     try {
-      const userId = req.headers['effective-user-id'] as string;
+      const userId = req.headers["effective-user-id"] as string;
 
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
       }
 
       if (!storage.limparHistoricoCaixas) {
-        return res.status(501).json({ error: "Método limparHistoricoCaixas não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método limparHistoricoCaixas não implementado" });
       }
 
       const resultado = await storage.limparHistoricoCaixas(userId);
-      console.log(`✅ Histórico de caixas limpo - User: ${userId}, Caixas removidos: ${resultado.deletedCount}`);
+      console.log(
+        `✅ Histórico de caixas limpo - User: ${userId}, Caixas removidos: ${resultado.deletedCount}`,
+      );
       res.json({ success: true, deletedCount: resultado.deletedCount });
     } catch (error) {
       console.error("Erro ao limpar histórico de caixas:", error);
@@ -3183,16 +3620,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/devolucoes", getUserId, async (req, res) => {
     try {
-      const userId = req.headers['effective-user-id'] as string;
-      
+      const userId = req.headers["effective-user-id"] as string;
+
       if (!storage.getDevolucoes) {
-        return res.status(501).json({ error: "Método getDevolucoes não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método getDevolucoes não implementado" });
       }
 
       const allDevolucoes = await storage.getDevolucoes();
-      const devolucoes = allDevolucoes.filter(d => d.user_id === userId);
-      
-      console.log(`✅ Devoluções buscadas - User: ${userId}, Total: ${devolucoes.length}`);
+      const devolucoes = allDevolucoes.filter((d) => d.user_id === userId);
+
+      console.log(
+        `✅ Devoluções buscadas - User: ${userId}, Total: ${devolucoes.length}`,
+      );
       res.json(devolucoes);
     } catch (error) {
       console.error("Erro ao buscar devoluções:", error);
@@ -3202,11 +3643,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/devolucoes/:id", getUserId, async (req, res) => {
     try {
-      const userId = req.headers['effective-user-id'] as string;
+      const userId = req.headers["effective-user-id"] as string;
       const id = parseInt(req.params.id);
 
       if (!storage.getDevolucao) {
-        return res.status(501).json({ error: "Método getDevolucao não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método getDevolucao não implementado" });
       }
 
       const devolucao = await storage.getDevolucao(id);
@@ -3224,10 +3667,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/devolucoes", getUserId, async (req, res) => {
     try {
-      const userId = req.headers['effective-user-id'] as string;
+      const userId = req.headers["effective-user-id"] as string;
 
       if (!storage.createDevolucao) {
-        return res.status(501).json({ error: "Método createDevolucao não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método createDevolucao não implementado" });
       }
 
       const { insertDevolucaoSchema } = await import("@shared/schema");
@@ -3239,21 +3684,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const devolucao = await storage.createDevolucao(validatedData);
 
-      if (devolucao.status === 'aprovada' && devolucao.produto_id) {
+      if (devolucao.status === "aprovada" && devolucao.produto_id) {
         const produto = await storage.getProduto(devolucao.produto_id);
         if (produto) {
           await storage.updateProduto(devolucao.produto_id, {
-            quantidade: produto.quantidade + devolucao.quantidade
+            quantidade: produto.quantidade + devolucao.quantidade,
           });
         }
       }
 
-      console.log(`✅ Devolução criada - ID: ${devolucao.id}, Produto: ${devolucao.produto_nome}`);
+      console.log(
+        `✅ Devolução criada - ID: ${devolucao.id}, Produto: ${devolucao.produto_nome}`,
+      );
       res.json(devolucao);
     } catch (error) {
       console.error("Erro ao criar devolução:", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Dados inválidos", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Dados inválidos", details: error.errors });
       }
       res.status(500).json({ error: "Erro ao criar devolução" });
     }
@@ -3261,11 +3710,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/devolucoes/:id", getUserId, async (req, res) => {
     try {
-      const userId = req.headers['effective-user-id'] as string;
+      const userId = req.headers["effective-user-id"] as string;
       const id = parseInt(req.params.id);
 
       if (!storage.getDevolucao || !storage.updateDevolucao) {
-        return res.status(501).json({ error: "Métodos de devolução não implementados" });
+        return res
+          .status(501)
+          .json({ error: "Métodos de devolução não implementados" });
       }
 
       const devolucaoExistente = await storage.getDevolucao(id);
@@ -3280,25 +3731,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const statusAnterior = devolucaoExistente.status;
       const novoStatus = validatedData.status || devolucaoExistente.status;
-      const novaQuantidade = validatedData.quantidade !== undefined ? validatedData.quantidade : devolucaoExistente.quantidade;
+      const novaQuantidade =
+        validatedData.quantidade !== undefined
+          ? validatedData.quantidade
+          : devolucaoExistente.quantidade;
 
       const devolucao = await storage.updateDevolucao(id, validatedData);
 
-      if (statusAnterior !== 'aprovada' && novoStatus === 'aprovada' && devolucaoExistente.produto_id) {
+      if (
+        statusAnterior !== "aprovada" &&
+        novoStatus === "aprovada" &&
+        devolucaoExistente.produto_id
+      ) {
         const produto = await storage.getProduto(devolucaoExistente.produto_id);
         if (produto) {
           await storage.updateProduto(devolucaoExistente.produto_id, {
-            quantidade: produto.quantidade + novaQuantidade
+            quantidade: produto.quantidade + novaQuantidade,
           });
         }
       }
 
-      console.log(`✅ Devolução atualizada - ID: ${id}, Status: ${novoStatus}, Quantidade: ${novaQuantidade}`);
+      console.log(
+        `✅ Devolução atualizada - ID: ${id}, Status: ${novoStatus}, Quantidade: ${novaQuantidade}`,
+      );
       res.json(devolucao);
     } catch (error) {
       console.error("Erro ao atualizar devolução:", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Dados inválidos", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Dados inválidos", details: error.errors });
       }
       res.status(500).json({ error: "Erro ao atualizar devolução" });
     }
@@ -3306,11 +3768,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/devolucoes/:id", getUserId, async (req, res) => {
     try {
-      const userId = req.headers['effective-user-id'] as string;
+      const userId = req.headers["effective-user-id"] as string;
       const id = parseInt(req.params.id);
 
       if (!storage.getDevolucao || !storage.deleteDevolucao) {
-        return res.status(501).json({ error: "Métodos de devolução não implementados" });
+        return res
+          .status(501)
+          .json({ error: "Métodos de devolução não implementados" });
       }
 
       const devolucao = await storage.getDevolucao(id);
@@ -3333,7 +3797,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { key } = req.params;
 
       if (!storage.getSystemConfig) {
-        return res.status(501).json({ error: "Método getSystemConfig não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método getSystemConfig não implementado" });
       }
 
       const config = await storage.getSystemConfig(key);
@@ -3354,11 +3820,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { chave, valor } = req.body;
 
       if (!chave || !valor) {
-        return res.status(400).json({ error: "Chave e valor são obrigatórios" });
+        return res
+          .status(400)
+          .json({ error: "Chave e valor são obrigatórios" });
       }
 
       if (!storage.upsertSystemConfig) {
-        return res.status(501).json({ error: "Método upsertSystemConfig não implementado" });
+        return res
+          .status(501)
+          .json({ error: "Método upsertSystemConfig não implementado" });
       }
 
       const config = await storage.upsertSystemConfig(chave, valor);

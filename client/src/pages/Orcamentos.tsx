@@ -525,31 +525,30 @@ export default function Orcamentos() {
                 </CardHeader>
                 <CardContent className="space-y-4 pt-6">
                   <div className="space-y-2">
-                    <Label htmlFor="search-produto" className="text-sm font-semibold text-gray-700">
-                      Buscar Produto
+                    <Label htmlFor="search-produto" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Search className="h-4 w-4 text-green-600" />
+                      Buscar e Adicionar Produto
                     </Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="search-produto"
                         type="text"
-                        placeholder="Digite o nome do produto para buscar..."
+                        placeholder="Digite o nome do produto e selecione abaixo..."
                         value={searchProduto}
                         onChange={(e) => setSearchProduto(e.target.value)}
                         className="pl-9 border-2 focus:border-green-500"
                       />
                     </div>
                     {searchProduto && (
-                      <p className="text-xs text-muted-foreground">
-                        {produtosFiltrados.length} produto(s) encontrado(s)
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <span className="font-semibold text-green-600">{produtosFiltrados.length}</span> 
+                        produto(s) encontrado(s)
                       </p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="select-produto" className="text-sm font-semibold text-gray-700">
-                      Selecionar e Adicionar Produto
-                    </Label>
                     <Select 
                       onValueChange={(value) => {
                         adicionarItem(parseInt(value));
@@ -557,28 +556,48 @@ export default function Orcamentos() {
                       }}
                       value=""
                     >
-                      <SelectTrigger id="select-produto" className="border-2 focus:border-green-500">
-                        <SelectValue placeholder="🔍 Selecione um produto da lista..." />
+                      <SelectTrigger className="border-2 focus:border-green-500 h-11">
+                        <SelectValue placeholder={
+                          searchProduto 
+                            ? `🔍 ${produtosFiltrados.length} produto(s) - Clique para selecionar`
+                            : "📦 Todos os produtos - Digite acima para filtrar"
+                        } />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-[300px]">
                         {produtosFiltrados.length === 0 ? (
-                          <div className="p-4 text-center text-muted-foreground text-sm">
-                            {searchProduto 
-                              ? `Nenhum produto encontrado para "${searchProduto}"`
-                              : "Nenhum produto disponível"}
+                          <div className="p-6 text-center">
+                            <div className="text-muted-foreground text-sm mb-2">
+                              {searchProduto 
+                                ? `Nenhum produto encontrado para "${searchProduto}"`
+                                : "Nenhum produto disponível"}
+                            </div>
+                            {searchProduto && (
+                              <p className="text-xs text-muted-foreground">
+                                Tente buscar por outro nome
+                              </p>
+                            )}
                           </div>
                         ) : (
                           produtosFiltrados.map((produto) => (
-                            <SelectItem key={produto.id} value={produto.id.toString()}>
-                              <div className="flex justify-between items-center w-full gap-4">
+                            <SelectItem 
+                              key={produto.id} 
+                              value={produto.id.toString()}
+                              className="cursor-pointer hover:bg-green-50"
+                            >
+                              <div className="flex justify-between items-center w-full gap-4 py-1">
                                 <span className="font-medium">{produto.nome}</span>
-                                <span className="text-green-600 font-semibold">R$ {produto.preco.toFixed(2)}</span>
+                                <span className="text-green-600 font-semibold whitespace-nowrap">
+                                  R$ {produto.preco.toFixed(2)}
+                                </span>
                               </div>
                             </SelectItem>
                           ))
                         )}
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">
+                      💡 Digite no campo acima para filtrar e facilitar a busca
+                    </p>
                   </div>
 
                   {itensCarrinho.length > 0 && (

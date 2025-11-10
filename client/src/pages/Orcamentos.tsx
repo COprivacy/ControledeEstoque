@@ -351,9 +351,9 @@ export default function Orcamentos() {
               ` : ''}
               <div class="info-item">
                 <span class="info-label">Data de Emissão</span>
-                <span class="info-value">${orcamento.data_criacao ? format(new Date(orcamento.data_criacao), "dd/MM/yyyy", { locale: ptBR }) : ''}</span>
+                <span class="info-value">${orcamento.data_criacao && !isNaN(new Date(orcamento.data_criacao).getTime()) ? format(new Date(orcamento.data_criacao), "dd/MM/yyyy", { locale: ptBR }) : '-'}</span>
               </div>
-              ${orcamento.validade ? `
+              ${orcamento.validade && !isNaN(new Date(orcamento.validade).getTime()) ? `
                 <div class="info-item">
                   <span class="info-label">Validade</span>
                   <span class="info-value">${format(new Date(orcamento.validade), "dd/MM/yyyy", { locale: ptBR })}</span>
@@ -847,12 +847,12 @@ export default function Orcamentos() {
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {orcamento.data_criacao && orcamento.data_criacao !== ""
+                        {orcamento.data_criacao && orcamento.data_criacao !== "" && !isNaN(new Date(orcamento.data_criacao).getTime())
                           ? format(new Date(orcamento.data_criacao), "dd/MM/yyyy", { locale: ptBR })
                           : "-"}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {orcamento.validade && orcamento.validade !== "" 
+                        {orcamento.validade && orcamento.validade !== "" && !isNaN(new Date(orcamento.validade).getTime())
                           ? format(new Date(orcamento.validade), "dd/MM/yyyy", { locale: ptBR })
                           : "-"}
                       </TableCell>
@@ -990,7 +990,7 @@ export default function Orcamentos() {
               <DialogHeader>
                 <DialogTitle className="text-2xl">Orçamento {selectedOrcamento.numero}</DialogTitle>
                 <DialogDescription>
-                  {selectedOrcamento.data_criacao && selectedOrcamento.data_criacao !== ""
+                  {selectedOrcamento.data_criacao && selectedOrcamento.data_criacao !== "" && !isNaN(new Date(selectedOrcamento.data_criacao).getTime())
                     ? `Criado em ${format(new Date(selectedOrcamento.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`
                     : "Data de criação não disponível"}
                 </DialogDescription>

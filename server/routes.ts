@@ -3843,16 +3843,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers["effective-user-id"] as string;
 
       const { insertOrcamentoSchema } = await import("@shared/schema");
-      const validatedData = insertOrcamentoSchema.parse({
-        ...req.body,
+      
+      // Validar dados recebidos
+      const validatedData = insertOrcamentoSchema.parse(req.body);
+
+      // Gerar número do orçamento
+      const numeroOrcamento = `ORC-${Date.now()}`;
+
+      // Criar orçamento com todos os dados
+      const orcamentoData = {
         user_id: userId,
-        data_criacao: new Date().toISOString(),
-        data_atualizacao: new Date().toISOString(),
-      });
+        numero_orcamento: numeroOrcamento,
+        cliente_nome: validatedData.cliente_nome,
+        cliente_email: validatedData.cliente_email || null,
+        cliente_telefone: validatedData.cliente_telefone || null,
+        data_validade: validatedData.data_validade ? new Date(validatedData.data_validade).toISOString() : null,
+        itens: validatedData.itens,
+        subtotal: validatedData.subtotal,
+        desconto: validatedData.desconto || 0,
+        total: validatedData.total,
+        observacoes: validatedData.observacoes || null,
+        status: "pendente",
+      };
 
-      const orcamento = await storage.createOrcamento(validatedData);
+      const orcamento = await storage.createOrcamento(orcamentoData);
 
-      console.log(`✅ Orçamento criado - ID: ${orcamento.id}, Número: ${orcamento.numero}, Cliente: ${orcamento.cliente_nome}`);
+      console.log(`✅ Orçamento criado - ID: ${orcamento.id}, Número: ${orcamento.numero_orcamento}, Cliente: ${orcamento.cliente_nome}`);
       res.json(orcamento);
     } catch (error) {
       console.error("Erro ao criar orçamento:", error);

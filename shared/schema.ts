@@ -399,17 +399,24 @@ export const orcamentos = pgTable("orcamentos", {
 
 export const insertOrcamentoSchema = createInsertSchema(orcamentos).omit({
   id: true,
+  numero_orcamento: true,
   data_emissao: true,
   atualizado_em: true,
 }).extend({
-  cliente_nome: z.string().optional(),
-  cliente_email: z.string().email().optional(),
+  cliente_nome: z.string().min(1, "Nome do cliente é obrigatório"),
+  cliente_email: z.string().email().optional().or(z.literal("")),
   cliente_telefone: z.string().optional(),
   data_validade: z.string().optional(),
   subtotal: z.coerce.number().min(0),
   desconto: z.coerce.number().min(0).default(0),
   total: z.coerce.number().min(0),
   observacoes: z.string().optional(),
+  itens: z.array(z.object({
+    produto_id: z.number(),
+    nome: z.string(),
+    preco: z.number(),
+    quantidade: z.number(),
+  })).min(1, "Adicione pelo menos um item"),
 });
 
 export type InsertOrcamento = z.infer<typeof insertOrcamentoSchema>;

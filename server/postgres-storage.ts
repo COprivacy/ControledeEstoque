@@ -788,28 +788,25 @@ export class PostgresStorage implements IStorage {
     return result[0];
   }
 
-  async createOrcamento(userId: string, data: any): Promise<Orcamento> {
-    const user = await this.getUserById(userId);
-    const numeroOrcamento = `ORC-${Date.now()}`;
-
+  async createOrcamento(data: any): Promise<Orcamento> {
     const [orcamento] = await this.db
       .insert(orcamentos)
       .values({
-        user_id: userId,
-        numero_orcamento: numeroOrcamento,
+        user_id: data.user_id,
+        numero_orcamento: data.numero_orcamento,
         data_emissao: new Date(),
-        data_validade: data.data_validade ? new Date(data.data_validade) : null,
+        data_validade: data.data_validade,
         cliente_id: data.cliente_id || null,
-        cliente_nome: data.cliente_nome || null,
-        cliente_email: data.cliente_email || null,
-        cliente_telefone: data.cliente_telefone || null,
-        status: 'pendente',
+        cliente_nome: data.cliente_nome,
+        cliente_email: data.cliente_email,
+        cliente_telefone: data.cliente_telefone,
+        status: data.status || 'pendente',
         itens: data.itens,
         subtotal: data.subtotal,
-        desconto: data.desconto || 0,
+        desconto: data.desconto,
         total: data.total,
-        observacoes: data.observacoes || null,
-        criado_por: user?.nome || user?.email || userId,
+        observacoes: data.observacoes,
+        criado_por: data.criado_por || data.user_id,
       })
       .returning();
 

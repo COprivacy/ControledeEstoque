@@ -383,57 +383,73 @@ export default function Orcamentos() {
               Novo Orçamento
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl">Criar Novo Orçamento</DialogTitle>
-              <DialogDescription>Preencha as informações do cliente e adicione os produtos</DialogDescription>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="border-b pb-4">
+              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Criar Novo Orçamento
+              </DialogTitle>
+              <DialogDescription className="text-base">
+                Preencha as informações do cliente e adicione os produtos para gerar o orçamento
+              </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-6">
-              <Card>
-                <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    Informações do Cliente
-                  </CardTitle>
-                  <CardDescription>Dados do cliente para o orçamento</CardDescription>
+            <div className="space-y-6 py-4">
+              <Card className="border-2 shadow-md">
+                <CardHeader className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <User className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg text-gray-900">Informações do Cliente</CardTitle>
+                        <CardDescription className="text-sm">Dados necessários para identificação do cliente</CardDescription>
+                      </div>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-4 pt-6">
-                  <div>
-                    <Label htmlFor="select-cliente">Selecionar Cliente Cadastrado</Label>
+                <CardContent className="space-y-5 pt-6">
+                  <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-4">
+                    <Label htmlFor="select-cliente" className="text-sm font-semibold text-gray-700 mb-2 block">
+                      Cliente Cadastrado (Opcional)
+                    </Label>
                     <Select onValueChange={handleSelecionarCliente}>
-                      <SelectTrigger id="select-cliente">
-                        <SelectValue placeholder="Selecione um cliente (opcional)" />
+                      <SelectTrigger id="select-cliente" className="bg-white">
+                        <SelectValue placeholder="Buscar cliente já cadastrado..." />
                       </SelectTrigger>
                       <SelectContent>
                         {clientes.map((cliente) => (
                           <SelectItem key={cliente.id} value={cliente.id.toString()}>
-                            {cliente.nome} {cliente.email ? `- ${cliente.email}` : ''}
+                            <div className="flex flex-col">
+                              <span className="font-medium">{cliente.nome}</span>
+                              {cliente.email && <span className="text-xs text-muted-foreground">{cliente.email}</span>}
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <Separator />
+                  <Separator className="my-4" />
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="input-nome" className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        Nome do Cliente *
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <Label htmlFor="input-nome" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <User className="h-4 w-4 text-blue-600" />
+                        Nome Completo *
                       </Label>
                       <Input
                         id="input-nome"
                         value={formData.cliente_nome}
                         onChange={(e) => setFormData({ ...formData, cliente_nome: e.target.value })}
-                        placeholder="Nome completo"
+                        placeholder="Digite o nome completo do cliente"
                         required
+                        className="border-2 focus:border-blue-500"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="input-email" className="flex items-center gap-2">
-                        <Mail className="h-4 w-4" />
+                    <div className="space-y-2">
+                      <Label htmlFor="input-email" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <Mail className="h-4 w-4 text-purple-600" />
                         Email
                       </Label>
                       <Input
@@ -442,14 +458,15 @@ export default function Orcamentos() {
                         value={formData.cliente_email}
                         onChange={(e) => setFormData({ ...formData, cliente_email: e.target.value })}
                         placeholder="email@exemplo.com"
+                        className="border-2 focus:border-purple-500"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="input-telefone" className="flex items-center gap-2">
-                        <Phone className="h-4 w-4" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <Label htmlFor="input-telefone" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <Phone className="h-4 w-4 text-green-600" />
                         Telefone
                       </Label>
                       <Input
@@ -457,11 +474,12 @@ export default function Orcamentos() {
                         value={formData.cliente_telefone}
                         onChange={(e) => setFormData({ ...formData, cliente_telefone: e.target.value })}
                         placeholder="(00) 00000-0000"
+                        className="border-2 focus:border-green-500"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="input-validade" className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
+                    <div className="space-y-2">
+                      <Label htmlFor="input-validade" className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <Calendar className="h-4 w-4 text-orange-600" />
                         Validade do Orçamento
                       </Label>
                       <Input
@@ -469,31 +487,48 @@ export default function Orcamentos() {
                         type="date"
                         value={formData.validade}
                         onChange={(e) => setFormData({ ...formData, validade: e.target.value })}
+                        className="border-2 focus:border-orange-500"
                       />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5" />
-                    Produtos
-                  </CardTitle>
-                  <CardDescription>Adicione produtos ao orçamento</CardDescription>
+              <Card className="border-2 shadow-md">
+                <CardHeader className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 border-b">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <ShoppingCart className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg text-gray-900">Produtos do Orçamento</CardTitle>
+                        <CardDescription className="text-sm">Selecione e adicione os produtos</CardDescription>
+                      </div>
+                    </div>
+                    {itensCarrinho.length > 0 && (
+                      <Badge className="bg-green-600 text-white px-3 py-1">
+                        {itensCarrinho.length} {itensCarrinho.length === 1 ? 'item' : 'itens'}
+                      </Badge>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4 pt-6">
-                  <div>
-                    <Label htmlFor="select-produto">Adicionar Produto</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="select-produto" className="text-sm font-semibold text-gray-700">
+                      Buscar e Adicionar Produto
+                    </Label>
                     <Select onValueChange={(value) => adicionarItem(parseInt(value))}>
-                      <SelectTrigger id="select-produto">
-                        <SelectValue placeholder="Selecione um produto para adicionar" />
+                      <SelectTrigger id="select-produto" className="border-2 focus:border-green-500">
+                        <SelectValue placeholder="🔍 Selecione um produto da lista..." />
                       </SelectTrigger>
                       <SelectContent>
                         {produtos.map((produto) => (
                           <SelectItem key={produto.id} value={produto.id.toString()}>
-                            {produto.nome} - R$ {produto.preco.toFixed(2)}
+                            <div className="flex justify-between items-center w-full gap-4">
+                              <span className="font-medium">{produto.nome}</span>
+                              <span className="text-green-600 font-semibold">R$ {produto.preco.toFixed(2)}</span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -573,21 +608,35 @@ export default function Orcamentos() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Observações
-                  </CardTitle>
-                  <CardDescription>Informações adicionais sobre o orçamento</CardDescription>
+              <Card className="border-2 shadow-md">
+                <CardHeader className="bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 border-b">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-orange-100 rounded-lg">
+                      <FileText className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg text-gray-900">Observações e Condições</CardTitle>
+                      <CardDescription className="text-sm">Informações adicionais importantes</CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <Textarea
-                    value={formData.observacoes}
-                    onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                    placeholder="Condições de pagamento, prazos, garantias, etc..."
-                    rows={4}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="observacoes" className="text-sm font-semibold text-gray-700">
+                      Condições de pagamento, prazos, garantias e outras informações
+                    </Label>
+                    <Textarea
+                      id="observacoes"
+                      value={formData.observacoes}
+                      onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+                      placeholder="Exemplo:&#10;- Pagamento: 50% entrada + 50% em 30 dias&#10;- Prazo de entrega: 7 dias úteis&#10;- Garantia: 12 meses&#10;- Frete: Por conta do cliente"
+                      rows={5}
+                      className="border-2 focus:border-orange-500 resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Estas informações aparecerão no orçamento impresso
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             </div>

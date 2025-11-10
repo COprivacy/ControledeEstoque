@@ -3953,6 +3953,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orcamentos/:id/converter-venda", getUserId, async (req, res) => {
     try {
       const userId = req.headers["effective-user-id"] as string;
+      const funcionarioId = req.headers["funcionario-id"] as string;
       const id = parseInt(req.params.id);
 
       if (!userId) {
@@ -3963,8 +3964,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(501).json({ error: "Método converterOrcamentoEmVenda não implementado" });
       }
 
-      const venda = await storage.converterOrcamentoEmVenda(id, userId);
-      console.log(`✅ Orçamento ${id} convertido em venda ${venda.id}`);
+      // Buscar nome do vendedor
+      let vendedorNome = 'Sistema';
+      if (funcionarioId) {
+        const funcionario = await storage.getFuncionario(funcionarioId);
+        if (funcionario) {
+          vendedorNome = funcionario.nome;
+        }
+      } else {
+        const usuario = await storage.getUserById(userId);
+        if (usuario) {
+          vendedorNome = usuario.nome;
+        }
+      }
+
+      const venda = await storage.converterOrcamentoEmVenda(id, userId, vendedorNome);
+      console.log(`✅ Orçamento ${id} convertido em venda ${venda.id} por ${vendedorNome}`);
       res.json(venda);
     } catch (error: any) {
       console.error("Erro ao converter orçamento:", error);

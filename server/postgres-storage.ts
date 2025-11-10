@@ -852,7 +852,7 @@ export class PostgresStorage implements IStorage {
       .where(eq(orcamentos.id, id));
   }
 
-  async converterOrcamentoEmVenda(id: number, userId: string): Promise<Venda> {
+  async converterOrcamentoEmVenda(id: number, userId: string, vendedorNome?: string): Promise<Venda> {
     const orcamento = await this.getOrcamento(id);
 
     if (!orcamento) {
@@ -881,6 +881,8 @@ export class PostgresStorage implements IStorage {
         cliente_id: orcamento.cliente_id || undefined,
         produto: itensOrcamento.map((i: any) => i.nome).join(', '),
         quantidade_vendida: itensOrcamento.reduce((sum: number, i: any) => sum + i.quantidade, 0),
+        orcamento_id: id,
+        vendedor: vendedorNome || orcamento.vendedor || 'Sistema',
       })
       .returning();
 

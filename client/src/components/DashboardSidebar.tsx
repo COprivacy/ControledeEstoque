@@ -1,14 +1,14 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { Home, Package, ClipboardList, FileText, Settings, CreditCard, Users, DollarSign, TrendingUp, BarChart3, Crown, Lock, LineChart, Scan, Wallet, ShoppingCart, PackageX } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useUser } from "@/hooks/use-user";
 
 type MenuItem = {
   title: string;
   url: string;
   icon: any;
-  permission?: "dashboard" | "pdv" | "produtos" | "inventario" | "relatorios" | "clientes" | "fornecedores" | "financeiro" | "config_fiscal" | "configuracoes" | "caixa" | "devolucoes" | "contas_pagar" | "contas_receber" | "historico_caixas";
+  permission?: "dashboard" | "pdv" | "produtos" | "inventario" | "relatorios" | "clientes" | "fornecedores" | "financeiro" | "config_fiscal" | "configuracoes" | "caixa" | "devolucoes" | "contas_pagar" | "contas_receber" | "historico_caixas" | "orcamentos";
   adminOnly?: boolean;
 };
 
@@ -92,18 +92,7 @@ export default function DashboardSidebar() {
 
         <SidebarGroup>
           <SidebarGroupLabel className="px-3 text-xs font-semibold tracking-wider text-muted-foreground/80 uppercase">
-            Estoque
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {inventoryMenuItems.map(renderMenuItem)}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-3 text-xs font-semibold tracking-wider text-muted-foreground/80 uppercase">
-            Vendas
+            💰 Vendas
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
@@ -114,7 +103,18 @@ export default function DashboardSidebar() {
 
         <SidebarGroup>
           <SidebarGroupLabel className="px-3 text-xs font-semibold tracking-wider text-muted-foreground/80 uppercase">
-            Gestão Financeira
+            📦 Estoque
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="space-y-1">
+              {inventoryMenuItems.map(renderMenuItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="px-3 text-xs font-semibold tracking-wider text-muted-foreground/80 uppercase">
+            💵 Financeiro
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">

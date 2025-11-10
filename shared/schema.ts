@@ -47,6 +47,8 @@ export const vendas = pgTable("vendas", {
   itens: text("itens"),
   cliente_id: integer("cliente_id"),
   forma_pagamento: text("forma_pagamento"),
+  orcamento_id: integer("orcamento_id"),
+  vendedor: text("vendedor"),
 });
 
 export const fornecedores = pgTable("fornecedores", {

@@ -76,11 +76,15 @@ export default function SalesTable({ sales }: SalesTableProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      {sale.orcamento_numero && (
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 w-fit">
-                          📋 {sale.orcamento_numero}
+                      {sale.orcamento_numero ? (
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 w-fit font-semibold">
+                          📋 Orçamento {sale.orcamento_numero}
                         </Badge>
-                      )}
+                      ) : sale.orcamento_id ? (
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 w-fit">
+                          📋 Orçamento #{sale.orcamento_id}
+                        </Badge>
+                      ) : null}
                       {sale.vendedor && (
                         <span className="text-sm text-muted-foreground">
                           👤 {sale.vendedor}

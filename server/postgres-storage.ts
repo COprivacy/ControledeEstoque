@@ -251,6 +251,37 @@ export class PostgresStorage implements IStorage {
     return await this.db.select().from(vendas);
   }
 
+  async getVendasByUser(userId: string): Promise<Venda[]> {
+    try {
+      const result = await this.pool.query(
+        `SELECT 
+          v.*,
+          o.id as orcamento_id,
+          o.vendedor,
+          o.numero as orcamento_numero
+         FROM vendas v
+         LEFT JOIN orcamentos o ON v.orcamento_id = o.id
+         WHERE v.user_id = $1
+         ORDER BY v.data DESC`,
+        [userId]
+      );
+
+      // Log para debug
+      if (result.rows.length > 0) {
+        logger.info('[DB] Exemplo de venda com orçamento:', {
+          id: result.rows[0].id,
+          orcamento_id: result.rows[0].orcamento_id,
+          orcamento_numero: result.rows[0].orcamento_numero
+        });
+      }
+
+      return result.rows;
+    } catch (error) {
+      logger.error('[DB] Erro ao buscar vendas:', error);
+      throw error;
+    }
+  }
+
   async createVenda(insertVenda: InsertVenda): Promise<Venda> {
     const result = await this.db.insert(vendas).values(insertVenda).returning();
     return result[0];
@@ -869,10 +900,10 @@ export class PostgresStorage implements IStorage {
 
     // Criar venda baseada no orçamento
     const itensOrcamento = Array.isArray(orcamento.itens) ? orcamento.itens : [];
-    
+
     // Se o orçamento tem cliente_id, usar ele. Senão, tentar buscar pelo nome do cliente
     let clienteId = orcamento.cliente_id;
-    
+
     if (!clienteId && orcamento.cliente_nome) {
       // Buscar cliente pelo nome e user_id
       const clientesEncontrados = await this.db
@@ -884,12 +915,12 @@ export class PostgresStorage implements IStorage {
             eq(clientes.nome, orcamento.cliente_nome)
           )
         );
-      
+
       if (clientesEncontrados.length > 0) {
         clienteId = clientesEncontrados[0].id;
       }
     }
-    
+
     const [venda] = await this.db
       .insert(vendas)
       .values({

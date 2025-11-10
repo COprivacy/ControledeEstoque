@@ -847,10 +847,12 @@ export default function Orcamentos() {
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {orcamento.data_criacao && format(new Date(orcamento.data_criacao), "dd/MM/yyyy", { locale: ptBR })}
+                        {orcamento.data_criacao && orcamento.data_criacao !== ""
+                          ? format(new Date(orcamento.data_criacao), "dd/MM/yyyy", { locale: ptBR })
+                          : "-"}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {orcamento.validade
+                        {orcamento.validade && orcamento.validade !== "" 
                           ? format(new Date(orcamento.validade), "dd/MM/yyyy", { locale: ptBR })
                           : "-"}
                       </TableCell>
@@ -988,7 +990,9 @@ export default function Orcamentos() {
               <DialogHeader>
                 <DialogTitle className="text-2xl">Orçamento {selectedOrcamento.numero}</DialogTitle>
                 <DialogDescription>
-                  {selectedOrcamento.data_criacao && `Criado em ${format(new Date(selectedOrcamento.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`}
+                  {selectedOrcamento.data_criacao && selectedOrcamento.data_criacao !== ""
+                    ? `Criado em ${format(new Date(selectedOrcamento.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`
+                    : "Data de criação não disponível"}
                 </DialogDescription>
               </DialogHeader>
 

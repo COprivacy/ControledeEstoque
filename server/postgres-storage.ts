@@ -775,7 +775,7 @@ export class PostgresStorage implements IStorage {
       .select()
       .from(orcamentos)
       .where(eq(orcamentos.user_id, userId))
-      .orderBy(desc(orcamentos.data_emissao));
+      .orderBy(desc(orcamentos.data_criacao));
     return result;
   }
 
@@ -793,20 +793,25 @@ export class PostgresStorage implements IStorage {
       .insert(orcamentos)
       .values({
         user_id: data.user_id,
-        numero_orcamento: data.numero_orcamento,
-        data_emissao: new Date(),
-        data_validade: data.data_validade,
+        numero: data.numero,
+        data_criacao: new Date().toISOString(),
+        validade: data.validade || null,
         cliente_id: data.cliente_id || null,
         cliente_nome: data.cliente_nome,
-        cliente_email: data.cliente_email,
-        cliente_telefone: data.cliente_telefone,
+        cliente_email: data.cliente_email || null,
+        cliente_telefone: data.cliente_telefone || null,
+        cliente_cpf_cnpj: data.cliente_cpf_cnpj || null,
+        cliente_endereco: data.cliente_endereco || null,
         status: data.status || 'pendente',
         itens: data.itens,
         subtotal: data.subtotal,
-        desconto: data.desconto,
-        total: data.total,
-        observacoes: data.observacoes,
-        criado_por: data.criado_por || data.user_id,
+        desconto: data.desconto || 0,
+        valor_total: data.valor_total,
+        observacoes: data.observacoes || null,
+        condicoes_pagamento: data.condicoes_pagamento || null,
+        prazo_entrega: data.prazo_entrega || null,
+        vendedor: data.vendedor || null,
+        venda_id: data.venda_id || null,
       })
       .returning();
 
@@ -817,18 +822,22 @@ export class PostgresStorage implements IStorage {
     const [orcamento] = await this.db
       .update(orcamentos)
       .set({
-        data_validade: data.data_validade ? new Date(data.data_validade) : null,
+        validade: data.validade,
         cliente_id: data.cliente_id,
         cliente_nome: data.cliente_nome,
         cliente_email: data.cliente_email,
         cliente_telefone: data.cliente_telefone,
+        cliente_cpf_cnpj: data.cliente_cpf_cnpj,
+        cliente_endereco: data.cliente_endereco,
         status: data.status,
         itens: data.itens,
         subtotal: data.subtotal,
         desconto: data.desconto,
-        total: data.total,
+        valor_total: data.valor_total,
         observacoes: data.observacoes,
-        atualizado_em: new Date(),
+        condicoes_pagamento: data.condicoes_pagamento,
+        prazo_entrega: data.prazo_entrega,
+        data_atualizacao: new Date().toISOString(),
       })
       .where(and(eq(orcamentos.id, id), eq(orcamentos.user_id, userId)))
       .returning();

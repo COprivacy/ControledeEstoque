@@ -31,10 +31,10 @@ export default function Orcamentos() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedOrcamento, setSelectedOrcamento] = useState<Orcamento | null>(null);
   const [formData, setFormData] = useState({
-    clienteNome: "",
-    clienteEmail: "",
-    clienteTelefone: "",
-    dataValidade: "",
+    cliente_nome: "",
+    cliente_email: "",
+    cliente_telefone: "",
+    validade: "",
     observacoes: "",
   });
   const [itensCarrinho, setItensCarrinho] = useState<ItemCarrinho[]>([]);
@@ -160,17 +160,17 @@ export default function Orcamentos() {
 
   const resetForm = () => {
     setFormData({
-      clienteNome: "",
-      clienteEmail: "",
-      clienteTelefone: "",
-      dataValidade: "",
+      cliente_nome: "",
+      cliente_email: "",
+      cliente_telefone: "",
+      validade: "",
       observacoes: "",
     });
     setItensCarrinho([]);
   };
 
   const handleSubmit = () => {
-    if (!formData.clienteNome.trim()) {
+    if (!formData.cliente_nome.trim()) {
       toast({ title: "Nome do cliente é obrigatório", variant: "destructive" });
       return;
     }
@@ -183,15 +183,15 @@ export default function Orcamentos() {
     const subtotal = calcularSubtotal();
     
     createMutation.mutate({
-      cliente_nome: formData.clienteNome,
-      cliente_email: formData.clienteEmail || "",
-      cliente_telefone: formData.clienteTelefone || "",
-      data_validade: formData.dataValidade || null,
+      cliente_nome: formData.cliente_nome,
+      cliente_email: formData.cliente_email || "",
+      cliente_telefone: formData.cliente_telefone || "",
+      validade: formData.validade || null,
       observacoes: formData.observacoes || null,
       itens: itensCarrinho,
       subtotal,
       desconto: 0,
-      total: subtotal,
+      valor_total: subtotal,
     });
   };
 
@@ -200,9 +200,9 @@ export default function Orcamentos() {
     if (cliente) {
       setFormData({
         ...formData,
-        clienteNome: cliente.nome,
-        clienteEmail: cliente.email || "",
-        clienteTelefone: cliente.telefone || "",
+        cliente_nome: cliente.nome,
+        cliente_email: cliente.email || "",
+        cliente_telefone: cliente.telefone || "",
       });
     }
   };
@@ -222,7 +222,7 @@ export default function Orcamentos() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Orçamento ${orcamento.numeroOrcamento}</title>
+          <title>Orçamento ${orcamento.numero}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
             h1 { color: #333; }
@@ -233,12 +233,12 @@ export default function Orcamentos() {
           </style>
         </head>
         <body>
-          <h1>Orçamento ${orcamento.numeroOrcamento}</h1>
-          <p><strong>Data:</strong> ${orcamento.dataEmissao ? format(new Date(orcamento.dataEmissao), "dd/MM/yyyy", { locale: ptBR }) : ''}</p>
-          <p><strong>Cliente:</strong> ${orcamento.clienteNome || 'Não informado'}</p>
-          ${orcamento.clienteEmail ? `<p><strong>Email:</strong> ${orcamento.clienteEmail}</p>` : ''}
-          ${orcamento.clienteTelefone ? `<p><strong>Telefone:</strong> ${orcamento.clienteTelefone}</p>` : ''}
-          ${orcamento.dataValidade ? `<p><strong>Validade:</strong> ${format(new Date(orcamento.dataValidade), "dd/MM/yyyy", { locale: ptBR })}</p>` : ''}
+          <h1>Orçamento ${orcamento.numero}</h1>
+          <p><strong>Data:</strong> ${orcamento.data_criacao ? format(new Date(orcamento.data_criacao), "dd/MM/yyyy", { locale: ptBR }) : ''}</p>
+          <p><strong>Cliente:</strong> ${orcamento.cliente_nome || 'Não informado'}</p>
+          ${orcamento.cliente_email ? `<p><strong>Email:</strong> ${orcamento.cliente_email}</p>` : ''}
+          ${orcamento.cliente_telefone ? `<p><strong>Telefone:</strong> ${orcamento.cliente_telefone}</p>` : ''}
+          ${orcamento.validade ? `<p><strong>Validade:</strong> ${format(new Date(orcamento.validade), "dd/MM/yyyy", { locale: ptBR })}</p>` : ''}
           
           <h2>Itens</h2>
           <table>
@@ -265,7 +265,7 @@ export default function Orcamentos() {
           <div class="total">
             <p>Subtotal: R$ ${orcamento.subtotal.toFixed(2)}</p>
             ${(orcamento.desconto && orcamento.desconto > 0) ? `<p>Desconto: R$ ${orcamento.desconto.toFixed(2)}</p>` : ''}
-            <p>Total: R$ ${orcamento.total.toFixed(2)}</p>
+            <p>Total: R$ ${orcamento.valor_total.toFixed(2)}</p>
           </div>
           
           ${orcamento.observacoes ? `<p><strong>Observações:</strong> ${orcamento.observacoes}</p>` : ''}
@@ -346,8 +346,8 @@ export default function Orcamentos() {
                       <Input
                         id="input-nome"
                         data-testid="input-cliente-nome"
-                        value={formData.clienteNome}
-                        onChange={(e) => setFormData({ ...formData, clienteNome: e.target.value })}
+                        value={formData.cliente_nome}
+                        onChange={(e) => setFormData({ ...formData, cliente_nome: e.target.value })}
                         placeholder="Nome completo"
                         required
                       />
@@ -358,8 +358,8 @@ export default function Orcamentos() {
                         id="input-email"
                         data-testid="input-cliente-email"
                         type="email"
-                        value={formData.clienteEmail}
-                        onChange={(e) => setFormData({ ...formData, clienteEmail: e.target.value })}
+                        value={formData.cliente_email}
+                        onChange={(e) => setFormData({ ...formData, cliente_email: e.target.value })}
                         placeholder="email@exemplo.com"
                       />
                     </div>
@@ -371,8 +371,8 @@ export default function Orcamentos() {
                       <Input
                         id="input-telefone"
                         data-testid="input-cliente-telefone"
-                        value={formData.clienteTelefone}
-                        onChange={(e) => setFormData({ ...formData, clienteTelefone: e.target.value })}
+                        value={formData.cliente_telefone}
+                        onChange={(e) => setFormData({ ...formData, cliente_telefone: e.target.value })}
                         placeholder="(00) 00000-0000"
                       />
                     </div>
@@ -382,8 +382,8 @@ export default function Orcamentos() {
                         id="input-validade"
                         data-testid="input-data-validade"
                         type="date"
-                        value={formData.dataValidade}
-                        onChange={(e) => setFormData({ ...formData, dataValidade: e.target.value })}
+                        value={formData.validade}
+                        onChange={(e) => setFormData({ ...formData, validade: e.target.value })}
                       />
                     </div>
                   </div>
@@ -560,26 +560,26 @@ export default function Orcamentos() {
                   {orcamentos.map((orcamento) => (
                     <TableRow key={orcamento.id} data-testid={`row-orcamento-${orcamento.id}`}>
                       <TableCell className="font-mono font-medium" data-testid={`text-numero-${orcamento.id}`}>
-                        {orcamento.numeroOrcamento}
+                        {orcamento.numero}
                       </TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{orcamento.clienteNome || "Cliente não informado"}</div>
-                          {orcamento.clienteEmail && (
-                            <div className="text-sm text-muted-foreground">{orcamento.clienteEmail}</div>
+                          <div className="font-medium">{orcamento.cliente_nome || "Cliente não informado"}</div>
+                          {orcamento.cliente_email && (
+                            <div className="text-sm text-muted-foreground">{orcamento.cliente_email}</div>
                           )}
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {orcamento.dataEmissao && format(new Date(orcamento.dataEmissao), "dd/MM/yyyy", { locale: ptBR })}
+                        {orcamento.data_criacao && format(new Date(orcamento.data_criacao), "dd/MM/yyyy", { locale: ptBR })}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {orcamento.dataValidade
-                          ? format(new Date(orcamento.dataValidade), "dd/MM/yyyy", { locale: ptBR })
+                        {orcamento.validade
+                          ? format(new Date(orcamento.validade), "dd/MM/yyyy", { locale: ptBR })
                           : "-"}
                       </TableCell>
                       <TableCell className="text-right font-medium" data-testid={`text-total-${orcamento.id}`}>
-                        R$ {orcamento.total.toFixed(2)}
+                        R$ {orcamento.valor_total.toFixed(2)}
                       </TableCell>
                       <TableCell>{getStatusBadge(orcamento.status || "pendente")}</TableCell>
                       <TableCell>
@@ -660,9 +660,9 @@ export default function Orcamentos() {
           {selectedOrcamento && (
             <>
               <DialogHeader>
-                <DialogTitle>Orçamento {selectedOrcamento.numeroOrcamento}</DialogTitle>
+                <DialogTitle>Orçamento {selectedOrcamento.numero}</DialogTitle>
                 <DialogDescription>
-                  {selectedOrcamento.dataEmissao && `Criado em ${format(new Date(selectedOrcamento.dataEmissao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`}
+                  {selectedOrcamento.data_criacao && `Criado em ${format(new Date(selectedOrcamento.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`}
                 </DialogDescription>
               </DialogHeader>
 
@@ -675,15 +675,15 @@ export default function Orcamentos() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <div className="text-sm text-muted-foreground">Nome</div>
-                        <div className="font-medium">{selectedOrcamento.clienteNome || "Não informado"}</div>
+                        <div className="font-medium">{selectedOrcamento.cliente_nome || "Não informado"}</div>
                       </div>
                       <div>
                         <div className="text-sm text-muted-foreground">Email</div>
-                        <div className="font-medium">{selectedOrcamento.clienteEmail || "Não informado"}</div>
+                        <div className="font-medium">{selectedOrcamento.cliente_email || "Não informado"}</div>
                       </div>
                       <div>
                         <div className="text-sm text-muted-foreground">Telefone</div>
-                        <div className="font-medium">{selectedOrcamento.clienteTelefone || "Não informado"}</div>
+                        <div className="font-medium">{selectedOrcamento.cliente_telefone || "Não informado"}</div>
                       </div>
                       <div>
                         <div className="text-sm text-muted-foreground">Status</div>
@@ -739,7 +739,7 @@ export default function Orcamentos() {
                       <Separator />
                       <div className="flex justify-between">
                         <span className="text-lg font-semibold">Total</span>
-                        <span className="text-lg font-bold">R$ {selectedOrcamento.total.toFixed(2)}</span>
+                        <span className="text-lg font-bold">R$ {selectedOrcamento.valor_total.toFixed(2)}</span>
                       </div>
                     </div>
                   </CardContent>

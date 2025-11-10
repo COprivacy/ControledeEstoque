@@ -3845,7 +3845,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { insertOrcamentoSchema } = await import("@shared/schema");
       
       // Validar dados recebidos
-      const validatedData = insertOrcamentoSchema.parse(req.body);
+      const validatedData = insertOrcamentoSchema.parse({
+        ...req.body,
+        user_id: userId,
+      });
 
       // Gerar número do orçamento
       const numeroOrcamento = `ORC-${Date.now()}`;
@@ -3853,22 +3856,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Criar orçamento com todos os dados
       const orcamentoData = {
         user_id: userId,
-        numero_orcamento: numeroOrcamento,
+        numero: numeroOrcamento,
         cliente_nome: validatedData.cliente_nome,
         cliente_email: validatedData.cliente_email || null,
         cliente_telefone: validatedData.cliente_telefone || null,
-        data_validade: validatedData.data_validade ? new Date(validatedData.data_validade).toISOString() : null,
+        cliente_cpf_cnpj: validatedData.cliente_cpf_cnpj || null,
+        cliente_endereco: validatedData.cliente_endereco || null,
+        validade: validatedData.validade || '30 dias',
         itens: validatedData.itens,
         subtotal: validatedData.subtotal,
         desconto: validatedData.desconto || 0,
-        total: validatedData.total,
+        valor_total: validatedData.valor_total,
         observacoes: validatedData.observacoes || null,
-        status: "pendente",
+        condicoes_pagamento: validatedData.condicoes_pagamento || null,
+        prazo_entrega: validatedData.prazo_entrega || null,
+        status: validatedData.status || 'pendente',
       };
 
       const orcamento = await storage.createOrcamento(orcamentoData);
 
-      console.log(`✅ Orçamento criado - ID: ${orcamento.id}, Número: ${orcamento.numero_orcamento}, Cliente: ${orcamento.cliente_nome}`);
+      console.log(`✅ Orçamento criado - ID: ${orcamento.id}, Número: ${orcamento.numero}, Cliente: ${orcamento.cliente_nome}`);
       res.json(orcamento);
     } catch (error) {
       console.error("Erro ao criar orçamento:", error);

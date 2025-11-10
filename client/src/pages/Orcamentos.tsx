@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +39,7 @@ export default function Orcamentos() {
     observacoes: "",
   });
   const [itensCarrinho, setItensCarrinho] = useState<ItemCarrinho[]>([]);
+  const [searchProduto, setSearchProduto] = useState("");
 
   const { data: orcamentos = [], isLoading } = useQuery<Orcamento[]>({
     queryKey: ["/api/orcamentos"],
@@ -51,6 +52,15 @@ export default function Orcamentos() {
   const { data: clientes = [] } = useQuery<Cliente[]>({
     queryKey: ["/api/clientes"],
   });
+
+  const produtosFiltrados = useMemo(() => {
+    if (!searchProduto.trim()) {
+      return produtos;
+    }
+    return produtos.filter((produto) =>
+      produto.nome.toLowerCase().includes(searchProduto.toLowerCase())
+    );
+  }, [produtos, searchProduto]);
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -515,22 +525,58 @@ export default function Orcamentos() {
                 </CardHeader>
                 <CardContent className="space-y-4 pt-6">
                   <div className="space-y-2">
-                    <Label htmlFor="select-produto" className="text-sm font-semibold text-gray-700">
-                      Buscar e Adicionar Produto
+                    <Label htmlFor="search-produto" className="text-sm font-semibold text-gray-700">
+                      Buscar Produto
                     </Label>
-                    <Select onValueChange={(value) => adicionarItem(parseInt(value))}>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="search-produto"
+                        type="text"
+                        placeholder="Digite o nome do produto para buscar..."
+                        value={searchProduto}
+                        onChange={(e) => setSearchProduto(e.target.value)}
+                        className="pl-9 border-2 focus:border-green-500"
+                      />
+                    </div>
+                    {searchProduto && (
+                      <p className="text-xs text-muted-foreground">
+                        {produtosFiltrados.length} produto(s) encontrado(s)
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="select-produto" className="text-sm font-semibold text-gray-700">
+                      Selecionar e Adicionar Produto
+                    </Label>
+                    <Select 
+                      onValueChange={(value) => {
+                        adicionarItem(parseInt(value));
+                        setSearchProduto("");
+                      }}
+                      value=""
+                    >
                       <SelectTrigger id="select-produto" className="border-2 focus:border-green-500">
                         <SelectValue placeholder="🔍 Selecione um produto da lista..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {produtos.map((produto) => (
-                          <SelectItem key={produto.id} value={produto.id.toString()}>
-                            <div className="flex justify-between items-center w-full gap-4">
-                              <span className="font-medium">{produto.nome}</span>
-                              <span className="text-green-600 font-semibold">R$ {produto.preco.toFixed(2)}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {produtosFiltrados.length === 0 ? (
+                          <div className="p-4 text-center text-muted-foreground text-sm">
+                            {searchProduto 
+                              ? `Nenhum produto encontrado para "${searchProduto}"`
+                              : "Nenhum produto disponível"}
+                          </div>
+                        ) : (
+                          produtosFiltrados.map((produto) => (
+                            <SelectItem key={produto.id} value={produto.id.toString()}>
+                              <div className="flex justify-between items-center w-full gap-4">
+                                <span className="font-medium">{produto.nome}</span>
+                                <span className="text-green-600 font-semibold">R$ {produto.preco.toFixed(2)}</span>
+                              </div>
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>

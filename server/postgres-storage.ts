@@ -770,20 +770,19 @@ export class PostgresStorage implements IStorage {
   }
 
   // Métodos de Orçamentos
-  async getOrcamentos(userId: string): Promise<Orcamento[]> {
+  async getOrcamentos(): Promise<Orcamento[]> {
     const result = await this.db
       .select()
       .from(orcamentos)
-      .where(eq(orcamentos.user_id, userId))
       .orderBy(desc(orcamentos.data_criacao));
     return result;
   }
 
-  async getOrcamento(id: number, userId: string): Promise<Orcamento | undefined> {
+  async getOrcamento(id: number): Promise<Orcamento | undefined> {
     const result = await this.db
       .select()
       .from(orcamentos)
-      .where(and(eq(orcamentos.id, id), eq(orcamentos.user_id, userId)))
+      .where(eq(orcamentos.id, id))
       .limit(1);
     return result[0];
   }
@@ -818,7 +817,7 @@ export class PostgresStorage implements IStorage {
     return orcamento;
   }
 
-  async updateOrcamento(id: number, userId: string, data: any): Promise<Orcamento> {
+  async updateOrcamento(id: number, data: any): Promise<Orcamento> {
     const [orcamento] = await this.db
       .update(orcamentos)
       .set({
@@ -839,23 +838,27 @@ export class PostgresStorage implements IStorage {
         prazo_entrega: data.prazo_entrega,
         data_atualizacao: new Date().toISOString(),
       })
-      .where(and(eq(orcamentos.id, id), eq(orcamentos.user_id, userId)))
+      .where(eq(orcamentos.id, id))
       .returning();
 
     return orcamento;
   }
 
-  async deleteOrcamento(id: number, userId: string): Promise<void> {
+  async deleteOrcamento(id: number): Promise<void> {
     await this.db
       .delete(orcamentos)
-      .where(and(eq(orcamentos.id, id), eq(orcamentos.user_id, userId)));
+      .where(eq(orcamentos.id, id));
   }
 
   async converterOrcamentoEmVenda(id: number, userId: string): Promise<Venda> {
-    const orcamento = await this.getOrcamento(id, userId);
+    const orcamento = await this.getOrcamento(id);
 
     if (!orcamento) {
       throw new Error("Orçamento não encontrado");
+    }
+
+    if (orcamento.user_id !== userId) {
+      throw new Error("Acesso negado");
     }
 
     if (orcamento.status === 'convertido') {
@@ -863,35 +866,29 @@ export class PostgresStorage implements IStorage {
     }
 
     // Criar venda baseada no orçamento
+    const itensOrcamento = Array.isArray(orcamento.itens) ? orcamento.itens : [];
+    
     const [venda] = await this.db
       .insert(vendas)
       .values({
-        userId,
-        data: new Date(),
-        total: orcamento.total,
-        metodoPagamento: 'dinheiro',
-        itens: orcamento.itens,
-        clienteId: orcamento.clienteId,
-        observacoes: `Convertido do orçamento ${orcamento.numeroOrcamento}`,
+        user_id: userId,
+        data: new Date().toISOString(),
+        valor_total: orcamento.valor_total,
+        forma_pagamento: 'dinheiro',
+        itens: JSON.stringify(itensOrcamento),
+        cliente_id: orcamento.cliente_id || undefined,
+        produto: itensOrcamento.map((i: any) => i.nome).join(', '),
+        quantidade_vendida: itensOrcamento.reduce((sum: number, i: any) => sum + i.quantidade, 0),
       })
       .returning();
 
     // Atualizar produtos (reduzir estoque)
-    const itensOrcamento = orcamento.itens as any[];
-    for (const item of itensOrcamento) {
-      const produto = await this.db
-        .select()
-        .from(produtos)
-        .where(and(eq(produtos.id, item.produto_id), eq(produtos.userId, userId)))
-        .limit(1);
-
-      if (produto[0]) {
-        await this.db
-          .update(produtos)
-          .set({
-            quantidade: produto[0].quantidade - item.quantidade,
-          })
-          .where(eq(produtos.id, item.produto_id));
+    for (const item of itensOrcamento as any[]) {
+      const produto = await this.getProduto(item.produto_id);
+      if (produto && produto.user_id === userId) {
+        await this.updateProduto(item.produto_id, {
+          quantidade: produto.quantidade - item.quantidade,
+        });
       }
     }
 
@@ -900,14 +897,11 @@ export class PostgresStorage implements IStorage {
       .update(orcamentos)
       .set({
         status: 'convertido',
-        atualizadoEm: new Date(),
+        data_atualizacao: new Date().toISOString(),
+        venda_id: venda.id,
       })
       .where(eq(orcamentos.id, id));
 
     return venda;
-  }
-
-  async getDevolucoes(userId: string): Promise<Devolucao[]> {
-    return await this.db.select().from(devolucoes).where(eq(devolucoes.userId, userId)).orderBy(desc(devolucoes.data));
   }
 }

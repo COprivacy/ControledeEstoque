@@ -3843,7 +3843,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers["effective-user-id"] as string;
 
       const { insertOrcamentoSchema } = await import("@shared/schema");
-      
+
       // Validar dados recebidos
       const validatedData = insertOrcamentoSchema.parse({
         ...req.body,
@@ -3891,6 +3891,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers["effective-user-id"] as string;
       const id = parseInt(req.params.id);
 
+      if (!userId) {
+        return res.status(401).json({ error: "Usuário não autenticado" });
+      }
+
       const orcamentoExistente = await storage.getOrcamento(id);
 
       if (!orcamentoExistente || orcamentoExistente.user_id !== userId) {
@@ -3911,7 +3915,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao atualizar orçamento:", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Dados inválidos", details: error.errors });
+        return res
+          .status(400)
+          .json({ error: "Dados inválidos", details: error.errors });
       }
       res.status(500).json({ error: "Erro ao atualizar orçamento" });
     }
@@ -3921,6 +3927,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.headers["effective-user-id"] as string;
       const id = parseInt(req.params.id);
+
+      if (!userId) {
+        return res.status(401).json({ error: "Usuário não autenticado" });
+      }
 
       const orcamento = await storage.getOrcamento(id);
 

@@ -220,6 +220,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`✅ Login de funcionário bem-sucedido: ${email}`);
       }
 
+      await storage.logAdminAction?.(
+        funcionario.id,
+        "LOGIN_FUNCIONARIO",
+        `Login realizado - ${funcionario.nome} (${funcionario.email})`
+      );
+
       const { senha: _, ...funcionarioSemSenha } = funcionario;
       const funcionarioResponse = {
         ...funcionarioSemSenha,
@@ -1283,9 +1289,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const permissoes = await storage.savePermissoesFuncionario(id, req.body);
+      
+      await storage.logAdminAction?.(
+        effectiveUserId,
+        "PERMISSOES_ATUALIZADAS",
+        `Permissões atualizadas para funcionário ${funcionario.nome} (${funcionario.email})`
+      );
+      
       res.json(permissoes);
     } catch (error) {
       res.status(500).json({ error: "Erro ao salvar permissões" });
+    }
+  });
+
+  app.get("/api/logs-admin", getUserId, async (req, res) => {
+    try {
+      const effectiveUserId = req.headers["effective-user-id"] as string;
+      const contaId = req.query.conta_id as string;
+
+      if (!contaId || contaId !== effectiveUserId) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      const logs = await storage.getLogsAdminByAccount?.(contaId);
+      
+      const funcionarios = await storage.getFuncionariosByContaId(contaId);
+      const usuarios = await storage.getUsers?.() || [];
+      const allUsers = [...usuarios, ...funcionarios];
+
+      const logsComNomes = (logs || []).map(log => {
+        const usuario = allUsers.find(u => u.id === log.usuario_id);
+        return {
+          ...log,
+          usuario_nome: usuario?.nome || 'Usuário Desconhecido',
+          usuario_email: usuario?.email || '',
+        };
+      });
+
+      res.json(logsComNomes);
+    } catch (error) {
+      console.error("Erro ao buscar logs:", error);
+      res.status(500).json({ error: "Erro ao buscar logs" });
     }
   });
 

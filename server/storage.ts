@@ -72,7 +72,9 @@ export interface IStorage {
   saveConfigMercadoPago?(config: InsertConfigMercadoPago): Promise<ConfigMercadoPago>;
   updateConfigMercadoPagoStatus?(status: string): Promise<void>;
   getLogsAdmin?(): Promise<LogAdmin[]>;
+  getLogsAdminByAccount?(contaId: string): Promise<LogAdmin[]>;
   createLogAdmin?(log: InsertLogAdmin): Promise<LogAdmin>;
+  logAdminAction?(actorId: string, action: string, details?: string): Promise<void>;
 
   // Métodos para Subscriptions
   getSubscriptions?(): Promise<Subscription[]>;

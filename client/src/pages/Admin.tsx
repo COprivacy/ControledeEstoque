@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Users, UserPlus, Trash2, Shield, Building2, CreditCard, Edit, Power, Check, Crown, Zap } from "lucide-react";
+import { Users, UserPlus, Trash2, Shield, Building2, CreditCard, Edit, Power, Check, Crown, Zap, FileText, Clock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -160,6 +160,15 @@ export default function Admin() {
       return perms;
     },
     enabled: employees.length > 0,
+  });
+
+  const { data: logs = [] } = useQuery({
+    queryKey: ["/api/logs-admin", currentUser.id],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/logs-admin?conta_id=${currentUser.id}`);
+      return response.json();
+    },
+    enabled: !!currentUser.id,
   });
 
   const accountUsers = employees;
@@ -418,7 +427,7 @@ export default function Admin() {
         </div>
 
       <Tabs defaultValue="info" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-800/50 p-1 rounded-xl shadow-sm">
+        <TabsList className="grid w-full grid-cols-3 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-800/50 p-1 rounded-xl shadow-sm">
           <TabsTrigger 
             value="info" 
             data-testid="tab-account-info"
@@ -432,6 +441,13 @@ export default function Admin() {
             className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
           >
             Funcionários
+          </TabsTrigger>
+          <TabsTrigger 
+            value="logs" 
+            data-testid="tab-logs"
+            className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
+          >
+            Logs de Auditoria
           </TabsTrigger>
         </TabsList>
 
@@ -1036,6 +1052,80 @@ export default function Admin() {
               )}
             </DialogContent>
           </Dialog>
+        </TabsContent>
+
+        <TabsContent value="logs" className="space-y-6 mt-6">
+          <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 shadow-lg">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg">
+                  <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Logs de Auditoria
+                  </CardTitle>
+                  <CardDescription>
+                    Histórico de ações dos funcionários e administradores
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {logs.length === 0 ? (
+                <Alert>
+                  <Clock className="h-4 w-4" />
+                  <AlertTitle>Nenhum log encontrado</AlertTitle>
+                  <AlertDescription>
+                    As ações dos funcionários aparecerão aqui quando forem realizadas.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data/Hora</TableHead>
+                        <TableHead>Usuário</TableHead>
+                        <TableHead>Ação</TableHead>
+                        <TableHead>Detalhes</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {logs.map((log: any) => (
+                        <TableRow key={log.id}>
+                          <TableCell data-testid={`text-log-timestamp-${log.id}`}>
+                            {new Date(log.data).toLocaleString('pt-BR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: false
+                            })}
+                          </TableCell>
+                          <TableCell data-testid={`text-log-user-${log.id}`}>
+                            <div>
+                              <div className="font-medium">{log.usuario_nome}</div>
+                              <div className="text-sm text-muted-foreground">{log.usuario_email}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell data-testid={`text-log-action-${log.id}`}>
+                            <Badge variant="outline">
+                              {log.acao}
+                            </Badge>
+                          </TableCell>
+                          <TableCell data-testid={`text-log-details-${log.id}`}>
+                            {log.detalhes || "Sem detalhes"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
       </div>

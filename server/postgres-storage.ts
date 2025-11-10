@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { Pool, neonConfig } from '@neondatabase/serverless';
-import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, sql, inArray } from 'drizzle-orm';
 import {
   users,
   produtos,
@@ -470,12 +470,42 @@ export class PostgresStorage implements IStorage {
     return await this.db.select().from(logsAdmin).orderBy(desc(logsAdmin.id));
   }
 
+  async getLogsAdminByAccount(contaId: string): Promise<LogAdmin[]> {
+    const funcionariosIds = await this.db
+      .select({ id: funcionarios.id })
+      .from(funcionarios)
+      .where(eq(funcionarios.conta_id, contaId));
+    
+    const ids = [contaId, ...funcionariosIds.map(f => f.id)];
+    
+    return await this.db
+      .select()
+      .from(logsAdmin)
+      .where(inArray(logsAdmin.usuario_id, ids))
+      .orderBy(desc(logsAdmin.data))
+      .limit(500);
+  }
+
   async createLogAdmin(log: InsertLogAdmin): Promise<LogAdmin> {
     const result = await this.db.insert(logsAdmin).values({
-      ...log,
+      usuario_id: log.usuario_id,
+      acao: log.acao,
+      detalhes: log.detalhes || null,
       data: new Date().toISOString(),
     }).returning();
     return result[0];
+  }
+
+  async logAdminAction(actorId: string, action: string, details?: string): Promise<void> {
+    try {
+      await this.createLogAdmin({
+        usuario_id: actorId,
+        acao: action,
+        detalhes: details || null,
+      });
+    } catch (error) {
+      console.error('[AUDIT_LOG] Erro ao registrar ação:', error);
+    }
   }
 
   async getSubscriptions(): Promise<Subscription[]> {

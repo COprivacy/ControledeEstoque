@@ -13,10 +13,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, FileText, CheckCircle, XCircle, ShoppingCart, Printer, Eye, Trash2, Calendar, Mail, Phone, User, Search, Pencil } from "lucide-react";
+import { Plus, FileText, CheckCircle, XCircle, ShoppingCart, Printer, Eye, Trash2, Calendar, Mail, Phone, User, Search, Pencil, TrendingUp, DollarSign, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Orcamento, Produto, Cliente } from "@shared/schema";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 
 interface ItemCarrinho {
   produto_id: number;
@@ -42,6 +44,7 @@ export default function Orcamentos() {
   });
   const [itensCarrinho, setItensCarrinho] = useState<ItemCarrinho[]>([]);
   const [searchProduto, setSearchProduto] = useState("");
+  const [searchOrcamento, setSearchOrcamento] = useState("");
 
   const { data: orcamentos = [], isLoading } = useQuery<Orcamento[]>({
     queryKey: ["/api/orcamentos"],
@@ -63,6 +66,49 @@ export default function Orcamentos() {
       produto.nome.toLowerCase().includes(searchProduto.toLowerCase())
     );
   }, [produtos, searchProduto]);
+
+  const orcamentosFiltrados = useMemo(() => {
+    if (!searchOrcamento.trim()) {
+      return orcamentos;
+    }
+    return orcamentos.filter((orc) =>
+      orc.numero.toLowerCase().includes(searchOrcamento.toLowerCase()) ||
+      orc.cliente_nome.toLowerCase().includes(searchOrcamento.toLowerCase()) ||
+      (orc.cliente_email && orc.cliente_email.toLowerCase().includes(searchOrcamento.toLowerCase()))
+    );
+  }, [orcamentos, searchOrcamento]);
+
+  // Dados para gráficos
+  const statsData = useMemo(() => {
+    const pendentes = orcamentos.filter(o => o.status === 'pendente').length;
+    const aprovados = orcamentos.filter(o => o.status === 'aprovado').length;
+    const rejeitados = orcamentos.filter(o => o.status === 'rejeitado').length;
+    const convertidos = orcamentos.filter(o => o.status === 'convertido').length;
+    
+    const totalValor = orcamentos.reduce((sum, o) => sum + o.valor_total, 0);
+    const valorPendentes = orcamentos.filter(o => o.status === 'pendente').reduce((sum, o) => sum + o.valor_total, 0);
+    const valorAprovados = orcamentos.filter(o => o.status === 'aprovado').reduce((sum, o) => sum + o.valor_total, 0);
+    const valorConvertidos = orcamentos.filter(o => o.status === 'convertido').reduce((sum, o) => sum + o.valor_total, 0);
+
+    return {
+      statusChart: [
+        { name: 'Pendente', value: pendentes, color: '#eab308' },
+        { name: 'Aprovado', value: aprovados, color: '#22c55e' },
+        { name: 'Rejeitado', value: rejeitados, color: '#ef4444' },
+        { name: 'Convertido', value: convertidos, color: '#3b82f6' },
+      ].filter(item => item.value > 0),
+      valorChart: [
+        { status: 'Pendente', valor: valorPendentes },
+        { status: 'Aprovado', valor: valorAprovados },
+        { status: 'Convertido', valor: valorConvertidos },
+      ].filter(item => item.valor > 0),
+      total: orcamentos.length,
+      totalValor,
+      valorPendentes,
+      valorAprovados,
+      valorConvertidos,
+    };
+  }, [orcamentos]);
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -807,15 +853,157 @@ export default function Orcamentos() {
         </Dialog>
       </div>
 
+      {orcamentos.length > 0 && (
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total de Orçamentos</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{statsData.total}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Total registrado
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">R$ {statsData.totalValor.toFixed(2)}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Soma de todos os orçamentos
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Em Análise</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">R$ {statsData.valorPendentes.toFixed(2)}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Orçamentos pendentes
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {orcamentos.length > 0 && (
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Orçamentos por Status</CardTitle>
+              <CardDescription>Distribuição de orçamentos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {statsData.statusChart.length > 0 ? (
+                <ChartContainer
+                  config={{
+                    pendente: { label: "Pendente", color: "#eab308" },
+                    aprovado: { label: "Aprovado", color: "#22c55e" },
+                    rejeitado: { label: "Rejeitado", color: "#ef4444" },
+                    convertido: { label: "Convertido", color: "#3b82f6" },
+                  }}
+                  className="h-[300px]"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={statsData.statusChart}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {statsData.statusChart.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  Nenhum dado disponível
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Valor por Status</CardTitle>
+              <CardDescription>Valores em Reais (R$)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {statsData.valorChart.length > 0 ? (
+                <ChartContainer
+                  config={{
+                    valor: { label: "Valor", color: "#3b82f6" },
+                  }}
+                  className="h-[300px]"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={statsData.valorChart}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="status" />
+                      <YAxis />
+                      <ChartTooltip 
+                        content={<ChartTooltipContent />}
+                        formatter={(value: any) => `R$ ${Number(value).toFixed(2)}`}
+                      />
+                      <Bar dataKey="valor" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  Nenhum dado disponível
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Orçamentos</CardTitle>
-          <CardDescription>
-            {orcamentos.length === 0 
-              ? "Nenhum orçamento cadastrado" 
-              : `${orcamentos.length} orçamento(s) cadastrado(s)`
-            }
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Lista de Orçamentos</CardTitle>
+              <CardDescription>
+                {orcamentos.length === 0 
+                  ? "Nenhum orçamento cadastrado" 
+                  : `${orcamentosFiltrados.length} de ${orcamentos.length} orçamento(s)`
+                }
+              </CardDescription>
+            </div>
+            {orcamentos.length > 0 && (
+              <div className="w-full max-w-sm">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por número, cliente ou email..."
+                    value={searchOrcamento}
+                    onChange={(e) => setSearchOrcamento(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {orcamentos.length === 0 ? (
@@ -841,10 +1029,17 @@ export default function Orcamentos() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orcamentos.map((orcamento) => (
+                  {orcamentosFiltrados.map((orcamento) => (
                     <TableRow key={orcamento.id}>
-                      <TableCell className="font-mono font-semibold text-blue-600">
-                        {orcamento.numero}
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-mono font-bold text-blue-600 text-base">
+                            {orcamento.numero}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            Orçamento #{orcamento.id}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div>

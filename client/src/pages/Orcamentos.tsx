@@ -451,12 +451,20 @@ export default function Orcamentos() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
-          if (open && !isEditing) {
+          if (!open) {
+            // Quando fechar o diálogo, sempre limpar o formulário
             resetForm();
           }
         }}>
           <DialogTrigger asChild>
-            <Button size="default" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+            <Button 
+              size="default" 
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              onClick={() => {
+                resetForm();
+                setIsDialogOpen(true);
+              }}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Novo Orçamento
             </Button>

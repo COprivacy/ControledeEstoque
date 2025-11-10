@@ -91,13 +91,14 @@ export default function Reports() {
         venda.quantidade_vendida || 0,
         `R$ ${(venda.valor_total || 0).toFixed(2)}`,
         formaPagamento,
+        venda.orcamento_id ? `#${venda.orcamento_id}` : '-',
         venda.data ? formatDateTime(venda.data) : 'N/A'
       ];
     });
     
     autoTable(doc, {
       startY: yPosition,
-      head: [['Produto', 'Quantidade', 'Valor Total', 'Pagamento', 'Data']],
+      head: [['Produto', 'Quantidade', 'Valor Total', 'Pagamento', 'Orçamento', 'Data']],
       body: tableData,
       theme: 'striped',
       headStyles: {
@@ -110,11 +111,12 @@ export default function Reports() {
         cellPadding: 3
       },
       columnStyles: {
-        0: { cellWidth: 55 },
-        1: { cellWidth: 25, halign: 'center' },
-        2: { cellWidth: 35, halign: 'right' },
-        3: { cellWidth: 35, halign: 'center' },
-        4: { cellWidth: 35, halign: 'right' }
+        0: { cellWidth: 45 },
+        1: { cellWidth: 20, halign: 'center' },
+        2: { cellWidth: 30, halign: 'right' },
+        3: { cellWidth: 30, halign: 'center' },
+        4: { cellWidth: 22, halign: 'center' },
+        5: { cellWidth: 35, halign: 'right' }
       }
     });
     

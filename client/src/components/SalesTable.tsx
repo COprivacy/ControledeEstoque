@@ -57,7 +57,15 @@ export default function SalesTable({ sales }: SalesTableProps) {
                 <TableRow key={sale.id}>
                   <TableCell className="font-medium">{sale.produto || 'N/A'}</TableCell>
                   <TableCell className="text-center">{sale.quantidade_vendida || 0}</TableCell>
-                  <TableCell>{formaPagamento}</TableCell>
+                  <TableCell>
+                    {sale.forma_pagamento === "cartao_credito"
+                      ? "💳 Cartão Crédito"
+                      : sale.forma_pagamento === "cartao_debito"
+                      ? "💳 Cartão Débito"
+                      : sale.forma_pagamento === "pix"
+                      ? "📱 PIX"
+                      : "💵 Dinheiro"}
+                  </TableCell>
                   <TableCell className="text-right font-medium" data-testid={`text-value-${sale.id}`}>
                     R$ {(sale.valor_total || 0).toFixed(2)}
                   </TableCell>

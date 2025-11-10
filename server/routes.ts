@@ -3955,6 +3955,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers["effective-user-id"] as string;
       const funcionarioId = req.headers["funcionario-id"] as string;
       const id = parseInt(req.params.id);
+      const { forma_pagamento } = req.body;
 
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
@@ -3978,7 +3979,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const venda = await storage.converterOrcamentoEmVenda(id, userId, vendedorNome);
+      const venda = await storage.converterOrcamentoEmVenda(id, userId, vendedorNome, forma_pagamento || 'dinheiro');
       console.log(`✅ Orçamento ${id} convertido em venda ${venda.id} por ${vendedorNome}`);
       res.json(venda);
     } catch (error: any) {

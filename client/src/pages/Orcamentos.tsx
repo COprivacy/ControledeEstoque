@@ -99,15 +99,22 @@ export default function Orcamentos() {
     },
   });
 
+  const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
+  const [orcamentoToConvert, setOrcamentoToConvert] = useState<number | null>(null);
+  const [formaPagamento, setFormaPagamento] = useState("dinheiro");
+
   const converterMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await apiRequest("POST", `/api/orcamentos/${id}/converter-venda`, {});
+    mutationFn: async ({ id, forma_pagamento }: { id: number; forma_pagamento: string }) => {
+      const response = await apiRequest("POST", `/api/orcamentos/${id}/converter-venda`, { forma_pagamento });
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orcamentos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/vendas"] });
       toast({ title: "✅ Orçamento convertido em venda com sucesso!" });
+      setIsConvertDialogOpen(false);
+      setFormaPagamento("dinheiro");
+      setOrcamentoToConvert(null);
     },
     onError: (error: any) => {
       toast({ 
@@ -117,6 +124,17 @@ export default function Orcamentos() {
       });
     },
   });
+
+  const handleConvertClick = (id: number) => {
+    setOrcamentoToConvert(id);
+    setIsConvertDialogOpen(true);
+  };
+
+  const handleConfirmConvert = () => {
+    if (orcamentoToConvert) {
+      converterMutation.mutate({ id: orcamentoToConvert, forma_pagamento: formaPagamento });
+    }
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -830,7 +848,7 @@ export default function Orcamentos() {
                           {orcamento.status === "aprovado" && (
                             <Button
                               size="sm"
-                              onClick={() => converterMutation.mutate(orcamento.id)}
+                              onClick={() => handleConvertClick(orcamento.id)}
                               className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
                             >
                               <ShoppingCart className="h-4 w-4 mr-1" />
@@ -861,6 +879,47 @@ export default function Orcamentos() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={isConvertDialogOpen} onOpenChange={setIsConvertDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Converter em Venda</DialogTitle>
+            <DialogDescription>
+              Selecione a forma de pagamento para finalizar a conversão
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="forma-pagamento">Forma de Pagamento</Label>
+              <Select value={formaPagamento} onValueChange={setFormaPagamento}>
+                <SelectTrigger id="forma-pagamento">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dinheiro">💵 Dinheiro</SelectItem>
+                  <SelectItem value="cartao_credito">💳 Cartão de Crédito</SelectItem>
+                  <SelectItem value="cartao_debito">💳 Cartão de Débito</SelectItem>
+                  <SelectItem value="pix">📱 PIX</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsConvertDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleConfirmConvert}
+              disabled={converterMutation.isPending}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+            >
+              {converterMutation.isPending ? "Convertendo..." : "Confirmar Conversão"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">

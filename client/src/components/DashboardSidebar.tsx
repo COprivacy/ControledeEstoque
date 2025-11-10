@@ -24,6 +24,10 @@ const inventoryMenuItems: MenuItem[] = [
   { title: "Clientes", url: "/clientes", icon: Users, permission: "clientes" },
 ];
 
+const salesMenuItems: MenuItem[] = [
+  { title: "Orçamentos", url: "/orcamentos", icon: FileText, permission: "orcamentos" },
+];
+
 const financeMenuItems: MenuItem[] = [
   { title: "Contas a Pagar", url: "/financeiro/contas-pagar", icon: CreditCard, permission: "contas_pagar" },
   { title: "Contas a Receber", url: "/financeiro/contas-receber", icon: DollarSign, permission: "contas_receber" },
@@ -93,6 +97,17 @@ export default function DashboardSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {inventoryMenuItems.map(renderMenuItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="px-3 text-xs font-semibold tracking-wider text-muted-foreground/80 uppercase">
+            Vendas
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="space-y-1">
+              {salesMenuItems.map(renderMenuItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

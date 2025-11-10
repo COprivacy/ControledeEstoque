@@ -788,12 +788,14 @@ export class PostgresStorage implements IStorage {
   }
 
   async createOrcamento(data: any): Promise<Orcamento> {
+    const dataAtual = new Date().toISOString();
     const [orcamento] = await this.db
       .insert(orcamentos)
       .values({
         user_id: data.user_id,
         numero: data.numero,
-        data_criacao: new Date().toISOString(),
+        data_criacao: data.data_criacao || dataAtual,
+        data_atualizacao: data.data_atualizacao || dataAtual,
         validade: data.validade || null,
         cliente_id: data.cliente_id || null,
         cliente_nome: data.cliente_nome,

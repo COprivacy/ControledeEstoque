@@ -3852,6 +3852,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Gerar número do orçamento
       const numeroOrcamento = `ORC-${Date.now()}`;
+      const dataAtual = new Date().toISOString();
 
       // Criar orçamento com todos os dados
       const orcamentoData = {
@@ -3871,6 +3872,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         condicoes_pagamento: validatedData.condicoes_pagamento || null,
         prazo_entrega: validatedData.prazo_entrega || null,
         status: validatedData.status || 'pendente',
+        data_criacao: dataAtual,
+        data_atualizacao: dataAtual,
       };
 
       const orcamento = await storage.createOrcamento(orcamentoData);

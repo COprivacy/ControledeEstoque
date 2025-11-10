@@ -902,6 +902,7 @@ export class PostgresStorage implements IStorage {
         produto: itensOrcamento.map((i: any) => i.nome).join(', '),
         quantidade_vendida: itensOrcamento.reduce((sum: number, i: any) => sum + i.quantidade, 0),
         orcamento_id: id,
+        orcamento_numero: orcamento.numero,
         vendedor: vendedorNome || orcamento.vendedor || 'Sistema',
       })
       .returning();

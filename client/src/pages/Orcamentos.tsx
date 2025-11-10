@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, FileText, CheckCircle, XCircle, ShoppingCart, Printer, Eye, Trash2, Calendar, Mail, Phone, User, Search } from "lucide-react";
+import { Plus, FileText, CheckCircle, XCircle, ShoppingCart, Printer, Eye, Trash2, Calendar, Mail, Phone, User, Search, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Orcamento, Produto, Cliente } from "@shared/schema";
@@ -31,6 +31,8 @@ export default function Orcamentos() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedOrcamento, setSelectedOrcamento] = useState<Orcamento | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [orcamentoEditando, setOrcamentoEditando] = useState<Orcamento | null>(null);
   const [formData, setFormData] = useState({
     cliente_nome: "",
     cliente_email: "",
@@ -64,23 +66,58 @@ export default function Orcamentos() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
+      if (isEditing && orcamentoEditando) {
+        const response = await apiRequest("PUT", `/api/orcamentos/${orcamentoEditando.id}`, data);
+        return response.json();
+      }
       const response = await apiRequest("POST", "/api/orcamentos", data);
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orcamentos"] });
-      toast({ title: "✅ Orçamento criado com sucesso!" });
+      toast({ title: isEditing ? "✅ Orçamento atualizado com sucesso!" : "✅ Orçamento criado com sucesso!" });
       setIsDialogOpen(false);
       resetForm();
+      setIsEditing(false);
+      setOrcamentoEditando(null);
     },
     onError: (error: any) => {
       toast({ 
-        title: "❌ Erro ao criar orçamento", 
+        title: isEditing ? "❌ Erro ao atualizar orçamento" : "❌ Erro ao criar orçamento", 
         description: error.message || "Tente novamente",
         variant: "destructive" 
       });
     },
   });
+
+  const handleEditarOrcamento = (orcamento: Orcamento) => {
+    setIsEditing(true);
+    setOrcamentoEditando(orcamento);
+    
+    // Preencher formulário com dados do orçamento
+    setFormData({
+      cliente_nome: orcamento.cliente_nome || "",
+      cliente_email: orcamento.cliente_email || "",
+      cliente_telefone: orcamento.cliente_telefone || "",
+      validade: orcamento.validade || "",
+      observacoes: orcamento.observacoes || "",
+    });
+    
+    // Preencher itens do carrinho
+    const itens = Array.isArray(orcamento.itens) ? orcamento.itens : [];
+    setItensCarrinho(itens.map((item: any) => ({
+      produto_id: item.produto_id,
+      nome: item.nome,
+      preco: item.preco,
+      quantidade: item.quantidade,
+    })));
+    
+    if (orcamento.cliente_id) {
+      setSelectedClienteId(orcamento.cliente_id);
+    }
+    
+    setIsDialogOpen(true);
+  };
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
@@ -198,6 +235,8 @@ export default function Orcamentos() {
     });
     setItensCarrinho([]);
     setSelectedClienteId(null);
+    setIsEditing(false);
+    setOrcamentoEditando(null);
   };
 
   const handleSubmit = () => {
@@ -419,10 +458,13 @@ export default function Orcamentos() {
           <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader className="border-b pb-4">
               <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Criar Novo Orçamento
+                {isEditing ? "Editar Orçamento" : "Criar Novo Orçamento"}
               </DialogTitle>
               <DialogDescription className="text-base">
-                Preencha as informações do cliente e adicione os produtos para gerar o orçamento
+                {isEditing 
+                  ? "Atualize as informações do orçamento conforme necessário"
+                  : "Preencha as informações do cliente e adicione os produtos para gerar o orçamento"
+                }
               </DialogDescription>
             </DialogHeader>
             
@@ -741,7 +783,10 @@ export default function Orcamentos() {
                 disabled={createMutation.isPending}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
-                {createMutation.isPending ? "Criando..." : "Criar Orçamento"}
+                {createMutation.isPending 
+                  ? (isEditing ? "Salvando..." : "Criando...") 
+                  : (isEditing ? "Salvar Alterações" : "Criar Orçamento")
+                }
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -827,6 +872,15 @@ export default function Orcamentos() {
                           </Button>
                           {orcamento.status === "pendente" && (
                             <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEditarOrcamento(orcamento)}
+                                className="hover:bg-blue-50"
+                                title="Editar orçamento"
+                              >
+                                <Pencil className="h-4 w-4 text-blue-600" />
+                              </Button>
                               <Button
                                 size="sm"
                                 variant="ghost"

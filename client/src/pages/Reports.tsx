@@ -19,12 +19,12 @@ export default function Reports() {
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
-    
+
     // Buscar configurações personalizadas
     const customization = localStorage.getItem("customization");
     let storeName = "Controle de Estoque Simples";
     let storeLogo = "";
-    
+
     if (customization) {
       try {
         const config = JSON.parse(customization);
@@ -34,10 +34,10 @@ export default function Reports() {
         console.error("Erro ao carregar configurações:", e);
       }
     }
-    
+
     // Cabeçalho com logo (se disponível)
     let yPosition = 20;
-    
+
     if (storeLogo) {
       try {
         doc.addImage(storeLogo, "PNG", 15, yPosition, 30, 30);
@@ -46,30 +46,30 @@ export default function Reports() {
         console.error("Erro ao adicionar logo:", e);
       }
     }
-    
+
     // Nome da empresa
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
     doc.text(storeName, storeLogo ? 50 : 15, storeLogo ? 35 : yPosition);
     yPosition = storeLogo ? 55 : yPosition + 10;
-    
+
     // Título do relatório
     doc.setFontSize(16);
     doc.text("Relatório de Vendas", 15, yPosition);
     yPosition += 10;
-    
+
     // Data de geração
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.text(`Gerado em: ${formatDateTime(new Date().toISOString())}`, 15, yPosition);
     yPosition += 15;
-    
+
     // Resumo
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text("Resumo:", 15, yPosition);
     yPosition += 7;
-    
+
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.text(`Vendas Hoje: R$ ${dailyTotal.toFixed(2)}`, 15, yPosition);
@@ -78,24 +78,26 @@ export default function Reports() {
     yPosition += 6;
     doc.text(`Total de Vendas: ${vendas.length}`, 15, yPosition);
     yPosition += 10;
-    
+
     // Tabela de vendas
     const tableData = vendas.map((venda: any) => {
       let formaPagamento = 'Dinheiro';
       if (venda.forma_pagamento === 'cartao_credito') formaPagamento = 'Cartão Crédito';
       else if (venda.forma_pagamento === 'cartao_debito') formaPagamento = 'Cartão Débito';
       else if (venda.forma_pagamento === 'pix') formaPagamento = 'PIX';
-      
+      else if (venda.forma_pagamento === 'boleto') formaPagamento = 'Boleto';
+
+
       return [
         venda.produto || 'N/A',
         venda.quantidade_vendida || 0,
         `R$ ${(venda.valor_total || 0).toFixed(2)}`,
         formaPagamento,
-        venda.orcamento_id ? `#${venda.orcamento_id}` : '-',
+        venda.orcamento_numero ? `${venda.orcamento_numero}` : '-',
         venda.data ? formatDateTime(venda.data) : 'N/A'
       ];
     });
-    
+
     autoTable(doc, {
       startY: yPosition,
       head: [['Produto', 'Quantidade', 'Valor Total', 'Pagamento', 'Orçamento', 'Data']],
@@ -119,14 +121,14 @@ export default function Reports() {
         5: { cellWidth: 35, halign: 'right' }
       }
     });
-    
+
     // Total geral
     const finalY = (doc as any).lastAutoTable.finalY || yPosition + 50;
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     const totalGeral = vendas.reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
     doc.text(`Total Geral: R$ ${totalGeral.toFixed(2)}`, 15, finalY + 10);
-    
+
     // Rodapé
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
@@ -140,11 +142,11 @@ export default function Reports() {
         { align: 'center' }
       );
     }
-    
+
     // Salvar PDF
     const dataAtual = new Date().toISOString().split('T')[0];
     doc.save(`relatorio-vendas-${dataAtual}.pdf`);
-    
+
     toast({
       title: "Relatório exportado!",
       description: "O PDF foi baixado com sucesso",
@@ -156,22 +158,22 @@ export default function Reports() {
     queryFn: async () => {
       const userStr = localStorage.getItem("user");
       if (!userStr) throw new Error("Usuário não autenticado");
-      
+
       const user = JSON.parse(userStr);
       const headers: Record<string, string> = {
         "x-user-id": user.id,
         "x-user-type": user.tipo || "usuario",
       };
-      
+
       if (user.tipo === "funcionario" && user.conta_id) {
         headers["x-conta-id"] = user.conta_id;
       }
-      
+
       let url = "/api/vendas";
       if (startDate && endDate) {
         url += `?start_date=${startDate}&end_date=${endDate}`;
       }
-      
+
       const response = await fetch(url, { headers });
       if (!response.ok) throw new Error("Erro ao buscar vendas");
       return response.json();
@@ -184,17 +186,17 @@ export default function Reports() {
     queryFn: async () => {
       const userStr = localStorage.getItem("user");
       if (!userStr) return [];
-      
+
       const user = JSON.parse(userStr);
       const headers: Record<string, string> = {
         "x-user-id": user.id,
         "x-user-type": user.tipo || "usuario",
       };
-      
+
       if (user.tipo === "funcionario" && user.conta_id) {
         headers["x-conta-id"] = user.conta_id;
       }
-      
+
       const response = await fetch("/api/reports/expiring", { headers });
       if (!response.ok) return [];
       return response.json();
@@ -304,7 +306,7 @@ export default function Reports() {
           <Download className="h-4 w-4 mr-2" />
           Exportar PDF
         </Button>
-        
+
         <div className="backdrop-blur-sm bg-card/80 rounded-lg border-2 border-primary/10 shadow-xl hover:shadow-2xl transition-all duration-500">
           <ReportsCard
             dailyTotal={dailyTotal}

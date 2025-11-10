@@ -11,6 +11,7 @@ interface Sale {
   data: string;
   orcamento_id?: number; // Adicionado campo orcamento_id
   vendedor?: string; // Adicionado campo vendedor
+  orcamento_numero?: string; // Adicionado campo orcamento_numero
 }
 
 interface SalesTableProps {
@@ -52,6 +53,8 @@ export default function SalesTable({ sales }: SalesTableProps) {
               if (sale.forma_pagamento === 'cartao_credito') formaPagamento = 'Cartão Crédito';
               else if (sale.forma_pagamento === 'cartao_debito') formaPagamento = 'Cartão Débito';
               else if (sale.forma_pagamento === 'pix') formaPagamento = 'PIX';
+              else if (sale.forma_pagamento === 'boleto') formaPagamento = 'Boleto';
+
 
               return (
                 <TableRow key={sale.id}>
@@ -64,6 +67,8 @@ export default function SalesTable({ sales }: SalesTableProps) {
                       ? "💳 Cartão Débito"
                       : sale.forma_pagamento === "pix"
                       ? "📱 PIX"
+                      : sale.forma_pagamento === "boleto"
+                      ? "📄 Boleto"
                       : "💵 Dinheiro"}
                   </TableCell>
                   <TableCell className="text-right font-medium" data-testid={`text-value-${sale.id}`}>
@@ -71,9 +76,9 @@ export default function SalesTable({ sales }: SalesTableProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      {sale.orcamento_id && (
+                      {sale.orcamento_numero && (
                         <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 w-fit">
-                          📋 Orçamento #{sale.orcamento_id}
+                          📋 {sale.orcamento_numero}
                         </Badge>
                       )}
                       {sale.vendedor && (

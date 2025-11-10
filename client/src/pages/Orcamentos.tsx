@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
@@ -12,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, FileText, CheckCircle, XCircle, ShoppingCart, Printer, Eye, Trash2, Edit } from "lucide-react";
+import { Plus, FileText, CheckCircle, XCircle, ShoppingCart, Printer, Eye, Trash2, Calendar, Mail, Phone, User } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Orcamento, Produto, Cliente } from "@shared/schema";
@@ -58,13 +59,13 @@ export default function Orcamentos() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orcamentos"] });
-      toast({ title: "Orçamento criado com sucesso!" });
+      toast({ title: "✅ Orçamento criado com sucesso!" });
       setIsDialogOpen(false);
       resetForm();
     },
     onError: (error: any) => {
       toast({ 
-        title: "Erro ao criar orçamento", 
+        title: "❌ Erro ao criar orçamento", 
         description: error.message || "Tente novamente",
         variant: "destructive" 
       });
@@ -78,11 +79,11 @@ export default function Orcamentos() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orcamentos"] });
-      toast({ title: "Status atualizado com sucesso!" });
+      toast({ title: "✅ Status atualizado com sucesso!" });
     },
     onError: () => {
       toast({ 
-        title: "Erro ao atualizar status", 
+        title: "❌ Erro ao atualizar status", 
         variant: "destructive" 
       });
     },
@@ -96,11 +97,12 @@ export default function Orcamentos() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orcamentos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/vendas"] });
-      toast({ title: "Orçamento convertido em venda com sucesso!" });
+      toast({ title: "✅ Orçamento convertido em venda com sucesso!" });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({ 
-        title: "Erro ao converter orçamento", 
+        title: "❌ Erro ao converter orçamento",
+        description: error.message || "Tente novamente",
         variant: "destructive" 
       });
     },
@@ -113,11 +115,11 @@ export default function Orcamentos() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orcamentos"] });
-      toast({ title: "Orçamento excluído com sucesso!" });
+      toast({ title: "✅ Orçamento excluído com sucesso!" });
     },
     onError: () => {
       toast({ 
-        title: "Erro ao excluir orçamento", 
+        title: "❌ Erro ao excluir orçamento", 
         variant: "destructive" 
       });
     },
@@ -171,12 +173,12 @@ export default function Orcamentos() {
 
   const handleSubmit = () => {
     if (!formData.cliente_nome.trim()) {
-      toast({ title: "Nome do cliente é obrigatório", variant: "destructive" });
+      toast({ title: "⚠️ Nome do cliente é obrigatório", variant: "destructive" });
       return;
     }
 
     if (itensCarrinho.length === 0) {
-      toast({ title: "Adicione pelo menos um produto", variant: "destructive" });
+      toast({ title: "⚠️ Adicione pelo menos um produto", variant: "destructive" });
       return;
     }
 
@@ -224,51 +226,121 @@ export default function Orcamentos() {
         <head>
           <title>Orçamento ${orcamento.numero}</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            h1 { color: #333; }
+            body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+            .header { text-align: center; margin-bottom: 40px; border-bottom: 3px solid #3b82f6; padding-bottom: 20px; }
+            .header h1 { color: #1e40af; margin: 0; font-size: 28px; }
+            .header p { color: #6b7280; margin: 5px 0; }
+            .info-section { margin: 30px 0; }
+            .info-section h2 { color: #1e40af; font-size: 18px; margin-bottom: 15px; border-left: 4px solid #3b82f6; padding-left: 10px; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+            .info-item { margin-bottom: 10px; }
+            .info-label { font-weight: bold; color: #4b5563; display: block; margin-bottom: 3px; font-size: 12px; text-transform: uppercase; }
+            .info-value { color: #1f2937; font-size: 14px; }
             table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f4f4f4; }
-            .total { font-size: 18px; font-weight: bold; text-align: right; margin-top: 20px; }
+            th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+            th { background-color: #f3f4f6; color: #1f2937; font-weight: 600; text-transform: uppercase; font-size: 12px; }
+            td { color: #4b5563; }
+            .text-right { text-align: right; }
+            .total-section { margin-top: 30px; text-align: right; }
+            .total-row { display: flex; justify-content: flex-end; margin: 10px 0; }
+            .total-label { font-weight: 600; margin-right: 20px; min-width: 100px; }
+            .total-value { font-size: 18px; }
+            .grand-total { font-size: 24px; color: #1e40af; font-weight: bold; border-top: 2px solid #3b82f6; padding-top: 15px; margin-top: 15px; }
+            .observacoes { background-color: #f9fafb; padding: 20px; border-radius: 8px; margin-top: 30px; }
+            .observacoes h3 { color: #1e40af; margin-top: 0; }
+            .footer { margin-top: 50px; text-align: center; color: #9ca3af; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 20px; }
           </style>
         </head>
         <body>
-          <h1>Orçamento ${orcamento.numero}</h1>
-          <p><strong>Data:</strong> ${orcamento.data_criacao ? format(new Date(orcamento.data_criacao), "dd/MM/yyyy", { locale: ptBR }) : ''}</p>
-          <p><strong>Cliente:</strong> ${orcamento.cliente_nome || 'Não informado'}</p>
-          ${orcamento.cliente_email ? `<p><strong>Email:</strong> ${orcamento.cliente_email}</p>` : ''}
-          ${orcamento.cliente_telefone ? `<p><strong>Telefone:</strong> ${orcamento.cliente_telefone}</p>` : ''}
-          ${orcamento.validade ? `<p><strong>Validade:</strong> ${format(new Date(orcamento.validade), "dd/MM/yyyy", { locale: ptBR })}</p>` : ''}
-          
-          <h2>Itens</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Produto</th>
-                <th>Quantidade</th>
-                <th>Preço Unit.</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itens.map((item: any) => `
-                <tr>
-                  <td>${item.nome}</td>
-                  <td>${item.quantidade}</td>
-                  <td>R$ ${item.preco.toFixed(2)}</td>
-                  <td>R$ ${(item.preco * item.quantidade).toFixed(2)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          
-          <div class="total">
-            <p>Subtotal: R$ ${orcamento.subtotal.toFixed(2)}</p>
-            ${(orcamento.desconto && orcamento.desconto > 0) ? `<p>Desconto: R$ ${orcamento.desconto.toFixed(2)}</p>` : ''}
-            <p>Total: R$ ${orcamento.valor_total.toFixed(2)}</p>
+          <div class="header">
+            <h1>ORÇAMENTO</h1>
+            <p>${orcamento.numero}</p>
+          </div>
+
+          <div class="info-section">
+            <h2>Informações do Cliente</h2>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Nome</span>
+                <span class="info-value">${orcamento.cliente_nome || 'Não informado'}</span>
+              </div>
+              ${orcamento.cliente_email ? `
+                <div class="info-item">
+                  <span class="info-label">Email</span>
+                  <span class="info-value">${orcamento.cliente_email}</span>
+                </div>
+              ` : ''}
+              ${orcamento.cliente_telefone ? `
+                <div class="info-item">
+                  <span class="info-label">Telefone</span>
+                  <span class="info-value">${orcamento.cliente_telefone}</span>
+                </div>
+              ` : ''}
+              <div class="info-item">
+                <span class="info-label">Data de Emissão</span>
+                <span class="info-value">${orcamento.data_criacao ? format(new Date(orcamento.data_criacao), "dd/MM/yyyy", { locale: ptBR }) : ''}</span>
+              </div>
+              ${orcamento.validade ? `
+                <div class="info-item">
+                  <span class="info-label">Validade</span>
+                  <span class="info-value">${format(new Date(orcamento.validade), "dd/MM/yyyy", { locale: ptBR })}</span>
+                </div>
+              ` : ''}
+            </div>
           </div>
           
-          ${orcamento.observacoes ? `<p><strong>Observações:</strong> ${orcamento.observacoes}</p>` : ''}
+          <div class="info-section">
+            <h2>Itens do Orçamento</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th class="text-right">Qtd.</th>
+                  <th class="text-right">Preço Unit.</th>
+                  <th class="text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itens.map((item: any) => `
+                  <tr>
+                    <td>${item.nome}</td>
+                    <td class="text-right">${item.quantidade}</td>
+                    <td class="text-right">R$ ${item.preco.toFixed(2)}</td>
+                    <td class="text-right">R$ ${(item.preco * item.quantidade).toFixed(2)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="total-section">
+            <div class="total-row">
+              <span class="total-label">Subtotal:</span>
+              <span class="total-value">R$ ${orcamento.subtotal.toFixed(2)}</span>
+            </div>
+            ${(orcamento.desconto && orcamento.desconto > 0) ? `
+              <div class="total-row">
+                <span class="total-label">Desconto:</span>
+                <span class="total-value">R$ ${orcamento.desconto.toFixed(2)}</span>
+              </div>
+            ` : ''}
+            <div class="total-row grand-total">
+              <span class="total-label">TOTAL:</span>
+              <span class="total-value">R$ ${orcamento.valor_total.toFixed(2)}</span>
+            </div>
+          </div>
+          
+          ${orcamento.observacoes ? `
+            <div class="observacoes">
+              <h3>Observações</h3>
+              <p>${orcamento.observacoes}</p>
+            </div>
+          ` : ''}
+
+          <div class="footer">
+            <p>Este orçamento foi gerado automaticamente pelo sistema</p>
+            <p>Emitido em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+          </div>
           
           <script>window.print();</script>
         </body>
@@ -279,10 +351,10 @@ export default function Orcamentos() {
 
   const getStatusBadge = (status: string) => {
     const badges = {
-      pendente: <Badge variant="outline" data-testid={`badge-status-pendente`}>Pendente</Badge>,
-      aprovado: <Badge className="bg-green-600 dark:bg-green-700 text-white" data-testid={`badge-status-aprovado`}>Aprovado</Badge>,
-      rejeitado: <Badge variant="destructive" data-testid={`badge-status-rejeitado`}>Rejeitado</Badge>,
-      convertido: <Badge className="bg-blue-600 dark:bg-blue-700 text-white" data-testid={`badge-status-convertido`}>Convertido</Badge>,
+      pendente: <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pendente</Badge>,
+      aprovado: <Badge className="bg-green-50 text-green-700 border-green-200 border">Aprovado</Badge>,
+      rejeitado: <Badge className="bg-red-50 text-red-700 border-red-200 border">Rejeitado</Badge>,
+      convertido: <Badge className="bg-blue-50 text-blue-700 border-blue-200 border">Convertido</Badge>,
     };
     return badges[status as keyof typeof badges] || badges.pendente;
   };
@@ -296,36 +368,41 @@ export default function Orcamentos() {
   }
 
   return (
-    <div className="container mx-auto max-w-7xl space-y-6">
+    <div className="container mx-auto max-w-7xl space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Orçamentos</h1>
-          <p className="text-muted-foreground mt-1">Gerencie seus orçamentos e propostas comerciais</p>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Orçamentos
+          </h1>
+          <p className="text-muted-foreground mt-2">Gerencie suas propostas comerciais de forma profissional</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="default" data-testid="button-novo-orcamento">
+            <Button size="default" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
               <Plus className="h-4 w-4 mr-2" />
               Novo Orçamento
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Criar Novo Orçamento</DialogTitle>
-              <DialogDescription>Preencha as informações do orçamento e adicione os produtos</DialogDescription>
+              <DialogTitle className="text-2xl">Criar Novo Orçamento</DialogTitle>
+              <DialogDescription>Preencha as informações do cliente e adicione os produtos</DialogDescription>
             </DialogHeader>
             
             <div className="space-y-6">
               <Card>
-                <CardHeader className="gap-1">
-                  <CardTitle className="text-lg">Informações do Cliente</CardTitle>
+                <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Informações do Cliente
+                  </CardTitle>
                   <CardDescription>Dados do cliente para o orçamento</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pt-6">
                   <div>
                     <Label htmlFor="select-cliente">Selecionar Cliente Cadastrado</Label>
                     <Select onValueChange={handleSelecionarCliente}>
-                      <SelectTrigger id="select-cliente" data-testid="select-cliente">
+                      <SelectTrigger id="select-cliente">
                         <SelectValue placeholder="Selecione um cliente (opcional)" />
                       </SelectTrigger>
                       <SelectContent>
@@ -342,10 +419,12 @@ export default function Orcamentos() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="input-nome">Nome do Cliente *</Label>
+                      <Label htmlFor="input-nome" className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Nome do Cliente *
+                      </Label>
                       <Input
                         id="input-nome"
-                        data-testid="input-cliente-nome"
                         value={formData.cliente_nome}
                         onChange={(e) => setFormData({ ...formData, cliente_nome: e.target.value })}
                         placeholder="Nome completo"
@@ -353,10 +432,12 @@ export default function Orcamentos() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="input-email">Email</Label>
+                      <Label htmlFor="input-email" className="flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        Email
+                      </Label>
                       <Input
                         id="input-email"
-                        data-testid="input-cliente-email"
                         type="email"
                         value={formData.cliente_email}
                         onChange={(e) => setFormData({ ...formData, cliente_email: e.target.value })}
@@ -367,20 +448,24 @@ export default function Orcamentos() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="input-telefone">Telefone</Label>
+                      <Label htmlFor="input-telefone" className="flex items-center gap-2">
+                        <Phone className="h-4 w-4" />
+                        Telefone
+                      </Label>
                       <Input
                         id="input-telefone"
-                        data-testid="input-cliente-telefone"
                         value={formData.cliente_telefone}
                         onChange={(e) => setFormData({ ...formData, cliente_telefone: e.target.value })}
                         placeholder="(00) 00000-0000"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="input-validade">Validade do Orçamento</Label>
+                      <Label htmlFor="input-validade" className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        Validade do Orçamento
+                      </Label>
                       <Input
                         id="input-validade"
-                        data-testid="input-data-validade"
                         type="date"
                         value={formData.validade}
                         onChange={(e) => setFormData({ ...formData, validade: e.target.value })}
@@ -391,15 +476,18 @@ export default function Orcamentos() {
               </Card>
 
               <Card>
-                <CardHeader className="gap-1">
-                  <CardTitle className="text-lg">Produtos</CardTitle>
+                <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <ShoppingCart className="h-5 w-5" />
+                    Produtos
+                  </CardTitle>
                   <CardDescription>Adicione produtos ao orçamento</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pt-6">
                   <div>
                     <Label htmlFor="select-produto">Adicionar Produto</Label>
                     <Select onValueChange={(value) => adicionarItem(parseInt(value))}>
-                      <SelectTrigger id="select-produto" data-testid="select-produto">
+                      <SelectTrigger id="select-produto">
                         <SelectValue placeholder="Selecione um produto para adicionar" />
                       </SelectTrigger>
                       <SelectContent>
@@ -413,14 +501,14 @@ export default function Orcamentos() {
                   </div>
 
                   {itensCarrinho.length > 0 && (
-                    <div className="border rounded-md">
+                    <div className="border rounded-lg overflow-hidden">
                       <Table>
                         <TableHeader>
-                          <TableRow>
+                          <TableRow className="bg-muted/50">
                             <TableHead>Produto</TableHead>
                             <TableHead className="w-32">Quantidade</TableHead>
-                            <TableHead className="w-32">Preço Unit.</TableHead>
-                            <TableHead className="w-32">Subtotal</TableHead>
+                            <TableHead className="w-32 text-right">Preço Unit.</TableHead>
+                            <TableHead className="w-32 text-right">Subtotal</TableHead>
                             <TableHead className="w-20"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -442,13 +530,12 @@ export default function Orcamentos() {
                                     );
                                   }}
                                   className="w-20"
-                                  data-testid={`input-quantidade-${idx}`}
                                 />
                               </TableCell>
-                              <TableCell className="text-muted-foreground">
+                              <TableCell className="text-right text-muted-foreground">
                                 R$ {item.preco.toFixed(2)}
                               </TableCell>
-                              <TableCell className="font-medium">
+                              <TableCell className="text-right font-semibold">
                                 R$ {(item.preco * item.quantidade).toFixed(2)}
                               </TableCell>
                               <TableCell>
@@ -456,7 +543,6 @@ export default function Orcamentos() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => removerItem(item.produto_id)}
-                                  data-testid={`button-remover-item-${idx}`}
                                 >
                                   <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
@@ -465,11 +551,11 @@ export default function Orcamentos() {
                           ))}
                         </TableBody>
                       </Table>
-                      <div className="p-4 bg-muted/50 border-t">
+                      <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 border-t">
                         <div className="flex justify-end">
                           <div className="text-right space-y-1">
                             <div className="text-sm text-muted-foreground">Total do Orçamento</div>
-                            <div className="text-2xl font-bold" data-testid="text-total">
+                            <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                               R$ {calcularSubtotal().toFixed(2)}
                             </div>
                           </div>
@@ -479,25 +565,28 @@ export default function Orcamentos() {
                   )}
 
                   {itensCarrinho.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Nenhum produto adicionado. Selecione produtos acima.
+                    <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                      <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                      <p className="text-muted-foreground">Nenhum produto adicionado. Selecione produtos acima.</p>
                     </div>
                   )}
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader className="gap-1">
-                  <CardTitle className="text-lg">Observações</CardTitle>
+                <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Observações
+                  </CardTitle>
                   <CardDescription>Informações adicionais sobre o orçamento</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   <Textarea
                     value={formData.observacoes}
                     onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
                     placeholder="Condições de pagamento, prazos, garantias, etc..."
                     rows={4}
-                    data-testid="textarea-observacoes"
                   />
                 </CardContent>
               </Card>
@@ -507,14 +596,13 @@ export default function Orcamentos() {
               <Button 
                 variant="outline" 
                 onClick={() => setIsDialogOpen(false)}
-                data-testid="button-cancelar"
               >
                 Cancelar
               </Button>
               <Button 
                 onClick={handleSubmit} 
                 disabled={createMutation.isPending}
-                data-testid="button-criar-orcamento"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
                 {createMutation.isPending ? "Criando..." : "Criar Orçamento"}
               </Button>
@@ -524,7 +612,7 @@ export default function Orcamentos() {
       </div>
 
       <Card>
-        <CardHeader className="gap-1">
+        <CardHeader>
           <CardTitle>Lista de Orçamentos</CardTitle>
           <CardDescription>
             {orcamentos.length === 0 
@@ -535,18 +623,18 @@ export default function Orcamentos() {
         </CardHeader>
         <CardContent>
           {orcamentos.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+            <div className="text-center py-16">
+              <FileText className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
               <h3 className="text-lg font-medium mb-2">Nenhum orçamento criado</h3>
-              <p className="text-muted-foreground mb-4">
-                Comece criando seu primeiro orçamento
+              <p className="text-muted-foreground mb-6">
+                Comece criando seu primeiro orçamento profissional
               </p>
             </div>
           ) : (
-            <div className="border rounded-md">
+            <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="bg-muted/50">
                     <TableHead>Número</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Data</TableHead>
@@ -558,8 +646,8 @@ export default function Orcamentos() {
                 </TableHeader>
                 <TableBody>
                   {orcamentos.map((orcamento) => (
-                    <TableRow key={orcamento.id} data-testid={`row-orcamento-${orcamento.id}`}>
-                      <TableCell className="font-mono font-medium" data-testid={`text-numero-${orcamento.id}`}>
+                    <TableRow key={orcamento.id}>
+                      <TableCell className="font-mono font-semibold text-blue-600">
                         {orcamento.numero}
                       </TableCell>
                       <TableCell>
@@ -578,7 +666,7 @@ export default function Orcamentos() {
                           ? format(new Date(orcamento.validade), "dd/MM/yyyy", { locale: ptBR })
                           : "-"}
                       </TableCell>
-                      <TableCell className="text-right font-medium" data-testid={`text-total-${orcamento.id}`}>
+                      <TableCell className="text-right font-semibold text-lg">
                         R$ {orcamento.valor_total.toFixed(2)}
                       </TableCell>
                       <TableCell>{getStatusBadge(orcamento.status || "pendente")}</TableCell>
@@ -588,7 +676,7 @@ export default function Orcamentos() {
                             size="sm"
                             variant="ghost"
                             onClick={() => visualizarOrcamento(orcamento)}
-                            data-testid={`button-visualizar-${orcamento.id}`}
+                            className="hover:bg-blue-50"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -596,7 +684,7 @@ export default function Orcamentos() {
                             size="sm"
                             variant="ghost"
                             onClick={() => imprimirOrcamento(orcamento)}
-                            data-testid={`button-imprimir-${orcamento.id}`}
+                            className="hover:bg-purple-50"
                           >
                             <Printer className="h-4 w-4" />
                           </Button>
@@ -606,7 +694,7 @@ export default function Orcamentos() {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => updateStatusMutation.mutate({ id: orcamento.id, status: "aprovado" })}
-                                data-testid={`button-aprovar-${orcamento.id}`}
+                                className="hover:bg-green-50"
                               >
                                 <CheckCircle className="h-4 w-4 text-green-600" />
                               </Button>
@@ -614,7 +702,7 @@ export default function Orcamentos() {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => updateStatusMutation.mutate({ id: orcamento.id, status: "rejeitado" })}
-                                data-testid={`button-rejeitar-${orcamento.id}`}
+                                className="hover:bg-red-50"
                               >
                                 <XCircle className="h-4 w-4 text-red-600" />
                               </Button>
@@ -624,7 +712,7 @@ export default function Orcamentos() {
                             <Button
                               size="sm"
                               onClick={() => converterMutation.mutate(orcamento.id)}
-                              data-testid={`button-converter-${orcamento.id}`}
+                              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
                             >
                               <ShoppingCart className="h-4 w-4 mr-1" />
                               Converter
@@ -639,7 +727,7 @@ export default function Orcamentos() {
                                   deleteMutation.mutate(orcamento.id);
                                 }
                               }}
-                              data-testid={`button-excluir-${orcamento.id}`}
+                              className="hover:bg-red-50"
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -656,37 +744,40 @@ export default function Orcamentos() {
       </Card>
 
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           {selectedOrcamento && (
             <>
               <DialogHeader>
-                <DialogTitle>Orçamento {selectedOrcamento.numero}</DialogTitle>
+                <DialogTitle className="text-2xl">Orçamento {selectedOrcamento.numero}</DialogTitle>
                 <DialogDescription>
                   {selectedOrcamento.data_criacao && `Criado em ${format(new Date(selectedOrcamento.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`}
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <Card>
-                  <CardHeader className="gap-1">
-                    <CardTitle className="text-base">Informações do Cliente</CardTitle>
+                  <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      Informações do Cliente
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2">
+                  <CardContent className="space-y-4 pt-6">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <div className="text-sm text-muted-foreground">Nome</div>
+                        <div className="text-sm text-muted-foreground mb-1">Nome</div>
                         <div className="font-medium">{selectedOrcamento.cliente_nome || "Não informado"}</div>
                       </div>
                       <div>
-                        <div className="text-sm text-muted-foreground">Email</div>
+                        <div className="text-sm text-muted-foreground mb-1">Email</div>
                         <div className="font-medium">{selectedOrcamento.cliente_email || "Não informado"}</div>
                       </div>
                       <div>
-                        <div className="text-sm text-muted-foreground">Telefone</div>
+                        <div className="text-sm text-muted-foreground mb-1">Telefone</div>
                         <div className="font-medium">{selectedOrcamento.cliente_telefone || "Não informado"}</div>
                       </div>
                       <div>
-                        <div className="text-sm text-muted-foreground">Status</div>
+                        <div className="text-sm text-muted-foreground mb-1">Status</div>
                         <div className="mt-1">{getStatusBadge(selectedOrcamento.status || "pendente")}</div>
                       </div>
                     </div>
@@ -694,13 +785,16 @@ export default function Orcamentos() {
                 </Card>
 
                 <Card>
-                  <CardHeader className="gap-1">
-                    <CardTitle className="text-base">Produtos</CardTitle>
+                  <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <ShoppingCart className="h-5 w-5" />
+                      Produtos
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-6">
                     <Table>
                       <TableHeader>
-                        <TableRow>
+                        <TableRow className="bg-muted/50">
                           <TableHead>Produto</TableHead>
                           <TableHead className="w-24 text-center">Qtd</TableHead>
                           <TableHead className="w-32 text-right">Preço Unit.</TableHead>
@@ -715,21 +809,21 @@ export default function Orcamentos() {
                             <TableCell className="text-right text-muted-foreground">
                               R$ {item.preco.toFixed(2)}
                             </TableCell>
-                            <TableCell className="text-right font-medium">
+                            <TableCell className="text-right font-semibold">
                               R$ {(item.preco * item.quantidade).toFixed(2)}
                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
-                    <Separator className="my-4" />
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
+                    <Separator className="my-6" />
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-base">
                         <span className="text-muted-foreground">Subtotal</span>
                         <span className="font-medium">R$ {selectedOrcamento.subtotal.toFixed(2)}</span>
                       </div>
                       {selectedOrcamento.desconto && selectedOrcamento.desconto > 0 && (
-                        <div className="flex justify-between">
+                        <div className="flex justify-between text-base">
                           <span className="text-muted-foreground">Desconto</span>
                           <span className="font-medium text-green-600">
                             - R$ {selectedOrcamento.desconto.toFixed(2)}
@@ -737,9 +831,11 @@ export default function Orcamentos() {
                         </div>
                       )}
                       <Separator />
-                      <div className="flex justify-between">
-                        <span className="text-lg font-semibold">Total</span>
-                        <span className="text-lg font-bold">R$ {selectedOrcamento.valor_total.toFixed(2)}</span>
+                      <div className="flex justify-between text-xl">
+                        <span className="font-bold">Total</span>
+                        <span className="font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                          R$ {selectedOrcamento.valor_total.toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
@@ -747,11 +843,14 @@ export default function Orcamentos() {
 
                 {selectedOrcamento.observacoes && (
                   <Card>
-                    <CardHeader className="gap-1">
-                      <CardTitle className="text-base">Observações</CardTitle>
+                    <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        Observações
+                      </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    <CardContent className="pt-6">
+                      <p className="text-sm whitespace-pre-wrap">
                         {selectedOrcamento.observacoes}
                       </p>
                     </CardContent>
@@ -763,7 +862,7 @@ export default function Orcamentos() {
                 <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
                   Fechar
                 </Button>
-                <Button onClick={() => imprimirOrcamento(selectedOrcamento)}>
+                <Button onClick={() => imprimirOrcamento(selectedOrcamento)} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
                   <Printer className="h-4 w-4 mr-2" />
                   Imprimir
                 </Button>

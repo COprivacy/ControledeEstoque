@@ -3950,6 +3950,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/orcamentos/:id/converter-venda", getUserId, async (req, res) => {
+    try {
+      const userId = req.headers["effective-user-id"] as string;
+      const id = parseInt(req.params.id);
+
+      if (!userId) {
+        return res.status(401).json({ error: "Usuário não autenticado" });
+      }
+
+      if (!storage.converterOrcamentoEmVenda) {
+        return res.status(501).json({ error: "Método converterOrcamentoEmVenda não implementado" });
+      }
+
+      const venda = await storage.converterOrcamentoEmVenda(id, userId);
+      console.log(`✅ Orçamento ${id} convertido em venda ${venda.id}`);
+      res.json(venda);
+    } catch (error: any) {
+      console.error("Erro ao converter orçamento:", error);
+      res.status(500).json({ error: error.message || "Erro ao converter orçamento" });
+    }
+  });
+
   app.get("/api/system-config/:key", async (req, res) => {
     try {
       const { key } = req.params;

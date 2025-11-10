@@ -179,6 +179,7 @@ export default function Orcamentos() {
       observacoes: "",
     });
     setItensCarrinho([]);
+    setSelectedClienteId(null);
   };
 
   const handleSubmit = () => {
@@ -195,6 +196,7 @@ export default function Orcamentos() {
     const subtotal = calcularSubtotal();
     
     createMutation.mutate({
+      cliente_id: selectedClienteId || undefined,
       cliente_nome: formData.cliente_nome,
       cliente_email: formData.cliente_email || "",
       cliente_telefone: formData.cliente_telefone || "",
@@ -207,9 +209,12 @@ export default function Orcamentos() {
     });
   };
 
+  const [selectedClienteId, setSelectedClienteId] = useState<number | null>(null);
+
   const handleSelecionarCliente = (clienteId: string) => {
     const cliente = clientes.find((c) => c.id === parseInt(clienteId));
     if (cliente) {
+      setSelectedClienteId(cliente.id);
       setFormData({
         ...formData,
         cliente_nome: cliente.nome,

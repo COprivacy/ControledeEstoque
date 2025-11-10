@@ -870,6 +870,26 @@ export class PostgresStorage implements IStorage {
     // Criar venda baseada no orçamento
     const itensOrcamento = Array.isArray(orcamento.itens) ? orcamento.itens : [];
     
+    // Se o orçamento tem cliente_id, usar ele. Senão, tentar buscar pelo nome do cliente
+    let clienteId = orcamento.cliente_id;
+    
+    if (!clienteId && orcamento.cliente_nome) {
+      // Buscar cliente pelo nome e user_id
+      const clientesEncontrados = await this.db
+        .select()
+        .from(clientes)
+        .where(
+          and(
+            eq(clientes.user_id, userId),
+            eq(clientes.nome, orcamento.cliente_nome)
+          )
+        );
+      
+      if (clientesEncontrados.length > 0) {
+        clienteId = clientesEncontrados[0].id;
+      }
+    }
+    
     const [venda] = await this.db
       .insert(vendas)
       .values({
@@ -878,7 +898,7 @@ export class PostgresStorage implements IStorage {
         valor_total: orcamento.valor_total,
         forma_pagamento: 'dinheiro',
         itens: JSON.stringify(itensOrcamento),
-        cliente_id: orcamento.cliente_id || undefined,
+        cliente_id: clienteId || undefined,
         produto: itensOrcamento.map((i: any) => i.nome).join(', '),
         quantidade_vendida: itensOrcamento.reduce((sum: number, i: any) => sum + i.quantidade, 0),
         orcamento_id: id,

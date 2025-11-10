@@ -6,6 +6,9 @@ A web application for Brazilian small businesses, offering inventory management,
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+**2025-11-10:** Fixed Orçamentos (Budget/Quotes) page - rebuilt with professional UI, proper data validation, and full functionality (create, view, print, approve, reject, convert to sale, delete). Resolved TypeScript naming conflicts (camelCase vs snake_case).
+
 ## System Architecture
 
 ### Frontend

@@ -397,7 +397,22 @@ export const orcamentos = pgTable("orcamentos", {
   atualizadoEm: timestamp("atualizado_em").defaultNow(),
 });
 
-export type InsertOrcamento = typeof orcamentos.$inferInsert;
+export const insertOrcamentoSchema = createInsertSchema(orcamentos).omit({
+  id: true,
+  dataEmissao: true,
+  atualizadoEm: true,
+}).extend({
+  clienteNome: z.string().optional(),
+  clienteEmail: z.string().email().optional(),
+  clienteTelefone: z.string().optional(),
+  dataValidade: z.string().optional(),
+  subtotal: z.coerce.number().min(0),
+  desconto: z.coerce.number().min(0).default(0),
+  total: z.coerce.number().min(0),
+  observacoes: z.string().optional(),
+});
+
+export type InsertOrcamento = z.infer<typeof insertOrcamentoSchema>;
 export type Orcamento = typeof orcamentos.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

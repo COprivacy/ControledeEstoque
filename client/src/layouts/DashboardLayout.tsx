@@ -4,10 +4,9 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import { TrialExpiredModal } from "@/components/TrialExpiredModal";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { RotateCcw, Truck, FileText } from "lucide-react"; // Added FileText import
 import { SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"; // Added SidebarMenuItem and SidebarMenuButton imports
-import { Link } from "wouter-preact"; // Added Link import
 
 interface DashboardLayoutProps {
   children: React.ReactNode;

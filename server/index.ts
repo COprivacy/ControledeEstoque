@@ -26,15 +26,18 @@ async function autoFixDatabaseSchema() {
   try {
     logger.info('[AUTO-FIX] Verificando schema do banco de dados...');
 
-    const result = await db.execute(sql`
+    // Verificar colunas da tabela users
+    const resultUsers = await db.execute(sql`
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = 'users'
     `);
 
-    const existingColumns = new Set(result.rows.map((row: any) => row.column_name));
+    const existingColumnsUsers = new Set(
+      resultUsers.rows.map((row: any) => row.column_name)
+    );
 
-    const requiredColumns = [
+    const requiredColumnsUsers = [
       { name: 'cpf_cnpj', type: 'TEXT', default: null },
       { name: 'telefone', type: 'TEXT', default: null },
       { name: 'endereco', type: 'TEXT', default: null },
@@ -46,9 +49,9 @@ async function autoFixDatabaseSchema() {
     ];
 
     let fixed = false;
-    for (const col of requiredColumns) {
-      if (!existingColumns.has(col.name)) {
-        logger.info(`[AUTO-FIX] Adicionando coluna ${col.name}...`);
+    for (const col of requiredColumnsUsers) {
+      if (!existingColumnsUsers.has(col.name)) {
+        logger.info(`[AUTO-FIX] Adicionando coluna ${col.name} em users...`);
 
         let alterQuery = `ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`;
         if (col.default !== null) {
@@ -58,6 +61,43 @@ async function autoFixDatabaseSchema() {
         await db.execute(sql.raw(alterQuery));
         fixed = true;
       }
+    }
+
+    // Verificar colunas da tabela vendas
+    const resultVendas = await db.execute(sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'vendas'
+    `);
+
+    const existingColumnsVendas = new Set(
+      resultVendas.rows.map((row: any) => row.column_name)
+    );
+
+    const requiredColumnsVendas = [
+      { name: 'orcamento_id', type: 'INTEGER', default: null },
+      { name: 'vendedor', type: 'TEXT', default: null },
+    ];
+
+    for (const col of requiredColumnsVendas) {
+      if (!existingColumnsVendas.has(col.name)) {
+        logger.info(`[AUTO-FIX] Adicionando coluna ${col.name} em vendas...`);
+
+        let alterQuery = `ALTER TABLE vendas ADD COLUMN ${col.name} ${col.type}`;
+        if (col.default !== null) {
+          alterQuery += ` DEFAULT ${typeof col.default === 'string' ? `'${col.default}'` : col.default}`;
+        }
+
+        await db.execute(sql.raw(alterQuery));
+        fixed = true;
+      }
+    }
+
+    // Criar índice se não existir
+    if (!existingColumnsVendas.has('orcamento_id')) {
+      logger.info('[AUTO-FIX] Criando índice idx_vendas_orcamento_id...');
+      await db.execute(sql.raw('CREATE INDEX IF NOT EXISTS idx_vendas_orcamento_id ON vendas(orcamento_id)'));
+      fixed = true;
     }
 
     if (fixed) {
@@ -224,7 +264,7 @@ app.use((req, res, next) => {
     log('Shutting down gracefully...');
     logger.info('Servidor encerrando', 'SHUTDOWN');
 
-    if ('close' in storage && typeof storage.close === 'function') {
+    if ('storage' in global && typeof storage.close === 'function') {
       storage.close();
     }
     process.exit(0);

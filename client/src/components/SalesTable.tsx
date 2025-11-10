@@ -78,7 +78,7 @@ export default function SalesTable({ sales }: SalesTableProps) {
                     <div className="flex flex-col gap-1">
                       {sale.orcamento_numero ? (
                         <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 w-fit font-semibold text-xs">
-                          📋 {sale.orcamento_numero}
+                          📋 Orçamento {sale.orcamento_numero}
                         </Badge>
                       ) : sale.orcamento_id ? (
                         <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 w-fit text-xs">

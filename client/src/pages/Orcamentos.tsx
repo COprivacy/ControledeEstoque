@@ -237,6 +237,7 @@ export default function Orcamentos() {
     setSelectedClienteId(null);
     setIsEditing(false);
     setOrcamentoEditando(null);
+    setSearchProduto("");
   };
 
   const handleSubmit = () => {
@@ -448,7 +449,12 @@ export default function Orcamentos() {
           </h1>
           <p className="text-muted-foreground mt-2">Gerencie suas propostas comerciais de forma profissional</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (open && !isEditing) {
+            resetForm();
+          }
+        }}>
           <DialogTrigger asChild>
             <Button size="default" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
               <Plus className="h-4 w-4 mr-2" />

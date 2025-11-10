@@ -253,29 +253,27 @@ export class PostgresStorage implements IStorage {
 
   async getVendasByUser(userId: string): Promise<Venda[]> {
     try {
-      const result = await this.pool.query(
-        `SELECT 
-          v.*,
-          o.id as orcamento_id,
-          o.vendedor,
-          o.numero as orcamento_numero
-         FROM vendas v
-         LEFT JOIN orcamentos o ON v.orcamento_id = o.id
-         WHERE v.user_id = $1
-         ORDER BY v.data DESC`,
-        [userId]
-      );
+      const result = await this.db
+        .select({
+          id: vendas.id,
+          user_id: vendas.user_id,
+          data: vendas.data,
+          produto: vendas.produto,
+          quantidade_vendida: vendas.quantidade_vendida,
+          valor_total: vendas.valor_total,
+          forma_pagamento: vendas.forma_pagamento,
+          itens: vendas.itens,
+          cliente_id: vendas.cliente_id,
+          orcamento_id: vendas.orcamento_id,
+          vendedor: vendas.vendedor,
+          orcamento_numero: orcamentos.numero,
+        })
+        .from(vendas)
+        .leftJoin(orcamentos, eq(vendas.orcamento_id, orcamentos.id))
+        .where(eq(vendas.user_id, userId))
+        .orderBy(desc(vendas.data));
 
-      // Log para debug
-      if (result.rows.length > 0) {
-        logger.info('[DB] Exemplo de venda com orçamento:', {
-          id: result.rows[0].id,
-          orcamento_id: result.rows[0].orcamento_id,
-          orcamento_numero: result.rows[0].orcamento_numero
-        });
-      }
-
-      return result.rows;
+      return result as any[];
     } catch (error) {
       logger.error('[DB] Erro ao buscar vendas:', error);
       throw error;

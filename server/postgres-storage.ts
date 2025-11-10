@@ -774,8 +774,8 @@ export class PostgresStorage implements IStorage {
     const result = await this.db
       .select()
       .from(orcamentos)
-      .where(eq(orcamentos.userId, userId))
-      .orderBy(desc(orcamentos.dataEmissao));
+      .where(eq(orcamentos.user_id, userId))
+      .orderBy(desc(orcamentos.data_emissao));
     return result;
   }
 
@@ -783,7 +783,7 @@ export class PostgresStorage implements IStorage {
     const result = await this.db
       .select()
       .from(orcamentos)
-      .where(and(eq(orcamentos.id, id), eq(orcamentos.userId, userId)))
+      .where(and(eq(orcamentos.id, id), eq(orcamentos.user_id, userId)))
       .limit(1);
     return result[0];
   }
@@ -795,21 +795,21 @@ export class PostgresStorage implements IStorage {
     const [orcamento] = await this.db
       .insert(orcamentos)
       .values({
-        userId,
-        numeroOrcamento,
-        dataEmissao: new Date(),
-        dataValidade: data.dataValidade ? new Date(data.dataValidade) : null,
-        clienteId: data.clienteId || null,
-        clienteNome: data.clienteNome || null,
-        clienteEmail: data.clienteEmail || null,
-        clienteTelefone: data.clienteTelefone || null,
+        user_id: userId,
+        numero_orcamento: numeroOrcamento,
+        data_emissao: new Date(),
+        data_validade: data.data_validade ? new Date(data.data_validade) : null,
+        cliente_id: data.cliente_id || null,
+        cliente_nome: data.cliente_nome || null,
+        cliente_email: data.cliente_email || null,
+        cliente_telefone: data.cliente_telefone || null,
         status: 'pendente',
         itens: data.itens,
         subtotal: data.subtotal,
         desconto: data.desconto || 0,
         total: data.total,
         observacoes: data.observacoes || null,
-        criadoPor: user?.nome || user?.email || userId,
+        criado_por: user?.nome || user?.email || userId,
       })
       .returning();
 
@@ -820,20 +820,20 @@ export class PostgresStorage implements IStorage {
     const [orcamento] = await this.db
       .update(orcamentos)
       .set({
-        dataValidade: data.dataValidade ? new Date(data.dataValidade) : null,
-        clienteId: data.clienteId,
-        clienteNome: data.clienteNome,
-        clienteEmail: data.clienteEmail,
-        clienteTelefone: data.clienteTelefone,
+        data_validade: data.data_validade ? new Date(data.data_validade) : null,
+        cliente_id: data.cliente_id,
+        cliente_nome: data.cliente_nome,
+        cliente_email: data.cliente_email,
+        cliente_telefone: data.cliente_telefone,
         status: data.status,
         itens: data.itens,
         subtotal: data.subtotal,
         desconto: data.desconto,
         total: data.total,
         observacoes: data.observacoes,
-        atualizadoEm: new Date(),
+        atualizado_em: new Date(),
       })
-      .where(and(eq(orcamentos.id, id), eq(orcamentos.userId, userId)))
+      .where(and(eq(orcamentos.id, id), eq(orcamentos.user_id, userId)))
       .returning();
 
     return orcamento;
@@ -842,7 +842,7 @@ export class PostgresStorage implements IStorage {
   async deleteOrcamento(id: number, userId: string): Promise<void> {
     await this.db
       .delete(orcamentos)
-      .where(and(eq(orcamentos.id, id), eq(orcamentos.userId, userId)));
+      .where(and(eq(orcamentos.id, id), eq(orcamentos.user_id, userId)));
   }
 
   async converterOrcamentoEmVenda(id: number, userId: string): Promise<Venda> {

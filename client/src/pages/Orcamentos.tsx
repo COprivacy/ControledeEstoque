@@ -183,7 +183,11 @@ export default function Orcamentos() {
     const subtotal = calcularSubtotal();
     
     createMutation.mutate({
-      ...formData,
+      cliente_nome: formData.clienteNome,
+      cliente_email: formData.clienteEmail || "",
+      cliente_telefone: formData.clienteTelefone || "",
+      data_validade: formData.dataValidade || null,
+      observacoes: formData.observacoes || null,
       itens: itensCarrinho,
       subtotal,
       desconto: 0,

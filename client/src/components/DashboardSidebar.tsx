@@ -1,7 +1,7 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { Home, Package, ClipboardList, FileText, Settings, CreditCard, Users, DollarSign, TrendingUp, BarChart3, Crown, Lock, LineChart, Scan, Wallet, ShoppingCart, PackageX } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { usePermissions } from "@/hooks/use-permissions";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useUser } from "@/hooks/use-user";
 
 type MenuItem = {

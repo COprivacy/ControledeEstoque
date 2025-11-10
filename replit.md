@@ -7,7 +7,15 @@ A web application for Brazilian small businesses, offering inventory management,
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
-**2025-11-10:** Fixed Orçamentos (Budget/Quotes) page - rebuilt with professional UI, proper data validation, and full functionality (create, view, print, approve, reject, convert to sale, delete). Resolved TypeScript naming conflicts (camelCase vs snake_case).
+**2025-11-10 (Evening):** Implemented comprehensive audit log system for employee monitoring:
+- Added `getLogsAdminByAccount` method in PostgresStorage with secure parameterized queries (using `inArray`)
+- Created GET `/api/logs-admin` route with data enrichment (user name/email)
+- Built "Logs de Auditoria" tab in Admin page with sortable table
+- Implemented automatic logging for employee login and permission updates
+- Fixed SQL injection vulnerability by replacing raw SQL with Drizzle's `inArray`
+- System currently logs: LOGIN_FUNCIONARIO, PERMISSOES_ATUALIZADAS (expandable to more actions)
+
+**2025-11-10 (Earlier):** Fixed Orçamentos (Budget/Quotes) page - rebuilt with professional UI, proper data validation, and full functionality (create, view, print, approve, reject, convert to sale, delete). Resolved TypeScript naming conflicts (camelCase vs snake_case).
 
 ## System Architecture
 

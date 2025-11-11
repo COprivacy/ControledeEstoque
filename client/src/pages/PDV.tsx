@@ -424,9 +424,9 @@ export default function PDV() {
           <Menu className="h-4 w-4 text-gray-600 dark:text-gray-400" />
         </button>
 
-        <div className="relative z-10 h-[calc(100vh-2rem)] p-4">
+        <div className="relative z-10 h-screen p-3">
           <div className={cn(
-            "h-full backdrop-blur-md bg-white/70 dark:bg-gray-900/70 rounded-2xl border-2 border-white/30 shadow-2xl transition-all duration-500 p-4 overflow-hidden",
+            "h-full backdrop-blur-md bg-white/80 dark:bg-gray-900/80 rounded-xl border-2 border-white/30 shadow-2xl transition-all duration-500 p-3 overflow-hidden",
             !caixaAberto && "opacity-60 pointer-events-none border-yellow-400/50 dark:border-yellow-600/50"
           )}>
             <PDVScanner

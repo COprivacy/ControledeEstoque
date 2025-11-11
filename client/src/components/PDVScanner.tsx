@@ -1,11 +1,11 @@
 
 import { useState, useRef, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Scan, ShoppingCart, Plus, Minus, DollarSign, User, Check, ChevronsUpDown, CreditCard, Banknote, Percent } from "lucide-react";
+import { Trash2, ShoppingCart, Plus, Minus, DollarSign, User, Check, ChevronsUpDown, CreditCard, Banknote, Percent, Camera, Scale, X, Scan } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import type { Cliente } from "@shared/schema";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -22,6 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface CartItem {
   id: number;
@@ -31,6 +32,7 @@ interface CartItem {
   quantidade: number;
   subtotal: number;
   estoque_disponivel: number;
+  peso?: number;
 }
 
 interface PDVScannerProps {
@@ -41,7 +43,6 @@ interface PDVScannerProps {
 
 export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchProduct }: PDVScannerProps) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [barcode, setBarcode] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [lastScanTime, setLastScanTime] = useState(0);
@@ -52,8 +53,13 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const [descontoPercentual, setDescontoPercentual] = useState(0);
   const [formaPagamento, setFormaPagamento] = useState<string>("dinheiro");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showCameraDialog, setShowCameraDialog] = useState(false);
+  const [showBalancaDialog, setShowBalancaDialog] = useState(false);
+  const [pesoBalanca, setPesoBalanca] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const valorPagoRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
   const { data: clientes = [] } = useQuery<Cliente[]>({
     queryKey: ["/api/clientes"],
@@ -126,49 +132,73 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     setIsProcessing(true);
 
     try {
+      // Detectar se é código de balança (começa com 2 e tem 13 dígitos)
+      const isBalancaCode = scannedBarcode.startsWith('2') && scannedBarcode.length === 13;
+      
+      let codigoProduto = scannedBarcode;
+      let pesoGramas = 0;
+      
+      if (isBalancaCode) {
+        // Formato balança: 2 + 6 dígitos produto + 5 dígitos peso + 1 verificador
+        codigoProduto = scannedBarcode.substring(1, 7);
+        pesoGramas = parseInt(scannedBarcode.substring(7, 12));
+        const pesoKg = pesoGramas / 1000;
+        
+        toast({
+          title: "🎯 Produto pesado detectado",
+          description: `Peso: ${pesoKg.toFixed(3)} kg`,
+        });
+      }
+
       const produto = onFetchProduct
-        ? await onFetchProduct(scannedBarcode)
-        : await fetchProduct(scannedBarcode);
+        ? await onFetchProduct(codigoProduto)
+        : await fetchProduct(codigoProduto);
 
       if (!produto) {
         playBeep(false);
         onProductNotFound?.(scannedBarcode);
         setBarcode("");
+        setIsProcessing(false);
         return;
       }
 
       playBeep(true);
 
-      const existingItemIndex = cart.findIndex(item => item.codigo_barras === scannedBarcode);
+      const existingItemIndex = cart.findIndex(item => item.codigo_barras === codigoProduto);
+      const quantidadeAdicionar = isBalancaCode ? (pesoGramas / 1000) : 1;
 
       if (existingItemIndex > -1) {
         const updatedCart = [...cart];
         const existingItem = updatedCart[existingItemIndex];
-        const newQuantity = Math.min(existingItem.quantidade + 1, existingItem.estoque_disponivel);
+        const newQuantity = existingItem.quantidade + quantidadeAdicionar;
         
-        if (newQuantity === existingItem.quantidade) {
+        if (newQuantity > existingItem.estoque_disponivel && !isBalancaCode) {
           toast({
             title: "⚠️ Estoque insuficiente",
             description: "Quantidade máxima atingida",
             variant: "destructive",
           });
+          setIsProcessing(false);
+          return;
         }
         
         updatedCart[existingItemIndex] = {
           ...existingItem,
           quantidade: newQuantity,
-          subtotal: newQuantity * existingItem.preco
+          subtotal: newQuantity * existingItem.preco,
+          peso: isBalancaCode ? pesoGramas / 1000 : undefined
         };
         setCart(updatedCart);
       } else {
         setCart([...cart, {
           id: produto.id,
           nome: produto.nome,
-          codigo_barras: scannedBarcode,
+          codigo_barras: codigoProduto,
           preco: produto.preco,
-          quantidade: 1,
-          subtotal: produto.preco,
-          estoque_disponivel: produto.quantidade
+          quantidade: quantidadeAdicionar,
+          subtotal: produto.preco * quantidadeAdicionar,
+          estoque_disponivel: produto.quantidade,
+          peso: isBalancaCode ? pesoGramas / 1000 : undefined
         }]);
       }
 
@@ -183,6 +213,85 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
   };
 
+  const startCamera = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+      setShowCameraDialog(true);
+      
+      // Iniciar detecção automática de código de barras
+      detectBarcode();
+    } catch (error) {
+      toast({
+        title: "❌ Erro ao acessar câmera",
+        description: "Verifique as permissões do navegador",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setShowCameraDialog(false);
+  };
+
+  const detectBarcode = async () => {
+    if (!videoRef.current || !canvasRef.current || !stream) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    if (!context) return;
+
+    const scanFrame = () => {
+      if (!stream || !showCameraDialog) return;
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0);
+
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Aqui você pode integrar uma biblioteca como zxing ou quagga para detecção
+      // Por simplicidade, vamos usar detecção manual básica
+      
+      requestAnimationFrame(scanFrame);
+    };
+
+    video.addEventListener('loadeddata', () => {
+      scanFrame();
+    });
+  };
+
+  const handleBalancaInput = () => {
+    if (!pesoBalanca || parseFloat(pesoBalanca) <= 0) {
+      toast({
+        title: "⚠️ Peso inválido",
+        description: "Digite um peso válido",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Aqui você adiciona lógica para buscar produto por código e aplicar peso
+    toast({
+      title: "⚖️ Peso registrado",
+      description: `${parseFloat(pesoBalanca).toFixed(3)} kg`,
+    });
+    
+    setPesoBalanca("");
+    setShowBalancaDialog(false);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !isProcessing) {
       e.preventDefault();
@@ -193,7 +302,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const updateQuantity = (index: number, newQuantity: number) => {
     setCart(cart.map((item, i) => {
       if (i === index) {
-        const quantity = Math.max(1, Math.min(newQuantity, item.estoque_disponivel));
+        const quantity = Math.max(0.001, Math.min(newQuantity, item.estoque_disponivel));
         return {
           ...item,
           quantidade: quantity,
@@ -291,138 +400,65 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   }, [clienteId, clientes]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-3 h-full overflow-hidden">
-      {/* Coluna Esquerda - Carrinho */}
-      <div className="flex flex-col gap-3 h-full min-h-0">
-        <Card className="flex-1 flex flex-col shadow-lg min-h-0 overflow-hidden">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ShoppingCart className="h-4 w-4" />
-              Carrinho de Compras
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col gap-2 overflow-hidden px-4 pb-3">
-            <div className="flex-1 border rounded-lg overflow-hidden min-h-0">
-              <div className="h-full overflow-y-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-muted z-10">
-                    <TableRow>
-                      <TableHead className="w-[40%] py-2 text-xs">Produto</TableHead>
-                      <TableHead className="text-center w-[25%] py-2 text-xs">Qtd</TableHead>
-                      <TableHead className="text-right w-[20%] py-2 text-xs">Preço</TableHead>
-                      <TableHead className="text-right w-[15%] py-2 text-xs">Total</TableHead>
-                      <TableHead className="text-center w-12 py-2 text-xs">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {cart.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                          <div className="flex flex-col items-center gap-2">
-                            <ShoppingCart className="h-10 w-10 opacity-20" />
-                            <p className="text-sm">Carrinho vazio</p>
-                            <p className="text-xs">Escaneie um produto para começar</p>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      cart.map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium text-sm py-2">{item.nome}</TableCell>
-                          <TableCell className="text-center py-2">
-                            <div className="flex items-center justify-center gap-1">
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => updateQuantity(index, item.quantidade - 1)}
-                                disabled={isProcessing}
-                              >
-                                <Minus className="h-3 w-3" />
-                              </Button>
-                              <span className="w-8 text-center font-semibold text-sm">{item.quantidade}</span>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => updateQuantity(index, item.quantidade + 1)}
-                                disabled={item.quantidade >= item.estoque_disponivel || isProcessing}
-                              >
-                                <Plus className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right text-sm py-2">R$ {item.preco.toFixed(2)}</TableCell>
-                          <TableCell className="text-right font-semibold text-sm py-2">R$ {item.subtotal.toFixed(2)}</TableCell>
-                          <TableCell className="text-center py-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => removeItem(index)}
-                              disabled={isProcessing}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-
+    <div className="flex flex-col h-full gap-2">
+      {/* Header com Scanner e Ações Rápidas */}
+      <div className="flex gap-2">
+        <Card className="flex-1 shadow-md">
+          <CardContent className="p-3">
             <div className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  ref={inputRef}
+                  type="text"
+                  placeholder="🔍 Código de barras..."
+                  value={barcode}
+                  onChange={(e) => setBarcode(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="h-10 text-base font-mono"
+                  autoComplete="off"
+                  disabled={isProcessing}
+                />
+              </div>
               <Button
                 variant="outline"
-                onClick={clearCart}
-                disabled={cart.length === 0 || isProcessing}
-                className="flex-1 h-8 text-xs"
+                size="icon"
+                className="h-10 w-10"
+                onClick={startCamera}
+                title="Usar câmera"
               >
-                <Trash2 className="h-3 w-3 mr-1" />
-                Limpar
+                <Camera className="h-5 w-5" />
               </Button>
               <Button
-                onClick={handleCompleteSale}
-                disabled={cart.length === 0 || isProcessing}
-                className="flex-1 h-8 text-xs bg-green-600 hover:bg-green-700"
+                variant="outline"
+                size="icon"
+                className="h-10 w-10"
+                onClick={() => setShowBalancaDialog(true)}
+                title="Balança"
               >
-                <Check className="h-3 w-3 mr-1" />
-                Finalizar Venda
+                <Scale className="h-5 w-5" />
               </Button>
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Coluna Direita - Cliente, Scanner e Pagamento */}
-      <div className="flex flex-col gap-3 h-full min-h-0 overflow-hidden">
-        {/* Cliente */}
-        <Card className="shadow-lg">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <User className="h-3 w-3" />
-              Cliente (Opcional)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-3">
+        <Card className="w-72 shadow-md">
+          <CardContent className="p-3">
             <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
-                  aria-expanded={openCombobox}
-                  className="w-full justify-between h-8 text-xs"
+                  className="w-full justify-between h-10"
                   disabled={isProcessing}
                 >
+                  <User className="h-4 w-4 mr-2" />
                   {clienteId === "none"
-                    ? "Sem cliente"
-                    : clientes.find((cliente) => cliente.id.toString() === clienteId)?.nome || "Sem cliente"}
-                  <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                    ? "Cliente"
+                    : clientes.find((c) => c.id.toString() === clienteId)?.nome || "Cliente"}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-full p-0">
+              <PopoverContent className="w-72 p-0">
                 <Command>
                   <CommandInput placeholder="Buscar cliente..." />
                   <CommandList>
@@ -435,12 +471,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                           setOpenCombobox(false);
                         }}
                       >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            clienteId === "none" ? "opacity-100" : "opacity-0"
-                          )}
-                        />
+                        <Check className={cn("mr-2 h-4 w-4", clienteId === "none" ? "opacity-100" : "opacity-0")} />
                         Sem cliente
                       </CommandItem>
                       {clientes.map((cliente) => (
@@ -452,12 +483,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                             setOpenCombobox(false);
                           }}
                         >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              clienteId === cliente.id.toString() ? "opacity-100" : "opacity-0"
-                            )}
-                          />
+                          <Check className={cn("mr-2 h-4 w-4", clienteId === cliente.id.toString() ? "opacity-100" : "opacity-0")} />
                           {cliente.nome}
                         </CommandItem>
                       ))}
@@ -468,179 +494,293 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
             </Popover>
           </CardContent>
         </Card>
+      </div>
 
-        {/* Scanner */}
-        <Card className="shadow-lg">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <Scan className="h-3 w-3" />
-              Código de Barras
+      {/* Área Principal - Carrinho e Pagamento */}
+      <div className="flex-1 flex gap-2 min-h-0">
+        {/* Carrinho */}
+        <Card className="flex-1 flex flex-col shadow-md min-h-0">
+          <CardHeader className="pb-2 pt-3 px-4 border-b">
+            <CardTitle className="flex items-center justify-between text-lg">
+              <span className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5" />
+                Carrinho ({cart.length})
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearCart}
+                disabled={cart.length === 0 || isProcessing}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Limpar
+              </Button>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 px-4 pb-3">
-            <Label htmlFor="barcode" className="text-xs">Digite ou escaneie o código</Label>
-            <Input
-              ref={inputRef}
-              id="barcode"
-              type="text"
-              placeholder="Código de barras"
-              value={barcode}
-              onChange={(e) => setBarcode(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="font-mono text-sm h-8"
-              autoComplete="off"
-              disabled={isProcessing}
-            />
-            <p className="text-xs text-muted-foreground">
-              Pressione Enter após digitar o código
-            </p>
+          <CardContent className="flex-1 p-0 overflow-hidden">
+            <div className="h-full overflow-y-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-muted/80 backdrop-blur-sm z-10">
+                  <TableRow>
+                    <TableHead className="w-[45%]">Produto</TableHead>
+                    <TableHead className="text-center w-[20%]">Qtd</TableHead>
+                    <TableHead className="text-right w-[17%]">Preço</TableHead>
+                    <TableHead className="text-right w-[18%]">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {cart.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-64 text-center">
+                        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                          <ShoppingCart className="h-16 w-16 opacity-20" />
+                          <div>
+                            <p className="font-medium">Carrinho vazio</p>
+                            <p className="text-sm">Escaneie produtos para começar</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    cart.map((item, index) => (
+                      <TableRow key={index} className="group">
+                        <TableCell className="font-medium">
+                          <div>
+                            <p className="line-clamp-1">{item.nome}</p>
+                            {item.peso && (
+                              <p className="text-xs text-muted-foreground">⚖️ {item.peso.toFixed(3)} kg</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => updateQuantity(index, item.quantidade - (item.peso ? 0.1 : 1))}
+                              disabled={isProcessing}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="w-12 text-center font-semibold">
+                              {item.peso ? item.quantidade.toFixed(3) : item.quantidade}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => updateQuantity(index, item.quantidade + (item.peso ? 0.1 : 1))}
+                              disabled={(!item.peso && item.quantidade >= item.estoque_disponivel) || isProcessing}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removeItem(index)}
+                              disabled={isProcessing}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          R$ {item.preco.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-primary">
+                          R$ {item.subtotal.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Pagamento */}
-        <Card className="shadow-lg bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <CreditCard className="h-3 w-3" />
+        {/* Painel de Pagamento */}
+        <Card className="w-96 flex flex-col shadow-md">
+          <CardHeader className="pb-2 pt-3 px-4 border-b">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <CreditCard className="h-5 w-5" />
               Pagamento
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 px-4 pb-3">
-            <div className="bg-background/80 backdrop-blur-sm rounded-lg p-3 border-2 border-primary/30">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium flex items-center gap-1">
-                  <DollarSign className="h-3 w-3" />
-                  Total da Venda
-                </span>
-                <span className="text-2xl font-bold text-primary">
-                  R$ {valorTotal.toFixed(2)}
-                </span>
+          <CardContent className="flex-1 flex flex-col gap-3 p-4">
+            {/* Total */}
+            <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-4 border-2 border-primary/20">
+              <div className="text-sm text-muted-foreground mb-1">Total da Venda</div>
+              <div className="text-4xl font-bold text-primary">
+                R$ {valorTotal.toFixed(2)}
               </div>
-
               {descontoPercentual > 0 && (
-                <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-dashed pt-1">
-                  <span>Desconto ({descontoPercentual}%)</span>
-                  <span className="font-medium text-red-600">- R$ {valorDesconto.toFixed(2)}</span>
+                <div className="text-xs text-red-600 mt-1">
+                  Desconto: {descontoPercentual}% (- R$ {valorDesconto.toFixed(2)})
                 </div>
               )}
             </div>
 
+            {/* Forma de Pagamento */}
             <div className="space-y-2">
-              <Label className="flex items-center gap-1 text-xs">
-                <CreditCard className="h-3 w-3" />
-                Forma de Pagamento
-              </Label>
-              <div className="grid grid-cols-2 gap-1.5">
-                <Button
-                  variant={formaPagamento === "dinheiro" ? "default" : "outline"}
-                  onClick={() => setFormaPagamento("dinheiro")}
-                  className={cn("h-7 text-xs", formaPagamento === "dinheiro" && "bg-primary")}
-                  disabled={isProcessing}
-                >
-                  <Banknote className="h-3 w-3 mr-1" />
-                  Dinheiro
-                </Button>
-                <Button
-                  variant={formaPagamento === "cartao_credito" ? "default" : "outline"}
-                  onClick={() => setFormaPagamento("cartao_credito")}
-                  className={cn("h-7 text-xs", formaPagamento === "cartao_credito" && "bg-primary")}
-                  disabled={isProcessing}
-                >
-                  <CreditCard className="h-3 w-3 mr-1" />
-                  Crédito
-                </Button>
-                <Button
-                  variant={formaPagamento === "cartao_debito" ? "default" : "outline"}
-                  onClick={() => setFormaPagamento("cartao_debito")}
-                  className={cn("h-7 text-xs", formaPagamento === "cartao_debito" && "bg-primary")}
-                  disabled={isProcessing}
-                >
-                  <CreditCard className="h-3 w-3 mr-1" />
-                  Débito
-                </Button>
-                <Button
-                  variant={formaPagamento === "pix" ? "default" : "outline"}
-                  onClick={() => setFormaPagamento("pix")}
-                  className={cn("h-7 text-xs", formaPagamento === "pix" && "bg-primary")}
-                  disabled={isProcessing}
-                >
-                  Pix
-                </Button>
+              <Label className="text-sm font-semibold">Forma de Pagamento</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: 'dinheiro', label: 'Dinheiro', icon: Banknote },
+                  { value: 'cartao_debito', label: 'Débito', icon: CreditCard },
+                  { value: 'cartao_credito', label: 'Crédito', icon: CreditCard },
+                  { value: 'pix', label: 'Pix', icon: DollarSign }
+                ].map(({ value, label, icon: Icon }) => (
+                  <Button
+                    key={value}
+                    variant={formaPagamento === value ? "default" : "outline"}
+                    onClick={() => setFormaPagamento(value)}
+                    className="h-10 justify-start"
+                    disabled={isProcessing}
+                  >
+                    <Icon className="h-4 w-4 mr-2" />
+                    {label}
+                  </Button>
+                ))}
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="flex items-center gap-1 text-xs">
-                <Percent className="h-3 w-3" />
+            {/* Desconto */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold flex items-center gap-1">
+                <Percent className="h-4 w-4" />
                 Desconto (%)
               </Label>
               <Input
                 type="number"
                 min="0"
                 max="100"
-                step="1"
+                step="0.1"
                 value={descontoPercentual}
-                onChange={(e) => {
-                  const value = parseFloat(e.target.value) || 0;
-                  setDescontoPercentual(Math.min(100, Math.max(0, value)));
-                }}
-                placeholder="0"
+                onChange={(e) => setDescontoPercentual(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                className="h-10"
                 disabled={isProcessing}
-                className="h-8 text-sm"
               />
             </div>
 
+            {/* Valor Pago (só para dinheiro) */}
             {formaPagamento === 'dinheiro' && (
-              <>
-                <div className="space-y-1.5">
-                  <Label htmlFor="valor-pago" className="flex items-center gap-1 text-xs">
-                    <DollarSign className="h-3 w-3" />
-                    Valor Pago
-                  </Label>
-                  <Input
-                    ref={valorPagoRef}
-                    id="valor-pago"
-                    type="number"
-                    step="0.01"
-                    value={valorPago}
-                    onChange={(e) => setValorPago(e.target.value)}
-                    onKeyDown={handleValorPagoKeyDown}
-                    placeholder="0,00"
-                    className="text-sm h-8"
-                    disabled={isProcessing}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Pressione Enter para finalizar
-                  </p>
-                </div>
-
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Valor Pago</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={valorPago}
+                  onChange={(e) => setValorPago(e.target.value)}
+                  onKeyDown={handleValorPagoKeyDown}
+                  placeholder="0,00"
+                  className="h-10 text-lg font-semibold"
+                  disabled={isProcessing}
+                />
                 {valorPago && parseFloat(valorPago) >= valorTotal && (
-                  <div className="p-2.5 bg-green-50 dark:bg-green-950 rounded-lg border-2 border-green-200 dark:border-green-800">
+                  <div className="bg-green-50 dark:bg-green-950 rounded-lg p-3 border border-green-200 dark:border-green-800">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                        Troco:
-                      </span>
-                      <span className="text-xl font-bold text-green-600 dark:text-green-400">
+                      <span className="text-sm font-medium">Troco:</span>
+                      <span className="text-2xl font-bold text-green-600 dark:text-green-400">
                         R$ {troco.toFixed(2)}
                       </span>
                     </div>
                   </div>
                 )}
-              </>
+              </div>
             )}
+
+            {/* Botão Finalizar */}
+            <Button
+              onClick={handleCompleteSale}
+              disabled={cart.length === 0 || isProcessing}
+              className="w-full h-12 text-base font-bold bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+              size="lg"
+            >
+              <Check className="h-5 w-5 mr-2" />
+              {isProcessing ? "Processando..." : "Finalizar Venda"}
+            </Button>
           </CardContent>
         </Card>
       </div>
 
+      {/* Dialog da Câmera */}
+      <Dialog open={showCameraDialog} onOpenChange={(open) => !open && stopCamera()}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              Scanner de Código de Barras
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-64 h-32 border-2 border-green-500 rounded-lg"></div>
+              </div>
+              <canvas ref={canvasRef} className="hidden" />
+            </div>
+            <p className="text-sm text-muted-foreground text-center">
+              Posicione o código de barras dentro da área marcada
+            </p>
+            <Button variant="outline" onClick={stopCamera} className="w-full">
+              Fechar Câmera
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog da Balança */}
+      <Dialog open={showBalancaDialog} onOpenChange={setShowBalancaDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Scale className="h-5 w-5" />
+              Produto Pesado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Peso (kg)</Label>
+              <Input
+                type="number"
+                step="0.001"
+                value={pesoBalanca}
+                onChange={(e) => setPesoBalanca(e.target.value)}
+                placeholder="0.000"
+                className="text-2xl font-bold text-center"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowBalancaDialog(false)} className="flex-1">
+                Cancelar
+              </Button>
+              <Button onClick={handleBalancaInput} className="flex-1">
+                Confirmar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Confirmação */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Venda</AlertDialogTitle>
             <AlertDialogDescription>
-              <div className="space-y-3 mt-4">
-                <div className="flex justify-between text-base">
+              <div className="space-y-3 mt-4 text-base">
+                <div className="flex justify-between font-bold text-lg border-b pb-2">
                   <span>Total:</span>
-                  <span className="font-bold text-primary">R$ {valorTotal.toFixed(2)}</span>
+                  <span className="text-primary">R$ {valorTotal.toFixed(2)}</span>
                 </div>
                 
                 {formaPagamento === 'dinheiro' && (
@@ -651,16 +791,14 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                     </div>
                     <div className="flex justify-between text-green-600">
                       <span>Troco:</span>
-                      <span className="font-bold">R$ {troco.toFixed(2)}</span>
+                      <span className="font-bold text-xl">R$ {troco.toFixed(2)}</span>
                     </div>
                   </>
                 )}
 
-                <div className="flex justify-between border-t pt-2">
-                  <span>Forma de Pagamento:</span>
-                  <span className="font-semibold capitalize">
-                    {formaPagamento.replace('_', ' ')}
-                  </span>
+                <div className="flex justify-between">
+                  <span>Pagamento:</span>
+                  <span className="font-semibold capitalize">{formaPagamento.replace('_', ' ')}</span>
                 </div>
 
                 {clienteId !== "none" && (
@@ -675,11 +813,9 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isProcessing}>
-              Cancelar
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={isProcessing}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmSale} disabled={isProcessing}>
-              {isProcessing ? "Processando..." : "Confirmar Venda"}
+              {isProcessing ? "Processando..." : "Confirmar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

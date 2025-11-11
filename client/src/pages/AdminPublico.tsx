@@ -2290,7 +2290,7 @@ export default function AdminPublico() {
                     />
                     <p className="text-xs text-slate-500 mt-1">
                       {diasRestantes && parseInt(diasRestantes) > 0
-                        ? `Expira em: ${new Date(new Date().getTime() + parseInt(diasRestantes) * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}`
+                        ? `Expira em: ${new Date(new Date().getTime() + parseInt(diasRestantes) * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`
                         : "Informe os dias para calcular a data"}
                     </p>
                   </div>

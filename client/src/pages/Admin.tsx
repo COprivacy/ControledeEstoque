@@ -47,6 +47,7 @@ import { Switch } from "@/components/ui/switch";
 import { CheckoutForm } from "@/components/CheckoutForm";
 import { EmployeePurchaseDialog } from "@/components/EmployeePurchaseDialog";
 import React from "react";
+import { useUser } from "@/hooks/use-user";
 
 interface User {
   id: string;
@@ -253,7 +254,7 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
                 data-testid="input-search-logs"
               />
             </div>
-            
+
             <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
               <SelectTrigger className="h-9 bg-white dark:bg-gray-950 border-slate-200 dark:border-slate-800" data-testid="select-employee-filter">
                 <Users className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -300,7 +301,7 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
       {filteredLogs.length === 0 ? (
         <Card className="bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900 dark:to-slate-950/50 border-slate-200 dark:border-slate-800">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <div className="p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full mb-4">
+            <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-500/10 rounded-full mb-4">
               <Clock className="h-8 w-8 text-blue-600 dark:text-blue-400" />
             </div>
             <h3 className="text-lg font-semibold mb-2">Nenhum log encontrado</h3>
@@ -349,7 +350,7 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
                         </span>
                       </div>
                     </TableCell>
-                    
+
                     <TableCell data-testid={`text-log-user-${log.id}`} className="py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
@@ -361,7 +362,7 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
                         </div>
                       </div>
                     </TableCell>
-                    
+
                     <TableCell data-testid={`text-log-action-${log.id}`} className="py-3">
                       <Badge
                         variant="outline"
@@ -370,7 +371,7 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
                         {log.acao}
                       </Badge>
                     </TableCell>
-                    
+
                     <TableCell data-testid={`text-log-details-${log.id}`} className="py-3 max-w-md">
                       <div className="space-y-1">
                         <p className="text-sm leading-tight">{log.detalhes || "—"}</p>
@@ -433,9 +434,23 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
   );
 }
 
+// Função para calcular dias restantes
+function calculateDaysRemaining(expirationDate: string | null | undefined): number {
+  if (!expirationDate) return 0;
+
+  const now = new Date();
+  const expiration = new Date(expirationDate);
+  const diffTime = expiration.getTime() - now.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays > 0 ? diffDays : 0;
+}
+
 export default function Admin() {
-  const { toast } = useToast();
+  const { user } = useUser();
   const [, setLocation] = useLocation();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [editEmployeeOpen, setEditEmployeeOpen] = useState(false);
   const [editPermissionsUser, setEditPermissionsUser] = useState<string | null>(null);
@@ -461,12 +476,19 @@ export default function Admin() {
 
   const [permissions, setPermissions] = useState<Record<string, Permission>>({});
 
-  const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem("user") || "{}"));
+  // Initial state from localStorage
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser));
+    }
+  }, []);
 
-  // Atualizar dados do usuário a cada 30 segundos para pegar atualizações do webhook
+  // Query to refresh current user data periodically
   useQuery({
-    queryKey: ["/api/user-refresh", currentUser.id],
+    queryKey: ["/api/user-refresh", currentUser?.id],
     queryFn: async () => {
+      if (!currentUser?.id) return currentUser; // Don't fetch if no user ID
       const response = await fetch(`/api/users`, {
         headers: {
           'x-user-id': currentUser.id,
@@ -475,59 +497,74 @@ export default function Admin() {
       if (response.ok) {
         const users = await response.json();
         const updatedUser = users.find((u: any) => u.id === currentUser.id);
-        if (updatedUser && updatedUser.max_funcionarios !== currentUser.max_funcionarios) {
-          localStorage.setItem("user", JSON.stringify(updatedUser));
-          setCurrentUser(updatedUser);
-          toast({
-            title: "✅ Limite atualizado",
-            description: `Seu limite de funcionários foi atualizado para ${updatedUser.max_funcionarios}!`,
-          });
+        if (updatedUser) {
+          // Check if max_funcionarios changed
+          if (updatedUser.max_funcionarios !== currentUser.max_funcionarios) {
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            setCurrentUser(updatedUser);
+            toast({
+              title: "✅ Limite atualizado",
+              description: `Seu limite de funcionários foi atualizado para ${updatedUser.max_funcionarios}!`,
+            });
+          }
+          return updatedUser;
         }
-        return updatedUser;
       }
-      return currentUser;
+      return currentUser; // Return current user if fetch fails or user not found
     },
-    refetchInterval: 30000, // Atualizar a cada 30 segundos
-    enabled: !!currentUser.id,
+    refetchInterval: 30000, // Refresh every 30 seconds
+    enabled: !!currentUser?.id, // Only run when currentUser.id is available
   });
 
   const { data: employees = [], isLoading } = useQuery<User[]>({
-    queryKey: ["/api/funcionarios", { conta_id: currentUser.id }],
+    queryKey: ["/api/funcionarios", { conta_id: currentUser?.id }],
     queryFn: async () => {
+      if (!currentUser?.id) return []; // Return empty array if no user ID
       const response = await apiRequest("GET", `/api/funcionarios?conta_id=${currentUser.id}`);
       return response.json();
     },
-    refetchInterval: 30000, // Auto-atualizar a cada 30 segundos
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    enabled: !!currentUser?.id, // Only run when currentUser.id is available
   });
 
   const { data: allPermissions = {} } = useQuery({
-    queryKey: ["/api/funcionarios/permissoes", currentUser.id],
+    queryKey: ["/api/funcionarios/permissoes", currentUser?.id],
     queryFn: async () => {
+      if (!currentUser?.id || employees.length === 0) return {}; // Don't fetch if no user ID or no employees
       const perms: Record<string, Permission> = {};
       for (const emp of employees) {
-        const response = await apiRequest("GET", `/api/funcionarios/${emp.id}/permissoes`);
-        perms[emp.id] = await response.json();
+        try {
+          const response = await apiRequest("GET", `/api/funcionarios/${emp.id}/permissoes`);
+          if (response.ok) {
+            perms[emp.id] = await response.json();
+          }
+        } catch (error) {
+          console.error(`Error fetching permissions for employee ${emp.id}:`, error);
+          // Handle error appropriately, maybe set a default empty permission or skip
+        }
       }
       return perms;
     },
-    enabled: employees.length > 0,
-    refetchInterval: 30000, // Auto-atualizar a cada 30 segundos
+    enabled: !!currentUser?.id && employees.length > 0, // Enable when user and employees are available
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
   });
 
   const { data: logs = [] } = useQuery({
-    queryKey: ["/api/logs-admin", currentUser.id],
+    queryKey: ["/api/logs-admin", currentUser?.id],
     queryFn: async () => {
+      if (!currentUser?.id) return []; // Return empty array if no user ID
       const response = await apiRequest("GET", `/api/logs-admin?conta_id=${currentUser.id}`);
       return response.json();
     },
-    enabled: !!currentUser.id,
-    refetchInterval: 30000, // Auto-atualizar a cada 30 segundos
+    enabled: !!currentUser?.id, // Only run when currentUser.id is available
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
   });
 
   const accountUsers = employees;
 
   const createEmployeeMutation = useMutation({
     mutationFn: async (userData: EmployeeFormData) => {
+      if (!currentUser?.id) throw new Error("User not identified");
       const response = await apiRequest("POST", "/api/funcionarios", {
         ...userData,
         conta_id: currentUser.id,
@@ -539,7 +576,7 @@ export default function Admin() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios", { conta_id: currentUser.id }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios", { conta_id: currentUser?.id }] });
       toast({
         title: "Funcionário adicionado",
         description: "Novo funcionário criado com sucesso!",
@@ -568,10 +605,14 @@ export default function Admin() {
         delete cleanUpdates.senha;
       }
       const response = await apiRequest("PATCH", `/api/funcionarios/${id}`, cleanUpdates);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw errorData;
+      }
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios", { conta_id: currentUser.id }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios", { conta_id: currentUser?.id }] });
       toast({
         title: "Funcionário atualizado",
         description: "Dados do funcionário atualizados com sucesso!",
@@ -591,10 +632,14 @@ export default function Admin() {
   const toggleStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const response = await apiRequest("PATCH", `/api/funcionarios/${id}`, { status });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw errorData;
+      }
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios", { conta_id: currentUser.id }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios", { conta_id: currentUser?.id }] });
       toast({
         title: "Status atualizado",
         description: "Status do funcionário atualizado com sucesso!",
@@ -612,10 +657,14 @@ export default function Admin() {
   const deleteEmployeeMutation = useMutation({
     mutationFn: async (id: string) => {
       const response = await apiRequest("DELETE", `/api/funcionarios/${id}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw errorData;
+      }
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios", { conta_id: currentUser.id }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios", { conta_id: currentUser?.id }] });
       toast({
         title: "Funcionário removido",
         description: "Funcionário removido com sucesso.",
@@ -696,16 +745,26 @@ export default function Admin() {
         ...prev,
         [userId]: allPermissions[userId],
       }));
+    } else {
+      // Ensure default permissions are set if no existing permissions are found
+      setPermissions(prev => ({
+        ...prev,
+        [userId]: getDefaultPermissions(),
+      }));
     }
   };
 
   const savePermissionsMutation = useMutation({
     mutationFn: async ({ userId, perms }: { userId: string; perms: Permission }) => {
       const response = await apiRequest("POST", `/api/funcionarios/${userId}/permissoes`, perms);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw errorData;
+      }
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios/permissoes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/funcionarios/permissoes", currentUser?.id] }); // Invalidate the correct query key
       toast({
         title: "Permissões atualizadas",
         description: "As permissões foram salvas com sucesso.",
@@ -723,7 +782,7 @@ export default function Admin() {
   });
 
   const savePermissions = (userId: string) => {
-    const perms = permissions[userId] || getDefaultPermissions();
+    const perms = permissions[userId] || allPermissions[userId] || getDefaultPermissions(); // Use cached or default if not in local state
     savePermissionsMutation.mutate({ userId, perms });
   };
 
@@ -737,15 +796,7 @@ export default function Admin() {
     setCheckoutOpen(true);
   };
 
-  const calculateDaysRemaining = (expirationDate?: string) => {
-    if (!expirationDate) return null;
-    const now = new Date();
-    const expiry = new Date(expirationDate);
-    const diff = expiry.getTime() - now.getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  };
-
-  if (isLoading) {
+  if (isLoading || !currentUser) { // Show loading if employees are loading or currentUser is not yet set
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
@@ -839,12 +890,13 @@ export default function Admin() {
               <CardContent className="space-y-4">
                 <div className="p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
                   <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Plano</p>
-                  <Badge variant={currentUser.plano === "premium" || currentUser.plano === "mensal" || currentUser.plano === "anual" ? "default" : "secondary"} className="text-sm px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 border-0">
+                  <Badge variant={currentUser.plano === "premium_mensal" || currentUser.plano === "premium_anual" || currentUser.plano === "mensal" || currentUser.plano === "anual" ? "default" : "secondary"} className="text-sm px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 border-0">
                     {currentUser.plano === "trial" && "7 Dias Free Trial"}
-                    {currentUser.plano === "mensal" && "Mensal"}
-                    {currentUser.plano === "anual" && "Anual"}
-                    {currentUser.plano === "premium" && "Premium"}
-                    {!["trial", "mensal", "anual", "premium"].includes(currentUser.plano) && "Free"}
+                    {currentUser.plano === "mensal" && "Plano Mensal"}
+                    {currentUser.plano === "anual" && "Plano Anual"}
+                    {currentUser.plano === "premium_mensal" && "Plano Mensal Premium"}
+                    {currentUser.plano === "premium_anual" && "Plano Anual Premium"}
+                    {!["trial", "mensal", "anual", "premium_mensal", "premium_anual"].includes(currentUser.plano) && "Free"}
                   </Badge>
                 </div>
                 {(currentUser.data_expiracao_plano || currentUser.data_expiracao_trial) && (
@@ -863,7 +915,7 @@ export default function Admin() {
             </Card>
           </div>
 
-          {(currentUser.plano === "trial" || currentUser.plano === "free") && (
+          {(currentUser.plano === "trial" || currentUser.plano === "free" || currentUser.plano === "mensal" || currentUser.plano === "anual") && ( // Adjusted condition to show upgrade prompt for relevant plans
             <Card className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 border-0 shadow-2xl">
               <div className="absolute inset-0 bg-black/10 backdrop-blur-sm"></div>
               <CardContent className="relative p-8">
@@ -1069,7 +1121,7 @@ export default function Admin() {
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mt-1">Limite de funcionários</p>
                 </div>
               </div>
-              {accountUsers.length >= (currentUser.max_funcionarios || 1) && (
+              {(currentUser.max_funcionarios !== undefined && accountUsers.length >= currentUser.max_funcionarios) && ( // Ensure max_funcionarios is defined
                 <Alert className="mt-4 border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20">
                   <AlertTitle className="text-orange-800 dark:text-orange-200">Limite atingido!</AlertTitle>
                   <AlertDescription className="text-orange-700 dark:text-orange-300 flex flex-col gap-3">

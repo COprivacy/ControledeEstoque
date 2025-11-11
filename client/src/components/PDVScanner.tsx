@@ -291,10 +291,10 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   }, [clienteId, clientes]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-3 h-full max-h-[calc(100vh-120px)] overflow-hidden p-2">
+    <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-3 h-full overflow-hidden">
       {/* Coluna Esquerda - Carrinho */}
       <div className="flex flex-col gap-3 h-full min-h-0">
-        <Card className="flex-1 flex flex-col shadow-lg min-h-0">
+        <Card className="flex-1 flex flex-col shadow-lg min-h-0 overflow-hidden">
           <CardHeader className="pb-2 pt-3 px-4">
             <CardTitle className="flex items-center gap-2 text-base">
               <ShoppingCart className="h-4 w-4" />
@@ -397,7 +397,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
       </div>
 
       {/* Coluna Direita - Cliente, Scanner e Pagamento */}
-      <div className="flex flex-col gap-3 h-full min-h-0 overflow-y-auto pr-1">
+      <div className="flex flex-col gap-3 h-full min-h-0 overflow-hidden">
         {/* Cliente */}
         <Card className="shadow-lg">
           <CardHeader className="pb-2 pt-3 px-4">

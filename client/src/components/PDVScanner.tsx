@@ -23,7 +23,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Html5QrcodeScanner } from "html5-qrcode";
 
 interface CartItem {
   id: number;
@@ -58,8 +57,11 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const [showBalancaDialog, setShowBalancaDialog] = useState(false);
   const [pesoBalanca, setPesoBalanca] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
-  const [isScannerActive, setIsScannerActive] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const barcodeDetectorRef = useRef<any>(null);
 
   const { data: clientes = [] } = useQuery<Cliente[]>({
     queryKey: ["/api/clientes"],
@@ -132,14 +134,12 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     setIsProcessing(true);
 
     try {
-      // Detectar se é código de balança (começa com 2 e tem 13 dígitos)
       const isBalancaCode = scannedBarcode.startsWith('2') && scannedBarcode.length === 13;
       
       let codigoProduto = scannedBarcode;
       let pesoGramas = 0;
       
       if (isBalancaCode) {
-        // Formato balança: 2 + 6 dígitos produto + 5 dígitos peso + 1 verificador
         codigoProduto = scannedBarcode.substring(1, 7);
         pesoGramas = parseInt(scannedBarcode.substring(7, 12));
         const pesoKg = pesoGramas / 1000;
@@ -213,69 +213,51 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
   };
 
-  const initScanner = () => {
-    const element = document.getElementById("qr-reader");
-    if (!element) {
-      console.error("Elemento qr-reader não encontrado");
-      return;
-    }
-
-    if (scannerRef.current) {
-      return; // Já está inicializado
-    }
-
+  // Sistema de scanner de câmera nativo
+  const startCamera = async () => {
+    setShowCameraDialog(true);
+    
     try {
-      const scanner = new Html5QrcodeScanner(
-        "qr-reader",
-        {
-          fps: 10,
-          qrbox: { width: 300, height: 200 },
-          aspectRatio: 1.0,
-          rememberLastUsedCamera: true,
-          showTorchButtonIfSupported: true,
-          formatsToSupport: [
-            8, // EAN_13
-            9, // EAN_8
-            11, // CODE_128
-            12, // CODE_39
-            13, // ITF
-            16, // UPC_A
-            17, // UPC_E
-            0  // QR_CODE
-          ],
-          experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
-          }
-        },
-        true // verbose
-      );
-
-      const onScanSuccess = (decodedText: string, decodedResult: any) => {
-        console.log("✅ Código lido:", decodedText, decodedResult);
-        playBeep(true);
-        toast({
-          title: "✅ Código detectado!",
-          description: decodedText,
+      // Verificar suporte a BarcodeDetector
+      if ('BarcodeDetector' in window) {
+        const formats = await (window as any).BarcodeDetector.getSupportedFormats();
+        console.log('📷 Formatos suportados:', formats);
+        barcodeDetectorRef.current = new (window as any).BarcodeDetector({
+          formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e']
         });
-        handleScan(decodedText);
-        stopCamera();
-      };
+      }
 
-      const onScanFailure = (error: string) => {
-        // Ignorar erros comuns de varredura
-        if (!error.includes("NotFoundException")) {
-          console.log("Scanner error:", error);
+      // Solicitar acesso à câmera
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
         }
-      };
+      });
 
-      scanner.render(onScanSuccess, onScanFailure);
-      scannerRef.current = scanner;
-      
-      console.log("📷 Scanner inicializado com sucesso");
+      streamRef.current = stream;
+
+      // Aguardar o vídeo estar pronto
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+          
+          toast({
+            title: "📷 Câmera ativada",
+            description: "Aponte para o código de barras",
+          });
+
+          // Iniciar detecção
+          detectBarcode();
+        }
+      }, 500);
+
     } catch (error) {
-      console.error("Erro ao inicializar scanner:", error);
+      console.error("Erro ao acessar câmera:", error);
       toast({
-        title: "❌ Erro ao abrir câmera",
+        title: "❌ Erro ao acessar câmera",
         description: "Verifique as permissões da câmera",
         variant: "destructive"
       });
@@ -283,21 +265,119 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
   };
 
-  const startCamera = () => {
-    setShowCameraDialog(true);
-    // Aguardar o Dialog renderizar
-    setTimeout(() => {
-      initScanner();
-    }, 500);
+  const detectBarcode = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    if (!context || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      animationFrameRef.current = requestAnimationFrame(detectBarcode);
+      return;
+    }
+
+    // Configurar canvas
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Desenhar frame atual
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    try {
+      // Usar BarcodeDetector nativo se disponível
+      if (barcodeDetectorRef.current) {
+        const barcodes = await barcodeDetectorRef.current.detect(canvas);
+        
+        if (barcodes.length > 0) {
+          const detectedCode = barcodes[0].rawValue;
+          console.log("✅ Código detectado:", detectedCode);
+          
+          // Desenhar retângulo ao redor do código
+          const { boundingBox } = barcodes[0];
+          context.strokeStyle = '#00ff00';
+          context.lineWidth = 4;
+          context.strokeRect(
+            boundingBox.x,
+            boundingBox.y,
+            boundingBox.width,
+            boundingBox.height
+          );
+
+          playBeep(true);
+          toast({
+            title: "✅ Código detectado!",
+            description: detectedCode,
+          });
+          
+          handleScan(detectedCode);
+          stopCamera();
+          return;
+        }
+      } else {
+        // Fallback: usar biblioteca ZXing via CDN
+        await loadZXingFallback(canvas);
+      }
+    } catch (error) {
+      console.error("Erro na detecção:", error);
+    }
+
+    // Continuar detecção
+    animationFrameRef.current = requestAnimationFrame(detectBarcode);
+  };
+
+  const loadZXingFallback = async (canvas: HTMLCanvasElement) => {
+    // Usar ZXing como fallback
+    if (!(window as any).ZXing) {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/@zxing/library@latest';
+      document.head.appendChild(script);
+      
+      await new Promise((resolve) => {
+        script.onload = resolve;
+      });
+    }
+
+    const codeReader = new (window as any).ZXing.BrowserMultiFormatReader();
+    const imageData = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height);
+    
+    if (imageData) {
+      try {
+        const result = await codeReader.decodeFromImageData(imageData);
+        if (result) {
+          console.log("✅ Código detectado (ZXing):", result.text);
+          playBeep(true);
+          toast({
+            title: "✅ Código detectado!",
+            description: result.text,
+          });
+          handleScan(result.text);
+          stopCamera();
+        }
+      } catch (e) {
+        // Nenhum código encontrado neste frame
+      }
+    }
   };
 
   const stopCamera = () => {
-    if (scannerRef.current) {
-      scannerRef.current.clear().catch(err => {
-        console.error("Erro ao parar scanner:", err);
-      });
-      scannerRef.current = null;
+    // Parar detecção
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
+
+    // Parar stream
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    // Limpar vídeo
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
     setShowCameraDialog(false);
   };
 
@@ -311,7 +391,6 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
       return;
     }
 
-    // Aqui você adiciona lógica para buscar produto por código e aplicar peso
     toast({
       title: "⚖️ Peso registrado",
       description: `${parseFloat(pesoBalanca).toFixed(3)} kg`,
@@ -427,6 +506,13 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
       setDescontoPercentual(0);
     }
   }, [clienteId, clientes]);
+
+  // Cleanup ao desmontar
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-full gap-2">
@@ -735,25 +821,45 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
         </Card>
       </div>
 
-      {/* Dialog da Câmera */}
+      {/* Dialog da Câmera - Redesenhado */}
       <Dialog open={showCameraDialog} onOpenChange={(open) => !open && stopCamera()}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Scan className="h-5 w-5" />
               Scanner de Código de Barras
             </DialogTitle>
             <DialogDescription>
-              Aponte a câmera para o código de barras do produto. Mantenha a distância de 10-20cm.
+              Aponte a câmera para o código de barras do produto
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
               <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
-                💡 Dica: Para melhor leitura, mantenha o código de barras centralizado e bem iluminado
+                💡 Mantenha o código de barras centralizado e bem iluminado (distância: 10-20cm)
               </p>
             </div>
-            <div id="qr-reader" className="w-full border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden"></div>
+            
+            {/* Área de vídeo */}
+            <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+              <canvas
+                ref={canvasRef}
+                className="absolute top-0 left-0 w-full h-full pointer-events-none"
+              />
+              
+              {/* Guia de posicionamento */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-3/4 h-1/3 border-4 border-green-500 rounded-lg opacity-50"></div>
+              </div>
+            </div>
+
             <div className="flex gap-2">
               <Button variant="outline" onClick={stopCamera} className="flex-1">
                 <X className="h-4 w-4 mr-2" />

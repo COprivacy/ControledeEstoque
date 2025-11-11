@@ -22,7 +22,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Html5QrcodeScanner } from "html5-qrcode";
 
 interface CartItem {
   id: number;
@@ -57,9 +58,8 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const [showBalancaDialog, setShowBalancaDialog] = useState(false);
   const [pesoBalanca, setPesoBalanca] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const [isScannerActive, setIsScannerActive] = useState(false);
 
   const { data: clientes = [] } = useQuery<Cliente[]>({
     queryKey: ["/api/clientes"],
@@ -213,64 +213,79 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
   };
 
-  const startCamera = async () => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-      });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-      setShowCameraDialog(true);
-      
-      // Iniciar detecção automática de código de barras
-      detectBarcode();
-    } catch (error) {
-      toast({
-        title: "❌ Erro ao acessar câmera",
-        description: "Verifique as permissões do navegador",
-        variant: "destructive",
-      });
-    }
+  const startCamera = () => {
+    setShowCameraDialog(true);
+    setIsScannerActive(true);
   };
 
   const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
+    if (scannerRef.current) {
+      scannerRef.current.clear().catch(err => {
+        console.error("Erro ao parar scanner:", err);
+      });
+      scannerRef.current = null;
     }
     setShowCameraDialog(false);
+    setIsScannerActive(false);
   };
 
-  const detectBarcode = async () => {
-    if (!videoRef.current || !canvasRef.current || !stream) return;
+  useEffect(() => {
+    if (showCameraDialog && isScannerActive && !scannerRef.current) {
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 150 },
+        aspectRatio: 1.777778,
+        formatsToSupport: [
+          0, // QR_CODE
+          8, // EAN_13
+          9, // EAN_8
+          11, // CODE_128
+          12, // CODE_39
+          13, // ITF
+          16, // UPC_A
+          17  // UPC_E
+        ]
+      };
 
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
+      const scanner = new Html5QrcodeScanner(
+        "qr-reader",
+        config,
+        false
+      );
 
-    if (!context) return;
+      scanner.render(
+        (decodedText) => {
+          // Sucesso na leitura
+          playBeep(true);
+          toast({
+            title: "✅ Código detectado!",
+            description: decodedText,
+          });
+          
+          // Processar o código
+          handleScan(decodedText);
+          
+          // Parar scanner após leitura bem-sucedida
+          stopCamera();
+        },
+        (errorMessage) => {
+          // Erro de leitura (pode ser ignorado, acontece durante a varredura)
+          // console.log("Scanner error:", errorMessage);
+        }
+      );
 
-    const scanFrame = () => {
-      if (!stream || !showCameraDialog) return;
+      scannerRef.current = scanner;
+    }
 
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0);
-
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      
-      // Aqui você pode integrar uma biblioteca como zxing ou quagga para detecção
-      // Por simplicidade, vamos usar detecção manual básica
-      
-      requestAnimationFrame(scanFrame);
+    return () => {
+      if (scannerRef.current && !showCameraDialog) {
+        scannerRef.current.clear().catch(err => {
+          console.error("Erro ao limpar scanner:", err);
+        });
+        scannerRef.current = null;
+      }
     };
-
-    video.addEventListener('loadeddata', () => {
-      scanFrame();
-    });
-  };
+  }, [showCameraDialog, isScannerActive]);
 
   const handleBalancaInput = () => {
     if (!pesoBalanca || parseFloat(pesoBalanca) <= 0) {
@@ -714,26 +729,18 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
               <Camera className="h-5 w-5" />
               Scanner de Código de Barras
             </DialogTitle>
+            <DialogDescription>
+              Aponte a câmera para o código de barras do produto
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-64 h-32 border-2 border-green-500 rounded-lg"></div>
-              </div>
-              <canvas ref={canvasRef} className="hidden" />
+            <div id="qr-reader" className="w-full"></div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={stopCamera} className="flex-1">
+                <X className="h-4 w-4 mr-2" />
+                Fechar
+              </Button>
             </div>
-            <p className="text-sm text-muted-foreground text-center">
-              Posicione o código de barras dentro da área marcada
-            </p>
-            <Button variant="outline" onClick={stopCamera} className="w-full">
-              Fechar Câmera
-            </Button>
           </div>
         </DialogContent>
       </Dialog>

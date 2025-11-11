@@ -1484,6 +1484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       res.json(produto);
     } catch (error) {
+      console.error("❌ Erro ao atualizar produto:", error);
       res.status(500).json({ error: "Erro ao atualizar produto" });
     }
   });

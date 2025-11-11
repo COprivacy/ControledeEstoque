@@ -291,60 +291,60 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   }, [clienteId, clientes]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
+    <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-3 h-full max-h-[calc(100vh-120px)] overflow-hidden p-2">
       {/* Coluna Esquerda - Carrinho */}
-      <div className="flex flex-col gap-4 h-full">
-        <Card className="flex-1 flex flex-col shadow-lg">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <ShoppingCart className="h-5 w-5" />
+      <div className="flex flex-col gap-3 h-full min-h-0">
+        <Card className="flex-1 flex flex-col shadow-lg min-h-0">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ShoppingCart className="h-4 w-4" />
               Carrinho de Compras
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col gap-3 overflow-hidden">
-            <div className="flex-1 border rounded-lg overflow-hidden">
+          <CardContent className="flex-1 flex flex-col gap-2 overflow-hidden px-4 pb-3">
+            <div className="flex-1 border rounded-lg overflow-hidden min-h-0">
               <div className="h-full overflow-y-auto">
                 <Table>
                   <TableHeader className="sticky top-0 bg-muted z-10">
                     <TableRow>
-                      <TableHead className="w-[40%]">Produto</TableHead>
-                      <TableHead className="text-center w-[25%]">Qtd</TableHead>
-                      <TableHead className="text-right w-[20%]">Preço</TableHead>
-                      <TableHead className="text-right w-[15%]">Total</TableHead>
-                      <TableHead className="text-center w-16">Ações</TableHead>
+                      <TableHead className="w-[40%] py-2 text-xs">Produto</TableHead>
+                      <TableHead className="text-center w-[25%] py-2 text-xs">Qtd</TableHead>
+                      <TableHead className="text-right w-[20%] py-2 text-xs">Preço</TableHead>
+                      <TableHead className="text-right w-[15%] py-2 text-xs">Total</TableHead>
+                      <TableHead className="text-center w-12 py-2 text-xs">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {cart.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                           <div className="flex flex-col items-center gap-2">
-                            <ShoppingCart className="h-12 w-12 opacity-20" />
-                            <p>Carrinho vazio</p>
-                            <p className="text-sm">Escaneie um produto para começar</p>
+                            <ShoppingCart className="h-10 w-10 opacity-20" />
+                            <p className="text-sm">Carrinho vazio</p>
+                            <p className="text-xs">Escaneie um produto para começar</p>
                           </div>
                         </TableCell>
                       </TableRow>
                     ) : (
                       cart.map((item, index) => (
                         <TableRow key={index}>
-                          <TableCell className="font-medium">{item.nome}</TableCell>
-                          <TableCell className="text-center">
+                          <TableCell className="font-medium text-sm py-2">{item.nome}</TableCell>
+                          <TableCell className="text-center py-2">
                             <div className="flex items-center justify-center gap-1">
                               <Button
                                 variant="outline"
                                 size="icon"
-                                className="h-7 w-7"
+                                className="h-6 w-6"
                                 onClick={() => updateQuantity(index, item.quantidade - 1)}
                                 disabled={isProcessing}
                               >
                                 <Minus className="h-3 w-3" />
                               </Button>
-                              <span className="w-10 text-center font-semibold">{item.quantidade}</span>
+                              <span className="w-8 text-center font-semibold text-sm">{item.quantidade}</span>
                               <Button
                                 variant="outline"
                                 size="icon"
-                                className="h-7 w-7"
+                                className="h-6 w-6"
                                 onClick={() => updateQuantity(index, item.quantidade + 1)}
                                 disabled={item.quantidade >= item.estoque_disponivel || isProcessing}
                               >
@@ -352,17 +352,17 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                               </Button>
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">R$ {item.preco.toFixed(2)}</TableCell>
-                          <TableCell className="text-right font-semibold">R$ {item.subtotal.toFixed(2)}</TableCell>
-                          <TableCell className="text-center">
+                          <TableCell className="text-right text-sm py-2">R$ {item.preco.toFixed(2)}</TableCell>
+                          <TableCell className="text-right font-semibold text-sm py-2">R$ {item.subtotal.toFixed(2)}</TableCell>
+                          <TableCell className="text-center py-2">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50"
                               onClick={() => removeItem(index)}
                               disabled={isProcessing}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3 w-3" />
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -378,17 +378,17 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                 variant="outline"
                 onClick={clearCart}
                 disabled={cart.length === 0 || isProcessing}
-                className="flex-1"
+                className="flex-1 h-8 text-xs"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Limpar Carrinho
+                <Trash2 className="h-3 w-3 mr-1" />
+                Limpar
               </Button>
               <Button
                 onClick={handleCompleteSale}
                 disabled={cart.length === 0 || isProcessing}
-                className="flex-1 bg-green-600 hover:bg-green-700"
+                className="flex-1 h-8 text-xs bg-green-600 hover:bg-green-700"
               >
-                <Check className="h-4 w-4 mr-2" />
+                <Check className="h-3 w-3 mr-1" />
                 Finalizar Venda
               </Button>
             </div>
@@ -396,30 +396,30 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
         </Card>
       </div>
 
-      {/* Coluna Direita - Scanner e Pagamento */}
-      <div className="flex flex-col gap-4 h-full">
+      {/* Coluna Direita - Cliente, Scanner e Pagamento */}
+      <div className="flex flex-col gap-3 h-full min-h-0 overflow-y-auto pr-1">
         {/* Cliente */}
         <Card className="shadow-lg">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <User className="h-4 w-4" />
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <User className="h-3 w-3" />
               Cliente (Opcional)
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 pb-3">
             <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
                   aria-expanded={openCombobox}
-                  className="w-full justify-between"
+                  className="w-full justify-between h-8 text-xs"
                   disabled={isProcessing}
                 >
                   {clienteId === "none"
                     ? "Sem cliente"
                     : clientes.find((cliente) => cliente.id.toString() === clienteId)?.nome || "Sem cliente"}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0">
@@ -471,14 +471,14 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
 
         {/* Scanner */}
         <Card className="shadow-lg">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Scan className="h-4 w-4" />
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Scan className="h-3 w-3" />
               Código de Barras
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <Label htmlFor="barcode">Digite ou escaneie o código</Label>
+          <CardContent className="space-y-2 px-4 pb-3">
+            <Label htmlFor="barcode" className="text-xs">Digite ou escaneie o código</Label>
             <Input
               ref={inputRef}
               id="barcode"
@@ -487,7 +487,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
               value={barcode}
               onChange={(e) => setBarcode(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="font-mono text-lg"
+              className="font-mono text-sm h-8"
               autoComplete="off"
               disabled={isProcessing}
             />
@@ -498,27 +498,27 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
         </Card>
 
         {/* Pagamento */}
-        <Card className="flex-1 shadow-lg bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CreditCard className="h-4 w-4" />
+        <Card className="shadow-lg bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <CreditCard className="h-3 w-3" />
               Pagamento
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-background/80 backdrop-blur-sm rounded-lg p-4 border-2 border-primary/30">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium flex items-center gap-1">
-                  <DollarSign className="h-4 w-4" />
+          <CardContent className="space-y-3 px-4 pb-3">
+            <div className="bg-background/80 backdrop-blur-sm rounded-lg p-3 border-2 border-primary/30">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium flex items-center gap-1">
+                  <DollarSign className="h-3 w-3" />
                   Total da Venda
                 </span>
-                <span className="text-3xl font-bold text-primary">
+                <span className="text-2xl font-bold text-primary">
                   R$ {valorTotal.toFixed(2)}
                 </span>
               </div>
 
               {descontoPercentual > 0 && (
-                <div className="flex items-center justify-between text-sm text-muted-foreground border-t border-dashed pt-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-dashed pt-1">
                   <span>Desconto ({descontoPercentual}%)</span>
                   <span className="font-medium text-red-600">- R$ {valorDesconto.toFixed(2)}</span>
                 </div>
@@ -526,42 +526,42 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
             </div>
 
             <div className="space-y-2">
-              <Label className="flex items-center gap-1">
+              <Label className="flex items-center gap-1 text-xs">
                 <CreditCard className="h-3 w-3" />
                 Forma de Pagamento
               </Label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-1.5">
                 <Button
                   variant={formaPagamento === "dinheiro" ? "default" : "outline"}
                   onClick={() => setFormaPagamento("dinheiro")}
-                  className={cn(formaPagamento === "dinheiro" && "bg-primary")}
+                  className={cn("h-7 text-xs", formaPagamento === "dinheiro" && "bg-primary")}
                   disabled={isProcessing}
                 >
-                  <Banknote className="h-4 w-4 mr-1" />
+                  <Banknote className="h-3 w-3 mr-1" />
                   Dinheiro
                 </Button>
                 <Button
                   variant={formaPagamento === "cartao_credito" ? "default" : "outline"}
                   onClick={() => setFormaPagamento("cartao_credito")}
-                  className={cn(formaPagamento === "cartao_credito" && "bg-primary")}
+                  className={cn("h-7 text-xs", formaPagamento === "cartao_credito" && "bg-primary")}
                   disabled={isProcessing}
                 >
-                  <CreditCard className="h-4 w-4 mr-1" />
+                  <CreditCard className="h-3 w-3 mr-1" />
                   Crédito
                 </Button>
                 <Button
                   variant={formaPagamento === "cartao_debito" ? "default" : "outline"}
                   onClick={() => setFormaPagamento("cartao_debito")}
-                  className={cn(formaPagamento === "cartao_debito" && "bg-primary")}
+                  className={cn("h-7 text-xs", formaPagamento === "cartao_debito" && "bg-primary")}
                   disabled={isProcessing}
                 >
-                  <CreditCard className="h-4 w-4 mr-1" />
+                  <CreditCard className="h-3 w-3 mr-1" />
                   Débito
                 </Button>
                 <Button
                   variant={formaPagamento === "pix" ? "default" : "outline"}
                   onClick={() => setFormaPagamento("pix")}
-                  className={cn(formaPagamento === "pix" && "bg-primary")}
+                  className={cn("h-7 text-xs", formaPagamento === "pix" && "bg-primary")}
                   disabled={isProcessing}
                 >
                   Pix
@@ -569,8 +569,8 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1">
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1 text-xs">
                 <Percent className="h-3 w-3" />
                 Desconto (%)
               </Label>
@@ -586,13 +586,14 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                 }}
                 placeholder="0"
                 disabled={isProcessing}
+                className="h-8 text-sm"
               />
             </div>
 
             {formaPagamento === 'dinheiro' && (
               <>
-                <div className="space-y-2">
-                  <Label htmlFor="valor-pago" className="flex items-center gap-1">
+                <div className="space-y-1.5">
+                  <Label htmlFor="valor-pago" className="flex items-center gap-1 text-xs">
                     <DollarSign className="h-3 w-3" />
                     Valor Pago
                   </Label>
@@ -605,7 +606,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                     onChange={(e) => setValorPago(e.target.value)}
                     onKeyDown={handleValorPagoKeyDown}
                     placeholder="0,00"
-                    className="text-lg"
+                    className="text-sm h-8"
                     disabled={isProcessing}
                   />
                   <p className="text-xs text-muted-foreground">
@@ -614,12 +615,12 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                 </div>
 
                 {valorPago && parseFloat(valorPago) >= valorTotal && (
-                  <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg border-2 border-green-200 dark:border-green-800">
+                  <div className="p-2.5 bg-green-50 dark:bg-green-950 rounded-lg border-2 border-green-200 dark:border-green-800">
                     <div className="flex justify-between items-center">
-                      <span className="text-base font-medium text-green-800 dark:text-green-200">
+                      <span className="text-sm font-medium text-green-800 dark:text-green-200">
                         Troco:
                       </span>
-                      <span className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      <span className="text-xl font-bold text-green-600 dark:text-green-400">
                         R$ {troco.toFixed(2)}
                       </span>
                     </div>

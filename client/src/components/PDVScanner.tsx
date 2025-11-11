@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, ShoppingCart, Plus, Minus, DollarSign, User, Check, ChevronsUpDown, CreditCard, Banknote, Percent, Camera, Scale, X, Scan } from "lucide-react";
+import { Trash2, ShoppingCart, Plus, Minus, DollarSign, User, Check, ChevronsUpDown, CreditCard, Banknote, Percent, Scale, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import type { Cliente } from "@shared/schema";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -53,13 +53,9 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const [descontoPercentual, setDescontoPercentual] = useState(0);
   const [formaPagamento, setFormaPagamento] = useState<string>("dinheiro");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showCameraDialog, setShowCameraDialog] = useState(false);
   const [showBalancaDialog, setShowBalancaDialog] = useState(false);
   const [pesoBalanca, setPesoBalanca] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const scanIntervalRef = useRef<number | null>(null);
 
   const { data: clientes = [] } = useQuery<Cliente[]>({
     queryKey: ["/api/clientes"],
@@ -211,106 +207,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
   };
 
-  // Sistema de câmera simplificado usando apenas input file como fallback
-  const startCamera = async () => {
-    try {
-      // Verificar se o navegador suporta BarcodeDetector
-      if (!('BarcodeDetector' in window)) {
-        toast({
-          title: "📷 Scanner não suportado",
-          description: "Use um leitor de código de barras USB ou digite manualmente",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      setShowCameraDialog(true);
-
-      // Solicitar acesso à câmera
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'environment',
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        }
-      });
-
-      streamRef.current = stream;
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        
-        toast({
-          title: "📷 Câmera ativada",
-          description: "Aponte para o código de barras",
-        });
-
-        // Iniciar scanner a cada 500ms
-        scanIntervalRef.current = window.setInterval(async () => {
-          await detectBarcodeFromVideo();
-        }, 500);
-      }
-
-    } catch (error) {
-      console.error("Erro ao acessar câmera:", error);
-      toast({
-        title: "❌ Erro ao acessar câmera",
-        description: "Verifique as permissões ou use um leitor USB",
-        variant: "destructive"
-      });
-      stopCamera();
-    }
-  };
-
-  const detectBarcodeFromVideo = async () => {
-    if (!videoRef.current || !showCameraDialog) return;
-
-    try {
-      const detector = new (window as any).BarcodeDetector({
-        formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e']
-      });
-
-      const barcodes = await detector.detect(videoRef.current);
-      
-      if (barcodes.length > 0) {
-        const detectedCode = barcodes[0].rawValue;
-        console.log("✅ Código detectado:", detectedCode);
-        
-        playBeep(true);
-        toast({
-          title: "✅ Código lido!",
-          description: detectedCode,
-        });
-        
-        stopCamera();
-        handleScan(detectedCode);
-      }
-    } catch (error) {
-      // Silenciar erros de detecção (normal quando não há código visível)
-    }
-  };
-
-  const stopCamera = () => {
-    // Parar intervalo de scan
-    if (scanIntervalRef.current) {
-      clearInterval(scanIntervalRef.current);
-      scanIntervalRef.current = null;
-    }
-
-    // Parar stream
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-
-    // Limpar vídeo
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-
-    setShowCameraDialog(false);
-  };
+  
 
   const handleBalancaInput = () => {
     if (!pesoBalanca || parseFloat(pesoBalanca) <= 0) {
@@ -438,12 +335,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
   }, [clienteId, clientes]);
 
-  // Cleanup ao desmontar
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, []);
+  
 
   return (
     <div className="flex flex-col h-full gap-2">
@@ -469,15 +361,6 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                 variant="outline"
                 size="icon"
                 className="h-10 w-10"
-                onClick={startCamera}
-                title="Tentar usar câmera (requer navegador compatível)"
-              >
-                <Camera className="h-5 w-5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-10 w-10"
                 onClick={() => setShowBalancaDialog(true)}
                 title="Balança"
               >
@@ -485,7 +368,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              💡 Use um leitor de código de barras USB para melhor experiência
+              💡 Use um leitor de código de barras USB ou digite o código manualmente
             </p>
           </CardContent>
         </Card>
@@ -754,43 +637,6 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
           </CardContent>
         </Card>
       </div>
-
-      {/* Dialog da Câmera - Simplificado */}
-      <Dialog open={showCameraDialog} onOpenChange={(open) => !open && stopCamera()}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Scan className="h-5 w-5" />
-              Scanner de Código de Barras
-            </DialogTitle>
-            <DialogDescription>
-              Aponte a câmera para o código de barras. Mantenha distância de 10-20cm.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {/* Área de vídeo */}
-            <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-              
-              {/* Guia de posicionamento */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-3/4 h-1/2 border-4 border-green-500 rounded-lg animate-pulse"></div>
-              </div>
-            </div>
-
-            <Button variant="outline" onClick={stopCamera} className="w-full">
-              <X className="h-4 w-4 mr-2" />
-              Fechar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Dialog da Balança */}
       <Dialog open={showBalancaDialog} onOpenChange={setShowBalancaDialog}>

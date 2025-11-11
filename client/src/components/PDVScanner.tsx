@@ -58,10 +58,8 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const [pesoBalanca, setPesoBalanca] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  const barcodeDetectorRef = useRef<any>(null);
+  const scanIntervalRef = useRef<number | null>(null);
 
   const { data: clientes = [] } = useQuery<Cliente[]>({
     queryKey: ["/api/clientes"],
@@ -213,158 +211,91 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
   };
 
-  // Sistema de scanner de câmera nativo
+  // Sistema de câmera simplificado usando apenas input file como fallback
   const startCamera = async () => {
-    setShowCameraDialog(true);
-    
     try {
-      // Verificar suporte a BarcodeDetector
-      if ('BarcodeDetector' in window) {
-        const formats = await (window as any).BarcodeDetector.getSupportedFormats();
-        console.log('📷 Formatos suportados:', formats);
-        barcodeDetectorRef.current = new (window as any).BarcodeDetector({
-          formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e']
+      // Verificar se o navegador suporta BarcodeDetector
+      if (!('BarcodeDetector' in window)) {
+        toast({
+          title: "📷 Scanner não suportado",
+          description: "Use um leitor de código de barras USB ou digite manualmente",
+          variant: "destructive"
         });
+        return;
       }
+
+      setShowCameraDialog(true);
 
       // Solicitar acesso à câmera
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
         }
       });
 
       streamRef.current = stream;
 
-      // Aguardar o vídeo estar pronto
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play();
-          
-          toast({
-            title: "📷 Câmera ativada",
-            description: "Aponte para o código de barras",
-          });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        
+        toast({
+          title: "📷 Câmera ativada",
+          description: "Aponte para o código de barras",
+        });
 
-          // Iniciar detecção
-          detectBarcode();
-        }
-      }, 500);
+        // Iniciar scanner a cada 500ms
+        scanIntervalRef.current = window.setInterval(async () => {
+          await detectBarcodeFromVideo();
+        }, 500);
+      }
 
     } catch (error) {
       console.error("Erro ao acessar câmera:", error);
       toast({
         title: "❌ Erro ao acessar câmera",
-        description: "Verifique as permissões da câmera",
+        description: "Verifique as permissões ou use um leitor USB",
         variant: "destructive"
       });
       stopCamera();
     }
   };
 
-  const detectBarcode = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-
-    if (!context || video.readyState !== video.HAVE_ENOUGH_DATA) {
-      animationFrameRef.current = requestAnimationFrame(detectBarcode);
-      return;
-    }
-
-    // Configurar canvas
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    // Desenhar frame atual
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const detectBarcodeFromVideo = async () => {
+    if (!videoRef.current || !showCameraDialog) return;
 
     try {
-      // Usar BarcodeDetector nativo se disponível
-      if (barcodeDetectorRef.current) {
-        const barcodes = await barcodeDetectorRef.current.detect(canvas);
-        
-        if (barcodes.length > 0) {
-          const detectedCode = barcodes[0].rawValue;
-          console.log("✅ Código detectado:", detectedCode);
-          
-          // Desenhar retângulo ao redor do código
-          const { boundingBox } = barcodes[0];
-          context.strokeStyle = '#00ff00';
-          context.lineWidth = 4;
-          context.strokeRect(
-            boundingBox.x,
-            boundingBox.y,
-            boundingBox.width,
-            boundingBox.height
-          );
+      const detector = new (window as any).BarcodeDetector({
+        formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e']
+      });
 
-          playBeep(true);
-          toast({
-            title: "✅ Código detectado!",
-            description: detectedCode,
-          });
-          
-          handleScan(detectedCode);
-          stopCamera();
-          return;
-        }
-      } else {
-        // Fallback: usar biblioteca ZXing via CDN
-        await loadZXingFallback(canvas);
+      const barcodes = await detector.detect(videoRef.current);
+      
+      if (barcodes.length > 0) {
+        const detectedCode = barcodes[0].rawValue;
+        console.log("✅ Código detectado:", detectedCode);
+        
+        playBeep(true);
+        toast({
+          title: "✅ Código lido!",
+          description: detectedCode,
+        });
+        
+        stopCamera();
+        handleScan(detectedCode);
       }
     } catch (error) {
-      console.error("Erro na detecção:", error);
-    }
-
-    // Continuar detecção
-    animationFrameRef.current = requestAnimationFrame(detectBarcode);
-  };
-
-  const loadZXingFallback = async (canvas: HTMLCanvasElement) => {
-    // Usar ZXing como fallback
-    if (!(window as any).ZXing) {
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/@zxing/library@latest';
-      document.head.appendChild(script);
-      
-      await new Promise((resolve) => {
-        script.onload = resolve;
-      });
-    }
-
-    const codeReader = new (window as any).ZXing.BrowserMultiFormatReader();
-    const imageData = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height);
-    
-    if (imageData) {
-      try {
-        const result = await codeReader.decodeFromImageData(imageData);
-        if (result) {
-          console.log("✅ Código detectado (ZXing):", result.text);
-          playBeep(true);
-          toast({
-            title: "✅ Código detectado!",
-            description: result.text,
-          });
-          handleScan(result.text);
-          stopCamera();
-        }
-      } catch (e) {
-        // Nenhum código encontrado neste frame
-      }
+      // Silenciar erros de detecção (normal quando não há código visível)
     }
   };
 
   const stopCamera = () => {
-    // Parar detecção
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
+    // Parar intervalo de scan
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
     }
 
     // Parar stream
@@ -525,7 +456,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                 <Input
                   ref={inputRef}
                   type="text"
-                  placeholder="🔍 Código de barras..."
+                  placeholder="🔍 Código de barras ou digite manualmente..."
                   value={barcode}
                   onChange={(e) => setBarcode(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -539,7 +470,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                 size="icon"
                 className="h-10 w-10"
                 onClick={startCamera}
-                title="Usar câmera"
+                title="Tentar usar câmera (requer navegador compatível)"
               >
                 <Camera className="h-5 w-5" />
               </Button>
@@ -553,6 +484,9 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                 <Scale className="h-5 w-5" />
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              💡 Use um leitor de código de barras USB para melhor experiência
+            </p>
           </CardContent>
         </Card>
 
@@ -821,27 +755,21 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
         </Card>
       </div>
 
-      {/* Dialog da Câmera - Redesenhado */}
+      {/* Dialog da Câmera - Simplificado */}
       <Dialog open={showCameraDialog} onOpenChange={(open) => !open && stopCamera()}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Scan className="h-5 w-5" />
               Scanner de Código de Barras
             </DialogTitle>
             <DialogDescription>
-              Aponte a câmera para o código de barras do produto
+              Aponte a câmera para o código de barras. Mantenha distância de 10-20cm.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-              <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
-                💡 Mantenha o código de barras centralizado e bem iluminado (distância: 10-20cm)
-              </p>
-            </div>
-            
             {/* Área de vídeo */}
-            <div className="relative bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
+            <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
               <video
                 ref={videoRef}
                 autoPlay
@@ -849,23 +777,17 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                 muted
                 className="w-full h-full object-cover"
               />
-              <canvas
-                ref={canvasRef}
-                className="absolute top-0 left-0 w-full h-full pointer-events-none"
-              />
               
               {/* Guia de posicionamento */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-3/4 h-1/3 border-4 border-green-500 rounded-lg opacity-50"></div>
+                <div className="w-3/4 h-1/2 border-4 border-green-500 rounded-lg animate-pulse"></div>
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={stopCamera} className="flex-1">
-                <X className="h-4 w-4 mr-2" />
-                Fechar
-              </Button>
-            </div>
+            <Button variant="outline" onClick={stopCamera} className="w-full">
+              <X className="h-4 w-4 mr-2" />
+              Fechar
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

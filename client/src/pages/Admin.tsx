@@ -46,6 +46,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { CheckoutForm } from "@/components/CheckoutForm";
 import { EmployeePurchaseDialog } from "@/components/EmployeePurchaseDialog";
+import React from "react";
 
 interface User {
   id: string;
@@ -180,7 +181,7 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
   }, [logs, searchTerm, selectedEmployee, selectedPeriod, selectedAction]);
 
   const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
-  
+
   const safeCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
 
   const paginatedLogs = useMemo(() => {

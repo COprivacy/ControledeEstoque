@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar, Download, Package, DollarSign, TrendingUp, ClipboardList, RefreshCw, FileText, AlertTriangle, CheckCircle2, Search } from "lucide-react";
@@ -187,11 +187,7 @@ export default function Inventory() {
       const produto = produtos.find(p => p.id === id);
       if (!produto) throw new Error("Produto não encontrado");
 
-      const response = await fetch(`/api/produtos/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...produto, quantidade }),
-      });
+      const response = await apiRequest("PUT", `/api/produtos/${id}`, { ...produto, quantidade });
       if (!response.ok) throw new Error("Erro ao atualizar produto");
       return response.json();
     },

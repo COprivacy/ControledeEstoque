@@ -229,23 +229,29 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
         "qr-reader",
         {
           fps: 10,
-          qrbox: { width: 250, height: 150 },
-          aspectRatio: 1.777778,
+          qrbox: { width: 300, height: 200 },
+          aspectRatio: 1.0,
+          rememberLastUsedCamera: true,
+          showTorchButtonIfSupported: true,
           formatsToSupport: [
-            0, // QR_CODE
             8, // EAN_13
             9, // EAN_8
             11, // CODE_128
             12, // CODE_39
             13, // ITF
             16, // UPC_A
-            17  // UPC_E
-          ]
+            17, // UPC_E
+            0  // QR_CODE
+          ],
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          }
         },
-        false
+        true // verbose
       );
 
-      const onScanSuccess = (decodedText: string) => {
+      const onScanSuccess = (decodedText: string, decodedResult: any) => {
+        console.log("✅ Código lido:", decodedText, decodedResult);
         playBeep(true);
         toast({
           title: "✅ Código detectado!",
@@ -255,12 +261,17 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
         stopCamera();
       };
 
-      const onScanFailure = () => {
-        // Ignorar erros durante a varredura
+      const onScanFailure = (error: string) => {
+        // Ignorar erros comuns de varredura
+        if (!error.includes("NotFoundException")) {
+          console.log("Scanner error:", error);
+        }
       };
 
       scanner.render(onScanSuccess, onScanFailure);
       scannerRef.current = scanner;
+      
+      console.log("📷 Scanner inicializado com sucesso");
     } catch (error) {
       console.error("Erro ao inicializar scanner:", error);
       toast({
@@ -726,18 +737,23 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
 
       {/* Dialog da Câmera */}
       <Dialog open={showCameraDialog} onOpenChange={(open) => !open && stopCamera()}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Camera className="h-5 w-5" />
+              <Scan className="h-5 w-5" />
               Scanner de Código de Barras
             </DialogTitle>
             <DialogDescription>
-              Aponte a câmera para o código de barras do produto
+              Aponte a câmera para o código de barras do produto. Mantenha a distância de 10-20cm.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div id="qr-reader" className="w-full"></div>
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
+                💡 Dica: Para melhor leitura, mantenha o código de barras centralizado e bem iluminado
+              </p>
+            </div>
+            <div id="qr-reader" className="w-full border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden"></div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={stopCamera} className="flex-1">
                 <X className="h-4 w-4 mr-2" />

@@ -1428,6 +1428,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const produto = await storage.createProduto(produtoData);
+      
+      await storage.logAdminAction?.(
+        effectiveUserId,
+        "PRODUTO_CRIADO",
+        `Produto criado: ${produtoData.nome} - Qtd: ${produtoData.quantidade}, Preço: R$ ${produtoData.preco.toFixed(2)}`,
+        req
+      );
+      
       res.json(produto);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1467,6 +1475,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const produto = await storage.updateProduto(id, updates);
+      
+      await storage.logAdminAction?.(
+        effectiveUserId,
+        "PRODUTO_ATUALIZADO",
+        `Produto atualizado: ${produto.nome} - ID: ${id}`,
+        req
+      );
       res.json(produto);
     } catch (error) {
       res.status(500).json({ error: "Erro ao atualizar produto" });
@@ -1490,6 +1505,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const deleted = await storage.deleteProduto(id);
+      
+      await storage.logAdminAction?.(
+        effectiveUserId,
+        "PRODUTO_DELETADO",
+        `Produto deletado: ${produtoExistente.nome} - ID: ${id}`,
+        req
+      );
+      
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Erro ao deletar produto" });
@@ -1574,6 +1597,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         caixaAberto.id,
         "total_vendas",
         valorTotal,
+      );
+
+      await storage.logAdminAction?.(
+        userId,
+        "VENDA_REALIZADA",
+        `Venda registrada - Total: R$ ${valorTotal.toFixed(2)}, Itens: ${produtosVendidos.length}, Forma: ${forma_pagamento || 'dinheiro'}`,
+        req
       );
 
       res.json({
@@ -1732,6 +1762,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data_cadastro: new Date().toISOString(),
       };
       const fornecedor = await storage.createFornecedor(fornecedorData);
+      
+      await storage.logAdminAction?.(
+        effectiveUserId,
+        "FORNECEDOR_CRIADO",
+        `Fornecedor criado: ${fornecedorData.nome}${fornecedorData.cnpj ? ' - CNPJ: ' + fornecedorData.cnpj : ''}`,
+        req
+      );
+      
       res.json(fornecedor);
     } catch (error) {
       res.status(500).json({ error: "Erro ao criar fornecedor" });
@@ -1826,6 +1864,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data_cadastro: new Date().toISOString(),
       };
       const cliente = await storage.createCliente(clienteData);
+      
+      await storage.logAdminAction?.(
+        effectiveUserId,
+        "CLIENTE_CRIADO",
+        `Cliente criado: ${clienteData.nome}${clienteData.cpf_cnpj ? ' - CPF/CNPJ: ' + clienteData.cpf_cnpj : ''}`,
+        req
+      );
+      
       res.json(cliente);
     } catch (error: any) {
       if (error.message && error.message.includes("duplicate key")) {

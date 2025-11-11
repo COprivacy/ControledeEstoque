@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
   Table,
@@ -102,12 +102,30 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedEmployee, selectedPeriod, selectedAction]);
+
   const actionColors: Record<string, string> = {
     LOGIN_FUNCIONARIO: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700",
+    LOGOUT_FUNCIONARIO: "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-700",
     PERMISSOES_ATUALIZADAS: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700",
     FUNCIONARIO_CRIADO: "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-700",
     FUNCIONARIO_ATUALIZADO: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700",
     FUNCIONARIO_DELETADO: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700",
+    PRODUTO_CRIADO: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700",
+    PRODUTO_ATUALIZADO: "bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300 border-teal-300 dark:border-teal-700",
+    PRODUTO_DELETADO: "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-700",
+    VENDA_REALIZADA: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700",
+    VENDA_CANCELADA: "bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-700",
+    CAIXA_ABERTO: "bg-lime-100 dark:bg-lime-900/30 text-lime-800 dark:text-lime-300 border-lime-300 dark:border-lime-700",
+    CAIXA_FECHADO: "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700",
+    CONFIG_ATUALIZADA: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700",
+    CLIENTE_CRIADO: "bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-300 border-sky-300 dark:border-sky-700",
+    FORNECEDOR_CRIADO: "bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-300 border-violet-300 dark:border-violet-700",
+    BACKUP_GERADO: "bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-800 dark:text-fuchsia-300 border-fuchsia-300 dark:border-fuchsia-700",
+    ERRO_SISTEMA: "bg-red-200 dark:bg-red-800/50 text-red-900 dark:text-red-200 border-red-400 dark:border-red-600",
+    ACESSO_NEGADO: "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border-red-400 dark:border-red-700",
   };
 
   const uniqueActions = useMemo(() => {
@@ -161,12 +179,14 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
     return filtered;
   }, [logs, searchTerm, selectedEmployee, selectedPeriod, selectedAction]);
 
-  const paginatedLogs = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredLogs.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredLogs, currentPage]);
-
   const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+  
+  const safeCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
+
+  const paginatedLogs = useMemo(() => {
+    const startIndex = (safeCurrentPage - 1) * itemsPerPage;
+    return filteredLogs.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredLogs, safeCurrentPage]);
 
   const exportToCSV = () => {
     const headers = ["Data/Hora", "Usuário", "Email", "Ação", "Detalhes", "IP", "Navegador"];
@@ -358,27 +378,27 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-2">
                 <div className="text-sm text-muted-foreground">
-                  Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filteredLogs.length)} de {filteredLogs.length} registros
+                  Mostrando {((safeCurrentPage - 1) * itemsPerPage) + 1} a {Math.min(safeCurrentPage * itemsPerPage, filteredLogs.length)} de {filteredLogs.length} registros
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
+                    disabled={safeCurrentPage === 1}
                     data-testid="button-prev-page"
                   >
                     <ChevronLeft className="h-4 w-4" />
                     Anterior
                   </Button>
                   <div className="text-sm font-medium">
-                    Página {currentPage} de {totalPages}
+                    Página {safeCurrentPage} de {totalPages}
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(p => Math.min(totalPages || 1, p + 1))}
+                    disabled={safeCurrentPage === totalPages}
                     data-testid="button-next-page"
                   >
                     Próxima

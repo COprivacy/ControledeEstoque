@@ -90,6 +90,10 @@ export default function Settings() {
 
   const [config, setConfig] = useState(DEFAULT_CONFIG);
 
+  // Mock mutation for disabling button during save
+  const [isSaving, setIsSaving] = useState(false);
+
+
   // Carregar configurações salvas quando o componente montar
   useEffect(() => {
     const saved = localStorage.getItem("customization");
@@ -205,7 +209,7 @@ export default function Settings() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validar email se alertas estiverem habilitados
     if (config.enableEmailAlerts && !config.emailForAlerts) {
       toast({
@@ -229,6 +233,8 @@ export default function Settings() {
       }
     }
 
+    setIsSaving(true); // Ativa o estado de salvando
+
     // Salvar configurações no localStorage
     localStorage.setItem("customization", JSON.stringify(config));
 
@@ -242,6 +248,11 @@ export default function Settings() {
       title: "Configurações salvas!",
       description: "A personalização foi aplicada com sucesso",
     });
+
+    // Simula um atraso para a demonstração do estado de salvando
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    setIsSaving(false); // Desativa o estado de salvando
   };
 
   const handleReset = () => {
@@ -906,9 +917,10 @@ export default function Settings() {
               onClick={handleSave}
               size="lg"
               className="px-8 py-6 text-base font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl border-0 animate-gradient-rotate"
+              disabled={isSaving}
             >
               <Save className="h-5 w-5 mr-2" />
-              Salvar Configurações
+              {isSaving ? "Salvando..." : "Salvar Configurações"}
             </Button>
           </div>
 

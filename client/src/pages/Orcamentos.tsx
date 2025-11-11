@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
@@ -84,7 +83,7 @@ export default function Orcamentos() {
     const aprovados = orcamentos.filter(o => o.status === 'aprovado').length;
     const rejeitados = orcamentos.filter(o => o.status === 'rejeitado').length;
     const convertidos = orcamentos.filter(o => o.status === 'convertido').length;
-    
+
     const totalValor = orcamentos.reduce((sum, o) => sum + o.valor_total, 0);
     const valorPendentes = orcamentos.filter(o => o.status === 'pendente').reduce((sum, o) => sum + o.valor_total, 0);
     const valorAprovados = orcamentos.filter(o => o.status === 'aprovado').reduce((sum, o) => sum + o.valor_total, 0);
@@ -139,7 +138,7 @@ export default function Orcamentos() {
   const handleEditarOrcamento = (orcamento: Orcamento) => {
     setIsEditing(true);
     setOrcamentoEditando(orcamento);
-    
+
     // Preencher formulário com dados do orçamento
     setFormData({
       cliente_nome: orcamento.cliente_nome || "",
@@ -148,7 +147,7 @@ export default function Orcamentos() {
       validade: orcamento.validade || "",
       observacoes: orcamento.observacoes || "",
     });
-    
+
     // Preencher itens do carrinho
     const itens = Array.isArray(orcamento.itens) ? orcamento.itens : [];
     setItensCarrinho(itens.map((item: any) => ({
@@ -157,11 +156,11 @@ export default function Orcamentos() {
       preco: item.preco,
       quantidade: item.quantidade,
     })));
-    
+
     if (orcamento.cliente_id) {
       setSelectedClienteId(orcamento.cliente_id);
     }
-    
+
     setIsDialogOpen(true);
   };
 
@@ -241,7 +240,7 @@ export default function Orcamentos() {
     if (!produto) return;
 
     const itemExistente = itensCarrinho.find((item) => item.produto_id === produtoId);
-    
+
     if (itemExistente) {
       setItensCarrinho(
         itensCarrinho.map((item) =>
@@ -298,7 +297,7 @@ export default function Orcamentos() {
     }
 
     const subtotal = calcularSubtotal();
-    
+
     createMutation.mutate({
       cliente_id: selectedClienteId || undefined,
       cliente_nome: formData.cliente_nome,
@@ -407,7 +406,7 @@ export default function Orcamentos() {
               ` : ''}
             </div>
           </div>
-          
+
           <div class="info-section">
             <h2>Itens do Orçamento</h2>
             <table>
@@ -431,7 +430,7 @@ export default function Orcamentos() {
               </tbody>
             </table>
           </div>
-          
+
           <div class="total-section">
             <div class="total-row">
               <span class="total-label">Subtotal:</span>
@@ -448,7 +447,7 @@ export default function Orcamentos() {
               <span class="total-value">R$ ${orcamento.valor_total.toFixed(2)}</span>
             </div>
           </div>
-          
+
           ${orcamento.observacoes ? `
             <div class="observacoes">
               <h3>Observações</h3>
@@ -460,7 +459,7 @@ export default function Orcamentos() {
             <p>Este orçamento foi gerado automaticamente pelo sistema</p>
             <p>Emitido em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
           </div>
-          
+
           <script>window.print();</script>
         </body>
       </html>
@@ -527,7 +526,7 @@ export default function Orcamentos() {
                 }
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="space-y-6 py-4">
               <Card className="border-2 shadow-md">
                 <CardHeader className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b">
@@ -835,6 +834,7 @@ export default function Orcamentos() {
               <Button 
                 variant="outline" 
                 onClick={() => setIsDialogOpen(false)}
+                disabled={createMutation.isPending}
               >
                 Cancelar
               </Button>

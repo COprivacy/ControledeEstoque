@@ -1,4 +1,3 @@
-
 import { useState, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
@@ -95,7 +94,7 @@ export default function Clientes() {
     const vendasCliente = getVendasPorCliente(clienteId);
     const totalCompras = vendasCliente.length;
     const valorTotal = vendasCliente.reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
-    const ultimaCompra = vendasCliente.length > 0 
+    const ultimaCompra = vendasCliente.length > 0
       ? vendasCliente.sort((a: any, b: any) => new Date(b.data).getTime() - new Date(a.data).getTime())[0]
       : null;
 
@@ -136,50 +135,53 @@ export default function Clientes() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome *</Label>
-                  <Input id="nome" name="nome" defaultValue={editingCliente?.nome} required />
+                  <Input id="nome" name="nome" defaultValue={editingCliente?.nome} required disabled={updateMutation.isPending || createMutation.isPending} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
-                  <Input id="cpf_cnpj" name="cpf_cnpj" defaultValue={editingCliente?.cpf_cnpj || ""} />
+                  <Input id="cpf_cnpj" name="cpf_cnpj" defaultValue={editingCliente?.cpf_cnpj || ""} disabled={updateMutation.isPending || createMutation.isPending} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="telefone">Telefone</Label>
-                  <Input id="telefone" name="telefone" defaultValue={editingCliente?.telefone || ""} />
+                  <Input id="telefone" name="telefone" defaultValue={editingCliente?.telefone || ""} required disabled={updateMutation.isPending || createMutation.isPending} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" defaultValue={editingCliente?.email || ""} />
+                  <Input id="email" name="email" type="email" defaultValue={editingCliente?.email || ""} required disabled={updateMutation.isPending || createMutation.isPending} />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="endereco">Endereço</Label>
-                <Input id="endereco" name="endereco" defaultValue={editingCliente?.endereco || ""} />
+                <Input id="endereco" name="endereco" defaultValue={editingCliente?.endereco || ""} disabled={updateMutation.isPending || createMutation.isPending} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="observacoes">Observações</Label>
-                <Textarea id="observacoes" name="observacoes" defaultValue={editingCliente?.observacoes || ""} />
+                <Textarea id="observacoes" name="observacoes" defaultValue={editingCliente?.observacoes || ""} disabled={updateMutation.isPending || createMutation.isPending} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="percentual_desconto">Desconto Padrão (%)</Label>
-                <Input 
-                  id="percentual_desconto" 
-                  name="percentual_desconto" 
-                  type="number" 
-                  min="0" 
-                  max="100" 
+                <Input
+                  id="percentual_desconto"
+                  name="percentual_desconto"
+                  type="number"
+                  min="0"
+                  max="100"
                   step="0.01"
-                  defaultValue={editingCliente?.percentual_desconto || ""} 
+                  defaultValue={editingCliente?.percentual_desconto || ""}
                   placeholder="0.00"
+                  disabled={updateMutation.isPending || createMutation.isPending}
                 />
                 <p className="text-xs text-muted-foreground">
                   Desconto aplicado automaticamente nas vendas para este cliente
                 </p>
               </div>
               <div className="flex gap-2 justify-end">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={updateMutation.isPending || createMutation.isPending}>
                   Cancelar
                 </Button>
-                <Button type="submit">Salvar</Button>
+                <Button type="submit" disabled={updateMutation.isPending || createMutation.isPending}>
+                  {editingCliente ? (updateMutation.isPending ? "Salvando..." : "Salvar") : (createMutation.isPending ? "Adicionando..." : "Adicionar")}
+                </Button>
               </div>
             </form>
           </DialogContent>
@@ -331,7 +333,7 @@ export default function Clientes() {
                                       <div>
                                         <p className="text-sm text-muted-foreground">Última Compra</p>
                                         <p className="text-lg font-bold text-purple-600">
-                                          {ultimaCompra 
+                                          {ultimaCompra
                                             ? format(new Date(ultimaCompra.data), "dd/MM/yyyy", { locale: ptBR })
                                             : "Nenhuma"}
                                         </p>

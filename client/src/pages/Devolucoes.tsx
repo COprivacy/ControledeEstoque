@@ -121,7 +121,7 @@ export default function Devolucoes() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
+
     let produtoId: number | undefined;
     let produto: Produto | undefined;
     let produtoNome: string;
@@ -131,7 +131,7 @@ export default function Devolucoes() {
     if (vendaSelecionada) {
       // Validar quantidade selecionada dos itens
       quantidade = itensSelecionados['item-principal'] || 0;
-      
+
       if (!quantidade || quantidade <= 0) {
         toast({
           title: "Erro",
@@ -155,7 +155,7 @@ export default function Devolucoes() {
       const produtoEncontrado = produtos.find(p => 
         p.nome.toLowerCase() === vendaSelecionada.produto?.toLowerCase()
       );
-      
+
       if (produtoEncontrado) {
         produtoId = produtoEncontrado.id;
         produto = produtoEncontrado;
@@ -191,7 +191,7 @@ export default function Devolucoes() {
 
       produtoNome = produto.nome;
       valorUnitario = produto.preco;
-      
+
       const quantidadeStr = formData.get("quantidade") as string;
       quantidade = parseInt(quantidadeStr);
 
@@ -599,7 +599,7 @@ export default function Devolucoes() {
                     : "Preencha os dados para registrar uma nova devolução"}
                 </DialogDescription>
               </DialogHeader>
-              
+
               {vendaSelecionada && (
                 <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800 space-y-3">
                   <div>
@@ -610,7 +610,7 @@ export default function Devolucoes() {
                       Data: {formatDate(vendaSelecionada.data)}
                     </p>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-blue-900 dark:text-blue-100">
                       Selecione os itens para devolver:

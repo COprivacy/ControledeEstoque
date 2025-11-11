@@ -1,4 +1,3 @@
-
 import { useState, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
@@ -139,7 +138,7 @@ export default function Fornecedores() {
 
   const handleCompraSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (!selectedProdutoId) {
       toast({ 
         title: "Produto não selecionado", 
@@ -148,7 +147,7 @@ export default function Fornecedores() {
       });
       return;
     }
-    
+
     const formData = new FormData(e.currentTarget);
     const quantidade = parseInt(formData.get("quantidade") as string);
     const valor_unitario = parseFloat(formData.get("valor_unitario") as string);
@@ -243,34 +242,36 @@ export default function Fornecedores() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome *</Label>
-                  <Input id="nome" name="nome" defaultValue={editingFornecedor?.nome} required data-testid="input-nome-fornecedor" />
+                  <Input id="nome" name="nome" defaultValue={editingFornecedor?.nome} required data-testid="input-nome-fornecedor" disabled={createMutation.isPending || updateMutation.isPending} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="cnpj">CNPJ</Label>
-                  <Input id="cnpj" name="cnpj" defaultValue={editingFornecedor?.cnpj || ""} data-testid="input-cnpj" />
+                  <Input id="cnpj" name="cnpj" defaultValue={editingFornecedor?.cnpj || ""} data-testid="input-cnpj" disabled={createMutation.isPending || updateMutation.isPending} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="telefone">Telefone</Label>
-                  <Input id="telefone" name="telefone" defaultValue={editingFornecedor?.telefone || ""} data-testid="input-telefone" />
+                  <Input id="telefone" name="telefone" defaultValue={editingFornecedor?.telefone || ""} data-testid="input-telefone" disabled={createMutation.isPending || updateMutation.isPending} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" defaultValue={editingFornecedor?.email || ""} data-testid="input-email-fornecedor" />
+                  <Input id="email" name="email" type="email" defaultValue={editingFornecedor?.email || ""} data-testid="input-email-fornecedor" disabled={createMutation.isPending || updateMutation.isPending} />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="endereco">Endereço</Label>
-                <Input id="endereco" name="endereco" defaultValue={editingFornecedor?.endereco || ""} data-testid="input-endereco" />
+                <Input id="endereco" name="endereco" defaultValue={editingFornecedor?.endereco || ""} data-testid="input-endereco" disabled={createMutation.isPending || updateMutation.isPending} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="observacoes">Observações</Label>
-                <Textarea id="observacoes" name="observacoes" defaultValue={editingFornecedor?.observacoes || ""} data-testid="input-observacoes-fornecedor" />
+                <Textarea id="observacoes" name="observacoes" defaultValue={editingFornecedor?.observacoes || ""} data-testid="input-observacoes-fornecedor" disabled={createMutation.isPending || updateMutation.isPending} />
               </div>
               <div className="flex gap-2 justify-end">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} data-testid="button-cancelar-fornecedor">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} data-testid="button-cancelar-fornecedor" disabled={createMutation.isPending || updateMutation.isPending}>
                   Cancelar
                 </Button>
-                <Button type="submit" data-testid="button-salvar-fornecedor">Salvar</Button>
+                <Button type="submit" data-testid="button-salvar-fornecedor" disabled={createMutation.isPending || updateMutation.isPending}>
+                  {createMutation.isPending || updateMutation.isPending ? "Salvando..." : "Salvar"}
+                </Button>
               </div>
             </form>
           </DialogContent>
@@ -287,7 +288,7 @@ export default function Fornecedores() {
           <form onSubmit={handleCompraSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="produto_id">Produto *</Label>
-              <Select value={selectedProdutoId} onValueChange={setSelectedProdutoId} required>
+              <Select value={selectedProdutoId} onValueChange={setSelectedProdutoId} required disabled={createCompraMutation.isPending}>
                 <SelectTrigger data-testid="select-produto-compra">
                   <SelectValue placeholder="Selecione um produto" />
                 </SelectTrigger>
@@ -303,22 +304,24 @@ export default function Fornecedores() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="quantidade">Quantidade *</Label>
-                <Input id="quantidade" name="quantidade" type="number" min="1" required data-testid="input-quantidade-compra" />
+                <Input id="quantidade" name="quantidade" type="number" min="1" required data-testid="input-quantidade-compra" disabled={createCompraMutation.isPending} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="valor_unitario">Valor Unitário (R$) *</Label>
-                <Input id="valor_unitario" name="valor_unitario" type="number" step="0.01" min="0" required data-testid="input-valor-unitario" />
+                <Input id="valor_unitario" name="valor_unitario" type="number" step="0.01" min="0" required data-testid="input-valor-unitario" disabled={createCompraMutation.isPending} />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="observacoes">Observações</Label>
-              <Textarea id="observacoes" name="observacoes" data-testid="input-observacoes-compra" />
+              <Textarea id="observacoes" name="observacoes" data-testid="input-observacoes-compra" disabled={createCompraMutation.isPending} />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button type="button" variant="outline" onClick={() => setIsCompraDialogOpen(false)} data-testid="button-cancelar-compra">
+              <Button type="button" variant="outline" onClick={() => setIsCompraDialogOpen(false)} data-testid="button-cancelar-compra" disabled={createCompraMutation.isPending}>
                 Cancelar
               </Button>
-              <Button type="submit" data-testid="button-salvar-compra">Registrar Compra</Button>
+              <Button type="submit" data-testid="button-salvar-compra" disabled={createCompraMutation.isPending}>
+                {createCompraMutation.isPending ? "Registrando..." : "Registrar Compra"}
+              </Button>
             </div>
           </form>
         </DialogContent>
@@ -347,6 +350,7 @@ export default function Fornecedores() {
                   defaultValue={editingCompra?.quantidade || ""} 
                   required 
                   data-testid="input-edit-quantidade-compra" 
+                  disabled={updateCompraMutation.isPending}
                 />
               </div>
               <div className="space-y-2">
@@ -360,6 +364,7 @@ export default function Fornecedores() {
                   defaultValue={editingCompra?.valor_unitario || ""} 
                   required 
                   data-testid="input-edit-valor-unitario" 
+                  disabled={updateCompraMutation.isPending}
                 />
               </div>
             </div>
@@ -370,6 +375,7 @@ export default function Fornecedores() {
                 name="observacoes" 
                 defaultValue={editingCompra?.observacoes || ""} 
                 data-testid="input-edit-observacoes-compra" 
+                disabled={updateCompraMutation.isPending}
               />
             </div>
             <div className="flex gap-2 justify-end">
@@ -381,10 +387,13 @@ export default function Fornecedores() {
                   setEditingCompra(null);
                 }} 
                 data-testid="button-cancelar-edit-compra"
+                disabled={updateCompraMutation.isPending}
               >
                 Cancelar
               </Button>
-              <Button type="submit" data-testid="button-salvar-edit-compra">Salvar Alterações</Button>
+              <Button type="submit" data-testid="button-salvar-edit-compra" disabled={updateCompraMutation.isPending}>
+                {updateCompraMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+              </Button>
             </div>
           </form>
         </DialogContent>
@@ -523,7 +532,7 @@ export default function Fornecedores() {
                                   )}
                                 </div>
                               </div>
-                              
+
                               <div>
                                 <h4 className="font-bold text-lg mb-3 flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                                   <ShoppingCart className="h-5 w-5 text-green-600" />

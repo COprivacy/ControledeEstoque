@@ -497,6 +497,7 @@ export default function Admin() {
       const response = await apiRequest("GET", `/api/funcionarios?conta_id=${currentUser.id}`);
       return response.json();
     },
+    refetchInterval: 30000, // Auto-atualizar a cada 30 segundos
   });
 
   const { data: allPermissions = {} } = useQuery({
@@ -510,6 +511,7 @@ export default function Admin() {
       return perms;
     },
     enabled: employees.length > 0,
+    refetchInterval: 30000, // Auto-atualizar a cada 30 segundos
   });
 
   const { data: logs = [] } = useQuery({
@@ -519,6 +521,7 @@ export default function Admin() {
       return response.json();
     },
     enabled: !!currentUser.id,
+    refetchInterval: 30000, // Auto-atualizar a cada 30 segundos
   });
 
   const accountUsers = employees;

@@ -999,8 +999,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Logs Admin - Sistema de logs estruturados
-  app.get("/api/logs-admin", requireAdmin, async (req, res) => {
+  // Logs do Sistema - Sistema de logs estruturados técnicos
+  app.get("/api/system-logs", requireAdmin, async (req, res) => {
     try {
       const { date, level, limit } = req.query;
       const logs = await logger.getLogs(

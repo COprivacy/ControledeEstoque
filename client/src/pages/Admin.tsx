@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import {
   Table,
@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Users, UserPlus, Trash2, Shield, Building2, CreditCard, Edit, Power, Check, Crown, Zap, FileText, Clock } from "lucide-react";
+import { Users, UserPlus, Trash2, Shield, Building2, CreditCard, Edit, Power, Check, Crown, Zap, FileText, Clock, Download, Search, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -81,6 +81,317 @@ interface EmployeeFormData {
   email: string;
   senha: string;
   cargo: string;
+}
+
+interface AuditLog {
+  id: number;
+  data: string;
+  usuario_nome: string;
+  usuario_email: string;
+  acao: string;
+  detalhes: string;
+  ip_address?: string;
+  user_agent?: string;
+}
+
+function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: User[] }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState<string>("all");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
+  const [selectedAction, setSelectedAction] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  const actionColors: Record<string, string> = {
+    LOGIN_FUNCIONARIO: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700",
+    PERMISSOES_ATUALIZADAS: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700",
+    FUNCIONARIO_CRIADO: "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-700",
+    FUNCIONARIO_ATUALIZADO: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700",
+    FUNCIONARIO_DELETADO: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700",
+  };
+
+  const uniqueActions = useMemo(() => {
+    return Array.from(new Set(logs.map(log => log.acao))).sort();
+  }, [logs]);
+
+  const filteredLogs = useMemo(() => {
+    let filtered = [...logs];
+
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(log =>
+        log.usuario_nome?.toLowerCase().includes(search) ||
+        log.usuario_email?.toLowerCase().includes(search) ||
+        log.acao?.toLowerCase().includes(search) ||
+        log.detalhes?.toLowerCase().includes(search)
+      );
+    }
+
+    if (selectedEmployee !== "all") {
+      filtered = filtered.filter(log =>
+        log.usuario_email === selectedEmployee
+      );
+    }
+
+    if (selectedPeriod !== "all") {
+      const now = new Date();
+      const logDate = (log: AuditLog) => new Date(log.data);
+
+      filtered = filtered.filter(log => {
+        const date = logDate(log);
+        switch (selectedPeriod) {
+          case "today":
+            return date.toDateString() === now.toDateString();
+          case "week":
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            return date >= weekAgo;
+          case "month":
+            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            return date >= monthAgo;
+          default:
+            return true;
+        }
+      });
+    }
+
+    if (selectedAction !== "all") {
+      filtered = filtered.filter(log => log.acao === selectedAction);
+    }
+
+    return filtered;
+  }, [logs, searchTerm, selectedEmployee, selectedPeriod, selectedAction]);
+
+  const paginatedLogs = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredLogs.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredLogs, currentPage]);
+
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+
+  const exportToCSV = () => {
+    const headers = ["Data/Hora", "Usuário", "Email", "Ação", "Detalhes", "IP", "Navegador"];
+    const csvData = filteredLogs.map(log => [
+      new Date(log.data).toLocaleString('pt-BR'),
+      log.usuario_nome || "",
+      log.usuario_email || "",
+      log.acao || "",
+      log.detalhes || "",
+      log.ip_address || "",
+      log.user_agent || ""
+    ]);
+
+    const csv = [headers, ...csvData]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `logs-auditoria-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  return (
+    <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 shadow-lg">
+      <CardHeader>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg">
+              <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Logs de Auditoria
+              </CardTitle>
+              <CardDescription>
+                Histórico de ações dos funcionários e administradores ({filteredLogs.length} registro{filteredLogs.length !== 1 ? 's' : ''})
+              </CardDescription>
+            </div>
+          </div>
+          <Button
+            onClick={exportToCSV}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            data-testid="button-export-logs"
+          >
+            <Download className="h-4 w-4" />
+            Exportar CSV
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              Buscar
+            </Label>
+            <Input
+              placeholder="Buscar em logs..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full"
+              data-testid="input-search-logs"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Funcionário
+            </Label>
+            <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+              <SelectTrigger data-testid="select-employee-filter">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Funcionários</SelectItem>
+                {employees.map(emp => (
+                  <SelectItem key={emp.id} value={emp.email}>{emp.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Período
+            </Label>
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger data-testid="select-period-filter">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todo o Período</SelectItem>
+                <SelectItem value="today">Hoje</SelectItem>
+                <SelectItem value="week">Última Semana</SelectItem>
+                <SelectItem value="month">Último Mês</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              Tipo de Ação
+            </Label>
+            <Select value={selectedAction} onValueChange={setSelectedAction}>
+              <SelectTrigger data-testid="select-action-filter">
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as Ações</SelectItem>
+                {uniqueActions.map(action => (
+                  <SelectItem key={action} value={action}>{action}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {filteredLogs.length === 0 ? (
+          <Alert>
+            <Clock className="h-4 w-4" />
+            <AlertTitle>Nenhum log encontrado</AlertTitle>
+            <AlertDescription>
+              {logs.length === 0
+                ? "As ações dos funcionários aparecerão aqui quando forem realizadas."
+                : "Nenhum log corresponde aos filtros selecionados. Tente ajustar os filtros."}
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <>
+            <div className="overflow-x-auto rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[180px]">Data/Hora</TableHead>
+                    <TableHead className="w-[200px]">Usuário</TableHead>
+                    <TableHead className="w-[180px]">Ação</TableHead>
+                    <TableHead>Detalhes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedLogs.map((log) => (
+                    <TableRow key={log.id} className="hover-elevate">
+                      <TableCell data-testid={`text-log-timestamp-${log.id}`} className="font-mono text-sm">
+                        {new Date(log.data).toLocaleString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                          hour12: false
+                        })}
+                      </TableCell>
+                      <TableCell data-testid={`text-log-user-${log.id}`}>
+                        <div className="space-y-1">
+                          <div className="font-medium">{log.usuario_nome}</div>
+                          <div className="text-xs text-muted-foreground">{log.usuario_email}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell data-testid={`text-log-action-${log.id}`}>
+                        <Badge
+                          variant="outline"
+                          className={actionColors[log.acao] || ""}
+                        >
+                          {log.acao}
+                        </Badge>
+                      </TableCell>
+                      <TableCell data-testid={`text-log-details-${log.id}`} className="max-w-md">
+                        <div className="space-y-1">
+                          <div className="text-sm">{log.detalhes || "Sem detalhes"}</div>
+                          {(log.ip_address || log.user_agent) && (
+                            <div className="text-xs text-muted-foreground space-y-0.5">
+                              {log.ip_address && <div>IP: {log.ip_address}</div>}
+                              {log.user_agent && <div className="truncate">Navegador: {log.user_agent.substring(0, 50)}...</div>}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-2">
+                <div className="text-sm text-muted-foreground">
+                  Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filteredLogs.length)} de {filteredLogs.length} registros
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    data-testid="button-prev-page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Anterior
+                  </Button>
+                  <div className="text-sm font-medium">
+                    Página {currentPage} de {totalPages}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    data-testid="button-next-page"
+                  >
+                    Próxima
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function Admin() {
@@ -1055,77 +1366,7 @@ export default function Admin() {
         </TabsContent>
 
         <TabsContent value="logs" className="space-y-6 mt-6">
-          <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 shadow-lg">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg">
-                  <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    Logs de Auditoria
-                  </CardTitle>
-                  <CardDescription>
-                    Histórico de ações dos funcionários e administradores
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {logs.length === 0 ? (
-                <Alert>
-                  <Clock className="h-4 w-4" />
-                  <AlertTitle>Nenhum log encontrado</AlertTitle>
-                  <AlertDescription>
-                    As ações dos funcionários aparecerão aqui quando forem realizadas.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Data/Hora</TableHead>
-                        <TableHead>Usuário</TableHead>
-                        <TableHead>Ação</TableHead>
-                        <TableHead>Detalhes</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {logs.map((log: any) => (
-                        <TableRow key={log.id}>
-                          <TableCell data-testid={`text-log-timestamp-${log.id}`}>
-                            {new Date(log.data).toLocaleString('pt-BR', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: false
-                            })}
-                          </TableCell>
-                          <TableCell data-testid={`text-log-user-${log.id}`}>
-                            <div>
-                              <div className="font-medium">{log.usuario_nome}</div>
-                              <div className="text-sm text-muted-foreground">{log.usuario_email}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell data-testid={`text-log-action-${log.id}`}>
-                            <Badge variant="outline">
-                              {log.acao}
-                            </Badge>
-                          </TableCell>
-                          <TableCell data-testid={`text-log-details-${log.id}`}>
-                            {log.detalhes || "Sem detalhes"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <AuditLogsSection logs={logs} employees={accountUsers} />
         </TabsContent>
       </Tabs>
       </div>

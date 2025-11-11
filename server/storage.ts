@@ -74,7 +74,7 @@ export interface IStorage {
   getLogsAdmin?(): Promise<LogAdmin[]>;
   getLogsAdminByAccount?(contaId: string): Promise<LogAdmin[]>;
   createLogAdmin?(log: InsertLogAdmin): Promise<LogAdmin>;
-  logAdminAction?(actorId: string, action: string, details?: string): Promise<void>;
+  logAdminAction?(actorId: string, action: string, details?: string, context?: { ip?: string; userAgent?: string; contaId?: string }): Promise<void>;
 
   // Métodos para Subscriptions
   getSubscriptions?(): Promise<Subscription[]>;

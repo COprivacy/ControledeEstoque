@@ -489,19 +489,32 @@ export class PostgresStorage implements IStorage {
   async createLogAdmin(log: InsertLogAdmin): Promise<LogAdmin> {
     const result = await this.db.insert(logsAdmin).values({
       usuario_id: log.usuario_id,
+      conta_id: log.conta_id,
       acao: log.acao,
       detalhes: log.detalhes || null,
       data: new Date().toISOString(),
+      ip_address: log.ip_address || null,
+      user_agent: log.user_agent || null,
     }).returning();
     return result[0];
   }
 
-  async logAdminAction(actorId: string, action: string, details?: string): Promise<void> {
+  async logAdminAction(actorId: string, action: string, details?: string, context?: { ip?: string; userAgent?: string; contaId?: string }): Promise<void> {
     try {
+      let contaId = context?.contaId || actorId;
+      
+      const funcionario = await this.db.select().from(funcionarios).where(eq(funcionarios.id, actorId)).limit(1);
+      if (funcionario[0]) {
+        contaId = funcionario[0].conta_id;
+      }
+      
       await this.createLogAdmin({
         usuario_id: actorId,
+        conta_id: contaId,
         acao: action,
         detalhes: details || null,
+        ip_address: context?.ip || null,
+        user_agent: context?.userAgent || null,
       });
     } catch (error) {
       console.error('[AUDIT_LOG] Erro ao registrar ação:', error);

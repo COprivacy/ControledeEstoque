@@ -204,9 +204,12 @@ export const configMercadoPago = pgTable("config_mercadopago", {
 export const logsAdmin = pgTable("logs_admin", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   usuario_id: text("usuario_id").notNull(),
+  conta_id: text("conta_id").notNull(),
   acao: text("acao").notNull(),
   detalhes: text("detalhes"),
   data: text("data").notNull(),
+  ip_address: text("ip_address"),
+  user_agent: text("user_agent"),
 });
 
 export const subscriptions = pgTable("subscriptions", {

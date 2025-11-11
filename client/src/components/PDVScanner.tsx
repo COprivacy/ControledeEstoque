@@ -1,16 +1,17 @@
 
 import { useState, useRef, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Scan, ShoppingCart, Plus, Minus, DollarSign, Wallet, User, Check, ChevronsUpDown, Users, CreditCard, Banknote, Percent } from "lucide-react";
+import { Trash2, Scan, ShoppingCart, Plus, Minus, DollarSign, User, Check, ChevronsUpDown, CreditCard, Banknote, Percent } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import type { Cliente } from "@shared/schema";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +22,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
 
 interface CartItem {
   id: number;
@@ -40,6 +40,8 @@ interface PDVScannerProps {
 }
 
 export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchProduct }: PDVScannerProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [barcode, setBarcode] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [lastScanTime, setLastScanTime] = useState(0);
@@ -49,8 +51,8 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [descontoPercentual, setDescontoPercentual] = useState(0);
   const [formaPagamento, setFormaPagamento] = useState<string>("dinheiro");
+  const [isProcessing, setIsProcessing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const valorPagoRef = useRef<HTMLInputElement>(null);
 
   const { data: clientes = [] } = useQuery<Cliente[]>({
@@ -62,34 +64,15 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   }, []);
 
   useEffect(() => {
-    if (scanTimeoutRef.current) {
-      clearTimeout(scanTimeoutRef.current);
-    }
-
     if (barcode.length >= 8) {
       handleScan(barcode);
     }
-
-    return () => {
-      if (scanTimeoutRef.current) {
-        clearTimeout(scanTimeoutRef.current);
-      }
-    };
   }, [barcode]);
 
   const subtotalSemDesconto = cart.reduce((sum, item) => sum + item.subtotal, 0);
   const valorDesconto = subtotalSemDesconto * (descontoPercentual / 100);
   const valorTotal = subtotalSemDesconto - valorDesconto;
   const troco = parseFloat(valorPago || "0") - valorTotal;
-
-  const mockFetchProduct = async (codigo: string) => {
-    const mockProducts = [
-      { id: 1, nome: "Arroz 5kg", codigo_barras: "7891234567890", preco: 25.50, quantidade: 50 },
-      { id: 2, nome: "Feijão 1kg", codigo_barras: "7891234567891", preco: 8.90, quantidade: 5 },
-      { id: 3, nome: "Óleo de Soja 900ml", codigo_barras: "7891234567892", preco: 7.50, quantidade: 30 },
-    ];
-    return mockProducts.find(p => p.codigo_barras === codigo);
-  };
 
   const playBeep = (success: boolean = true) => {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -112,10 +95,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
   const fetchProduct = async (barcode: string) => {
     try {
       const userStr = localStorage.getItem("user");
-      if (!userStr) {
-        console.error("Usuário não autenticado");
-        return null;
-      }
+      if (!userStr) return null;
 
       const user = JSON.parse(userStr);
       const headers: Record<string, string> = {
@@ -128,9 +108,7 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
       }
 
       const response = await fetch(`/api/produtos/codigo/${barcode}`, { headers });
-      if (!response.ok) {
-        return null;
-      }
+      if (!response.ok) return null;
       return await response.json();
     } catch (error) {
       console.error("Erro ao buscar produto:", error);
@@ -138,15 +116,14 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
   };
 
-
   const handleScan = async (scannedBarcode: string) => {
-    if (!scannedBarcode.trim()) return;
+    if (!scannedBarcode.trim() || isProcessing) return;
 
     const now = Date.now();
-    if (now - lastScanTime < 100) {
-      return;
-    }
+    if (now - lastScanTime < 100) return;
+    
     setLastScanTime(now);
+    setIsProcessing(true);
 
     try {
       const produto = onFetchProduct
@@ -168,6 +145,15 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
         const updatedCart = [...cart];
         const existingItem = updatedCart[existingItemIndex];
         const newQuantity = Math.min(existingItem.quantidade + 1, existingItem.estoque_disponivel);
+        
+        if (newQuantity === existingItem.quantidade) {
+          toast({
+            title: "⚠️ Estoque insuficiente",
+            description: "Quantidade máxima atingida",
+            variant: "destructive",
+          });
+        }
+        
         updatedCart[existingItemIndex] = {
           ...existingItem,
           quantidade: newQuantity,
@@ -187,16 +173,19 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
       }
 
       setBarcode("");
-      inputRef.current?.focus();
+      setTimeout(() => inputRef.current?.focus(), 100);
     } catch (error) {
       console.error("Erro ao processar código de barras:", error);
       playBeep(false);
       setBarcode("");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !isProcessing) {
+      e.preventDefault();
       handleScan(barcode);
     }
   };
@@ -221,17 +210,33 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
 
   const handleCompleteSale = () => {
     if (cart.length === 0) {
-      alert("Carrinho vazio!");
+      toast({
+        title: "⚠️ Carrinho vazio",
+        description: "Adicione produtos antes de finalizar",
+        variant: "destructive",
+      });
       return;
     }
 
     if (formaPagamento === 'dinheiro') {
       const valorPagoNum = parseFloat(valorPago || "0");
       if (valorPagoNum < valorTotal) {
-        alert("Valor pago insuficiente!");
+        toast({
+          title: "⚠️ Valor insuficiente",
+          description: "O valor pago é menor que o total",
+          variant: "destructive",
+        });
         return;
       }
     }
+
+    setShowConfirmDialog(true);
+  };
+
+  const confirmSale = () => {
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
 
     const itens = cart.map(item => ({
       codigo_barras: item.codigo_barras,
@@ -249,8 +254,8 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
 
     onSaleComplete?.(saleData);
-
     clearCart();
+    setIsProcessing(false);
   };
 
   const clearCart = () => {
@@ -261,25 +266,14 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     setDescontoPercentual(0);
     setFormaPagamento("dinheiro");
     setShowConfirmDialog(false);
-    inputRef.current?.focus();
+    setIsProcessing(false);
+    setTimeout(() => inputRef.current?.focus(), 100);
   };
 
   const handleValorPagoKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !isProcessing) {
       e.preventDefault();
-      const valorPagoNum = parseFloat(valorPago || "0");
-
-      if (cart.length === 0) {
-        alert("Carrinho vazio!");
-        return;
-      }
-
-      if (valorPagoNum < valorTotal) {
-        alert("Valor pago insuficiente!");
-        return;
-      }
-
-      setShowConfirmDialog(true);
+      handleCompleteSale();
     }
   };
 
@@ -296,102 +290,105 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
     }
   }, [clienteId, clientes]);
 
-  const totalComDesconto = valorTotal;
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 h-[calc(100vh-180px)]">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
       {/* Coluna Esquerda - Carrinho */}
-      <div className="space-y-3 flex flex-col overflow-hidden">
-        <Card className="shadow-md flex-1 flex flex-col overflow-hidden">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ShoppingCart className="h-4 w-4" />
+      <div className="flex flex-col gap-4 h-full">
+        <Card className="flex-1 flex flex-col shadow-lg">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <ShoppingCart className="h-5 w-5" />
               Carrinho de Compras
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 px-4 pb-3 flex-1 overflow-auto">
-            <div className="border rounded-md overflow-hidden flex-1">
-              <div className="max-h-full overflow-y-auto">
-                <table className="w-full text-sm">
-                  <TableHeader>
+          <CardContent className="flex-1 flex flex-col gap-3 overflow-hidden">
+            <div className="flex-1 border rounded-lg overflow-hidden">
+              <div className="h-full overflow-y-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-muted z-10">
                     <TableRow>
-                      <TableHead className="text-left p-2 text-xs font-semibold">Produto</TableHead>
-                      <TableHead className="text-center p-2 text-xs font-semibold">Qtd</TableHead>
-                      <TableHead className="text-right p-2 text-xs font-semibold">Preço Unit.</TableHead>
-                      <TableHead className="text-right p-2 text-xs font-semibold">Subtotal</TableHead>
-                      <TableHead className="text-center p-2 text-xs font-semibold w-16">Ações</TableHead>
+                      <TableHead className="w-[40%]">Produto</TableHead>
+                      <TableHead className="text-center w-[25%]">Qtd</TableHead>
+                      <TableHead className="text-right w-[20%]">Preço</TableHead>
+                      <TableHead className="text-right w-[15%]">Total</TableHead>
+                      <TableHead className="text-center w-16">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {cart.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center p-4 text-muted-foreground text-xs">
-                          Carrinho vazio. Escaneie um produto para começar.
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                          <div className="flex flex-col items-center gap-2">
+                            <ShoppingCart className="h-12 w-12 opacity-20" />
+                            <p>Carrinho vazio</p>
+                            <p className="text-sm">Escaneie um produto para começar</p>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : (
                       cart.map((item, index) => (
-                        <TableRow key={index} className="border-t hover:bg-muted/30">
-                          <TableCell className="p-2 text-xs">{item.nome}</TableCell>
-                          <TableCell className="p-2 text-center">
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">{item.nome}</TableCell>
+                          <TableCell className="text-center">
                             <div className="flex items-center justify-center gap-1">
                               <Button
                                 variant="outline"
                                 size="icon"
-                                className="h-6 w-6"
+                                className="h-7 w-7"
                                 onClick={() => updateQuantity(index, item.quantidade - 1)}
+                                disabled={isProcessing}
                               >
                                 <Minus className="h-3 w-3" />
                               </Button>
-                              <span className="w-6 text-center font-medium text-xs">{item.quantidade}</span>
+                              <span className="w-10 text-center font-semibold">{item.quantidade}</span>
                               <Button
                                 variant="outline"
                                 size="icon"
-                                className="h-6 w-6"
+                                className="h-7 w-7"
                                 onClick={() => updateQuantity(index, item.quantidade + 1)}
-                                disabled={item.quantidade >= item.estoque_disponivel}
+                                disabled={item.quantidade >= item.estoque_disponivel || isProcessing}
                               >
                                 <Plus className="h-3 w-3" />
                               </Button>
                             </div>
                           </TableCell>
-                          <TableCell className="p-2 text-right text-xs">R$ {item.preco.toFixed(2)}</TableCell>
-                          <TableCell className="p-2 text-right font-semibold text-xs">R$ {item.subtotal.toFixed(2)}</TableCell>
-                          <TableCell className="p-2 text-center">
+                          <TableCell className="text-right">R$ {item.preco.toFixed(2)}</TableCell>
+                          <TableCell className="text-right font-semibold">R$ {item.subtotal.toFixed(2)}</TableCell>
+                          <TableCell className="text-center">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
                               onClick={() => removeItem(index)}
+                              disabled={isProcessing}
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </TableCell>
                         </TableRow>
                       ))
                     )}
                   </TableBody>
-                </table>
+                </Table>
               </div>
             </div>
-            <div className="flex gap-2 mt-2">
+
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={clearCart}
-                disabled={cart.length === 0}
-                className="flex-1 h-8 text-xs"
-                size="sm"
+                disabled={cart.length === 0 || isProcessing}
+                className="flex-1"
               >
-                <Trash2 className="h-3 w-3 mr-1" />
-                Limpar
+                <Trash2 className="h-4 w-4 mr-2" />
+                Limpar Carrinho
               </Button>
               <Button
-                onClick={() => setShowConfirmDialog(true)}
-                disabled={cart.length === 0}
-                className="flex-1 h-8 text-xs bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                size="sm"
+                onClick={handleCompleteSale}
+                disabled={cart.length === 0 || isProcessing}
+                className="flex-1 bg-green-600 hover:bg-green-700"
               >
-                <Check className="h-3 w-3 mr-1" />
+                <Check className="h-4 w-4 mr-2" />
                 Finalizar Venda
               </Button>
             </div>
@@ -400,36 +397,36 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
       </div>
 
       {/* Coluna Direita - Scanner e Pagamento */}
-      <div className="space-y-3 flex flex-col overflow-hidden">
-        {/* Seleção de Cliente */}
-        <Card className="shadow-md">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="flex items-center gap-2 text-sm">
+      <div className="flex flex-col gap-4 h-full">
+        {/* Cliente */}
+        <Card className="shadow-lg">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
               <User className="h-4 w-4" />
               Cliente (Opcional)
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-3">
+          <CardContent>
             <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
                   aria-expanded={openCombobox}
-                  className="w-full justify-between h-8 text-xs"
-                  size="sm"
+                  className="w-full justify-between"
+                  disabled={isProcessing}
                 >
                   {clienteId === "none"
                     ? "Sem cliente"
                     : clientes.find((cliente) => cliente.id.toString() === clienteId)?.nome || "Sem cliente"}
-                  <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0">
                 <Command>
-                  <CommandInput placeholder="Buscar cliente..." className="h-8 text-xs" />
+                  <CommandInput placeholder="Buscar cliente..." />
                   <CommandList>
-                    <CommandEmpty className="text-xs">Nenhum cliente encontrado.</CommandEmpty>
+                    <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
                     <CommandGroup>
                       <CommandItem
                         value="none"
@@ -437,11 +434,10 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                           setClienteId("none");
                           setOpenCombobox(false);
                         }}
-                        className="text-xs"
                       >
                         <Check
                           className={cn(
-                            "mr-2 h-3 w-3",
+                            "mr-2 h-4 w-4",
                             clienteId === "none" ? "opacity-100" : "opacity-0"
                           )}
                         />
@@ -455,11 +451,10 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                             setClienteId(currentValue);
                             setOpenCombobox(false);
                           }}
-                          className="text-xs"
                         >
                           <Check
                             className={cn(
-                              "mr-2 h-3 w-3",
+                              "mr-2 h-4 w-4",
                               clienteId === cliente.id.toString() ? "opacity-100" : "opacity-0"
                             )}
                           />
@@ -474,121 +469,108 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
           </CardContent>
         </Card>
 
-        {/* Scanner de Código de Barras */}
-        <Card className="shadow-md">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="flex items-center gap-2 text-sm">
+        {/* Scanner */}
+        <Card className="shadow-lg">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
               <Scan className="h-4 w-4" />
-              Código de barras
+              Código de Barras
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 px-4 pb-3">
-            <div className="space-y-1">
-              <Label htmlFor="barcode" className="text-xs">Digite ou escaneie o código</Label>
-              <Input
-                ref={inputRef}
-                id="barcode"
-                type="text"
-                placeholder="Código de barras"
-                value={barcode}
-                onChange={(e) => setBarcode(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="font-mono h-8 text-xs"
-                autoComplete="off"
-              />
-              <p className="text-xs text-muted-foreground">
-                Escaneie ou digite o código
-              </p>
-            </div>
+          <CardContent className="space-y-2">
+            <Label htmlFor="barcode">Digite ou escaneie o código</Label>
+            <Input
+              ref={inputRef}
+              id="barcode"
+              type="text"
+              placeholder="Código de barras"
+              value={barcode}
+              onChange={(e) => setBarcode(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="font-mono text-lg"
+              autoComplete="off"
+              disabled={isProcessing}
+            />
+            <p className="text-xs text-muted-foreground">
+              Pressione Enter após digitar o código
+            </p>
           </CardContent>
         </Card>
 
-        {/* Informações de Pagamento */}
-        <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 shadow-md flex-1">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="flex items-center gap-2 text-sm">
+        {/* Pagamento */}
+        <Card className="flex-1 shadow-lg bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
               <CreditCard className="h-4 w-4" />
               Pagamento
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 px-4 pb-3">
-            <div className="bg-background/60 backdrop-blur-sm rounded-md p-3 border-2 border-primary/30">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium flex items-center gap-1">
-                  <DollarSign className="h-3 w-3" />
+          <CardContent className="space-y-4">
+            <div className="bg-background/80 backdrop-blur-sm rounded-lg p-4 border-2 border-primary/30">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium flex items-center gap-1">
+                  <DollarSign className="h-4 w-4" />
                   Total da Venda
                 </span>
-                <span className="text-2xl font-bold text-primary">
-                  R$ {totalComDesconto.toFixed(2)}
+                <span className="text-3xl font-bold text-primary">
+                  R$ {valorTotal.toFixed(2)}
                 </span>
               </div>
 
               {descontoPercentual > 0 && (
-                <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-dashed pt-1 mt-1">
+                <div className="flex items-center justify-between text-sm text-muted-foreground border-t border-dashed pt-2">
                   <span>Desconto ({descontoPercentual}%)</span>
                   <span className="font-medium text-red-600">- R$ {valorDesconto.toFixed(2)}</span>
                 </div>
               )}
             </div>
 
-            <div className="space-y-1">
-              <Label className="flex items-center gap-1 text-xs">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
                 <CreditCard className="h-3 w-3" />
                 Forma de Pagamento
               </Label>
-              <div className="grid grid-cols-2 gap-1">
+              <div className="grid grid-cols-2 gap-2">
                 <Button
                   variant={formaPagamento === "dinheiro" ? "default" : "outline"}
                   onClick={() => setFormaPagamento("dinheiro")}
-                  className={cn(
-                    "h-7 text-xs",
-                    formaPagamento === "dinheiro" && "bg-primary"
-                  )}
-                  size="sm"
+                  className={cn(formaPagamento === "dinheiro" && "bg-primary")}
+                  disabled={isProcessing}
                 >
-                  <Banknote className="h-3 w-3 mr-1" />
+                  <Banknote className="h-4 w-4 mr-1" />
                   Dinheiro
                 </Button>
                 <Button
                   variant={formaPagamento === "cartao_credito" ? "default" : "outline"}
                   onClick={() => setFormaPagamento("cartao_credito")}
-                  className={cn(
-                    "h-7 text-xs",
-                    formaPagamento === "cartao_credito" && "bg-primary"
-                  )}
-                  size="sm"
+                  className={cn(formaPagamento === "cartao_credito" && "bg-primary")}
+                  disabled={isProcessing}
                 >
-                  <CreditCard className="h-3 w-3 mr-1" />
+                  <CreditCard className="h-4 w-4 mr-1" />
                   Crédito
                 </Button>
                 <Button
                   variant={formaPagamento === "cartao_debito" ? "default" : "outline"}
                   onClick={() => setFormaPagamento("cartao_debito")}
-                  className={cn(
-                    "h-7 text-xs",
-                    formaPagamento === "cartao_debito" && "bg-primary"
-                  )}
-                  size="sm"
+                  className={cn(formaPagamento === "cartao_debito" && "bg-primary")}
+                  disabled={isProcessing}
                 >
-                  <CreditCard className="h-3 w-3 mr-1" />
+                  <CreditCard className="h-4 w-4 mr-1" />
                   Débito
                 </Button>
                 <Button
                   variant={formaPagamento === "pix" ? "default" : "outline"}
                   onClick={() => setFormaPagamento("pix")}
-                  className={cn(
-                    "h-7 text-xs",
-                    formaPagamento === "pix" && "bg-primary"
-                  )}
-                  size="sm"
+                  className={cn(formaPagamento === "pix" && "bg-primary")}
+                  disabled={isProcessing}
                 >
                   Pix
                 </Button>
               </div>
             </div>
 
-            <div className="space-y-1">
-              <Label className="flex items-center gap-1 text-xs">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
                 <Percent className="h-3 w-3" />
                 Desconto (%)
               </Label>
@@ -603,14 +585,14 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                   setDescontoPercentual(Math.min(100, Math.max(0, value)));
                 }}
                 placeholder="0"
-                className="h-8 text-xs"
+                disabled={isProcessing}
               />
             </div>
 
             {formaPagamento === 'dinheiro' && (
               <>
-                <div className="space-y-1">
-                  <Label htmlFor="valor-pago" className="flex items-center gap-1 text-xs">
+                <div className="space-y-2">
+                  <Label htmlFor="valor-pago" className="flex items-center gap-1">
                     <DollarSign className="h-3 w-3" />
                     Valor Pago
                   </Label>
@@ -623,7 +605,8 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                     onChange={(e) => setValorPago(e.target.value)}
                     onKeyDown={handleValorPagoKeyDown}
                     placeholder="0,00"
-                    className="text-lg h-8 text-xs"
+                    className="text-lg"
+                    disabled={isProcessing}
                   />
                   <p className="text-xs text-muted-foreground">
                     Pressione Enter para finalizar
@@ -631,12 +614,12 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                 </div>
 
                 {valorPago && parseFloat(valorPago) >= valorTotal && (
-                  <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg border-2 border-green-200 dark:border-green-800">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                      <span className="text-base font-medium text-green-800 dark:text-green-200">
                         Troco:
                       </span>
-                      <span className="text-xl font-bold text-green-600 dark:text-green-400">
+                      <span className="text-2xl font-bold text-green-600 dark:text-green-400">
                         R$ {troco.toFixed(2)}
                       </span>
                     </div>
@@ -644,54 +627,62 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
                 )}
               </>
             )}
-
-            <AlertDialog open={showConfirmDialog} onOpenChange={(isOpen) => {
-              setShowConfirmDialog(isOpen);
-              if (!isOpen && valorPagoRef.current) {
-                valorPagoRef.current.focus();
-              }
-            }}>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmar Finalização da Venda</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    <div className="space-y-2 mt-2">
-                      <div className="flex justify-between">
-                        <span>Total da Venda:</span>
-                        <span className="font-semibold">R$ {valorTotal.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Valor Pago:</span>
-                        <span className="font-semibold">R$ {parseFloat(valorPago || "0").toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-green-600">
-                        <span>Troco:</span>
-                        <span className="font-bold">R$ {troco.toFixed(2)}</span>
-                      </div>
-                      {clienteId !== "none" && (
-                        <div className="flex justify-between mt-4 pt-2 border-t">
-                          <span>Cliente:</span>
-                          <span className="font-semibold">
-                            {clientes.find((c) => c.id.toString() === clienteId)?.nome || ""}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => valorPagoRef.current?.focus()}>
-                    Cancelar
-                  </AlertDialogCancel>
-                  <AlertDialogAction onClick={handleCompleteSale}>
-                    Confirmar Venda
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Venda</AlertDialogTitle>
+            <AlertDialogDescription>
+              <div className="space-y-3 mt-4">
+                <div className="flex justify-between text-base">
+                  <span>Total:</span>
+                  <span className="font-bold text-primary">R$ {valorTotal.toFixed(2)}</span>
+                </div>
+                
+                {formaPagamento === 'dinheiro' && (
+                  <>
+                    <div className="flex justify-between">
+                      <span>Valor Pago:</span>
+                      <span className="font-semibold">R$ {parseFloat(valorPago || "0").toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-green-600">
+                      <span>Troco:</span>
+                      <span className="font-bold">R$ {troco.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
+
+                <div className="flex justify-between border-t pt-2">
+                  <span>Forma de Pagamento:</span>
+                  <span className="font-semibold capitalize">
+                    {formaPagamento.replace('_', ' ')}
+                  </span>
+                </div>
+
+                {clienteId !== "none" && (
+                  <div className="flex justify-between">
+                    <span>Cliente:</span>
+                    <span className="font-semibold">
+                      {clientes.find((c) => c.id.toString() === clienteId)?.nome || ""}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isProcessing}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSale} disabled={isProcessing}>
+              {isProcessing ? "Processando..." : "Confirmar Venda"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

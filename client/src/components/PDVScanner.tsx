@@ -231,50 +231,69 @@ export default function PDVScanner({ onSaleComplete, onProductNotFound, onFetchP
 
   useEffect(() => {
     if (showCameraDialog && isScannerActive && !scannerRef.current) {
-      const config = {
-        fps: 10,
-        qrbox: { width: 250, height: 150 },
-        aspectRatio: 1.777778,
-        formatsToSupport: [
-          0, // QR_CODE
-          8, // EAN_13
-          9, // EAN_8
-          11, // CODE_128
-          12, // CODE_39
-          13, // ITF
-          16, // UPC_A
-          17  // UPC_E
-        ]
-      };
-
-      const scanner = new Html5QrcodeScanner(
-        "qr-reader",
-        config,
-        false
-      );
-
-      scanner.render(
-        (decodedText) => {
-          // Sucesso na leitura
-          playBeep(true);
-          toast({
-            title: "✅ Código detectado!",
-            description: decodedText,
-          });
-          
-          // Processar o código
-          handleScan(decodedText);
-          
-          // Parar scanner após leitura bem-sucedida
-          stopCamera();
-        },
-        (errorMessage) => {
-          // Erro de leitura (pode ser ignorado, acontece durante a varredura)
-          // console.log("Scanner error:", errorMessage);
+      // Aguardar o DOM estar pronto
+      setTimeout(() => {
+        const element = document.getElementById("qr-reader");
+        if (!element) {
+          console.error("Elemento qr-reader não encontrado");
+          return;
         }
-      );
 
-      scannerRef.current = scanner;
+        const config = {
+          fps: 10,
+          qrbox: { width: 250, height: 150 },
+          aspectRatio: 1.777778,
+          formatsToSupport: [
+            0, // QR_CODE
+            8, // EAN_13
+            9, // EAN_8
+            11, // CODE_128
+            12, // CODE_39
+            13, // ITF
+            16, // UPC_A
+            17  // UPC_E
+          ]
+        };
+
+        try {
+          const scanner = new Html5QrcodeScanner(
+            "qr-reader",
+            config,
+            false
+          );
+
+          scanner.render(
+            (decodedText) => {
+              // Sucesso na leitura
+              playBeep(true);
+              toast({
+                title: "✅ Código detectado!",
+                description: decodedText,
+              });
+              
+              // Processar o código
+              handleScan(decodedText);
+              
+              // Parar scanner após leitura bem-sucedida
+              stopCamera();
+            },
+            (errorMessage) => {
+              // Erro de leitura (pode ser ignorado, acontece durante a varredura)
+              // console.log("Scanner error:", errorMessage);
+            }
+          );
+
+          scannerRef.current = scanner;
+        } catch (error) {
+          console.error("Erro ao inicializar scanner:", error);
+          toast({
+            title: "❌ Erro ao abrir câmera",
+            description: "Não foi possível inicializar o scanner",
+            variant: "destructive"
+          });
+          stopCamera();
+        }
+      }, 100);
     }
 
     return () => {

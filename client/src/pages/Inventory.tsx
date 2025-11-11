@@ -187,7 +187,8 @@ export default function Inventory() {
       const produto = produtos.find(p => p.id === id);
       if (!produto) throw new Error("Produto não encontrado");
 
-      const response = await apiRequest("PUT", `/api/produtos/${id}`, { ...produto, quantidade });
+      const { id: _, ...produtoSemId } = produto;
+      const response = await apiRequest("PUT", `/api/produtos/${id}`, { ...produtoSemId, quantidade });
       if (!response.ok) throw new Error("Erro ao atualizar produto");
       return response.json();
     },

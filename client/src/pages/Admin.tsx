@@ -101,32 +101,32 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
   const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
   const [selectedAction, setSelectedAction] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 15;
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedEmployee, selectedPeriod, selectedAction]);
 
   const actionColors: Record<string, string> = {
-    LOGIN_FUNCIONARIO: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700",
-    LOGOUT_FUNCIONARIO: "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-700",
-    PERMISSOES_ATUALIZADAS: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700",
-    FUNCIONARIO_CRIADO: "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-700",
-    FUNCIONARIO_ATUALIZADO: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700",
-    FUNCIONARIO_DELETADO: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700",
-    PRODUTO_CRIADO: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700",
-    PRODUTO_ATUALIZADO: "bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300 border-teal-300 dark:border-teal-700",
-    PRODUTO_DELETADO: "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-700",
-    VENDA_REALIZADA: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700",
-    VENDA_CANCELADA: "bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-700",
-    CAIXA_ABERTO: "bg-lime-100 dark:bg-lime-900/30 text-lime-800 dark:text-lime-300 border-lime-300 dark:border-lime-700",
-    CAIXA_FECHADO: "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700",
-    CONFIG_ATUALIZADA: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700",
-    CLIENTE_CRIADO: "bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-300 border-sky-300 dark:border-sky-700",
-    FORNECEDOR_CRIADO: "bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-300 border-violet-300 dark:border-violet-700",
-    BACKUP_GERADO: "bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-800 dark:text-fuchsia-300 border-fuchsia-300 dark:border-fuchsia-700",
-    ERRO_SISTEMA: "bg-red-200 dark:bg-red-800/50 text-red-900 dark:text-red-200 border-red-400 dark:border-red-600",
-    ACESSO_NEGADO: "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border-red-400 dark:border-red-700",
+    LOGIN_FUNCIONARIO: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+    LOGOUT_FUNCIONARIO: "bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/30",
+    PERMISSOES_ATUALIZADAS: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30",
+    FUNCIONARIO_CRIADO: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/30",
+    FUNCIONARIO_ATUALIZADO: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
+    FUNCIONARIO_DELETADO: "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30",
+    PRODUTO_CRIADO: "bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/30",
+    PRODUTO_ATUALIZADO: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/30",
+    PRODUTO_DELETADO: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/30",
+    VENDA_REALIZADA: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30",
+    VENDA_CANCELADA: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30",
+    CAIXA_ABERTO: "bg-lime-500/10 text-lime-700 dark:text-lime-400 border-lime-500/30",
+    CAIXA_FECHADO: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30",
+    CONFIG_ATUALIZADA: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/30",
+    CLIENTE_CRIADO: "bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/30",
+    FORNECEDOR_CRIADO: "bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/30",
+    BACKUP_GERADO: "bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-400 border-fuchsia-500/30",
+    ERRO_SISTEMA: "bg-red-500/20 text-red-800 dark:text-red-300 border-red-500/50",
+    ACESSO_NEGADO: "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/40",
   };
 
   const uniqueActions = useMemo(() => {
@@ -181,7 +181,6 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
   }, [logs, searchTerm, selectedEmployee, selectedPeriod, selectedAction]);
 
   const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
-
   const safeCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
 
   const paginatedLogs = useMemo(() => {
@@ -213,57 +212,52 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
   };
 
   return (
-    <Card className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 shadow-lg">
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg">
-              <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <CardTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Logs de Auditoria
-              </CardTitle>
-              <CardDescription>
-                Histórico de ações dos funcionários e administradores ({filteredLogs.length} registro{filteredLogs.length !== 1 ? 's' : ''})
-              </CardDescription>
-            </div>
+    <div className="space-y-4">
+      {/* Header Compacto */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
+            <FileText className="h-5 w-5 text-white" />
           </div>
-          <Button
-            onClick={exportToCSV}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            data-testid="button-export-logs"
-          >
-            <Download className="h-4 w-4" />
-            Exportar CSV
-          </Button>
+          <div>
+            <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Sistema de Auditoria
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {filteredLogs.length} registro{filteredLogs.length !== 1 ? 's' : ''} encontrado{filteredLogs.length !== 1 ? 's' : ''}
+            </p>
+          </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <Search className="h-4 w-4" />
-              Buscar
-            </Label>
-            <Input
-              placeholder="Buscar em logs..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
-              data-testid="input-search-logs"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Funcionário
-            </Label>
+        <Button
+          onClick={exportToCSV}
+          size="sm"
+          className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-md"
+          data-testid="button-export-logs"
+        >
+          <Download className="h-4 w-4" />
+          Exportar
+        </Button>
+      </div>
+
+      {/* Filtros Compactos */}
+      <Card className="bg-gradient-to-br from-white to-slate-50/50 dark:from-gray-900 dark:to-slate-950/50 border-slate-200/50 dark:border-slate-800/50 shadow-sm">
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Buscar logs..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-9 bg-white dark:bg-gray-950 border-slate-200 dark:border-slate-800"
+                data-testid="input-search-logs"
+              />
+            </div>
+            
             <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
-              <SelectTrigger data-testid="select-employee-filter">
-                <SelectValue placeholder="Todos" />
+              <SelectTrigger className="h-9 bg-white dark:bg-gray-950 border-slate-200 dark:border-slate-800" data-testid="select-employee-filter">
+                <Users className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Funcionário" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os Funcionários</SelectItem>
@@ -272,15 +266,11 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Período
-            </Label>
+
             <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger data-testid="select-period-filter">
-                <SelectValue placeholder="Todos" />
+              <SelectTrigger className="h-9 bg-white dark:bg-gray-950 border-slate-200 dark:border-slate-800" data-testid="select-period-filter">
+                <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Período" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todo o Período</SelectItem>
@@ -289,15 +279,11 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
                 <SelectItem value="month">Último Mês</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              Tipo de Ação
-            </Label>
+
             <Select value={selectedAction} onValueChange={setSelectedAction}>
-              <SelectTrigger data-testid="select-action-filter">
-                <SelectValue placeholder="Todas" />
+              <SelectTrigger className="h-9 bg-white dark:bg-gray-950 border-slate-200 dark:border-slate-800" data-testid="select-action-filter">
+                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Tipo de Ação" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as Ações</SelectItem>
@@ -307,111 +293,143 @@ function AuditLogsSection({ logs, employees }: { logs: AuditLog[]; employees: Us
               </SelectContent>
             </Select>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {filteredLogs.length === 0 ? (
-          <Alert>
-            <Clock className="h-4 w-4" />
-            <AlertTitle>Nenhum log encontrado</AlertTitle>
-            <AlertDescription>
+      {/* Tabela de Logs */}
+      {filteredLogs.length === 0 ? (
+        <Card className="bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900 dark:to-slate-950/50 border-slate-200 dark:border-slate-800">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <div className="p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full mb-4">
+              <Clock className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Nenhum log encontrado</h3>
+            <p className="text-sm text-muted-foreground text-center max-w-md">
               {logs.length === 0
                 ? "As ações dos funcionários aparecerão aqui quando forem realizadas."
                 : "Nenhum log corresponde aos filtros selecionados. Tente ajustar os filtros."}
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <>
-            <div className="overflow-x-auto rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[180px]">Data/Hora</TableHead>
-                    <TableHead className="w-[200px]">Usuário</TableHead>
-                    <TableHead className="w-[180px]">Ação</TableHead>
-                    <TableHead>Detalhes</TableHead>
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="bg-gradient-to-br from-white to-slate-50/30 dark:from-gray-900 dark:to-slate-950/30 border-slate-200/50 dark:border-slate-800/50 shadow-md overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-900 dark:to-slate-950/50 border-b-2 border-slate-200 dark:border-slate-800">
+                  <TableHead className="font-semibold">Data/Hora</TableHead>
+                  <TableHead className="font-semibold">Usuário</TableHead>
+                  <TableHead className="font-semibold">Ação</TableHead>
+                  <TableHead className="font-semibold">Detalhes</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedLogs.map((log, idx) => (
+                  <TableRow 
+                    key={log.id} 
+                    className={`transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50 ${
+                      idx % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-slate-50/30 dark:bg-slate-950/20'
+                    }`}
+                  >
+                    <TableCell data-testid={`text-log-timestamp-${log.id}`} className="font-mono text-xs py-3">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-foreground">
+                          {new Date(log.data).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                          })}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {new Date(log.data).toLocaleTimeString('pt-BR', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                    </TableCell>
+                    
+                    <TableCell data-testid={`text-log-user-${log.id}`} className="py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                          {log.usuario_nome?.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-medium text-sm leading-none">{log.usuario_nome}</span>
+                          <span className="text-xs text-muted-foreground leading-none">{log.usuario_email}</span>
+                        </div>
+                      </div>
+                    </TableCell>
+                    
+                    <TableCell data-testid={`text-log-action-${log.id}`} className="py-3">
+                      <Badge
+                        variant="outline"
+                        className={`text-xs font-medium px-2 py-1 ${actionColors[log.acao] || "bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/30"}`}
+                      >
+                        {log.acao}
+                      </Badge>
+                    </TableCell>
+                    
+                    <TableCell data-testid={`text-log-details-${log.id}`} className="py-3 max-w-md">
+                      <div className="space-y-1">
+                        <p className="text-sm leading-tight">{log.detalhes || "—"}</p>
+                        {(log.ip_address || log.user_agent) && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {log.ip_address && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs text-muted-foreground">
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                {log.ip_address}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedLogs.map((log) => (
-                    <TableRow key={log.id} className="hover-elevate">
-                      <TableCell data-testid={`text-log-timestamp-${log.id}`} className="font-mono text-sm">
-                        {new Date(log.data).toLocaleString('pt-BR', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                          hour12: false
-                        })}
-                      </TableCell>
-                      <TableCell data-testid={`text-log-user-${log.id}`}>
-                        <div className="space-y-1">
-                          <div className="font-medium">{log.usuario_nome}</div>
-                          <div className="text-xs text-muted-foreground">{log.usuario_email}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell data-testid={`text-log-action-${log.id}`}>
-                        <Badge
-                          variant="outline"
-                          className={actionColors[log.acao] || ""}
-                        >
-                          {log.acao}
-                        </Badge>
-                      </TableCell>
-                      <TableCell data-testid={`text-log-details-${log.id}`} className="max-w-md">
-                        <div className="space-y-1">
-                          <div className="text-sm">{log.detalhes || "Sem detalhes"}</div>
-                          {(log.ip_address || log.user_agent) && (
-                            <div className="text-xs text-muted-foreground space-y-0.5">
-                              {log.ip_address && <div>IP: {log.ip_address}</div>}
-                              {log.user_agent && <div className="truncate">Navegador: {log.user_agent.substring(0, 50)}...</div>}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-2">
-                <div className="text-sm text-muted-foreground">
-                  Mostrando {((safeCurrentPage - 1) * itemsPerPage) + 1} a {Math.min(safeCurrentPage * itemsPerPage, filteredLogs.length)} de {filteredLogs.length} registros
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-900 dark:to-slate-950/50 border-t border-slate-200 dark:border-slate-800">
+              <p className="text-xs text-muted-foreground">
+                Exibindo <span className="font-semibold text-foreground">{((safeCurrentPage - 1) * itemsPerPage) + 1}</span> a{" "}
+                <span className="font-semibold text-foreground">{Math.min(safeCurrentPage * itemsPerPage, filteredLogs.length)}</span> de{" "}
+                <span className="font-semibold text-foreground">{filteredLogs.length}</span> registros
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={safeCurrentPage === 1}
+                  className="h-8 px-3"
+                  data-testid="button-prev-page"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-medium px-2">{safeCurrentPage}</span>
+                  <span className="text-xs text-muted-foreground">de {totalPages}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={safeCurrentPage === 1}
-                    data-testid="button-prev-page"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Anterior
-                  </Button>
-                  <div className="text-sm font-medium">
-                    Página {safeCurrentPage} de {totalPages}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages || 1, p + 1))}
-                    disabled={safeCurrentPage === totalPages}
-                    data-testid="button-next-page"
-                  >
-                    Próxima
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages || 1, p + 1))}
+                  disabled={safeCurrentPage === totalPages}
+                  className="h-8 px-3"
+                  data-testid="button-next-page"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+            </div>
+          )}
+        </Card>
+      )}
+    </div>
   );
 }
 

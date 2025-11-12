@@ -104,6 +104,7 @@ export default function AdminPublico() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClientFor360, setSelectedClientFor360] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'clientes' | 'assinaturas' | 'configuracoes' | 'sistema'>('dashboard');
 
   const { data: subscriptions = [], isLoading: isLoadingSubscriptions, error: subscriptionsError } = useQuery<Subscription[]>({
     queryKey: ["/api/subscriptions"],
@@ -230,36 +231,55 @@ export default function AdminPublico() {
         <nav className="flex-1 p-4 space-y-2">
           <Button
             variant="ghost"
-            className="w-full justify-start hover:bg-slate-700"
-            onClick={() => setSelectedClientFor360(null)}
+            className={`w-full justify-start hover:bg-slate-700 ${!selectedClientFor360 && activeTab === 'dashboard' ? 'bg-slate-700' : ''}`}
+            onClick={() => {
+              setSelectedClientFor360(null);
+              setActiveTab('dashboard');
+            }}
           >
             <BarChart3 className="h-5 w-5 mr-3" />
             {sidebarOpen && "Dashboard"}
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start hover:bg-slate-700"
+            className={`w-full justify-start hover:bg-slate-700 ${!selectedClientFor360 && activeTab === 'clientes' ? 'bg-slate-700' : ''}`}
+            onClick={() => {
+              setSelectedClientFor360(null);
+              setActiveTab('clientes');
+            }}
           >
             <Users className="h-5 w-5 mr-3" />
             {sidebarOpen && "Clientes"}
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start hover:bg-slate-700"
+            className={`w-full justify-start hover:bg-slate-700 ${!selectedClientFor360 && activeTab === 'assinaturas' ? 'bg-slate-700' : ''}`}
+            onClick={() => {
+              setSelectedClientFor360(null);
+              setActiveTab('assinaturas');
+            }}
           >
             <CreditCard className="h-5 w-5 mr-3" />
             {sidebarOpen && "Assinaturas"}
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start hover:bg-slate-700"
+            className={`w-full justify-start hover:bg-slate-700 ${!selectedClientFor360 && activeTab === 'configuracoes' ? 'bg-slate-700' : ''}`}
+            onClick={() => {
+              setSelectedClientFor360(null);
+              setActiveTab('configuracoes');
+            }}
           >
             <Settings className="h-5 w-5 mr-3" />
             {sidebarOpen && "Configurações"}
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start hover:bg-slate-700"
+            className={`w-full justify-start hover:bg-slate-700 ${!selectedClientFor360 && activeTab === 'sistema' ? 'bg-slate-700' : ''}`}
+            onClick={() => {
+              setSelectedClientFor360(null);
+              setActiveTab('sistema');
+            }}
           >
             <Database className="h-5 w-5 mr-3" />
             {sidebarOpen && "Sistema"}
@@ -381,6 +401,192 @@ export default function AdminPublico() {
                         </>
                       );
                     })()}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : activeTab === 'clientes' ? (
+            // Aba de Clientes
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-blue-600" />
+                      Gerenciar Clientes
+                    </CardTitle>
+                    <div className="relative w-64">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        placeholder="Buscar clientes..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Plano</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Data Cadastro</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users && users.length > 0 ? (
+                        users
+                          .filter(user => 
+                            (user.nome?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                            (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+                          )
+                          .map((user) => (
+                            <TableRow key={user.id}>
+                              <TableCell className="font-medium">{user.nome || '-'}</TableCell>
+                              <TableCell>{user.email || '-'}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{user.plano || 'Free'}</Badge>
+                              </TableCell>
+                              <TableCell>{getStatusBadge(user.status || 'expirado')}</TableCell>
+                              <TableCell>{formatDate(user.data_criacao)}</TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setSelectedClientFor360(user.id)}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Ver Detalhes
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground">
+                            Nenhum cliente encontrado
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          ) : activeTab === 'assinaturas' ? (
+            // Aba de Assinaturas
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-purple-600" />
+                    Gerenciar Assinaturas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Plano</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Vencimento</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {subscriptions && subscriptions.length > 0 ? (
+                        subscriptions.map((sub) => {
+                          const user = users.find(u => u.id === sub.user_id);
+                          return (
+                            <TableRow key={sub.id}>
+                              <TableCell className="font-medium">{user?.nome || user?.email || '-'}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{sub.plano}</Badge>
+                              </TableCell>
+                              <TableCell>{formatCurrency(sub.valor)}</TableCell>
+                              <TableCell>{getStatusBadge(sub.status)}</TableCell>
+                              <TableCell>{formatDate(sub.data_vencimento)}</TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setSelectedClientFor360(sub.user_id)}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Ver Cliente
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground">
+                            Nenhuma assinatura encontrada
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          ) : activeTab === 'configuracoes' ? (
+            // Aba de Configurações
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-blue-600" />
+                    Configurações do Sistema
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">Funcionalidades de configuração em desenvolvimento...</p>
+                </CardContent>
+              </Card>
+            </div>
+          ) : activeTab === 'sistema' ? (
+            // Aba de Sistema
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Database className="h-5 w-5 text-blue-600" />
+                    Status do Sistema
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-500 rounded-full">
+                          <Zap className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-semibold">Sistema Operacional</p>
+                          <p className="text-sm text-muted-foreground">Todos os serviços estão funcionando normalmente</p>
+                        </div>
+                      </div>
+                      <Badge className="bg-green-500">Online</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div className="p-4 border rounded-lg">
+                        <p className="text-sm text-muted-foreground">Total de Usuários</p>
+                        <p className="text-2xl font-bold">{users.length}</p>
+                      </div>
+                      <div className="p-4 border rounded-lg">
+                        <p className="text-sm text-muted-foreground">Total de Assinaturas</p>
+                        <p className="text-2xl font-bold">{subscriptions.length}</p>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

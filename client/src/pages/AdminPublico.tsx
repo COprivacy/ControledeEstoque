@@ -1,3 +1,4 @@
+
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
@@ -48,7 +49,8 @@ import {
   Bell,
   LogOut,
   Database,
-  Zap
+  Zap,
+  Check
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -63,6 +65,202 @@ import {
 import { Cliente360Timeline } from "@/components/Cliente360Timeline";
 import { Cliente360Notes } from "@/components/Cliente360Notes";
 
+// Componente de Edição/Criação de Usuário
+function UserEditDialog({ 
+  user, 
+  open, 
+  onOpenChange 
+}: { 
+  user?: User | null; 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [formData, setFormData] = useState({
+    nome: user?.nome || "",
+    email: user?.email || "",
+    senha: "",
+    plano: user?.plano || "free",
+    status: user?.status || "ativo",
+    cpf_cnpj: user?.cpf_cnpj || "",
+    telefone: user?.telefone || "",
+    endereco: user?.endereco || "",
+    max_funcionarios: user?.max_funcionarios || 1,
+  });
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        nome: user.nome || "",
+        email: user.email || "",
+        senha: "",
+        plano: user.plano || "free",
+        status: user.status || "ativo",
+        cpf_cnpj: user.cpf_cnpj || "",
+        telefone: user.telefone || "",
+        endereco: user.endereco || "",
+        max_funcionarios: user.max_funcionarios || 1,
+      });
+    }
+  }, [user]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (user) {
+        // Atualizar usuário existente
+        const updateData = { ...formData };
+        if (!updateData.senha) delete updateData.senha; // Não enviar senha vazia
+        const response = await apiRequest("PATCH", `/api/users/${user.id}`, updateData);
+        return response.json();
+      } else {
+        // Criar novo usuário
+        const response = await apiRequest("POST", "/api/auth/register", formData);
+        return response.json();
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: user ? "Usuário atualizado!" : "Usuário criado!",
+        description: user ? "As informações foram atualizadas com sucesso." : "O novo usuário foi criado com sucesso.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      onOpenChange(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{user ? "Editar Usuário" : "Criar Novo Usuário"}</DialogTitle>
+          <DialogDescription>
+            {user ? "Atualize as informações do usuário" : "Preencha os dados para criar um novo usuário"}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Nome *</Label>
+              <Input
+                value={formData.nome}
+                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                placeholder="Nome completo"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Email *</Label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="email@exemplo.com"
+                disabled={!!user} // Email não pode ser editado
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Senha {user ? "(deixe em branco para manter a atual)" : "*"}</Label>
+            <Input
+              type="password"
+              value={formData.senha}
+              onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
+              placeholder={user ? "Digite para alterar a senha" : "Digite a senha"}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Plano</Label>
+              <Select value={formData.plano} onValueChange={(value) => setFormData({ ...formData, plano: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="trial">Trial</SelectItem>
+                  <SelectItem value="premium_mensal">Premium Mensal</SelectItem>
+                  <SelectItem value="premium_anual">Premium Anual</SelectItem>
+                  <SelectItem value="premium">Premium</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                  <SelectItem value="bloqueado">Bloqueado</SelectItem>
+                  <SelectItem value="cancelado">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>CPF/CNPJ</Label>
+              <Input
+                value={formData.cpf_cnpj}
+                onChange={(e) => setFormData({ ...formData, cpf_cnpj: e.target.value })}
+                placeholder="000.000.000-00"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Telefone</Label>
+              <Input
+                value={formData.telefone}
+                onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                placeholder="(00) 00000-0000"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Endereço</Label>
+            <Input
+              value={formData.endereco}
+              onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
+              placeholder="Endereço completo"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Máximo de Funcionários</Label>
+            <Input
+              type="number"
+              min="1"
+              value={formData.max_funcionarios}
+              onChange={(e) => setFormData({ ...formData, max_funcionarios: parseInt(e.target.value) })}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+            {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {user ? "Salvar Alterações" : "Criar Usuário"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // Componente de Configurações
 function ConfiguracoesTab() {
   const { toast } = useToast();
@@ -75,7 +273,7 @@ function ConfiguracoesTab() {
   });
 
   // Carregar configuração do Mercado Pago
-  const { data: mpConfigData } = useQuery({
+  const { data: mpConfigData, isLoading: isLoadingMpConfig } = useQuery({
     queryKey: ["/api/config-mercadopago"],
     retry: 1,
   });
@@ -150,8 +348,43 @@ function ConfiguracoesTab() {
     },
   });
 
+  // Status da integração
+  const getIntegrationStatus = () => {
+    if (isLoadingMpConfig) return { color: "bg-gray-500", text: "Verificando...", icon: Loader2 };
+    if (!mpConfigData || !mpConfigData.access_token) return { color: "bg-red-500", text: "Não Configurado", icon: XCircle };
+    if (mpConfigData.status_conexao === "conectado") return { color: "bg-green-500", text: "Conectado", icon: CheckCircle };
+    return { color: "bg-yellow-500", text: "Configurado (não testado)", icon: AlertCircle };
+  };
+
+  const status = getIntegrationStatus();
+  const StatusIcon = status.icon;
+
   return (
     <div className="space-y-6">
+      {/* Status da Integração Mercado Pago */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-blue-600" />
+            Status das Integrações
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 ${status.color} rounded-full`}>
+                <StatusIcon className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold">Mercado Pago</p>
+                <p className="text-sm text-muted-foreground">Gateway de Pagamento</p>
+              </div>
+            </div>
+            <Badge className={status.color}>{status.text}</Badge>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Configuração Mercado Pago */}
       <Card>
         <CardHeader>
@@ -403,6 +636,8 @@ export default function AdminPublico() {
   const [selectedClientFor360, setSelectedClientFor360] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'clientes' | 'assinaturas' | 'configuracoes' | 'sistema'>('dashboard');
+  const [userEditDialogOpen, setUserEditDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
   const { data: subscriptions = [], isLoading: isLoadingSubscriptions, error: subscriptionsError } = useQuery<Subscription[]>({
     queryKey: ["/api/subscriptions"],
@@ -414,6 +649,27 @@ export default function AdminPublico() {
     queryKey: ["/api/users"],
     retry: 1,
     staleTime: 30000,
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const response = await apiRequest("DELETE", `/api/users/${userId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Usuário excluído!",
+        description: "O usuário foi removido com sucesso.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   // Calcular métricas
@@ -465,6 +721,8 @@ export default function AdminPublico() {
       pendente: { variant: "secondary", label: "Pendente", color: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
       expirado: { variant: "destructive", label: "Expirado", color: "bg-red-500/10 text-red-400 border-red-500/20" },
       cancelado: { variant: "outline", label: "Cancelado", color: "bg-gray-500/10 text-gray-400 border-gray-500/20" },
+      inativo: { variant: "outline", label: "Inativo", color: "bg-gray-500/10 text-gray-400 border-gray-500/20" },
+      bloqueado: { variant: "destructive", label: "Bloqueado", color: "bg-red-500/10 text-red-400 border-red-500/20" },
     };
     const config = statusMap[status] || { variant: "outline" as const, label: status, color: "bg-gray-500/10 text-gray-400 border-gray-500/20" };
     return <Badge className={`${config.color} border`}>{config.label}</Badge>;
@@ -713,14 +971,23 @@ export default function AdminPublico() {
                       <Users className="h-5 w-5 text-blue-600" />
                       Gerenciar Clientes
                     </CardTitle>
-                    <div className="relative w-64">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input
-                        placeholder="Buscar clientes..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
+                    <div className="flex items-center gap-2">
+                      <div className="relative w-64">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                          placeholder="Buscar clientes..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                      <Button onClick={() => {
+                        setEditingUser(null);
+                        setUserEditDialogOpen(true);
+                      }}>
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Novo Usuário
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>
@@ -753,14 +1020,36 @@ export default function AdminPublico() {
                               <TableCell>{getStatusBadge(user.status || 'expirado')}</TableCell>
                               <TableCell>{formatDate(user.data_criacao)}</TableCell>
                               <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setSelectedClientFor360(user.id)}
-                                >
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  Ver Detalhes
-                                </Button>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedClientFor360(user.id)}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setEditingUser(user);
+                                      setUserEditDialogOpen(true);
+                                    }}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      if (confirm(`Tem certeza que deseja excluir o usuário ${user.nome}?`)) {
+                                        deleteUserMutation.mutate(user.id);
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))
@@ -1053,6 +1342,13 @@ export default function AdminPublico() {
           )}
         </main>
       </div>
+
+      {/* Dialog de Edição/Criação de Usuário */}
+      <UserEditDialog 
+        user={editingUser} 
+        open={userEditDialogOpen} 
+        onOpenChange={setUserEditDialogOpen}
+      />
     </div>
   );
 }

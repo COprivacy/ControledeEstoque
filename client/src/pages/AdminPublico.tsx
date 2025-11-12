@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,12 +105,16 @@ export default function AdminPublico() {
   const [selectedClientFor360, setSelectedClientFor360] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const { data: subscriptions = [], isLoading: isLoadingSubscriptions } = useQuery<Subscription[]>({
+  const { data: subscriptions = [], isLoading: isLoadingSubscriptions, error: subscriptionsError } = useQuery<Subscription[]>({
     queryKey: ["/api/subscriptions"],
+    retry: 1,
+    staleTime: 30000,
   });
 
-  const { data: users = [], isLoading: isLoadingUsers } = useQuery<User[]>({
+  const { data: users = [], isLoading: isLoadingUsers, error: usersError } = useQuery<User[]>({
     queryKey: ["/api/users"],
+    retry: 1,
+    staleTime: 30000,
   });
 
   // Calcular métricas
@@ -173,6 +178,30 @@ export default function AdminPublico() {
           <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
           <p className="text-slate-600 dark:text-slate-300 text-lg">Carregando painel...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (subscriptionsError || usersError) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <AlertCircle className="h-12 w-12 text-red-600 mx-auto" />
+              <h2 className="text-xl font-bold">Erro ao carregar dados</h2>
+              <p className="text-sm text-muted-foreground">
+                {subscriptionsError?.message || usersError?.message || "Erro desconhecido"}
+              </p>
+              <Button onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ["/api/subscriptions"] });
+                queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+              }}>
+                Tentar novamente
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -321,16 +350,20 @@ export default function AdminPublico() {
                       const client = users.find(u => u.id === selectedClientFor360);
                       const clientSubscriptions = subscriptions.filter(s => s.user_id === selectedClientFor360);
 
+                      if (!client) {
+                        return <p className="col-span-4 text-sm text-muted-foreground">Cliente não encontrado</p>;
+                      }
+
                       return (
                         <>
                           <div>
                             <p className="text-sm text-muted-foreground">Plano Atual</p>
-                            <p className="font-semibold">{client?.plano || 'Free'}</p>
+                            <p className="font-semibold">{client.plano || 'Free'}</p>
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">Status</p>
-                            <Badge variant={client?.status === 'ativo' ? 'default' : 'secondary'}>
-                              {client?.status || 'Desconhecido'}
+                            <Badge variant={client.status === 'ativo' ? 'default' : 'secondary'}>
+                              {client.status || 'Desconhecido'}
                             </Badge>
                           </div>
                           <div>
@@ -340,8 +373,8 @@ export default function AdminPublico() {
                           <div>
                             <p className="text-sm text-muted-foreground">Data Cadastro</p>
                             <p className="font-semibold">
-                              {client?.data_criacao
-                                ? new Date(client.data_criacao).toLocaleDateString('pt-BR')
+                              {client.data_criacao
+                                ? formatDate(client.data_criacao)
                                 : '-'}
                             </p>
                           </div>
@@ -521,32 +554,40 @@ export default function AdminPublico() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users
-                        .filter(user => 
-                          user.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-                        )
-                        .slice(0, 10)
-                        .map((user) => (
-                          <TableRow key={user.id}>
-                            <TableCell className="font-medium">{user.nome}</TableCell>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{user.plano}</Badge>
-                            </TableCell>
-                            <TableCell>{getStatusBadge(user.status)}</TableCell>
-                            <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setSelectedClientFor360(user.id)}
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                Ver Detalhes
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                      {users && users.length > 0 ? (
+                        users
+                          .filter(user => 
+                            (user.nome?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                            (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+                          )
+                          .slice(0, 10)
+                          .map((user) => (
+                            <TableRow key={user.id}>
+                              <TableCell className="font-medium">{user.nome || '-'}</TableCell>
+                              <TableCell>{user.email || '-'}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{user.plano || 'Free'}</Badge>
+                              </TableCell>
+                              <TableCell>{getStatusBadge(user.status || 'expirado')}</TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setSelectedClientFor360(user.id)}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Ver Detalhes
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground">
+                            Nenhum cliente encontrado
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </CardContent>

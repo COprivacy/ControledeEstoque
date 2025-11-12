@@ -497,6 +497,12 @@ export const planChangesHistory = pgTable("plan_changes_history", {
   from_plan: text("from_plan"),
   to_plan: text("to_plan").notNull(),
   changed_by: text("changed_by").notNull().references(() => users.id),
+  reason: text("reason"),
+  metadata: jsonb("metadata"),
+  changed_at: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userIdChangedAtIdx: index("plan_changes_history_user_id_changed_at_idx").on(table.user_id, table.changed_at),
+}));
 
 // Pacotes de Funcionários Comprados
 export const employeePackages = pgTable("employee_packages", {
@@ -523,24 +529,16 @@ export const insertEmployeePackageSchema = createInsertSchema(employeePackages).
 export type EmployeePackage = typeof employeePackages.$inferSelect;
 export type InsertEmployeePackage = z.infer<typeof insertEmployeePackageSchema>;
 
-  reason: text("reason"),
-  metadata: jsonb("metadata"),
-  changed_at: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  userIdChangedAtIdx: index("plan_changes_history_user_id_changed_at_idx").on(table.user_id, table.changed_at),
-}));
-
 // Comunicações enviadas ao cliente
 export const clientCommunications = pgTable("client_communications", {
   id: serial("id").primaryKey(),
   user_id: text("user_id").notNull().references(() => users.id),
   admin_id: text("admin_id").notNull().references(() => users.id),
-  communication_type: text("communication_type").notNull(),
+  type: text("type").notNull(),
   subject: text("subject"),
-  message: text("message").notNull(),
-  status: text("status").notNull().default("pending"),
-  sent_at: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+  content: text("content").notNull(),
   metadata: jsonb("metadata"),
+  sent_at: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   userIdSentAtIdx: index("client_communications_user_id_sent_at_idx").on(table.user_id, table.sent_at),
 }));

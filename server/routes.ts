@@ -3043,6 +3043,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: "ativo",
           });
 
+          // CRÍTICO: Reativar todos os funcionários bloqueados desta conta
+          if (storage.getFuncionarios) {
+            const funcionarios = await storage.getFuncionarios();
+            const funcionariosDaConta = funcionarios.filter(
+              (f) => f.conta_id === subscription.user_id && f.status === "bloqueado"
+            );
+
+            for (const funcionario of funcionariosDaConta) {
+              await storage.updateFuncionario(funcionario.id, {
+                status: "ativo",
+              });
+            }
+
+            if (funcionariosDaConta.length > 0) {
+              logger.info("Funcionários reativados após pagamento aprovado", "MERCADOPAGO_WEBHOOK", {
+                userId: subscription.user_id,
+                funcionariosReativados: funcionariosDaConta.length,
+              });
+            }
+          }
+
           logger.info("Assinatura ativada com sucesso", "MERCADOPAGO_WEBHOOK", {
             subscriptionId: subscription.id,
           });

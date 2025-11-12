@@ -21,11 +21,11 @@ export function AdminRoute({ children }: AdminRouteProps) {
   const MASTER_USER_EMAIL = "pavisoft.suporte@gmail.com";
   const isMasterUser = user?.email === MASTER_USER_EMAIL;
 
-  // Verificar se o usuário está bloqueado (para admins comuns)
+  // CRÍTICO: Verificar bloqueio em tempo real para TODOS os admins (exceto master)
   const { data: userStatus, isLoading: isCheckingStatus } = useQuery({
     queryKey: ["/api/user/check-blocked"],
-    enabled: isAdmin && !isMasterUser, // Apenas admins comuns precisam ser verificados
-    refetchInterval: 5000,
+    enabled: isAdmin && !isMasterUser, // Apenas o master é imune
+    refetchInterval: 5000, // Verificar a cada 5 segundos
   });
 
   if (isCheckingStatus) {

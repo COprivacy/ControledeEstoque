@@ -622,14 +622,37 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
             {/* Verificações Detalhadas */}
             {healthStatus?.checks && healthStatus.checks.length > 0 && (
               <div className="space-y-2">
-                <p className="text-sm font-semibold">Verificações de Saúde:</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold">Verificações de Saúde:</p>
+                  {healthStatus.summary?.degraded > 0 || healthStatus.summary?.critical > 0 ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      onClick={runHealthCheck}
+                      disabled={isCheckingHealth}
+                    >
+                      {isCheckingHealth ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Settings className="h-4 w-4 mr-2" />
+                      )}
+                      Tentar Corrigir
+                    </Button>
+                  ) : null}
+                </div>
                 {healthStatus.checks.map((check: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center gap-2">
                       {getStatusIcon(check.status)}
                       <div>
-                        <p className="text-sm font-medium">{check.service.replace(/_/g, ' ')}</p>
+                        <p className="text-sm font-medium capitalize">{check.service.replace(/_/g, ' ')}</p>
                         <p className="text-xs text-muted-foreground">{check.message}</p>
+                        {check.timestamp && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(check.timestamp).toLocaleString('pt-BR')}
+                          </p>
+                        )}
                       </div>
                     </div>
                     {check.autoFixed && (

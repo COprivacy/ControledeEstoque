@@ -78,6 +78,9 @@ class AutoHealingService {
     // 5. Verificar integridade de dados
     await this.checkDataIntegrity();
 
+    // 6. Verificar módulos do sistema
+    await this.checkSystemModules();
+
     // Registrar resumo
     const critical = this.healthChecks.filter(h => h.status === 'critical').length;
     const degraded = this.healthChecks.filter(h => h.status === 'degraded').length;
@@ -248,6 +251,88 @@ class AutoHealingService {
 
     } catch (error: any) {
       this.addHealthCheck('data_integrity', 'degraded', `Erro ao verificar integridade: ${error.message}`);
+    }
+  }
+
+  // 6. Verificar módulos do sistema
+  private async checkSystemModules(): Promise<void> {
+    // Módulo de Estoque
+    try {
+      const produtos = await storage.getProdutos();
+      const produtosAtivos = produtos.filter(p => p.quantidade > 0);
+      const produtosVencidos = produtos.filter(p => {
+        if (!p.vencimento) return false;
+        return new Date(p.vencimento) < new Date();
+      });
+
+      if (produtosVencidos.length > 10) {
+        this.addHealthCheck('module_estoque', 'degraded', `${produtosVencidos.length} produtos vencidos no estoque`);
+      } else {
+        this.addHealthCheck('module_estoque', 'healthy', `Estoque OK: ${produtosAtivos.length} produtos ativos`);
+      }
+    } catch (error: any) {
+      this.addHealthCheck('module_estoque', 'critical', `Módulo de Estoque com erro: ${error.message}`);
+    }
+
+    // Módulo Financeiro
+    try {
+      const contas = await storage.getContasPagar?.() || [];
+      const contasVencidas = contas.filter((c: any) => {
+        if (c.status === 'pago') return false;
+        return new Date(c.vencimento) < new Date();
+      });
+
+      if (contasVencidas.length > 5) {
+        this.addHealthCheck('module_financeiro', 'degraded', `${contasVencidas.length} contas a pagar vencidas`);
+      } else {
+        this.addHealthCheck('module_financeiro', 'healthy', `Financeiro OK: ${contas.length} contas cadastradas`);
+      }
+    } catch (error: any) {
+      this.addHealthCheck('module_financeiro', 'critical', `Módulo Financeiro com erro: ${error.message}`);
+    }
+
+    // Módulo PDV/Vendas
+    try {
+      const vendas = await storage.getVendas();
+      const hoje = new Date().toISOString().split('T')[0];
+      const vendasHoje = vendas.filter(v => v.data?.startsWith(hoje));
+
+      this.addHealthCheck('module_pdv', 'healthy', `PDV operacional: ${vendasHoje.length} vendas hoje`);
+    } catch (error: any) {
+      this.addHealthCheck('module_pdv', 'critical', `Módulo PDV com erro: ${error.message}`);
+    }
+
+    // Módulo Admin
+    try {
+      const users = await storage.getUsers();
+      const admins = users.filter(u => u.is_admin === 'true');
+      const funcionarios = await storage.getFuncionarios?.() || [];
+
+      if (admins.length === 0) {
+        this.addHealthCheck('module_admin', 'critical', 'Nenhum administrador cadastrado');
+      } else {
+        this.addHealthCheck('module_admin', 'healthy', `Admin OK: ${admins.length} admins, ${funcionarios.length} funcionários`);
+      }
+    } catch (error: any) {
+      this.addHealthCheck('module_admin', 'critical', `Módulo Admin com erro: ${error.message}`);
+    }
+
+    // Módulo de Caixa
+    try {
+      if (storage.getCaixas) {
+        const caixas = await storage.getCaixas('all');
+        const caixasAbertos = caixas.filter((c: any) => c.status === 'aberto');
+
+        if (caixasAbertos.length > 50) {
+          this.addHealthCheck('module_caixa', 'degraded', `Muitos caixas abertos: ${caixasAbertos.length}`);
+        } else {
+          this.addHealthCheck('module_caixa', 'healthy', `Caixa OK: ${caixasAbertos.length} caixas abertos`);
+        }
+      } else {
+        this.addHealthCheck('module_caixa', 'healthy', 'Módulo de Caixa disponível');
+      }
+    } catch (error: any) {
+      this.addHealthCheck('module_caixa', 'critical', `Módulo Caixa com erro: ${error.message}`);
     }
   }
 

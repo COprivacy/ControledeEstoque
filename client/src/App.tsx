@@ -213,9 +213,23 @@ function Router() {
           </DashboardLayout>
         )}
       </Route>
-      <Route path="/admin-publico" element={<AdminMasterRoute><AdminPublico /></AdminMasterRoute>} />
-      <Route path="/test-suite" element={<AdminMasterRoute><TestSuite /></AdminMasterRoute>} />
-      <Route path="/ajuda" element={<Ajuda />} />
+      <Route path="/admin-publico">
+        {() => (
+          <AdminMasterRoute>
+            <AdminPublico />
+          </AdminMasterRoute>
+        )}
+      </Route>
+      <Route path="/test-suite">
+        {() => (
+          <AdminMasterRoute>
+            <TestSuite />
+          </AdminMasterRoute>
+        )}
+      </Route>
+      <Route path="/ajuda">
+        {() => <Ajuda />}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

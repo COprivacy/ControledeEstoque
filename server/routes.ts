@@ -3322,6 +3322,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sistema de Auto-Healing
+  app.get("/api/system/health", requireAdmin, async (req, res) => {
+    try {
+      const { autoHealingService } = await import("./auto-healing");
+      const status = autoHealingService.getSystemStatus();
+      res.json(status);
+    } catch (error: any) {
+      console.error("Erro ao obter status do sistema:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/system/health/check", requireAdmin, async (req, res) => {
+    try {
+      const { autoHealingService } = await import("./auto-healing");
+      const checks = await autoHealingService.runHealthChecks();
+      res.json({
+        success: true,
+        checks,
+        summary: autoHealingService.getSystemStatus().summary
+      });
+    } catch (error: any) {
+      console.error("Erro ao executar verificações:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/system/autofix-history", requireAdmin, async (req, res) => {
+    try {
+      const { autoHealingService } = await import("./auto-healing");
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const history = autoHealingService.getAutoFixHistory(limit);
+      res.json(history);
+    } catch (error: any) {
+      console.error("Erro ao obter histórico de auto-fix:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Verificar status de bloqueio do usuário
   app.get("/api/user/check-blocked", async (req, res) => {
     try {

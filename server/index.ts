@@ -250,6 +250,10 @@ app.use((req, res, next) => {
   const { paymentReminderService } = await import('./payment-reminder');
   paymentReminderService.startAutoCheck();
 
+  // Sistema de Auto-Healing (verificações a cada 5 minutos)
+  const { autoHealingService } = await import('./auto-healing');
+  autoHealingService.startAutoHealing(5);
+
   logger.info('Servidor iniciado', 'STARTUP', { port, env: app.get("env") });
 
   // Limpar logs antigos a cada 24h

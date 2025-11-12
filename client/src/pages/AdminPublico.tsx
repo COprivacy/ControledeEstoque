@@ -477,6 +477,8 @@ function ConfiguracoesTab() {
 // Componente de Sistema
 function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Subscription[] }) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isCheckingHealth, setIsCheckingHealth] = useState(false);
   
   const assinaturasAtivas = subscriptions.filter(s => s.status === "ativo").length;
   const assinaturasPendentes = subscriptions.filter(s => s.status === "pendente").length;
@@ -484,33 +486,194 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
     .filter(s => s.status === "ativo")
     .reduce((sum, s) => sum + s.valor, 0);
 
+  // Buscar status de saúde do sistema
+  const { data: healthStatus, isLoading: isLoadingHealth } = useQuery({
+    queryKey: ["/api/system/health"],
+    refetchInterval: 60000, // Atualizar a cada 1 minuto
+  });
+
+  // Buscar histórico de correções automáticas
+  const { data: autoFixHistory } = useQuery({
+    queryKey: ["/api/system/autofix-history"],
+    refetchInterval: 60000,
+  });
+
+  const runHealthCheck = async () => {
+    setIsCheckingHealth(true);
+    try {
+      const response = await fetch("/api/system/health/check", {
+        method: "POST",
+        headers: {
+          "x-user-id": JSON.parse(localStorage.getItem("user") || "{}").id,
+          "x-is-admin": "true",
+        },
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Verificação concluída!",
+          description: "Verificações de saúde executadas com sucesso",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/system/health"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/system/autofix-history"] });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao executar verificações",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCheckingHealth(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'online': return 'bg-green-500';
+      case 'degraded': return 'bg-yellow-500';
+      case 'offline': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'healthy': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'degraded': return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+      case 'critical': return <XCircle className="h-4 w-4 text-red-500" />;
+      default: return <AlertCircle className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Status do Sistema */}
+      {/* Status do Sistema com Auto-Healing */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5 text-blue-600" />
-            Status do Sistema
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5 text-blue-600" />
+              Status do Sistema
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={runHealthCheck}
+              disabled={isCheckingHealth}
+            >
+              {isCheckingHealth ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Verificar Agora
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            {/* Status Geral */}
+            <div className={`flex items-center justify-between p-4 rounded-lg ${
+              healthStatus?.status === 'online' ? 'bg-green-50 dark:bg-green-900/20' :
+              healthStatus?.status === 'degraded' ? 'bg-yellow-50 dark:bg-yellow-900/20' :
+              'bg-red-50 dark:bg-red-900/20'
+            }`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-500 rounded-full">
+                <div className={`p-2 rounded-full ${getStatusColor(healthStatus?.status || 'online')}`}>
                   <Zap className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="font-semibold">Sistema Operacional</p>
-                  <p className="text-sm text-muted-foreground">Todos os serviços estão funcionando normalmente</p>
+                  <p className="font-semibold">
+                    {healthStatus?.status === 'online' ? 'Sistema Operacional' :
+                     healthStatus?.status === 'degraded' ? 'Sistema com Alertas' :
+                     'Sistema com Problemas'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {healthStatus?.summary?.healthy || 0} serviços saudáveis, {healthStatus?.summary?.degraded || 0} com alertas, {healthStatus?.summary?.critical || 0} críticos
+                  </p>
                 </div>
               </div>
-              <Badge className="bg-green-500">Online</Badge>
+              <Badge className={getStatusColor(healthStatus?.status || 'online')}>
+                {healthStatus?.status === 'online' ? 'Online' :
+                 healthStatus?.status === 'degraded' ? 'Degradado' : 'Offline'}
+              </Badge>
             </div>
+
+            {/* Auto-Healing Summary */}
+            {healthStatus?.summary?.autoFixed > 0 && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-900">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-500 rounded-full">
+                    <Check className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-blue-700 dark:text-blue-400">
+                      🔧 Auto-Healing Ativo
+                    </p>
+                    <p className="text-sm text-blue-600 dark:text-blue-300">
+                      {healthStatus.summary.autoFixed} problema(s) corrigido(s) automaticamente
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Verificações Detalhadas */}
+            {healthStatus?.checks && healthStatus.checks.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">Verificações de Saúde:</p>
+                {healthStatus.checks.map((check: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(check.status)}
+                      <div>
+                        <p className="text-sm font-medium">{check.service.replace(/_/g, ' ')}</p>
+                        <p className="text-xs text-muted-foreground">{check.message}</p>
+                      </div>
+                    </div>
+                    {check.autoFixed && (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        Auto-corrigido
+                      </Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Histórico de Auto-Healing */}
+      {autoFixHistory && autoFixHistory.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-purple-600" />
+              Histórico de Correções Automáticas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {autoFixHistory.slice(0, 10).map((fix: any, index: number) => (
+                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-500" />
+                    <div>
+                      <p className="text-sm font-medium">{fix.service.replace(/_/g, ' ')}</p>
+                      <p className="text-xs text-muted-foreground">{fix.message}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(fix.timestamp).toLocaleString('pt-BR')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Estatísticas Gerais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -1290,13 +1290,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const permissoes = await storage.savePermissoesFuncionario(id, req.body);
-      
+
       await storage.logAdminAction?.(
         effectiveUserId,
         "PERMISSOES_ATUALIZADAS",
         `Permissões atualizadas para funcionário ${funcionario.nome} (${funcionario.email})`
       );
-      
+
       res.json(permissoes);
     } catch (error) {
       res.status(500).json({ error: "Erro ao salvar permissões" });
@@ -1313,7 +1313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const logs = await storage.getLogsAdminByAccount?.(contaId);
-      
+
       const funcionarios = await storage.getFuncionariosByContaId(contaId);
       const usuarios = await storage.getUsers?.() || [];
       const allUsers = [...usuarios, ...funcionarios];
@@ -1429,14 +1429,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const produto = await storage.createProduto(produtoData);
-      
+
       await storage.logAdminAction?.(
         effectiveUserId,
         "PRODUTO_CRIADO",
         `Produto criado: ${produtoData.nome} - Qtd: ${produtoData.quantidade}, Preço: R$ ${produtoData.preco.toFixed(2)}`,
         req
       );
-      
+
       res.json(produto);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1476,7 +1476,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const produto = await storage.updateProduto(id, updates);
-      
+
       await storage.logAdminAction?.(
         effectiveUserId,
         "PRODUTO_ATUALIZADO",
@@ -1507,14 +1507,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const deleted = await storage.deleteProduto(id);
-      
+
       await storage.logAdminAction?.(
         effectiveUserId,
         "PRODUTO_DELETADO",
         `Produto deletado: ${produtoExistente.nome} - ID: ${id}`,
         req
       );
-      
+
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Erro ao deletar produto" });
@@ -1764,14 +1764,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data_cadastro: new Date().toISOString(),
       };
       const fornecedor = await storage.createFornecedor(fornecedorData);
-      
+
       await storage.logAdminAction?.(
         effectiveUserId,
         "FORNECEDOR_CRIADO",
         `Fornecedor criado: ${fornecedorData.nome}${fornecedorData.cnpj ? ' - CNPJ: ' + fornecedorData.cnpj : ''}`,
         req
       );
-      
+
       res.json(fornecedor);
     } catch (error) {
       res.status(500).json({ error: "Erro ao criar fornecedor" });
@@ -1866,14 +1866,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data_cadastro: new Date().toISOString(),
       };
       const cliente = await storage.createCliente(clienteData);
-      
+
       await storage.logAdminAction?.(
         effectiveUserId,
         "CLIENTE_CRIADO",
         `Cliente criado: ${clienteData.nome}${clienteData.cpf_cnpj ? ' - CPF/CNPJ: ' + clienteData.cpf_cnpj : ''}`,
         req
       );
-      
+
       res.json(cliente);
     } catch (error: any) {
       if (error.message && error.message.includes("duplicate key")) {
@@ -2950,10 +2950,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { type, data, action } = req.body;
 
-      logger.info("Webhook Mercado Pago recebido", "MERCADOPAGO_WEBHOOK", { 
-        type, 
+      logger.info("Webhook Mercado Pago recebido", "MERCADOPAGO_WEBHOOK", {
+        type,
         action,
-        dataId: data?.id 
+        dataId: data?.id
       });
 
       // Processar notificação de pagamento
@@ -3145,6 +3145,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pacote_50: 50,
       };
 
+      // Mapear pacotes para preços
+      const pacotePrecos: Record<string, number> = {
+        pacote_5: 39.90,
+        pacote_10: 69.90,
+        pacote_20: 119.90,
+        pacote_50: 249.90,
+      };
+
+
       const quantidadeAdicional = pacoteQuantidades[pacoteId];
 
       if (quantidadeAdicional && userId) {
@@ -3155,9 +3164,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const limiteAtual = user.max_funcionarios || 1;
           const novoLimite = limiteAtual + quantidadeAdicional;
 
+          // Calcular data de vencimento (30 dias)
+          const dataVencimento = new Date();
+          dataVencimento.setDate(dataVencimento.getDate() + 30);
+
+          // Registrar pacote comprado
+          if (storage.createEmployeePackage) {
+            await storage.createEmployeePackage({
+              user_id: userId,
+              package_type: pacoteId,
+              quantity: quantidadeAdicional,
+              price: pacotePrecos[pacoteId] || payment.value || 0,
+              status: "ativo",
+              payment_id: payment.id,
+              data_vencimento: dataVencimento.toISOString(),
+            });
+          }
+
+
+          // Atualizar usuário
           await storage.updateUser(userId, {
             max_funcionarios: novoLimite,
+            max_funcionarios_base: user.max_funcionarios_base || 1, // Preservar limite base
+            data_expiracao_pacote_funcionarios: dataVencimento.toISOString(),
           });
+
 
           console.log(
             `✅ [WEBHOOK] Pagamento confirmado - Pacote: ${pacoteId}`,
@@ -3166,6 +3197,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(
             `✅ [WEBHOOK] Limite anterior: ${limiteAtual} → Novo limite: ${novoLimite}`,
           );
+          console.log(
+            `✅ [WEBHOOK] Vencimento: ${dataVencimento.toLocaleDateString('pt-BR')}`,
+          );
+
 
           logger.info("Pacote de funcionários ativado", "WEBHOOK", {
             userId,
@@ -3174,6 +3209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             quantidadeAdicional,
             limiteAnterior: limiteAtual,
             novoLimite,
+            dataVencimento: dataVencimento.toISOString(),
           });
 
           // Enviar email de confirmação de ativação
@@ -3201,6 +3237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
+
 
       res.json({
         success: true,
@@ -3903,30 +3940,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateSchema = insertDevolucaoSchema.partial();
       const validatedData = updateSchema.parse(req.body);
 
-      const statusAnterior = devolucaoExistente.status;
-      const novoStatus = validatedData.status || devolucaoExistente.status;
-      const novaQuantidade =
-        validatedData.quantidade !== undefined
-          ? validatedData.quantidade
-          : devolucaoExistente.quantidade;
-
       const devolucao = await storage.updateDevolucao(id, validatedData);
 
       if (
-        statusAnterior !== "aprovada" &&
-        novoStatus === "aprovada" &&
+        devolucaoExistente.status !== "aprovada" &&
+        validatedData.status === "aprovada" &&
         devolucaoExistente.produto_id
       ) {
         const produto = await storage.getProduto(devolucaoExistente.produto_id);
         if (produto) {
           await storage.updateProduto(devolucaoExistente.produto_id, {
-            quantidade: produto.quantidade + novaQuantidade,
+            quantidade: produto.quantidade + (validatedData.quantidade || devolucaoExistente.quantidade),
           });
         }
       }
 
       console.log(
-        `✅ Devolução atualizada - ID: ${id}, Status: ${novoStatus}, Quantidade: ${novaQuantidade}`,
+        `✅ Devolução atualizada - ID: ${id}, Status: ${validatedData.status || devolucaoExistente.status}, Quantidade: ${validatedData.quantidade || devolucaoExistente.quantidade}`,
       );
       res.json(devolucao);
     } catch (error) {
@@ -4171,7 +4201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { userId } = req.params;
       const adminId = req.headers["x-user-id"] as string;
-      
+
       const note = await storage.createClientNote({
         user_id: userId,
         admin_id: adminId,
@@ -4357,8 +4387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subject: req.body.subject,
         content: req.body.content,
         metadata: req.body.metadata,
-        sent_at: new Date().toISOString(),
-      });
+        sent_at: new Date().toISOString});
 
       res.json(communication);
     } catch (error) {

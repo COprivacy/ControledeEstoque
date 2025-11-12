@@ -86,6 +86,21 @@ export class PaymentReminderService {
             }
           }
         }
+
+        // Verificar expiração de pacotes de funcionários
+        if (user.data_expiracao_pacote_funcionarios) {
+          const daysUntilPackageExpiration = this.getDaysDifference(now, new Date(user.data_expiracao_pacote_funcionarios));
+
+          // Avisos antes do vencimento
+          if (this.config.daysBeforeExpiration.includes(daysUntilPackageExpiration)) {
+            await this.sendEmployeePackageExpirationWarning(user, daysUntilPackageExpiration);
+          }
+
+          // Pacote expirado - reverter para limite base
+          if (daysUntilPackageExpiration < 0) {
+            await this.revertToBaseLimitAfterExpiration(user);
+          }
+        }
       }
 
       logger.info('Verificação de pagamentos concluída', 'PAYMENT_REMINDER');
@@ -282,6 +297,102 @@ export class PaymentReminderService {
       status: 'bloqueado',
       data_expiracao_trial: null,
       data_expiracao_plano: null,
+
+  /**
+   * Envia aviso de vencimento de pacote de funcionários
+   */
+  private async sendEmployeePackageExpirationWarning(user: any, daysRemaining: number): Promise<void> {
+    const limiteBase = user.max_funcionarios_base || 1;
+    const limiteAtual = user.max_funcionarios || 1;
+    const funcionariosExtras = limiteAtual - limiteBase;
+
+    await this.emailService.sendExpirationWarning({
+      to: user.email,
+      userName: user.nome,
+      planName: `Pacote de ${funcionariosExtras} Funcionários Extras`,
+      daysRemaining,
+      expirationDate: new Date(user.data_expiracao_pacote_funcionarios!).toLocaleDateString('pt-BR'),
+      amount: 0, // Será necessário buscar o preço do banco
+    });
+
+    logger.info('Aviso de vencimento de pacote de funcionários enviado', 'PAYMENT_REMINDER', {
+      userId: user.id,
+      daysRemaining,
+      funcionariosExtras,
+    });
+  }
+
+  /**
+   * Reverte o limite de funcionários para o limite base após expiração
+   */
+  private async revertToBaseLimitAfterExpiration(user: any): Promise<void> {
+    const limiteBase = user.max_funcionarios_base || 1;
+    const limiteAtual = user.max_funcionarios || 1;
+
+    // Verificar se realmente precisa reverter
+    if (limiteAtual <= limiteBase) {
+      return;
+    }
+
+    const funcionariosExtras = limiteAtual - limiteBase;
+
+    // Atualizar limite do usuário
+    await storage.updateUser(user.id, {
+      max_funcionarios: limiteBase,
+      data_expiracao_pacote_funcionarios: null,
+    });
+
+    // Marcar pacotes como expirados
+    if (storage.updateEmployeePackageStatus) {
+      await storage.updateEmployeePackageStatus(user.id, 'expirado');
+    }
+
+    // Buscar funcionários da conta
+    if (storage.getFuncionarios) {
+      const funcionarios = await storage.getFuncionarios();
+      const funcionariosDaConta = funcionarios
+        .filter(f => f.conta_id === user.id && f.status === 'ativo')
+        .sort((a, b) => new Date(b.data_criacao || 0).getTime() - new Date(a.data_criacao || 0).getTime());
+
+      // Bloquear funcionários que ultrapassam o limite base
+      // (bloquear os mais recentes primeiro)
+      const funcionariosParaBloquear = funcionariosDaConta.slice(0, funcionariosExtras);
+
+      for (const funcionario of funcionariosParaBloquear) {
+        await storage.updateFuncionario(funcionario.id, {
+          status: 'bloqueado',
+        });
+
+        logger.warn('Funcionário bloqueado devido ao vencimento do pacote', 'PAYMENT_REMINDER', {
+          funcionarioId: funcionario.id,
+          funcionarioNome: funcionario.nome,
+          contaId: user.id,
+        });
+      }
+
+      logger.warn(`${funcionariosParaBloquear.length} funcionário(s) bloqueado(s) por vencimento de pacote`, 'PAYMENT_REMINDER', {
+        userId: user.id,
+        limiteAnterior: limiteAtual,
+        novoLimite: limiteBase,
+      });
+    }
+
+    // Enviar email notificando o usuário
+    await this.emailService.sendAccountBlocked({
+      to: user.email,
+      userName: user.nome,
+      planName: `Pacote de ${funcionariosExtras} Funcionários Extras`,
+    });
+
+    logger.error('Limite de funcionários revertido por vencimento de pacote', 'PAYMENT_REMINDER', {
+      userId: user.id,
+      userEmail: user.email,
+      limiteAnterior: limiteAtual,
+      novoLimite: limiteBase,
+      funcionariosBloqueados: funcionariosExtras,
+    });
+  }
+
     });
 
     // Bloquear todos os funcionários desta conta

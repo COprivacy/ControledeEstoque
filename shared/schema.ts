@@ -22,6 +22,8 @@ export const users = pgTable("users", {
   permissoes: text("permissoes"),
   ultimo_acesso: text("ultimo_acesso"),
   max_funcionarios: integer("max_funcionarios").default(1),
+  max_funcionarios_base: integer("max_funcionarios_base").default(1),
+  data_expiracao_pacote_funcionarios: text("data_expiracao_pacote_funcionarios"),
   meta_mensal: real("meta_mensal").default(15000),
 });
 
@@ -495,6 +497,32 @@ export const planChangesHistory = pgTable("plan_changes_history", {
   from_plan: text("from_plan"),
   to_plan: text("to_plan").notNull(),
   changed_by: text("changed_by").notNull().references(() => users.id),
+
+// Pacotes de Funcionários Comprados
+export const employeePackages = pgTable("employee_packages", {
+  id: serial("id").primaryKey(),
+  user_id: text("user_id").notNull().references(() => users.id),
+  package_type: text("package_type").notNull(), // pacote_5, pacote_10, pacote_20, pacote_50
+  quantity: integer("quantity").notNull(), // Quantidade de funcionários adicionados
+  price: real("price").notNull(), // Valor pago
+  status: text("status").notNull().default("ativo"), // ativo, expirado, cancelado
+  payment_id: text("payment_id"), // ID do pagamento (Mercado Pago ou Asaas)
+  data_compra: text("data_compra").notNull(),
+  data_vencimento: text("data_vencimento").notNull(), // 30 dias após compra
+  data_cancelamento: text("data_cancelamento"),
+}, (table) => ({
+  userIdIdx: index("employee_packages_user_id_idx").on(table.user_id),
+  statusIdx: index("employee_packages_status_idx").on(table.status),
+}));
+
+export const insertEmployeePackageSchema = createInsertSchema(employeePackages).omit({
+  id: true,
+  data_compra: true,
+});
+
+export type EmployeePackage = typeof employeePackages.$inferSelect;
+export type InsertEmployeePackage = z.infer<typeof insertEmployeePackageSchema>;
+
   reason: text("reason"),
   metadata: jsonb("metadata"),
   changed_at: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),

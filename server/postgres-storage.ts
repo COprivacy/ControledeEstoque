@@ -22,6 +22,11 @@ import {
   systemConfig,
   devolucoes,
   orcamentos,
+  clientNotes,
+  clientDocuments,
+  clientInteractions,
+  planChangesHistory,
+  clientCommunications,
   type User,
   type InsertUser,
   type Produto,
@@ -59,6 +64,16 @@ import {
   type InsertDevolucao,
   type Orcamento,
   type InsertOrcamento,
+  type ClientNote,
+  type InsertClientNote,
+  type ClientDocument,
+  type InsertClientDocument,
+  type ClientInteraction,
+  type InsertClientInteraction,
+  type PlanChangeHistory,
+  type InsertPlanChangeHistory,
+  type ClientCommunication,
+  type InsertClientCommunication,
 } from '@shared/schema';
 import type { IStorage } from './storage';
 import { randomUUID } from 'crypto';
@@ -1000,5 +1015,209 @@ export class PostgresStorage implements IStorage {
       .where(eq(orcamentos.id, id));
 
     return venda;
+  }
+
+  // ============================================
+  // IMPLEMENTAÇÃO DOS MÉTODOS DE GESTÃO DE CLIENTE 360°
+  // ============================================
+
+  async getClientNotes(userId: string, limit = 50, offset = 0): Promise<ClientNote[]> {
+    const results = await this.db
+      .select()
+      .from(clientNotes)
+      .where(eq(clientNotes.user_id, userId))
+      .orderBy(desc(clientNotes.created_at))
+      .limit(limit)
+      .offset(offset);
+    return results;
+  }
+
+  async createClientNote(note: InsertClientNote): Promise<ClientNote> {
+    const [created] = await this.db
+      .insert(clientNotes)
+      .values(note)
+      .returning();
+    return created;
+  }
+
+  async updateClientNote(id: number, updates: Partial<ClientNote>): Promise<ClientNote | undefined> {
+    // Sanitizar: permitir apenas campos mutáveis
+    const { content } = updates;
+    const sanitizedUpdates: any = {};
+    
+    if (content !== undefined) sanitizedUpdates.content = content;
+    sanitizedUpdates.updated_at = sql`NOW()`;
+    
+    const [updated] = await this.db
+      .update(clientNotes)
+      .set(sanitizedUpdates)
+      .where(eq(clientNotes.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteClientNote(id: number): Promise<boolean> {
+    const result = await this.db
+      .delete(clientNotes)
+      .where(eq(clientNotes.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getClientDocuments(userId: string, limit = 50, offset = 0): Promise<ClientDocument[]> {
+    const results = await this.db
+      .select()
+      .from(clientDocuments)
+      .where(eq(clientDocuments.user_id, userId))
+      .orderBy(desc(clientDocuments.uploaded_at))
+      .limit(limit)
+      .offset(offset);
+    return results;
+  }
+
+  async createClientDocument(document: InsertClientDocument): Promise<ClientDocument> {
+    const [created] = await this.db
+      .insert(clientDocuments)
+      .values(document)
+      .returning();
+    return created;
+  }
+
+  async deleteClientDocument(id: number): Promise<boolean> {
+    const result = await this.db
+      .delete(clientDocuments)
+      .where(eq(clientDocuments.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getClientInteractions(userId: string, limit = 50, offset = 0): Promise<ClientInteraction[]> {
+    const results = await this.db
+      .select()
+      .from(clientInteractions)
+      .where(eq(clientInteractions.user_id, userId))
+      .orderBy(desc(clientInteractions.created_at))
+      .limit(limit)
+      .offset(offset);
+    return results;
+  }
+
+  async createClientInteraction(interaction: InsertClientInteraction): Promise<ClientInteraction> {
+    const [created] = await this.db
+      .insert(clientInteractions)
+      .values(interaction)
+      .returning();
+    return created;
+  }
+
+  async getPlanChangesHistory(userId: string, limit = 50, offset = 0): Promise<PlanChangeHistory[]> {
+    const results = await this.db
+      .select()
+      .from(planChangesHistory)
+      .where(eq(planChangesHistory.user_id, userId))
+      .orderBy(desc(planChangesHistory.changed_at))
+      .limit(limit)
+      .offset(offset);
+    return results;
+  }
+
+  async createPlanChangeHistory(change: InsertPlanChangeHistory): Promise<PlanChangeHistory> {
+    const [created] = await this.db
+      .insert(planChangesHistory)
+      .values(change)
+      .returning();
+    return created;
+  }
+
+  async getClientCommunications(userId: string, limit = 50, offset = 0): Promise<ClientCommunication[]> {
+    const results = await this.db
+      .select()
+      .from(clientCommunications)
+      .where(eq(clientCommunications.user_id, userId))
+      .orderBy(desc(clientCommunications.sent_at))
+      .limit(limit)
+      .offset(offset);
+    return results;
+  }
+
+  async createClientCommunication(communication: InsertClientCommunication): Promise<ClientCommunication> {
+    const [created] = await this.db
+      .insert(clientCommunications)
+      .values(communication)
+      .returning();
+    return created;
+  }
+
+  async getClientTimeline(userId: string, limit = 50, offset = 0): Promise<any[]> {
+    // Query usando UNION ALL para combinar todas as tabelas de eventos do cliente
+    const timeline = await this.db.execute(sql`
+      SELECT 
+        'note' as event_type,
+        id,
+        admin_id as actor_id,
+        content as description,
+        NULL::text as subject,
+        NULL::jsonb as metadata,
+        created_at as event_date
+      FROM client_notes
+      WHERE user_id = ${userId}
+      
+      UNION ALL
+      
+      SELECT 
+        'document' as event_type,
+        id,
+        admin_id as actor_id,
+        file_name as description,
+        description as subject,
+        jsonb_build_object('file_url', file_url, 'file_type', file_type, 'file_size', file_size) as metadata,
+        uploaded_at as event_date
+      FROM client_documents
+      WHERE user_id = ${userId}
+      
+      UNION ALL
+      
+      SELECT 
+        'interaction' as event_type,
+        id,
+        admin_id as actor_id,
+        description,
+        interaction_type as subject,
+        metadata,
+        created_at as event_date
+      FROM client_interactions
+      WHERE user_id = ${userId}
+      
+      UNION ALL
+      
+      SELECT 
+        'plan_change' as event_type,
+        id,
+        changed_by as actor_id,
+        CONCAT('De ', COALESCE(from_plan, 'nenhum'), ' para ', to_plan) as description,
+        reason as subject,
+        metadata,
+        changed_at as event_date
+      FROM plan_changes_history
+      WHERE user_id = ${userId}
+      
+      UNION ALL
+      
+      SELECT 
+        'communication' as event_type,
+        id,
+        admin_id as actor_id,
+        message as description,
+        subject,
+        jsonb_build_object('type', communication_type, 'status', status) as metadata,
+        sent_at as event_date
+      FROM client_communications
+      WHERE user_id = ${userId}
+      
+      ORDER BY event_date DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `);
+
+    return timeline.rows;
   }
 }

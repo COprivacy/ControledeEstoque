@@ -31,7 +31,17 @@ import {
   type Devolucao,
   type InsertDevolucao,
   type Orcamento,
-  type InsertOrcamento
+  type InsertOrcamento,
+  type ClientNote,
+  type InsertClientNote,
+  type ClientDocument,
+  type InsertClientDocument,
+  type ClientInteraction,
+  type InsertClientInteraction,
+  type PlanChangeHistory,
+  type InsertPlanChangeHistory,
+  type ClientCommunication,
+  type InsertClientCommunication
 } from "@shared/schema";
 
 export interface IStorage {
@@ -133,6 +143,36 @@ export interface IStorage {
   createOrcamento?(orcamento: InsertOrcamento): Promise<Orcamento>;
   updateOrcamento?(id: number, updates: Partial<Orcamento>): Promise<Orcamento | undefined>;
   deleteOrcamento?(id: number): Promise<boolean>;
+
+  // ============================================
+  // MÉTODOS PARA GESTÃO DE CLIENTE 360°
+  // ============================================
+  
+  // Client Notes - Notas sobre clientes
+  getClientNotes(userId: string, limit?: number, offset?: number): Promise<ClientNote[]>;
+  createClientNote(note: InsertClientNote): Promise<ClientNote>;
+  updateClientNote(id: number, updates: Partial<ClientNote>): Promise<ClientNote | undefined>;
+  deleteClientNote(id: number): Promise<boolean>;
+  
+  // Client Documents - Documentos/anexos
+  getClientDocuments(userId: string, limit?: number, offset?: number): Promise<ClientDocument[]>;
+  createClientDocument(document: InsertClientDocument): Promise<ClientDocument>;
+  deleteClientDocument(id: number): Promise<boolean>;
+  
+  // Client Interactions - Timeline de interações
+  getClientInteractions(userId: string, limit?: number, offset?: number): Promise<ClientInteraction[]>;
+  createClientInteraction(interaction: InsertClientInteraction): Promise<ClientInteraction>;
+  
+  // Plan Changes History - Histórico de mudanças de plano
+  getPlanChangesHistory(userId: string, limit?: number, offset?: number): Promise<PlanChangeHistory[]>;
+  createPlanChangeHistory(change: InsertPlanChangeHistory): Promise<PlanChangeHistory>;
+  
+  // Client Communications - Comunicações enviadas
+  getClientCommunications(userId: string, limit?: number, offset?: number): Promise<ClientCommunication[]>;
+  createClientCommunication(communication: InsertClientCommunication): Promise<ClientCommunication>;
+  
+  // Timeline Unificada - Agrega todos os eventos do cliente
+  getClientTimeline(userId: string, limit?: number, offset?: number): Promise<any[]>;
 }
 
 export abstract class Storage {

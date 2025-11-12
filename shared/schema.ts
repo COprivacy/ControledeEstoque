@@ -370,6 +370,12 @@ export const insertMovimentacaoCaixaSchema = createInsertSchema(movimentacoesCai
   tipo: z.enum(["suprimento", "retirada"]),
 });
 
+export type InsertCaixa = z.infer<typeof insertCaixaSchema>;
+export type Caixa = typeof caixas.$inferSelect;
+
+export type InsertMovimentacaoCaixa = z.infer<typeof insertMovimentacaoCaixaSchema>;
+export type MovimentacaoCaixa = typeof movimentacoesCaixa.$inferSelect;
+
 export const insertDevolucaoSchema = createInsertSchema(devolucoes).omit({
   id: true,
 }).extend({

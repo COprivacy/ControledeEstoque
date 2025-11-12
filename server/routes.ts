@@ -817,22 +817,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const config = req.body;
 
+      // Se o webhook_url não foi fornecido, gerar um padrão
+      if (!config.webhook_url) {
+        const baseUrl = process.env.REPLIT_DEV_DOMAIN
+          ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+          : "http://localhost:5000";
+        config.webhook_url = `${baseUrl}/api/webhook/mercadopago`;
+      }
+
       await storage.saveConfigMercadoPago({
         ...config,
         updated_at: new Date().toISOString(),
       });
 
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-        : "http://localhost:5000";
-
       res.json({
         success: true,
         message: "Configuração salva com sucesso!",
-        webhook_info: {
-          url: `${baseUrl}/api/webhook/mercadopago`,
-          instructions: "Configure este URL no painel do Mercado Pago",
-        },
+        webhook_url: config.webhook_url,
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -2947,27 +2948,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mercado Pago Webhook
   app.post("/api/webhook/mercadopago", async (req, res) => {
     try {
-      const { type, data } = req.body;
+      const { type, data, action } = req.body;
 
-      console.log("📥 Webhook Mercado Pago recebido:", { type, data });
+      logger.info("Webhook Mercado Pago recebido", "MERCADOPAGO_WEBHOOK", { 
+        type, 
+        action,
+        dataId: data?.id 
+      });
 
       // Processar notificação de pagamento
-      if (type === "payment") {
+      if (type === "payment" || action === "payment.created" || action === "payment.updated") {
         const paymentId = data.id;
 
-        // Buscar detalhes do pagamento
+        if (!paymentId) {
+          logger.warn("Webhook sem payment ID", "MERCADOPAGO_WEBHOOK");
+          return res.status(400).json({ error: "Payment ID não fornecido" });
+        }
+
+        // Buscar configuração do Mercado Pago
         const config = await storage.getConfigMercadoPago();
         if (!config || !config.access_token) {
-          console.error("❌ Configuração do Mercado Pago não encontrada");
+          logger.error("Configuração do Mercado Pago não encontrada", "MERCADOPAGO_WEBHOOK");
           return res.status(500).json({ error: "Configuração não encontrada" });
         }
 
-        const { MercadoPagoService } = await import("./mercadopago");
-        const mercadopago = new MercadoPagoService({
-          accessToken: config.access_token,
-        });
-
-        // Buscar informações do pagamento
+        // Buscar informações do pagamento via API
         const response = await fetch(
           `https://api.mercadopago.com/v1/payments/${paymentId}`,
           {
@@ -2978,43 +2983,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
 
         if (!response.ok) {
-          console.error("❌ Erro ao buscar pagamento do Mercado Pago");
+          logger.error("Erro ao buscar pagamento do Mercado Pago", "MERCADOPAGO_WEBHOOK", {
+            status: response.status
+          });
           return res.status(500).json({ error: "Erro ao buscar pagamento" });
         }
 
         const paymentData = await response.json();
         const externalReference = paymentData.external_reference;
         const status = paymentData.status;
+        const statusDetail = paymentData.status_detail;
 
-        console.log("💳 Dados do pagamento:", {
-          id: paymentId,
+        logger.info("Dados do pagamento processados", "MERCADOPAGO_WEBHOOK", {
+          paymentId,
           status,
+          statusDetail,
           externalReference,
         });
 
-        // Encontrar assinatura pelo external_reference
-        const subscriptions = await storage.getSubscriptions();
-        const subscription = subscriptions.find(
+        if (!externalReference) {
+          logger.warn("Pagamento sem external_reference", "MERCADOPAGO_WEBHOOK", { paymentId });
+          return res.status(400).json({ error: "External reference não encontrada" });
+        }
+
+        // Buscar assinatura pelo external_reference
+        const subscriptions = await storage.getSubscriptions?.();
+        const subscription = subscriptions?.find(
           (s) => s.external_reference === externalReference,
         );
 
         if (!subscription) {
-          console.log(
-            "⚠️ Assinatura não encontrada para referência:",
+          logger.warn("Assinatura não encontrada", "MERCADOPAGO_WEBHOOK", {
             externalReference,
-          );
+          });
           return res.status(404).json({ error: "Assinatura não encontrada" });
         }
 
         // Processar status do pagamento
         if (status === "approved") {
-          // Pagamento aprovado
-          console.log(
-            "✅ Pagamento aprovado - Ativando assinatura:",
-            subscription.id,
-          );
+          logger.info("Pagamento aprovado - Ativando assinatura", "MERCADOPAGO_WEBHOOK", {
+            subscriptionId: subscription.id,
+            userId: subscription.user_id,
+            plano: subscription.plano,
+          });
 
-          await storage.updateSubscription(subscription.id, {
+          // Atualizar assinatura
+          await storage.updateSubscription?.(subscription.id, {
             status: "ativo",
             status_pagamento: "approved",
             mercadopago_payment_id: paymentId.toString(),
@@ -3023,43 +3037,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
 
           // Atualizar plano do usuário
-          await storage.updateUser(subscription.user_id, {
+          await storage.updateUser?.(subscription.user_id, {
             plano: subscription.plano,
             data_expiracao_plano: subscription.data_vencimento,
             status: "ativo",
           });
 
-          console.log(`✅ Assinatura ${subscription.id} ativada com sucesso!`);
-          logger.info("Pagamento aprovado via webhook", "MERCADOPAGO_WEBHOOK", {
+          logger.info("Assinatura ativada com sucesso", "MERCADOPAGO_WEBHOOK", {
             subscriptionId: subscription.id,
-            userId: subscription.user_id,
-            plano: subscription.plano,
           });
-        } else if (status === "rejected" || status === "cancelled") {
-          // Pagamento recusado ou cancelado
-          console.log("❌ Pagamento recusado/cancelado:", subscription.id);
 
-          await storage.updateSubscription(subscription.id, {
+        } else if (status === "rejected" || status === "cancelled") {
+          logger.warn("Pagamento recusado/cancelado", "MERCADOPAGO_WEBHOOK", {
+            subscriptionId: subscription.id,
+            status,
+            statusDetail,
+          });
+
+          await storage.updateSubscription?.(subscription.id, {
             status: "cancelado",
             status_pagamento: status,
             mercadopago_payment_id: paymentId.toString(),
-            motivo_cancelamento: `Pagamento ${status} pelo Mercado Pago`,
+            motivo_cancelamento: `Pagamento ${status} - ${statusDetail || 'sem detalhes'}`,
             data_atualizacao: new Date().toISOString(),
           });
 
-          logger.warn(
-            "Pagamento recusado/cancelado via webhook",
-            "MERCADOPAGO_WEBHOOK",
-            {
-              subscriptionId: subscription.id,
-              status,
-            },
-          );
         } else if (status === "pending" || status === "in_process") {
-          // Pagamento pendente
-          console.log("⏳ Pagamento pendente:", subscription.id);
+          logger.info("Pagamento pendente", "MERCADOPAGO_WEBHOOK", {
+            subscriptionId: subscription.id,
+            status,
+          });
 
-          await storage.updateSubscription(subscription.id, {
+          await storage.updateSubscription?.(subscription.id, {
             status_pagamento: status,
             mercadopago_payment_id: paymentId.toString(),
             data_atualizacao: new Date().toISOString(),
@@ -3069,9 +3078,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ success: true, message: "Webhook processado com sucesso" });
     } catch (error: any) {
-      console.error("❌ Erro ao processar webhook Mercado Pago:", error);
-      logger.error("Erro no webhook Mercado Pago", "MERCADOPAGO_WEBHOOK", {
-        error,
+      logger.error("Erro ao processar webhook Mercado Pago", "MERCADOPAGO_WEBHOOK", {
+        error: error.message,
+        stack: error.stack,
       });
       res.status(500).json({ error: error.message });
     }

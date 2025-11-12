@@ -584,8 +584,10 @@ function MercadoPagoConfigTab() {
               onClick={() => saveMercadoPagoConfig.mutate()}
               disabled={saveMercadoPagoConfig.isPending}
               data-testid="button-save-mp-config"
+              className="bg-blue-600 hover:bg-blue-700"
             >
               {saveMercadoPagoConfig.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Save className="h-4 w-4 mr-2" />
               Salvar Configuração
             </Button>
             <Button
@@ -598,6 +600,23 @@ function MercadoPagoConfigTab() {
               Testar Conexão
             </Button>
           </div>
+          
+          {mpConfigData && mpConfigData.webhook_url && (
+            <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-900">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold text-green-700 dark:text-green-400">Webhook Configurado</p>
+                  <p className="text-sm text-green-600 dark:text-green-300 mt-1 break-all">
+                    {mpConfigData.webhook_url}
+                  </p>
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                    ✅ Configure esta URL no painel do Mercado Pago quando tiver seu domínio premium
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

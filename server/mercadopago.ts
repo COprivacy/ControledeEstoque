@@ -93,10 +93,10 @@ export class MercadoPagoService {
         external_reference: params.external_reference,
       };
 
+      // Usar notification_url fornecido ou gerar padrão
+      // O webhook será configurado no painel quando o usuário tiver domínio premium
       if (params.notification_url) {
         body.notification_url = params.notification_url;
-      } else {
-        body.notification_url = `${baseUrl}/api/webhook/mercadopago`;
       }
 
       const result = await this.preferenceClient.create({ body });

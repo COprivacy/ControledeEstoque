@@ -63,10 +63,14 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
     setIsChecking(false); // Marca a verificação inicial como concluída
   }, [setLocation, isChecking, isAuthenticated]);
 
+  // MASTER_USER_EMAIL é o único usuário que nunca pode ser bloqueado
+  const MASTER_USER_EMAIL = "pavisoft.suporte@gmail.com";
+  const isMasterUser = user?.email === MASTER_USER_EMAIL;
+
   // Verificar se o usuário está bloqueado (buscar status atualizado do servidor)
   const { data: userStatus, isLoading: isCheckingStatus } = useQuery({
     queryKey: ["/api/user/check-blocked"],
-    enabled: isAuthenticated && user?.is_admin !== "true",
+    enabled: isAuthenticated && !isMasterUser, // Apenas o master é imune
     refetchInterval: 5000, // Verificar a cada 5 segundos
   });
 
@@ -80,7 +84,8 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
   }
 
   // Se o usuário está bloqueado (verificação em tempo real)
-  if (userStatus?.isBlocked && user?.is_admin !== "true") {
+  // Apenas o Admin Master (pavisoft.suporte@gmail.com) está imune ao bloqueio
+  if (userStatus?.isBlocked && !isMasterUser) {
     return (
       <div className="flex items-center justify-center h-screen p-4 bg-gray-50 dark:bg-gray-900">
         <Card className="max-w-md w-full" data-testid="blocked-page">

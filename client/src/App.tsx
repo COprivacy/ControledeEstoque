@@ -32,6 +32,7 @@ import AdminPublico from "@/pages/AdminPublico";
 import Planos from "@/pages/Planos";
 import Devolucoes from "@/pages/Devolucoes";
 import Orcamentos from "@/pages/Orcamentos";
+import TestSuite from "./pages/TestSuite";
 
 function Router() {
   return (
@@ -211,15 +212,10 @@ function Router() {
           </DashboardLayout>
         )}
       </Route>
-      <Route path="/admin-master">
-        {() => (
-          <DashboardLayout>
-            <AdminMasterRoute>
-              <AdminPublico />
-            </AdminMasterRoute>
-          </DashboardLayout>
-        )}
-      </Route>
+      <Route path="/admin-publico" element={<AdminMasterRoute><AdminPublico /></AdminMasterRoute>} />
+      <Route path="/test-suite" element={<AdminMasterRoute><TestSuite /></AdminMasterRoute>} />
+      <Route path="/ajuda" element={<Ajuda />} />
+      <Route path="/contato" element={<Contato />} />
       <Route component={NotFound} />
     </Switch>
   );

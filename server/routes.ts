@@ -2945,6 +2945,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Executar suite completa de testes
+  app.post("/api/run-tests", requireAdmin, async (req, res) => {
+    try {
+      const { TestSuite } = await import("./test-suite");
+      const suite = new TestSuite();
+      const results = await suite.runAllTests();
+
+      const success = results.filter(r => r.status === 'success').length;
+      const errors = results.filter(r => r.status === 'error').length;
+      const warnings = results.filter(r => r.status === 'warning').length;
+
+      res.json({
+        success: errors === 0,
+        summary: {
+          total: results.length,
+          success,
+          errors,
+          warnings,
+          percentage: Math.round((success / results.length) * 100)
+        },
+        results
+      });
+    } catch (error) {
+      logger.error("Erro ao executar testes", "TEST_SUITE", { error });
+      res.status(500).json({ error: "Erro ao executar testes" });
+    }
+  });
+
   // Mercado Pago Webhook
   app.post("/api/webhook/mercadopago", async (req, res) => {
     try {
@@ -4122,7 +4150,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
 
       if (!userId) {
-        return res.status(401).json({ error: "Usuário não autenticado" });
+        return res.      .status(401)
+          .json({ error: "Usuário não autenticado" });
       }
 
       const orcamento = await storage.getOrcamento(id);
@@ -4387,7 +4416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subject: req.body.subject,
         content: req.body.content,
         metadata: req.body.metadata,
-        sent_at: new Date().toISOString});
+        sent_at: new Date().toISOString()});
 
       res.json(communication);
     } catch (error) {

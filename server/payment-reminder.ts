@@ -297,6 +297,38 @@ export class PaymentReminderService {
       status: 'bloqueado',
       data_expiracao_trial: null,
       data_expiracao_plano: null,
+    });
+
+    // Bloquear todos os funcionários desta conta
+    if (storage.getFuncionarios) {
+      const funcionarios = await storage.getFuncionarios();
+      const funcionariosDaConta = funcionarios.filter(f => f.conta_id === user.id);
+
+      for (const funcionario of funcionariosDaConta) {
+        await storage.updateFuncionario(funcionario.id, {
+          status: 'bloqueado',
+        });
+      }
+
+      if (funcionariosDaConta.length > 0) {
+        logger.info(`${funcionariosDaConta.length} funcionário(s) bloqueado(s) devido ao trial expirado`, 'PAYMENT_REMINDER', {
+          userId: user.id,
+        });
+      }
+    }
+
+    // Enviar email de conta bloqueada
+    await this.emailService.sendAccountBlocked({
+      to: user.email,
+      userName: user.nome,
+      planName: 'Plano Trial',
+    });
+
+    logger.warn('Usuário trial expirado bloqueado', 'PAYMENT_REMINDER', {
+      userId: user.id,
+      userEmail: user.email,
+    });
+  }
 
   /**
    * Envia aviso de vencimento de pacote de funcionários

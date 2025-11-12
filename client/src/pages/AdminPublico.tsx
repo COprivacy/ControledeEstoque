@@ -260,12 +260,171 @@ function UserEditDialog({
   );
 }
 
-// Componente de Configurações
-function ConfiguracoesTab() {
+// Componente de Configurações SMTP
+function SMTPConfigTab() {
+  const { toast } = useToast();
+  const [testEmail, setTestEmail] = useState("");
+
+  const sendTestEmails = useMutation({
+    mutationFn: async () => {
+      if (!testEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testEmail)) {
+        throw new Error("Email inválido");
+      }
+      const response = await apiRequest("POST", "/api/test/send-emails", { email: testEmail });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Emails enviados!",
+        description: `${data.message}`,
+      });
+      setTestEmail("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao enviar emails",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Configuração SMTP */}
+      <Card id="smtp-config">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-blue-600" />
+            Configuração de E-mail (SMTP)
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Configure o servidor SMTP para envio de e-mails do sistema
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="smtp-host">Servidor SMTP</Label>
+              <Input
+                id="smtp-host"
+                placeholder="smtp.gmail.com"
+                defaultValue={import.meta.env.VITE_SMTP_HOST || ''}
+                data-testid="input-smtp-host"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="smtp-port">Porta</Label>
+              <Input
+                id="smtp-port"
+                type="number"
+                placeholder="587"
+                defaultValue={import.meta.env.VITE_SMTP_PORT || '587'}
+                data-testid="input-smtp-port"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="smtp-user">Usuário (E-mail)</Label>
+              <Input
+                id="smtp-user"
+                type="email"
+                placeholder="seu@email.com"
+                defaultValue={import.meta.env.VITE_SMTP_USER || ''}
+                data-testid="input-smtp-user"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="smtp-pass">Senha</Label>
+              <Input
+                id="smtp-pass"
+                type="password"
+                placeholder="••••••••••••••••"
+                data-testid="input-smtp-pass"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="smtp-from">Nome do Remetente</Label>
+            <Input
+              id="smtp-from"
+              placeholder="Pavisoft Sistemas <noreply@pavisoft.com>"
+              defaultValue={import.meta.env.VITE_SMTP_FROM || ''}
+              data-testid="input-smtp-from"
+            />
+          </div>
+          <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <div>
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                ℹ️ Como obter as credenciais SMTP
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                Para Gmail: Use uma "Senha de App" em vez da senha normal.
+                <br />
+                Acesse: Conta Google → Segurança → Verificação em duas etapas → Senhas de app
+              </p>
+            </div>
+          </div>
+          <div className="pt-4">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Importante</AlertTitle>
+              <AlertDescription>
+                Essas configurações devem ser adicionadas no arquivo <code>.env</code> do servidor.
+                Adicione as variáveis: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
+              </AlertDescription>
+            </Alert>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Teste de Emails */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-purple-600" />
+            Teste de Envio de Emails
+          </CardTitle>
+          <CardDescription>
+            Envie todos os templates de email para um endereço de teste
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Email de Teste</Label>
+            <Input
+              type="email"
+              value={testEmail}
+              onChange={(e) => setTestEmail(e.target.value)}
+              placeholder="seuemail@exemplo.com"
+              data-testid="input-test-email"
+            />
+          </div>
+          <Button
+            onClick={() => sendTestEmails.mutate()}
+            disabled={sendTestEmails.isPending || !testEmail}
+            data-testid="button-send-test-emails"
+          >
+            {sendTestEmails.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Enviar Todos os Templates
+          </Button>
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Serão enviados 8 emails de teste com todos os templates do sistema
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Componente de Configuração Mercado Pago
+function MercadoPagoConfigTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isTesting, setIsTesting] = useState(false);
-  const [testEmail, setTestEmail] = useState("");
   const [mpConfig, setMpConfig] = useState({
     access_token: "",
     public_key: "",
@@ -323,30 +482,6 @@ function ConfiguracoesTab() {
     },
   });
 
-  const sendTestEmails = useMutation({
-    mutationFn: async () => {
-      if (!testEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testEmail)) {
-        throw new Error("Email inválido");
-      }
-      const response = await apiRequest("POST", "/api/test/send-emails", { email: testEmail });
-      return response.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Emails enviados!",
-        description: `${data.message}`,
-      });
-      setTestEmail("");
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao enviar emails",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   // Status da integração
   const getIntegrationStatus = () => {
     if (isLoadingMpConfig) return { color: "bg-gray-500", text: "Verificando...", icon: Loader2 };
@@ -365,7 +500,7 @@ function ConfiguracoesTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-blue-600" />
-            Status das Integrações
+            Status da Integração
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -389,7 +524,7 @@ function ConfiguracoesTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-blue-600" />
-            Configuração Mercado Pago
+            Credenciais da API
           </CardTitle>
           <CardDescription>
             Configure as credenciais da API do Mercado Pago para processar pagamentos
@@ -403,6 +538,7 @@ function ConfiguracoesTab() {
               value={mpConfig.access_token}
               onChange={(e) => setMpConfig({ ...mpConfig, access_token: e.target.value })}
               placeholder="APP_USR-..."
+              data-testid="input-mp-access-token"
             />
           </div>
           <div className="space-y-2">
@@ -411,12 +547,14 @@ function ConfiguracoesTab() {
               value={mpConfig.public_key}
               onChange={(e) => setMpConfig({ ...mpConfig, public_key: e.target.value })}
               placeholder="APP_USR-..."
+              data-testid="input-mp-public-key"
             />
           </div>
           <div className="flex gap-2">
             <Button
               onClick={() => saveMercadoPagoConfig.mutate()}
               disabled={saveMercadoPagoConfig.isPending}
+              data-testid="button-save-mp-config"
             >
               {saveMercadoPagoConfig.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Salvar Configuração
@@ -425,48 +563,12 @@ function ConfiguracoesTab() {
               variant="outline"
               onClick={() => testMercadoPagoConnection.mutate()}
               disabled={testMercadoPagoConnection.isPending || !mpConfig.access_token}
+              data-testid="button-test-mp-connection"
             >
               {testMercadoPagoConnection.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Testar Conexão
             </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Teste de Emails */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-purple-600" />
-            Teste de Envio de Emails
-          </CardTitle>
-          <CardDescription>
-            Envie todos os templates de email para um endereço de teste
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Email de Teste</Label>
-            <Input
-              type="email"
-              value={testEmail}
-              onChange={(e) => setTestEmail(e.target.value)}
-              placeholder="seuemail@exemplo.com"
-            />
-          </div>
-          <Button
-            onClick={() => sendTestEmails.mutate()}
-            disabled={sendTestEmails.isPending || !testEmail}
-          >
-            {sendTestEmails.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Enviar Todos os Templates
-          </Button>
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Serão enviados 8 emails de teste com todos os templates do sistema
-            </AlertDescription>
-          </Alert>
         </CardContent>
       </Card>
     </div>
@@ -795,7 +897,7 @@ export default function AdminPublico() {
   const [selectedClientFor360, setSelectedClientFor360] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'clientes' | 'assinaturas' | 'configuracoes' | 'sistema' | 'metricas'>('dashboard');
-  const [configTab, setConfigTab] = useState<'usuarios' | 'assinaturas' | 'status' | 'logs' | 'config' | 'mercadopago'>('usuarios');
+  const [configTab, setConfigTab] = useState<'config' | 'mercadopago'>('config');
   const [userEditDialogOpen, setUserEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
@@ -1299,111 +1401,15 @@ export default function AdminPublico() {
           ) : activeTab === 'configuracoes' ? (
             // Aba de Configurações
             <Tabs value={configTab} onValueChange={(value) => setConfigTab(value as typeof configTab)} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-6">
-                <TabsTrigger value="usuarios">Usuários</TabsTrigger>
-                <TabsTrigger value="assinaturas">Assinaturas</TabsTrigger>
-                <TabsTrigger value="status">Status</TabsTrigger>
-                <TabsTrigger value="logs">Logs</TabsTrigger>
-                <TabsTrigger value="config">Configurações</TabsTrigger>
-                <TabsTrigger value="mercadopago">Mercado Pago</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="config" data-testid="tab-configuracoes">Configurações</TabsTrigger>
+                <TabsTrigger value="mercadopago" data-testid="tab-mercadopago">Mercado Pago</TabsTrigger>
               </TabsList>
               <TabsContent value="config">
-                <div className="space-y-6">
-                  {/* Configuração SMTP */}
-                  <Card id="smtp-config">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Mail className="h-5 w-5 text-blue-600" />
-                        Configuração de E-mail (SMTP)
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        Configure o servidor SMTP para envio de e-mails do sistema
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="smtp-host">Servidor SMTP</Label>
-                          <Input
-                            id="smtp-host"
-                            placeholder="smtp.gmail.com"
-                            defaultValue={import.meta.env.VITE_SMTP_HOST || ''}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="smtp-port">Porta</Label>
-                          <Input
-                            id="smtp-port"
-                            type="number"
-                            placeholder="587"
-                            defaultValue={import.meta.env.VITE_SMTP_PORT || '587'}
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="smtp-user">Usuário (E-mail)</Label>
-                          <Input
-                            id="smtp-user"
-                            type="email"
-                            placeholder="seu@email.com"
-                            defaultValue={import.meta.env.VITE_SMTP_USER || ''}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="smtp-pass">Senha</Label>
-                          <Input
-                            id="smtp-pass"
-                            type="password"
-                            placeholder="••••••••••••••••"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="smtp-from">Nome do Remetente</Label>
-                        <Input
-                          id="smtp-from"
-                          placeholder="Pavisoft Sistemas <noreply@pavisoft.com>"
-                          defaultValue={import.meta.env.VITE_SMTP_FROM || ''}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <div>
-                          <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                            ℹ️ Como obter as credenciais SMTP
-                          </p>
-                          <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                            Para Gmail: Use uma "Senha de App" em vez da senha normal.
-                            <br />
-                            Acesse: Conta Google → Segurança → Verificação em duas etapas → Senhas de app
-                          </p>
-                        </div>
-                      </div>
-                      <div className="pt-4">
-                        <Alert>
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertTitle>Importante</AlertTitle>
-                          <AlertDescription>
-                            Essas configurações devem ser adicionadas no arquivo <code>.env</code> do servidor.
-                            Adicione as variáveis: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
-                          </AlertDescription>
-                        </Alert>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Outras Configurações */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Configurações Gerais</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground">
-                        Outras configurações do sistema serão exibidas aqui.
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
+                <SMTPConfigTab />
+              </TabsContent>
+              <TabsContent value="mercadopago">
+                <MercadoPagoConfigTab />
               </TabsContent>
             </Tabs>
           ) : activeTab === 'sistema' ? (

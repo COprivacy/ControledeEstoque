@@ -260,29 +260,48 @@ function UserEditDialog({
   );
 }
 
-// Componente de Configurações SMTP
-function SMTPConfigTab() {
+// Componente de Gestão Avançada de Usuários
+function GestaoAvancadaTab({ users }: { users: User[] }) {
   const { toast } = useToast();
-  const [testEmail, setTestEmail] = useState("");
+  const queryClient = useQueryClient();
+  const [filtroPlano, setFiltroPlano] = useState<string>("todos");
+  const [filtroStatus, setFiltroStatus] = useState<string>("todos");
 
-  const sendTestEmails = useMutation({
-    mutationFn: async () => {
-      if (!testEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testEmail)) {
-        throw new Error("Email inválido");
-      }
-      const response = await apiRequest("POST", "/api/test/send-emails", { email: testEmail });
-      return response.json();
+  // Estatísticas por plano
+  const estatisticasPorPlano = useMemo(() => {
+    const stats: Record<string, number> = {};
+    users.forEach(user => {
+      stats[user.plano] = (stats[user.plano] || 0) + 1;
+    });
+    return stats;
+  }, [users]);
+
+  // Usuários filtrados
+  const usuariosFiltrados = useMemo(() => {
+    return users.filter(user => {
+      const passaPlano = filtroPlano === "todos" || user.plano === filtroPlano;
+      const passaStatus = filtroStatus === "todos" || user.status === filtroStatus;
+      return passaPlano && passaStatus;
+    });
+  }, [users, filtroPlano, filtroStatus]);
+
+  const alterarPlanoEmLote = useMutation({
+    mutationFn: async ({ userIds, novoPlano }: { userIds: string[], novoPlano: string }) => {
+      const promises = userIds.map(id => 
+        apiRequest("PATCH", `/api/users/${id}`, { plano: novoPlano })
+      );
+      await Promise.all(promises);
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({
-        title: "Emails enviados!",
-        description: `${data.message}`,
+        title: "Planos alterados!",
+        description: "Os planos foram atualizados com sucesso",
       });
-      setTestEmail("");
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro ao enviar emails",
+        title: "Erro ao alterar planos",
         description: error.message,
         variant: "destructive",
       });
@@ -291,142 +310,153 @@ function SMTPConfigTab() {
 
   return (
     <div className="space-y-6">
-      {/* Configuração SMTP */}
-      <Card id="smtp-config">
+      {/* Estatísticas Rápidas */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-blue-600">{users.length}</p>
+              <p className="text-sm text-muted-foreground">Total de Usuários</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-600">
+                {users.filter(u => u.status === 'ativo').length}
+              </p>
+              <p className="text-sm text-muted-foreground">Usuários Ativos</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-purple-600">
+                {users.filter(u => u.plano === 'premium' || u.plano === 'premium_mensal' || u.plano === 'premium_anual').length}
+              </p>
+              <p className="text-sm text-muted-foreground">Assinantes Premium</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-orange-600">
+                {users.filter(u => u.plano === 'trial').length}
+              </p>
+              <p className="text-sm text-muted-foreground">Em Trial</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Distribuição por Plano */}
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-blue-600" />
-            Configuração de E-mail (SMTP)
+            <BarChart3 className="h-5 w-5 text-blue-600" />
+            Distribuição por Plano
           </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Configure o servidor SMTP para envio de e-mails do sistema
-          </p>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="smtp-host">Servidor SMTP</Label>
-              <Input
-                id="smtp-host"
-                placeholder="smtp.gmail.com"
-                defaultValue={import.meta.env.VITE_SMTP_HOST || ''}
-                data-testid="input-smtp-host"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="smtp-port">Porta</Label>
-              <Input
-                id="smtp-port"
-                type="number"
-                placeholder="587"
-                defaultValue={import.meta.env.VITE_SMTP_PORT || '587'}
-                data-testid="input-smtp-port"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="smtp-user">Usuário (E-mail)</Label>
-              <Input
-                id="smtp-user"
-                type="email"
-                placeholder="seu@email.com"
-                defaultValue={import.meta.env.VITE_SMTP_USER || ''}
-                data-testid="input-smtp-user"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="smtp-pass">Senha</Label>
-              <Input
-                id="smtp-pass"
-                type="password"
-                placeholder="••••••••••••••••"
-                data-testid="input-smtp-pass"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="smtp-from">Nome do Remetente</Label>
-            <Input
-              id="smtp-from"
-              placeholder="Pavisoft Sistemas <noreply@pavisoft.com>"
-              defaultValue={import.meta.env.VITE_SMTP_FROM || ''}
-              data-testid="input-smtp-from"
-            />
-          </div>
-          <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <div>
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                ℹ️ Como obter as credenciais SMTP
-              </p>
-              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                Para Gmail: Use uma "Senha de App" em vez da senha normal.
-                <br />
-                Acesse: Conta Google → Segurança → Verificação em duas etapas → Senhas de app
-              </p>
-            </div>
-          </div>
-          <div className="pt-4">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle className="mb-2">⚠️ Importante: Edição Manual Necessária</AlertTitle>
-              <AlertDescription>
-                <p className="mb-2">
-                  As configurações de SMTP <strong>devem ser editadas diretamente no arquivo .env</strong> do servidor.
-                </p>
-                <p className="mb-2">
-                  Esta tela serve apenas como <strong>referência visual</strong> dos valores que você precisa configurar.
-                </p>
-                <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded mt-3 font-mono text-sm">
-                  <p>SMTP_HOST=smtp.gmail.com</p>
-                  <p>SMTP_PORT=587</p>
-                  <p>SMTP_USER=seu.email@gmail.com</p>
-                  <p>SMTP_PASS=sua-senha-app</p>
-                  <p>SMTP_FROM=Pavisoft Sistemas &lt;noreply@pavisoft.com&gt;</p>
+        <CardContent>
+          <div className="space-y-3">
+            {Object.entries(estatisticasPorPlano).map(([plano, quantidade]) => (
+              <div key={plano} className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">{plano}</Badge>
+                  <span className="text-sm text-muted-foreground">
+                    {((quantidade / users.length) * 100).toFixed(1)}% dos usuários
+                  </span>
                 </div>
-                <p className="mt-3 text-xs text-muted-foreground">
-                  📝 Edite o arquivo <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">.env</code> na raiz do projeto e reinicie o servidor.
-                </p>
-              </AlertDescription>
-            </Alert>
+                <span className="font-semibold">{quantidade}</span>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Teste de Emails */}
+      {/* Filtros e Ações em Lote */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-purple-600" />
-            Teste de Envio de Emails
+            <Shield className="h-5 w-5 text-purple-600" />
+            Filtros e Ações em Lote
           </CardTitle>
-          <CardDescription>
-            Envie todos os templates de email para um endereço de teste
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Email de Teste</Label>
-            <Input
-              type="email"
-              value={testEmail}
-              onChange={(e) => setTestEmail(e.target.value)}
-              placeholder="seuemail@exemplo.com"
-              data-testid="input-test-email"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Filtrar por Plano</Label>
+              <Select value={filtroPlano} onValueChange={setFiltroPlano}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Planos</SelectItem>
+                  <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="trial">Trial</SelectItem>
+                  <SelectItem value="premium_mensal">Premium Mensal</SelectItem>
+                  <SelectItem value="premium_anual">Premium Anual</SelectItem>
+                  <SelectItem value="premium">Premium</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Filtrar por Status</Label>
+              <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Status</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                  <SelectItem value="bloqueado">Bloqueado</SelectItem>
+                  <SelectItem value="cancelado">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <Button
-            onClick={() => sendTestEmails.mutate()}
-            disabled={sendTestEmails.isPending || !testEmail}
-            data-testid="button-send-test-emails"
-          >
-            {sendTestEmails.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Enviar Todos os Templates
-          </Button>
+
+          <div className="p-4 bg-muted rounded-lg">
+            <p className="text-sm font-medium mb-2">
+              {usuariosFiltrados.length} usuários encontrados com os filtros aplicados
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Use os filtros acima para refinar a busca e realizar ações em lote
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Informações do Sistema de Email */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-blue-600" />
+            Configuração de Email (SMTP)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
           <Alert>
             <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Configuração Manual Necessária</AlertTitle>
             <AlertDescription>
-              Serão enviados 8 emails de teste com todos os templates do sistema
+              <p className="mb-3">
+                As configurações de SMTP devem ser editadas diretamente no arquivo <code className="bg-muted px-1 rounded">.env</code> do servidor.
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                <p>SMTP_HOST=smtp.gmail.com</p>
+                <p>SMTP_PORT=587</p>
+                <p>SMTP_USER=seu.email@gmail.com</p>
+                <p>SMTP_PASS=sua-senha-app</p>
+                <p>SMTP_FROM=Pavisoft Sistemas &lt;noreply@pavisoft.com&gt;</p>
+              </div>
+              <p className="mt-3 text-xs">
+                📝 Edite o arquivo .env na raiz do projeto e reinicie o servidor para aplicar as alterações.
+              </p>
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -1126,12 +1156,12 @@ export default function AdminPublico() {
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
       {/* Sidebar */}
       <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-slate-800 text-white transition-all duration-300 flex flex-col`}>
-        <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+        <div className="p-4 border-b border-slate-700">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hover:bg-slate-700"
+            className="hover:bg-slate-700 w-full"
           >
             <Menu className="h-5 w-5" />
           </Button>
@@ -1493,11 +1523,11 @@ export default function AdminPublico() {
             // Aba de Configurações
             <Tabs value={configTab} onValueChange={(value) => setConfigTab(value as typeof configTab)} className="space-y-6">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="config" data-testid="tab-configuracoes">Configurações</TabsTrigger>
+                <TabsTrigger value="config" data-testid="tab-configuracoes">Gestão Avançada</TabsTrigger>
                 <TabsTrigger value="mercadopago" data-testid="tab-mercadopago">Mercado Pago</TabsTrigger>
               </TabsList>
               <TabsContent value="config">
-                <SMTPConfigTab />
+                <GestaoAvancadaTab users={users} />
               </TabsContent>
               <TabsContent value="mercadopago">
                 <MercadoPagoConfigTab />

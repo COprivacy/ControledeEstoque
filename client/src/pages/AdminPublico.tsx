@@ -63,6 +63,304 @@ import {
 import { Cliente360Timeline } from "@/components/Cliente360Timeline";
 import { Cliente360Notes } from "@/components/Cliente360Notes";
 
+// Componente de Configurações
+function ConfiguracoesTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isTesting, setIsTesting] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [mpConfig, setMpConfig] = useState({
+    access_token: "",
+    public_key: "",
+  });
+
+  // Carregar configuração do Mercado Pago
+  const { data: mpConfigData } = useQuery({
+    queryKey: ["/api/config-mercadopago"],
+    retry: 1,
+  });
+
+  useEffect(() => {
+    if (mpConfigData) {
+      setMpConfig({
+        access_token: mpConfigData.access_token || "",
+        public_key: mpConfigData.public_key || "",
+      });
+    }
+  }, [mpConfigData]);
+
+  const saveMercadoPagoConfig = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/config-mercadopago", mpConfig);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Configuração salva!",
+        description: "As configurações do Mercado Pago foram atualizadas.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/config-mercadopago"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const testMercadoPagoConnection = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/config-mercadopago/test", {
+        access_token: mpConfig.access_token,
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.success ? "Conexão bem-sucedida!" : "Falha na conexão",
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
+    },
+  });
+
+  const sendTestEmails = useMutation({
+    mutationFn: async () => {
+      if (!testEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testEmail)) {
+        throw new Error("Email inválido");
+      }
+      const response = await apiRequest("POST", "/api/test/send-emails", { email: testEmail });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Emails enviados!",
+        description: `${data.message}`,
+      });
+      setTestEmail("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao enviar emails",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Configuração Mercado Pago */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-blue-600" />
+            Configuração Mercado Pago
+          </CardTitle>
+          <CardDescription>
+            Configure as credenciais da API do Mercado Pago para processar pagamentos
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Access Token</Label>
+            <Input
+              type="password"
+              value={mpConfig.access_token}
+              onChange={(e) => setMpConfig({ ...mpConfig, access_token: e.target.value })}
+              placeholder="APP_USR-..."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Public Key</Label>
+            <Input
+              value={mpConfig.public_key}
+              onChange={(e) => setMpConfig({ ...mpConfig, public_key: e.target.value })}
+              placeholder="APP_USR-..."
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => saveMercadoPagoConfig.mutate()}
+              disabled={saveMercadoPagoConfig.isPending}
+            >
+              {saveMercadoPagoConfig.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Salvar Configuração
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => testMercadoPagoConnection.mutate()}
+              disabled={testMercadoPagoConnection.isPending || !mpConfig.access_token}
+            >
+              {testMercadoPagoConnection.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Testar Conexão
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Teste de Emails */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-purple-600" />
+            Teste de Envio de Emails
+          </CardTitle>
+          <CardDescription>
+            Envie todos os templates de email para um endereço de teste
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Email de Teste</Label>
+            <Input
+              type="email"
+              value={testEmail}
+              onChange={(e) => setTestEmail(e.target.value)}
+              placeholder="seuemail@exemplo.com"
+            />
+          </div>
+          <Button
+            onClick={() => sendTestEmails.mutate()}
+            disabled={sendTestEmails.isPending || !testEmail}
+          >
+            {sendTestEmails.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Enviar Todos os Templates
+          </Button>
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Serão enviados 8 emails de teste com todos os templates do sistema
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Componente de Sistema
+function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Subscription[] }) {
+  const { toast } = useToast();
+  
+  const assinaturasAtivas = subscriptions.filter(s => s.status === "ativo").length;
+  const assinaturasPendentes = subscriptions.filter(s => s.status === "pendente").length;
+  const receitaMensal = subscriptions
+    .filter(s => s.status === "ativo")
+    .reduce((sum, s) => sum + s.valor, 0);
+
+  return (
+    <div className="space-y-6">
+      {/* Status do Sistema */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5 text-blue-600" />
+            Status do Sistema
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-500 rounded-full">
+                  <Zap className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold">Sistema Operacional</p>
+                  <p className="text-sm text-muted-foreground">Todos os serviços estão funcionando normalmente</p>
+                </div>
+              </div>
+              <Badge className="bg-green-500">Online</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Estatísticas Gerais */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Total de Usuários</p>
+              <p className="text-3xl font-bold">{users.length}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Total de Assinaturas</p>
+              <p className="text-3xl font-bold">{subscriptions.length}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Assinaturas Ativas</p>
+              <p className="text-3xl font-bold text-green-600">{assinaturasAtivas}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Receita Mensal</p>
+              <p className="text-3xl font-bold text-blue-600">
+                {new Intl.NumberFormat("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                }).format(receitaMensal)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Métricas Detalhadas */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Métricas do Sistema</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div>
+                <p className="font-semibold">Assinaturas Pendentes</p>
+                <p className="text-sm text-muted-foreground">Aguardando pagamento</p>
+              </div>
+              <Badge variant="secondary">{assinaturasPendentes}</Badge>
+            </div>
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div>
+                <p className="font-semibold">Taxa de Conversão</p>
+                <p className="text-sm text-muted-foreground">Assinaturas ativas / total</p>
+              </div>
+              <Badge>
+                {subscriptions.length > 0
+                  ? ((assinaturasAtivas / subscriptions.length) * 100).toFixed(1)
+                  : 0}%
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div>
+                <p className="font-semibold">Planos Gratuitos</p>
+                <p className="text-sm text-muted-foreground">Usuários no plano free/trial</p>
+              </div>
+              <Badge variant="outline">
+                {users.filter(u => u.plano === 'free' || u.plano === 'trial').length}
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 type Subscription = {
   id: number;
   user_id: string;
@@ -540,57 +838,10 @@ export default function AdminPublico() {
             </div>
           ) : activeTab === 'configuracoes' ? (
             // Aba de Configurações
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5 text-blue-600" />
-                    Configurações do Sistema
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">Funcionalidades de configuração em desenvolvimento...</p>
-                </CardContent>
-              </Card>
-            </div>
+            <ConfiguracoesTab />
           ) : activeTab === 'sistema' ? (
             // Aba de Sistema
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Database className="h-5 w-5 text-blue-600" />
-                    Status do Sistema
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-green-500 rounded-full">
-                          <Zap className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="font-semibold">Sistema Operacional</p>
-                          <p className="text-sm text-muted-foreground">Todos os serviços estão funcionando normalmente</p>
-                        </div>
-                      </div>
-                      <Badge className="bg-green-500">Online</Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <div className="p-4 border rounded-lg">
-                        <p className="text-sm text-muted-foreground">Total de Usuários</p>
-                        <p className="text-2xl font-bold">{users.length}</p>
-                      </div>
-                      <div className="p-4 border rounded-lg">
-                        <p className="text-sm text-muted-foreground">Total de Assinaturas</p>
-                        <p className="text-2xl font-bold">{subscriptions.length}</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <SistemaTab users={users} subscriptions={subscriptions} />
           ) : (
             // Dashboard Principal
             <>

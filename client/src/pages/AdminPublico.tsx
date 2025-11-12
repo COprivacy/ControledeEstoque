@@ -1127,12 +1127,6 @@ export default function AdminPublico() {
       {/* Sidebar */}
       <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-slate-800 text-white transition-all duration-300 flex flex-col`}>
         <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-          <div className={`flex items-center gap-2 ${!sidebarOpen && 'justify-center'}`}>
-            <div className="p-2 bg-blue-600 rounded-lg">
-              <Shield className="h-6 w-6" />
-            </div>
-            {sidebarOpen && <span className="font-bold text-lg">Admin Master</span>}
-          </div>
           <Button
             variant="ghost"
             size="icon"

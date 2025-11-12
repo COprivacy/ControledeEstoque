@@ -4150,8 +4150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
 
       if (!userId) {
-        return res.      .status(401)
-          .json({ error: "Usuário não autenticado" });
+        return res.status(401).json({ error: "Usuário não autenticado" });
       }
 
       const orcamento = await storage.getOrcamento(id);

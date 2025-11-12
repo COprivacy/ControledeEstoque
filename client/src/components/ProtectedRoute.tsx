@@ -1,10 +1,11 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { useUser } from "@/hooks/use-user";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Lock } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Lock, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
+import { Button } from "@/components/ui/button";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -18,6 +19,8 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
   const [hasUser, setHasUser] = useState(false);
   // Adicionado estado para controlar autenticação, pois a lógica de verificação de permissão é separada
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user } = useUser();
+
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -30,11 +33,10 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
     try {
       const parsedUser = JSON.parse(userStr);
 
-      // Verificar se a conta está bloqueada
+      // Verificar se a conta está bloqueada no carregamento inicial
       if (parsedUser.status === "bloqueado" && parsedUser.is_admin !== "true") {
-        console.warn("⚠️ ProtectedRoute: Conta bloqueada");
-        // Manter autenticado mas será mostrado o modal de expiração
-        setIsAuthenticated(true);
+        console.warn("⚠️ ProtectedRoute: Conta bloqueada no carregamento inicial");
+        setIsAuthenticated(true); // Manter autenticado para que a verificação em tempo real possa ocorrer
         return;
       }
 
@@ -47,14 +49,13 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
     }
   }, [setLocation]);
 
-  // Atualiza o estado hasUser com base no localStorage
+  // Atualiza o estado hasUser com base no localStorage e garante redirecionamento se necessário
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
       setHasUser(true);
     } else {
       setHasUser(false);
-      // Se não houver usuário e não estivermos mais verificando, redireciona para login
       if (!isChecking && !isAuthenticated) {
         setLocation("/login");
       }
@@ -62,16 +63,57 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
     setIsChecking(false); // Marca a verificação inicial como concluída
   }, [setLocation, isChecking, isAuthenticated]);
 
+  // Verificar se o usuário está bloqueado (buscar status atualizado do servidor)
+  const { data: userStatus, isLoading: isCheckingStatus } = useQuery({
+    queryKey: ["/api/user/check-blocked"],
+    enabled: isAuthenticated && user?.is_admin !== "true",
+    refetchInterval: 5000, // Verificar a cada 5 segundos
+  });
 
-  if (isLoading || isChecking) {
+  // Se está verificando o status ou as permissões iniciais, mostrar loading
+  if (isLoading || isChecking || isCheckingStatus) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" data-testid="loading-permissions"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
-  // Se o usuário não estiver autenticado ou a conta estiver bloqueada (e não for admin)
+  // Se o usuário está bloqueado (verificação em tempo real)
+  if (userStatus?.isBlocked && user?.is_admin !== "true") {
+    return (
+      <div className="flex items-center justify-center h-screen p-4 bg-gray-50 dark:bg-gray-900">
+        <Card className="max-w-md w-full" data-testid="blocked-page">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="rounded-full bg-red-100 dark:bg-red-900/30 p-6">
+                <Lock className="h-12 w-12 text-red-600 dark:text-red-400" data-testid="icon-lock" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-blocked-title">
+                  Conta Bloqueada
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400" data-testid="text-blocked-description">
+                  Sua conta foi bloqueada pelo administrador. Entre em contato com o suporte para mais informações.
+                </p>
+              </div>
+              <Button
+                onClick={() => {
+                  localStorage.removeItem("user");
+                  window.location.href = "/login";
+                }}
+                className="mt-4"
+              >
+                Fazer Logout
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Se o usuário não estiver autenticado ou não tiver permissão
   if (!isAuthenticated || (!hasPermission(requiredPermission) && !isLoading)) {
     return (
       <div className="flex items-center justify-center h-screen p-4 bg-gray-50 dark:bg-gray-900">
@@ -86,11 +128,7 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
                   Acesso Negado
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400" data-testid="text-blocked-description">
-                  {/* Mensagem mais genérica caso a conta esteja bloqueada ou não tenha permissão */}
-                  {localStorage.getItem("user") && JSON.parse(localStorage.getItem("user")!).status === "bloqueado" && JSON.parse(localStorage.getItem("user")!).is_admin !== "true"
-                    ? "Sua conta está bloqueada. Entre em contato com o administrador para reativá-la."
-                    : "Você não tem permissão para acessar esta página. Entre em contato com o administrador da sua conta para solicitar acesso."
-                  }
+                  Você não tem permissão para acessar esta página. Entre em contato com o administrador.
                 </p>
               </div>
             </div>

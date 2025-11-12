@@ -795,6 +795,7 @@ export default function AdminPublico() {
   const [selectedClientFor360, setSelectedClientFor360] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'clientes' | 'assinaturas' | 'configuracoes' | 'sistema' | 'metricas'>('dashboard');
+  const [configTab, setConfigTab] = useState<'usuarios' | 'assinaturas' | 'status' | 'logs' | 'config' | 'mercadopago'>('usuarios');
   const [userEditDialogOpen, setUserEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
@@ -1297,7 +1298,7 @@ export default function AdminPublico() {
             </div>
           ) : activeTab === 'configuracoes' ? (
             // Aba de Configurações
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <Tabs value={configTab} onValueChange={(value) => setConfigTab(value as typeof configTab)} className="space-y-6">
               <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="usuarios">Usuários</TabsTrigger>
                 <TabsTrigger value="assinaturas">Assinaturas</TabsTrigger>

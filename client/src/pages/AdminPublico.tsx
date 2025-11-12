@@ -369,12 +369,24 @@ function SMTPConfigTab() {
           <div className="pt-4">
             <Alert>
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Importante</AlertTitle>
               <AlertDescription>
-                Essas configurações devem ser adicionadas no arquivo <code>.env</code> do servidor.
-                Adicione as variáveis: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
+                Essas configurações devem ser adicionadas no arquivo .env do servidor. Adicione as variáveis: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
               </AlertDescription>
             </Alert>
+          </div>
+
+          <div className="flex justify-end pt-4">
+            <Button
+              onClick={() => {
+                toast({
+                  title: "Informação",
+                  description: "As configurações de SMTP devem ser salvas no arquivo .env do servidor",
+                });
+              }}
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Salvar Configurações SMTP
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -428,6 +440,7 @@ function MercadoPagoConfigTab() {
   const [mpConfig, setMpConfig] = useState({
     access_token: "",
     public_key: "",
+    webhook_url: "" // Adicionado campo webhook_url
   });
 
   // Carregar configuração do Mercado Pago
@@ -441,6 +454,7 @@ function MercadoPagoConfigTab() {
       setMpConfig({
         access_token: mpConfigData.access_token || "",
         public_key: mpConfigData.public_key || "",
+        webhook_url: mpConfigData.webhook_url || "" // Atualizado para carregar webhook_url
       });
     }
   }, [mpConfigData]);
@@ -548,6 +562,17 @@ function MercadoPagoConfigTab() {
               onChange={(e) => setMpConfig({ ...mpConfig, public_key: e.target.value })}
               placeholder="APP_USR-..."
               data-testid="input-mp-public-key"
+            />
+          </div>
+          {/* Campo Webhook URL */}
+          <div className="space-y-2">
+            <Label htmlFor="mp-webhook">Webhook URL</Label>
+            <Input
+              id="mp-webhook"
+              value={mpConfig.webhook_url}
+              onChange={(e) => setMpConfig({ ...mpConfig, webhook_url: e.target.value })}
+              placeholder="https://seu-dominio.com/api/webhooks/mercadopago"
+              data-testid="input-mp-webhook"
             />
           </div>
           <div className="flex gap-2">
@@ -767,10 +792,10 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
                     <div
                       key={index}
                       className={`flex items-start justify-between p-4 rounded-lg border-2 transition-all ${
-                        check.status === 'healthy' 
-                          ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-900' 
-                          : check.status === 'degraded' 
-                          ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900' 
+                        check.status === 'healthy'
+                          ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-900'
+                          : check.status === 'degraded'
+                          ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900'
                           : 'bg-rose-50 dark:bg-rose-900/10 border-rose-200 dark:border-rose-900'
                       }`}
                     >
@@ -791,11 +816,11 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
                               </Badge>
                             )}
                             <span className="text-xs text-muted-foreground">
-                              {new Date(check.timestamp).toLocaleString('pt-BR', { 
-                                day: '2-digit', 
-                                month: '2-digit', 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
+                              {new Date(check.timestamp).toLocaleString('pt-BR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
                               })}
                             </span>
                           </div>
@@ -832,7 +857,7 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
                             size="sm"
                             onClick={async () => {
                               try {
-                                await fetch('/api/system/health/check', { 
+                                await fetch('/api/system/health/check', {
                                   method: 'POST',
                                   headers: {
                                     "x-user-id": JSON.parse(localStorage.getItem("user") || "{}").id,

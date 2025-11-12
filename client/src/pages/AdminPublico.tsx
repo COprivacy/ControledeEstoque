@@ -1,4 +1,3 @@
-
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
@@ -10,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -66,13 +65,13 @@ import { Cliente360Timeline } from "@/components/Cliente360Timeline";
 import { Cliente360Notes } from "@/components/Cliente360Notes";
 
 // Componente de Edição/Criação de Usuário
-function UserEditDialog({ 
-  user, 
-  open, 
-  onOpenChange 
-}: { 
-  user?: User | null; 
-  open: boolean; 
+function UserEditDialog({
+  user,
+  open,
+  onOpenChange
+}: {
+  user?: User | null;
+  open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
   const { toast } = useToast();
@@ -479,7 +478,7 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
-  
+
   const assinaturasAtivas = subscriptions.filter(s => s.status === "ativo").length;
   const assinaturasPendentes = subscriptions.filter(s => s.status === "pendente").length;
   const receitaMensal = subscriptions
@@ -487,7 +486,7 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
     .reduce((sum, s) => sum + s.valor, 0);
 
   // Buscar status de saúde do sistema
-  const { data: healthStatus, isLoading: isLoadingHealth } = useQuery({
+  const { data: healthStatus, isLoading: isLoadingHealth, refetch: fetchHealthStatus } = useQuery({
     queryKey: ["/api/system/health"],
     refetchInterval: 60000, // Atualizar a cada 1 minuto
   });
@@ -508,7 +507,7 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
           "x-is-admin": "true",
         },
       });
-      
+
       if (response.ok) {
         toast({
           title: "Verificação concluída!",
@@ -642,24 +641,75 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
                   ) : null}
                 </div>
                 {healthStatus.checks.map((check: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-2">
+                  <div
+                    key={index}
+                    className={`flex items-center justify-between p-4 rounded-lg border ${
+                      check.status === 'healthy' ? 'bg-green-50 dark:bg-green-900/20 border-green-200' :
+                      check.status === 'degraded' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200' :
+                      'bg-red-50 dark:bg-red-900/20 border-red-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 flex-1">
                       {getStatusIcon(check.status)}
-                      <div>
-                        <p className="text-sm font-medium capitalize">{check.service.replace(/_/g, ' ')}</p>
-                        <p className="text-xs text-muted-foreground">{check.message}</p>
-                        {check.timestamp && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(check.timestamp).toLocaleString('pt-BR')}
-                          </p>
+                      <div className="flex-1">
+                        <p className="font-medium capitalize">
+                          {check.service.replace(/_/g, ' ')}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{check.message}</p>
+                        {check.autoFixed && (
+                          <Badge className="mt-1" variant="outline">
+                            ✅ Corrigido Automaticamente
+                          </Badge>
                         )}
                       </div>
                     </div>
-                    {check.autoFixed && (
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        Auto-corrigido
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {check.status !== 'healthy' && check.service === 'email_service' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Redirecionar para a aba de configurações
+                            const tabs = document.querySelector('[role="tablist"]');
+                            const configTab = Array.from(tabs?.querySelectorAll('button') || [])
+                              .find(btn => btn.textContent?.includes('Configurações'));
+                            if (configTab instanceof HTMLElement) {
+                              configTab.click();
+                              // Scroll para seção de email
+                              setTimeout(() => {
+                                const emailSection = document.getElementById('smtp-config');
+                                emailSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }, 100);
+                            }
+                          }}
+                          className="text-xs"
+                        >
+                          <Settings className="h-3 w-3 mr-1" />
+                          Configurar
+                        </Button>
+                      )}
+                      {check.status !== 'healthy' && check.service === 'memory_usage' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await fetch('/api/system/health/check', { method: 'POST' });
+                              await fetchHealthStatus();
+                            } catch (error) {
+                              console.error('Erro ao tentar liberar memória:', error);
+                            }
+                          }}
+                          className="text-xs"
+                        >
+                          <Zap className="h-3 w-3 mr-1" />
+                          Liberar
+                        </Button>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(check.timestamp).toLocaleTimeString('pt-BR')}
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -698,7 +748,7 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
         </Card>
       )}
 
-      
+
     </div>
   );
 }
@@ -980,7 +1030,7 @@ export default function AdminPublico() {
         <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              {selectedClientFor360 ? 'Cliente 360°' : 'Dashboard Principal'}
+              {selectedClientFor360 ? 'Cliente 360°' : 'Painel Principal'}
             </h1>
             <p className="text-sm text-slate-600 dark:text-slate-400">
               Bem-vindo, Administrador Master
@@ -1126,7 +1176,7 @@ export default function AdminPublico() {
                     <TableBody>
                       {users && users.length > 0 ? (
                         users
-                          .filter(user => 
+                          .filter(user =>
                             (user.nome?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                             (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
                           )
@@ -1247,7 +1297,114 @@ export default function AdminPublico() {
             </div>
           ) : activeTab === 'configuracoes' ? (
             // Aba de Configurações
-            <ConfiguracoesTab />
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+              <TabsList className="grid w-full grid-cols-6">
+                <TabsTrigger value="usuarios">Usuários</TabsTrigger>
+                <TabsTrigger value="assinaturas">Assinaturas</TabsTrigger>
+                <TabsTrigger value="status">Status</TabsTrigger>
+                <TabsTrigger value="logs">Logs</TabsTrigger>
+                <TabsTrigger value="config">Configurações</TabsTrigger>
+                <TabsTrigger value="mercadopago">Mercado Pago</TabsTrigger>
+              </TabsList>
+              <TabsContent value="config">
+                <div className="space-y-6">
+                  {/* Configuração SMTP */}
+                  <Card id="smtp-config">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Mail className="h-5 w-5 text-blue-600" />
+                        Configuração de E-mail (SMTP)
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Configure o servidor SMTP para envio de e-mails do sistema
+                      </p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="smtp-host">Servidor SMTP</Label>
+                          <Input
+                            id="smtp-host"
+                            placeholder="smtp.gmail.com"
+                            defaultValue={import.meta.env.VITE_SMTP_HOST || ''}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="smtp-port">Porta</Label>
+                          <Input
+                            id="smtp-port"
+                            type="number"
+                            placeholder="587"
+                            defaultValue={import.meta.env.VITE_SMTP_PORT || '587'}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="smtp-user">Usuário (E-mail)</Label>
+                          <Input
+                            id="smtp-user"
+                            type="email"
+                            placeholder="seu@email.com"
+                            defaultValue={import.meta.env.VITE_SMTP_USER || ''}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="smtp-pass">Senha</Label>
+                          <Input
+                            id="smtp-pass"
+                            type="password"
+                            placeholder="••••••••••••••••"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="smtp-from">Nome do Remetente</Label>
+                        <Input
+                          id="smtp-from"
+                          placeholder="Pavisoft Sistemas <noreply@pavisoft.com>"
+                          defaultValue={import.meta.env.VITE_SMTP_FROM || ''}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <div>
+                          <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                            ℹ️ Como obter as credenciais SMTP
+                          </p>
+                          <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                            Para Gmail: Use uma "Senha de App" em vez da senha normal.
+                            <br />
+                            Acesse: Conta Google → Segurança → Verificação em duas etapas → Senhas de app
+                          </p>
+                        </div>
+                      </div>
+                      <div className="pt-4">
+                        <Alert>
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertTitle>Importante</AlertTitle>
+                          <AlertDescription>
+                            Essas configurações devem ser adicionadas no arquivo <code>.env</code> do servidor.
+                            Adicione as variáveis: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
+                          </AlertDescription>
+                        </Alert>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Outras Configurações */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Configurações Gerais</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground">
+                        Outras configurações do sistema serão exibidas aqui.
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+            </Tabs>
           ) : activeTab === 'sistema' ? (
             // Aba de Sistema
             <SistemaTab users={users} subscriptions={subscriptions} />
@@ -1507,7 +1664,7 @@ export default function AdminPublico() {
                     <TableBody>
                       {users && users.length > 0 ? (
                         users
-                          .filter(user => 
+                          .filter(user =>
                             (user.nome?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                             (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
                           )
@@ -1549,9 +1706,9 @@ export default function AdminPublico() {
       </div>
 
       {/* Dialog de Edição/Criação de Usuário */}
-      <UserEditDialog 
-        user={editingUser} 
-        open={userEditDialogOpen} 
+      <UserEditDialog
+        user={editingUser}
+        open={userEditDialogOpen}
         onOpenChange={setUserEditDialogOpen}
       />
     </div>

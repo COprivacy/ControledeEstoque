@@ -675,84 +675,7 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
         </Card>
       )}
 
-      {/* Estatísticas Gerais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Total de Usuários</p>
-              <p className="text-3xl font-bold">{users.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Total de Assinaturas</p>
-              <p className="text-3xl font-bold">{subscriptions.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Assinaturas Ativas</p>
-              <p className="text-3xl font-bold text-green-600">{assinaturasAtivas}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Receita Mensal</p>
-              <p className="text-3xl font-bold text-blue-600">
-                {new Intl.NumberFormat("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                }).format(receitaMensal)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Métricas Detalhadas */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Métricas do Sistema</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div>
-                <p className="font-semibold">Assinaturas Pendentes</p>
-                <p className="text-sm text-muted-foreground">Aguardando pagamento</p>
-              </div>
-              <Badge variant="secondary">{assinaturasPendentes}</Badge>
-            </div>
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div>
-                <p className="font-semibold">Taxa de Conversão</p>
-                <p className="text-sm text-muted-foreground">Assinaturas ativas / total</p>
-              </div>
-              <Badge>
-                {subscriptions.length > 0
-                  ? ((assinaturasAtivas / subscriptions.length) * 100).toFixed(1)
-                  : 0}%
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div>
-                <p className="font-semibold">Planos Gratuitos</p>
-                <p className="text-sm text-muted-foreground">Usuários no plano free/trial</p>
-              </div>
-              <Badge variant="outline">
-                {users.filter(u => u.plano === 'free' || u.plano === 'trial').length}
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      
     </div>
   );
 }
@@ -798,7 +721,7 @@ export default function AdminPublico() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClientFor360, setSelectedClientFor360] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'clientes' | 'assinaturas' | 'configuracoes' | 'sistema'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'clientes' | 'assinaturas' | 'configuracoes' | 'sistema' | 'metricas'>('dashboard');
   const [userEditDialogOpen, setUserEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
@@ -1002,6 +925,17 @@ export default function AdminPublico() {
           >
             <Database className="h-5 w-5 mr-3" />
             {sidebarOpen && "Sistema"}
+          </Button>
+          <Button
+            variant="ghost"
+            className={`w-full justify-start hover:bg-slate-700 ${!selectedClientFor360 && activeTab === 'metricas' ? 'bg-slate-700' : ''}`}
+            onClick={() => {
+              setSelectedClientFor360(null);
+              setActiveTab('metricas');
+            }}
+          >
+            <BarChart3 className="h-5 w-5 mr-3" />
+            {sidebarOpen && "Métricas"}
           </Button>
         </nav>
 
@@ -1294,6 +1228,91 @@ export default function AdminPublico() {
           ) : activeTab === 'sistema' ? (
             // Aba de Sistema
             <SistemaTab users={users} subscriptions={subscriptions} />
+          ) : activeTab === 'metricas' ? (
+            // Aba de Métricas
+            <div className="space-y-6">
+              {/* Estatísticas Gerais */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Total de Usuários</p>
+                      <p className="text-3xl font-bold">{users.length}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Total de Assinaturas</p>
+                      <p className="text-3xl font-bold">{subscriptions.length}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Assinaturas Ativas</p>
+                      <p className="text-3xl font-bold text-green-600">{assinaturasAtivas}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Receita Mensal</p>
+                      <p className="text-3xl font-bold text-blue-600">
+                        {new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(receitaMensal)}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Métricas Detalhadas */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                    Métricas do Sistema
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <p className="font-semibold">Assinaturas Pendentes</p>
+                        <p className="text-sm text-muted-foreground">Aguardando pagamento</p>
+                      </div>
+                      <Badge variant="secondary">{assinaturasPendentes}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <p className="font-semibold">Taxa de Conversão</p>
+                        <p className="text-sm text-muted-foreground">Assinaturas ativas / total</p>
+                      </div>
+                      <Badge>
+                        {subscriptions.length > 0
+                          ? ((assinaturasAtivas / subscriptions.length) * 100).toFixed(1)
+                          : 0}%
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <p className="font-semibold">Planos Gratuitos</p>
+                        <p className="text-sm text-muted-foreground">Usuários no plano free/trial</p>
+                      </div>
+                      <Badge variant="outline">
+                        {users.filter(u => u.plano === 'free' || u.plano === 'trial').length}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           ) : (
             // Dashboard Principal
             <>

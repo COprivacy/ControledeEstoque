@@ -662,6 +662,7 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
               size="sm"
               onClick={runHealthCheck}
               disabled={isCheckingHealth}
+              data-testid="button-verify-health"
             >
               {isCheckingHealth ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -674,18 +675,27 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Status Geral */}
-            <div className={`flex items-center justify-between p-4 rounded-lg ${
-              healthStatus?.status === 'online' ? 'bg-green-50 dark:bg-green-900/20' :
-              healthStatus?.status === 'degraded' ? 'bg-yellow-50 dark:bg-yellow-900/20' :
-              'bg-red-50 dark:bg-red-900/20'
+            {/* Status Geral - Melhorado */}
+            <div className={`flex items-center justify-between p-6 rounded-lg border-2 ${
+              healthStatus?.status === 'online' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900' :
+              healthStatus?.status === 'degraded' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900' :
+              'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-900'
             }`}>
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${getStatusColor(healthStatus?.status || 'online')}`}>
-                  <Zap className="h-5 w-5 text-white" />
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-full ${
+                  healthStatus?.status === 'online' ? 'bg-emerald-500' :
+                  healthStatus?.status === 'degraded' ? 'bg-amber-500' : 'bg-rose-500'
+                }`}>
+                  {healthStatus?.status === 'online' ? (
+                    <CheckCircle className="h-6 w-6 text-white" />
+                  ) : healthStatus?.status === 'degraded' ? (
+                    <AlertCircle className="h-6 w-6 text-white" />
+                  ) : (
+                    <XCircle className="h-6 w-6 text-white" />
+                  )}
                 </div>
                 <div>
-                  <p className="font-semibold">
+                  <p className="text-lg font-bold mb-1">
                     {healthStatus?.status === 'online' ? 'Sistema Operacional' :
                      healthStatus?.status === 'degraded' ? 'Sistema com Alertas' :
                      'Sistema com Problemas'}
@@ -693,9 +703,18 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
                   <p className="text-sm text-muted-foreground">
                     {healthStatus?.summary?.healthy || 0} serviços saudáveis, {healthStatus?.summary?.degraded || 0} com alertas, {healthStatus?.summary?.critical || 0} críticos
                   </p>
+                  {healthStatus?.lastCheck && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Última verificação: {new Date(healthStatus.lastCheck).toLocaleString('pt-BR')}
+                    </p>
+                  )}
                 </div>
               </div>
-              <Badge className={getStatusColor(healthStatus?.status || 'online')}>
+              <Badge className={`text-sm px-3 py-1 ${
+                healthStatus?.status === 'online' ? 'bg-emerald-500 hover:bg-emerald-600' :
+                healthStatus?.status === 'degraded' ? 'bg-amber-500 hover:bg-amber-600' :
+                'bg-rose-500 hover:bg-rose-600'
+              }`}>
                 {healthStatus?.status === 'online' ? 'Online' :
                  healthStatus?.status === 'degraded' ? 'Degradado' : 'Offline'}
               </Badge>
@@ -720,100 +739,130 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
               </div>
             )}
 
-            {/* Verificações Detalhadas */}
+            {/* Verificações Detalhadas - Melhoradas */}
             {healthStatus?.checks && healthStatus.checks.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold">Verificações de Saúde:</p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-base font-semibold">Verificações de Saúde:</p>
                   {healthStatus.summary?.degraded > 0 || healthStatus.summary?.critical > 0 ? (
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      variant="default"
+                      className="bg-blue-600 hover:bg-blue-700"
                       onClick={runHealthCheck}
                       disabled={isCheckingHealth}
+                      data-testid="button-try-fix"
                     >
                       {isCheckingHealth ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
-                        <Settings className="h-4 w-4 mr-2" />
+                        <Zap className="h-4 w-4 mr-2" />
                       )}
                       Tentar Corrigir
                     </Button>
                   ) : null}
                 </div>
-                {healthStatus.checks.map((check: any, index: number) => (
-                  <div
-                    key={index}
-                    className={`flex items-center justify-between p-4 rounded-lg border ${
-                      check.status === 'healthy' ? 'bg-green-50 dark:bg-green-900/20 border-green-200' :
-                      check.status === 'degraded' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200' :
-                      'bg-red-50 dark:bg-red-900/20 border-red-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 flex-1">
-                      {getStatusIcon(check.status)}
-                      <div className="flex-1">
-                        <p className="font-medium capitalize">
-                          {check.service.replace(/_/g, ' ')}
-                        </p>
-                        <p className="text-sm text-muted-foreground">{check.message}</p>
-                        {check.autoFixed && (
-                          <Badge className="mt-1" variant="outline">
-                            ✅ Corrigido Automaticamente
-                          </Badge>
+                <div className="grid gap-3">
+                  {healthStatus.checks.map((check: any, index: number) => (
+                    <div
+                      key={index}
+                      className={`flex items-start justify-between p-4 rounded-lg border-2 transition-all ${
+                        check.status === 'healthy' 
+                          ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-900' 
+                          : check.status === 'degraded' 
+                          ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900' 
+                          : 'bg-rose-50 dark:bg-rose-900/10 border-rose-200 dark:border-rose-900'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className="mt-0.5">
+                          {getStatusIcon(check.status)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-base capitalize mb-1">
+                            {check.service.replace(/_/g, ' ')}
+                          </p>
+                          <p className="text-sm text-muted-foreground mb-2">{check.message}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {check.autoFixed && (
+                              <Badge className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200" variant="outline">
+                                <Check className="h-3 w-3 mr-1" />
+                                Corrigido Automaticamente
+                              </Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(check.timestamp).toLocaleString('pt-BR', { 
+                                day: '2-digit', 
+                                month: '2-digit', 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-3">
+                        {check.status !== 'healthy' && check.service === 'email_service' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Redirecionar para configurações
+                              const sidebar = document.querySelector('aside');
+                              const configButton = Array.from(sidebar?.querySelectorAll('button') || [])
+                                .find(btn => btn.textContent?.includes('Configurações'));
+                              if (configButton instanceof HTMLElement) {
+                                configButton.click();
+                                setTimeout(() => {
+                                  const emailSection = document.getElementById('smtp-config');
+                                  emailSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }, 200);
+                              }
+                            }}
+                            className="whitespace-nowrap"
+                            data-testid="button-configure-smtp"
+                          >
+                            <Settings className="h-4 w-4 mr-1" />
+                            Configurar
+                          </Button>
+                        )}
+                        {check.status !== 'healthy' && check.service === 'memory_usage' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                await fetch('/api/system/health/check', { 
+                                  method: 'POST',
+                                  headers: {
+                                    "x-user-id": JSON.parse(localStorage.getItem("user") || "{}").id,
+                                    "x-is-admin": "true",
+                                  },
+                                });
+                                await fetchHealthStatus();
+                                toast({
+                                  title: "Memória liberada!",
+                                  description: "Garbage collection executado com sucesso",
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: "Erro",
+                                  description: "Erro ao tentar liberar memória",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                            className="whitespace-nowrap"
+                            data-testid="button-free-memory"
+                          >
+                            <Zap className="h-4 w-4 mr-1" />
+                            Liberar
+                          </Button>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {check.status !== 'healthy' && check.service === 'email_service' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            // Redirecionar para a aba de configurações
-                            const tabs = document.querySelector('[role="tablist"]');
-                            const configTab = Array.from(tabs?.querySelectorAll('button') || [])
-                              .find(btn => btn.textContent?.includes('Configurações'));
-                            if (configTab instanceof HTMLElement) {
-                              configTab.click();
-                              // Scroll para seção de email
-                              setTimeout(() => {
-                                const emailSection = document.getElementById('smtp-config');
-                                emailSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                              }, 100);
-                            }
-                          }}
-                          className="text-xs"
-                        >
-                          <Settings className="h-3 w-3 mr-1" />
-                          Configurar
-                        </Button>
-                      )}
-                      {check.status !== 'healthy' && check.service === 'memory_usage' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={async () => {
-                            try {
-                              await fetch('/api/system/health/check', { method: 'POST' });
-                              await fetchHealthStatus();
-                            } catch (error) {
-                              console.error('Erro ao tentar liberar memória:', error);
-                            }
-                          }}
-                          className="text-xs"
-                        >
-                          <Zap className="h-3 w-3 mr-1" />
-                          Liberar
-                        </Button>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(check.timestamp).toLocaleTimeString('pt-BR')}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </div>

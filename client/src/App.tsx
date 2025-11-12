@@ -33,6 +33,7 @@ import Planos from "@/pages/Planos";
 import Devolucoes from "@/pages/Devolucoes";
 import Orcamentos from "@/pages/Orcamentos";
 import TestSuite from "./pages/TestSuite";
+import Ajuda from "./pages/Ajuda";
 
 function Router() {
   return (

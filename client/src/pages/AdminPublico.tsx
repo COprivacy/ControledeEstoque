@@ -369,24 +369,26 @@ function SMTPConfigTab() {
           <div className="pt-4">
             <Alert>
               <AlertCircle className="h-4 w-4" />
+              <AlertTitle className="mb-2">⚠️ Importante: Edição Manual Necessária</AlertTitle>
               <AlertDescription>
-                Essas configurações devem ser adicionadas no arquivo .env do servidor. Adicione as variáveis: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
+                <p className="mb-2">
+                  As configurações de SMTP <strong>devem ser editadas diretamente no arquivo .env</strong> do servidor.
+                </p>
+                <p className="mb-2">
+                  Esta tela serve apenas como <strong>referência visual</strong> dos valores que você precisa configurar.
+                </p>
+                <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded mt-3 font-mono text-sm">
+                  <p>SMTP_HOST=smtp.gmail.com</p>
+                  <p>SMTP_PORT=587</p>
+                  <p>SMTP_USER=seu.email@gmail.com</p>
+                  <p>SMTP_PASS=sua-senha-app</p>
+                  <p>SMTP_FROM=Pavisoft Sistemas &lt;noreply@pavisoft.com&gt;</p>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  📝 Edite o arquivo <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">.env</code> na raiz do projeto e reinicie o servidor.
+                </p>
               </AlertDescription>
             </Alert>
-          </div>
-
-          <div className="flex justify-end pt-4">
-            <Button
-              onClick={() => {
-                toast({
-                  title: "Informação",
-                  description: "As configurações de SMTP devem ser salvas no arquivo .env do servidor",
-                });
-              }}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Salvar Configurações SMTP
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -564,7 +566,6 @@ function MercadoPagoConfigTab() {
               data-testid="input-mp-public-key"
             />
           </div>
-          {/* Campo Webhook URL */}
           <div className="space-y-2">
             <Label htmlFor="mp-webhook">Webhook URL</Label>
             <Input
@@ -574,6 +575,9 @@ function MercadoPagoConfigTab() {
               placeholder="https://seu-dominio.com/api/webhooks/mercadopago"
               data-testid="input-mp-webhook"
             />
+            <p className="text-xs text-muted-foreground">
+              ℹ️ URL onde o Mercado Pago enviará notificações de pagamento
+            </p>
           </div>
           <div className="flex gap-2">
             <Button

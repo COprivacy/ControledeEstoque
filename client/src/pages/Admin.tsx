@@ -76,6 +76,10 @@ interface Permission {
   caixa: string;
   configuracoes: string;
   historico_caixas: string;
+  devolucoes: string;
+  contas_pagar: string;
+  contas_receber: string;
+  orcamentos: string;
 }
 
 interface EmployeeFormData {
@@ -723,6 +727,10 @@ export default function Admin() {
     caixa: "false",
     configuracoes: "false",
     historico_caixas: "false",
+    devolucoes: "false",
+    contas_pagar: "false",
+    contas_receber: "false",
+    orcamentos: "false",
   });
 
   const togglePermission = (userId: string, permission: keyof Permission) => {
@@ -1409,6 +1417,7 @@ export default function Admin() {
                         { key: 'financeiro', label: 'Financeiro', description: 'Acessar módulo financeiro' },
                         { key: 'config_fiscal', label: 'Config. Fiscal', description: 'Configurações fiscais e NF-e' },
                         { key: 'devolucoes', label: 'Devoluções', description: 'Gerenciar devoluções de produtos' },
+                        { key: 'orcamentos', label: 'Orçamentos', description: 'Criar e gerenciar orçamentos' },
                         { key: 'contas_pagar', label: 'Contas a Pagar', description: 'Gerenciar contas a pagar' },
                         { key: 'contas_receber', label: 'Contas a Receber', description: 'Gerenciar contas a receber' },
                       ].map((perm) => (

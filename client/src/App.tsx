@@ -216,7 +216,6 @@ function Router() {
       <Route path="/admin-publico" element={<AdminMasterRoute><AdminPublico /></AdminMasterRoute>} />
       <Route path="/test-suite" element={<AdminMasterRoute><TestSuite /></AdminMasterRoute>} />
       <Route path="/ajuda" element={<Ajuda />} />
-      <Route path="/contato" element={<Contato />} />
       <Route component={NotFound} />
     </Switch>
   );

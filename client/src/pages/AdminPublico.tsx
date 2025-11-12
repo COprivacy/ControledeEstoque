@@ -86,6 +86,7 @@ function UserEditDialog({
     telefone: user?.telefone || "",
     endereco: user?.endereco || "",
     max_funcionarios: user?.max_funcionarios || 1,
+    data_expiracao_plano: user?.data_expiracao_plano || user?.data_expiracao_trial || "",
   });
 
   useEffect(() => {
@@ -100,6 +101,7 @@ function UserEditDialog({
         telefone: user.telefone || "",
         endereco: user.endereco || "",
         max_funcionarios: user.max_funcionarios || 1,
+        data_expiracao_plano: user.data_expiracao_plano || user.data_expiracao_trial || "",
       });
     }
   }, [user]);
@@ -245,6 +247,39 @@ function UserEditDialog({
               onChange={(e) => setFormData({ ...formData, max_funcionarios: parseInt(e.target.value) })}
             />
           </div>
+
+          {user && (
+            <div className="space-y-2">
+              <Label>Dias de Plano Restantes</Label>
+              <Input
+                type="number"
+                min="0"
+                value={
+                  user.data_expiracao_plano || user.data_expiracao_trial
+                    ? Math.max(
+                        0,
+                        Math.ceil(
+                          (new Date(user.data_expiracao_plano || user.data_expiracao_trial!).getTime() - 
+                           new Date().getTime()) / (1000 * 60 * 60 * 24)
+                        )
+                      )
+                    : 0
+                }
+                onChange={(e) => {
+                  const dias = parseInt(e.target.value) || 0;
+                  const novaData = new Date();
+                  novaData.setDate(novaData.getDate() + dias);
+                  setFormData({ 
+                    ...formData, 
+                    data_expiracao_plano: novaData.toISOString() 
+                  });
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Define quantos dias o plano permanecerá ativo
+              </p>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

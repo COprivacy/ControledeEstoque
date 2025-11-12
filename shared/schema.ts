@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, serial } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, serial, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { timestamp, jsonb } from 'drizzle-orm/pg-core';
@@ -437,6 +437,122 @@ export const insertOrcamentoSchema = createInsertSchema(orcamentos).omit({
 
 export type InsertOrcamento = z.infer<typeof insertOrcamentoSchema>;
 export type Orcamento = typeof orcamentos.$inferSelect;
+
+// ============================================
+// GESTÃO DE CLIENTE 360° - NOVAS TABELAS
+// ============================================
+
+// Notas sobre clientes
+export const clientNotes = pgTable("client_notes", {
+  id: serial("id").primaryKey(),
+  user_id: text("user_id").notNull().references(() => users.id),
+  admin_id: text("admin_id").notNull().references(() => users.id),
+  content: text("content").notNull(),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true }),
+}, (table) => ({
+  userIdCreatedAtIdx: index("client_notes_user_id_created_at_idx").on(table.user_id, table.created_at),
+}));
+
+// Documentos/Anexos do cliente
+export const clientDocuments = pgTable("client_documents", {
+  id: serial("id").primaryKey(),
+  user_id: text("user_id").notNull().references(() => users.id),
+  admin_id: text("admin_id").notNull().references(() => users.id),
+  file_name: text("file_name").notNull(),
+  file_url: text("file_url").notNull(),
+  file_type: text("file_type").notNull(),
+  file_size: integer("file_size"),
+  description: text("description"),
+  uploaded_at: timestamp("uploaded_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userIdUploadedAtIdx: index("client_documents_user_id_uploaded_at_idx").on(table.user_id, table.uploaded_at),
+}));
+
+// Timeline de Interações com cliente
+export const clientInteractions = pgTable("client_interactions", {
+  id: serial("id").primaryKey(),
+  user_id: text("user_id").notNull().references(() => users.id),
+  admin_id: text("admin_id").references(() => users.id),
+  interaction_type: text("interaction_type").notNull(),
+  description: text("description").notNull(),
+  metadata: jsonb("metadata"),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userIdCreatedAtIdx: index("client_interactions_user_id_created_at_idx").on(table.user_id, table.created_at),
+}));
+
+// Histórico de Mudanças de Plano
+export const planChangesHistory = pgTable("plan_changes_history", {
+  id: serial("id").primaryKey(),
+  user_id: text("user_id").notNull().references(() => users.id),
+  from_plan: text("from_plan"),
+  to_plan: text("to_plan").notNull(),
+  changed_by: text("changed_by").notNull().references(() => users.id),
+  reason: text("reason"),
+  metadata: jsonb("metadata"),
+  changed_at: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userIdChangedAtIdx: index("plan_changes_history_user_id_changed_at_idx").on(table.user_id, table.changed_at),
+}));
+
+// Comunicações enviadas ao cliente
+export const clientCommunications = pgTable("client_communications", {
+  id: serial("id").primaryKey(),
+  user_id: text("user_id").notNull().references(() => users.id),
+  admin_id: text("admin_id").notNull().references(() => users.id),
+  communication_type: text("communication_type").notNull(),
+  subject: text("subject"),
+  message: text("message").notNull(),
+  status: text("status").notNull().default("pending"),
+  sent_at: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+  metadata: jsonb("metadata"),
+}, (table) => ({
+  userIdSentAtIdx: index("client_communications_user_id_sent_at_idx").on(table.user_id, table.sent_at),
+}));
+
+// Schemas de inserção para as novas tabelas
+export const insertClientNoteSchema = createInsertSchema(clientNotes).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const insertClientDocumentSchema = createInsertSchema(clientDocuments).omit({
+  id: true,
+  uploaded_at: true,
+});
+
+export const insertClientInteractionSchema = createInsertSchema(clientInteractions).omit({
+  id: true,
+  created_at: true,
+});
+
+export const insertPlanChangeHistorySchema = createInsertSchema(planChangesHistory).omit({
+  id: true,
+  changed_at: true,
+});
+
+export const insertClientCommunicationSchema = createInsertSchema(clientCommunications).omit({
+  id: true,
+  sent_at: true,
+});
+
+// Types exportados para as novas tabelas
+export type InsertClientNote = z.infer<typeof insertClientNoteSchema>;
+export type ClientNote = typeof clientNotes.$inferSelect;
+
+export type InsertClientDocument = z.infer<typeof insertClientDocumentSchema>;
+export type ClientDocument = typeof clientDocuments.$inferSelect;
+
+export type InsertClientInteraction = z.infer<typeof insertClientInteractionSchema>;
+export type ClientInteraction = typeof clientInteractions.$inferSelect;
+
+export type InsertPlanChangeHistory = z.infer<typeof insertPlanChangeHistorySchema>;
+export type PlanChangeHistory = typeof planChangesHistory.$inferSelect;
+
+export type InsertClientCommunication = z.infer<typeof insertClientCommunicationSchema>;
+export type ClientCommunication = typeof clientCommunications.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;

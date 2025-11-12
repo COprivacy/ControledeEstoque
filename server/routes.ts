@@ -4079,6 +4079,240 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================
+  // ROTAS CLIENTE 360° - ADMIN MASTER
+  // ============================================
+
+  // Notas do Cliente
+  app.get("/api/admin/clients/:userId/notes", requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : undefined;
+
+      const notes = await storage.getClientNotes(userId, limit, offset);
+      res.json(notes);
+    } catch (error) {
+      console.error("Erro ao buscar notas:", error);
+      res.status(500).json({ error: "Erro ao buscar notas do cliente" });
+    }
+  });
+
+  app.post("/api/admin/clients/:userId/notes", requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const adminId = req.headers["x-user-id"] as string;
+      
+      const note = await storage.createClientNote({
+        user_id: userId,
+        admin_id: adminId,
+        content: req.body.content,
+        created_at: new Date().toISOString(),
+      });
+
+      res.json(note);
+    } catch (error) {
+      console.error("Erro ao criar nota:", error);
+      res.status(500).json({ error: "Erro ao criar nota" });
+    }
+  });
+
+  app.put("/api/admin/clients/notes/:noteId", requireAdmin, async (req, res) => {
+    try {
+      const { noteId } = req.params;
+      const note = await storage.updateClientNote(parseInt(noteId), req.body);
+      res.json(note);
+    } catch (error) {
+      console.error("Erro ao atualizar nota:", error);
+      res.status(500).json({ error: "Erro ao atualizar nota" });
+    }
+  });
+
+  app.delete("/api/admin/clients/notes/:noteId", requireAdmin, async (req, res) => {
+    try {
+      const { noteId } = req.params;
+      await storage.deleteClientNote(parseInt(noteId));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Erro ao deletar nota:", error);
+      res.status(500).json({ error: "Erro ao deletar nota" });
+    }
+  });
+
+  // Documentos do Cliente
+  app.get("/api/admin/clients/:userId/documents", requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : undefined;
+
+      const documents = await storage.getClientDocuments(userId, limit, offset);
+      res.json(documents);
+    } catch (error) {
+      console.error("Erro ao buscar documentos:", error);
+      res.status(500).json({ error: "Erro ao buscar documentos" });
+    }
+  });
+
+  app.post("/api/admin/clients/:userId/documents", requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const adminId = req.headers["x-user-id"] as string;
+
+      const document = await storage.createClientDocument({
+        user_id: userId,
+        admin_id: adminId,
+        file_name: req.body.file_name,
+        file_url: req.body.file_url,
+        file_type: req.body.file_type,
+        file_size: req.body.file_size,
+        description: req.body.description,
+        uploaded_at: new Date().toISOString(),
+      });
+
+      res.json(document);
+    } catch (error) {
+      console.error("Erro ao criar documento:", error);
+      res.status(500).json({ error: "Erro ao criar documento" });
+    }
+  });
+
+  app.delete("/api/admin/clients/documents/:documentId", requireAdmin, async (req, res) => {
+    try {
+      const { documentId } = req.params;
+      await storage.deleteClientDocument(parseInt(documentId));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Erro ao deletar documento:", error);
+      res.status(500).json({ error: "Erro ao deletar documento" });
+    }
+  });
+
+  // Interações/Timeline do Cliente
+  app.get("/api/admin/clients/:userId/interactions", requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : undefined;
+
+      const interactions = await storage.getClientInteractions(userId, limit, offset);
+      res.json(interactions);
+    } catch (error) {
+      console.error("Erro ao buscar interações:", error);
+      res.status(500).json({ error: "Erro ao buscar interações" });
+    }
+  });
+
+  app.post("/api/admin/clients/:userId/interactions", requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const adminId = req.headers["x-user-id"] as string;
+
+      const interaction = await storage.createClientInteraction({
+        user_id: userId,
+        admin_id: adminId,
+        interaction_type: req.body.interaction_type,
+        description: req.body.description,
+        metadata: req.body.metadata,
+        created_at: new Date().toISOString(),
+      });
+
+      res.json(interaction);
+    } catch (error) {
+      console.error("Erro ao criar interação:", error);
+      res.status(500).json({ error: "Erro ao criar interação" });
+    }
+  });
+
+  // Histórico de Mudanças de Plano
+  app.get("/api/admin/clients/:userId/plan-changes", requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : undefined;
+
+      const changes = await storage.getPlanChangesHistory(userId, limit, offset);
+      res.json(changes);
+    } catch (error) {
+      console.error("Erro ao buscar histórico de planos:", error);
+      res.status(500).json({ error: "Erro ao buscar histórico de planos" });
+    }
+  });
+
+  app.post("/api/admin/clients/:userId/plan-changes", requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const adminId = req.headers["x-user-id"] as string;
+
+      const change = await storage.createPlanChangeHistory({
+        user_id: userId,
+        from_plan: req.body.from_plan,
+        to_plan: req.body.to_plan,
+        reason: req.body.reason,
+        changed_by: adminId,
+        metadata: req.body.metadata,
+        changed_at: new Date().toISOString(),
+      });
+
+      res.json(change);
+    } catch (error) {
+      console.error("Erro ao criar registro de mudança de plano:", error);
+      res.status(500).json({ error: "Erro ao criar registro" });
+    }
+  });
+
+  // Comunicações do Cliente
+  app.get("/api/admin/clients/:userId/communications", requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : undefined;
+
+      const communications = await storage.getClientCommunications(userId, limit, offset);
+      res.json(communications);
+    } catch (error) {
+      console.error("Erro ao buscar comunicações:", error);
+      res.status(500).json({ error: "Erro ao buscar comunicações" });
+    }
+  });
+
+  app.post("/api/admin/clients/:userId/communications", requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const adminId = req.headers["x-user-id"] as string;
+
+      const communication = await storage.createClientCommunication({
+        user_id: userId,
+        admin_id: adminId,
+        type: req.body.type,
+        subject: req.body.subject,
+        content: req.body.content,
+        metadata: req.body.metadata,
+        sent_at: new Date().toISOString(),
+      });
+
+      res.json(communication);
+    } catch (error) {
+      console.error("Erro ao criar comunicação:", error);
+      res.status(500).json({ error: "Erro ao criar comunicação" });
+    }
+  });
+
+  // Timeline Completa (todos os eventos)
+  app.get("/api/admin/clients/:userId/timeline", requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+
+      const timeline = await storage.getClientTimeline(userId, limit, offset);
+      res.json(timeline);
+    } catch (error) {
+      console.error("Erro ao buscar timeline:", error);
+      res.status(500).json({ error: "Erro ao buscar timeline do cliente" });
+    }
+  });
+
   app.get("/api/system-config/:key", async (req, res) => {
     try {
       const { key } = req.params;

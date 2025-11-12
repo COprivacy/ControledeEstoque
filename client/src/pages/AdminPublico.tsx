@@ -63,6 +63,19 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
+// --- Mock Components for Cliente 360 ---
+// These would typically be imported from their respective files.
+// For this example, we'll define them as placeholders.
+
+const Cliente360Timeline = ({ userId }: { userId: string }) => (
+  <div className="text-sm text-muted-foreground">Timeline placeholder for user ID: {userId}</div>
+);
+const Cliente360Notes = ({ userId }: { userId: string }) => (
+  <div className="text-sm text-muted-foreground">Notes placeholder for user ID: {userId}</div>
+);
+
+// --- End Mock Components ---
+
 type Subscription = {
   id: number;
   user_id: string;
@@ -76,6 +89,7 @@ type Subscription = {
   status_pagamento: string | null;
   data_criacao: string;
   invoice_url?: string;
+  init_point?: string;
 };
 
 type User = {
@@ -174,6 +188,8 @@ export default function AdminPublico() {
   const [testEmail, setTestEmail] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState('+55 98 98426-7488');
 
+  const [selectedClientFor360, setSelectedClientFor360] = useState<string | null>(null);
+
   const { data: subscriptions = [], isLoading: isLoadingSubscriptions } = useQuery<Subscription[]>({
     queryKey: ["/api/subscriptions"],
   });
@@ -207,7 +223,7 @@ export default function AdminPublico() {
 
     const response = await fetch(url, {
       method,
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
         "x-user-id": user?.id || "",
         "x-is-admin": user?.is_admin || "false",
@@ -1166,7 +1182,7 @@ export default function AdminPublico() {
 
         {/* Tabs com Design Premium */}
         <Tabs defaultValue="usuarios" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-slate-900/50 p-1.5 rounded-xl border border-slate-700/50 backdrop-blur-sm">
+          <TabsList className="grid w-full grid-cols-4 bg-slate-900/50 p-1.5 rounded-xl border border-slate-700/50 backdrop-blur-sm">
             <TabsTrigger
               value="usuarios"
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-300"
@@ -1190,6 +1206,14 @@ export default function AdminPublico() {
             >
               <Settings className="h-4 w-4 mr-2" />
               Configuração
+            </TabsTrigger>
+            <TabsTrigger
+              value="client360"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-teal-600 data-[state=active]:text-white rounded-lg transition-all duration-300"
+              data-testid="tab-cliente-360"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              Cliente 360°
             </TabsTrigger>
           </TabsList>
 
@@ -2141,301 +2165,412 @@ export default function AdminPublico() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
 
-        {/* Dialog para visualizar detalhes do usuário */}
-        <Dialog open={isViewUserDialogOpen} onOpenChange={setIsViewUserDialogOpen}>
-          <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-3xl">
-            <DialogHeader>
-              <DialogTitle className="text-xl">Detalhes do Usuário</DialogTitle>
-              <DialogDescription className="text-slate-400">Informações completas do usuário selecionado</DialogDescription>
-            </DialogHeader>
-            {selectedUser && (
+          {/* Tab Cliente 360° */}
+          <TabsContent value="client360" className="space-y-6">
+            {selectedClientFor360 ? (
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-slate-400 text-sm">Nome:</Label>
-                    <p className="text-white font-medium">{selectedUser.nome}</p>
+                    <h2 className="text-2xl font-bold">
+                      Cliente 360° - {users.find(u => u.id === selectedClientFor360)?.nome}
+                    </h2>
+                    <p className="text-muted-foreground">
+                      {users.find(u => u.id === selectedClientFor360)?.email}
+                    </p>
                   </div>
-                  <div>
-                    <Label className="text-slate-400 text-sm">Email:</Label>
-                    <p className="text-white font-medium">{selectedUser.email}</p>
-                  </div>
+                  <Button variant="outline" onClick={() => setSelectedClientFor360(null)}>
+                    Voltar para Lista
+                  </Button>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-slate-400 text-sm">Plano:</Label>
-                    <p className="text-white font-medium">{selectedUser.plano}</p>
-                  </div>
-                  <div>
-                    <Label className="text-slate-400 text-sm">Status:</Label>
-                    <p className="text-white font-medium">{selectedUser.status}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-slate-400 text-sm">Administrador:</Label>
-                    <p className="text-white font-medium">{selectedUser.is_admin ? "Sim" : "Não"}</p>
-                  </div>
-                  <div>
-                    <Label className="text-slate-400 text-sm">ID Cliente Mercado Pago:</Label>
-                    <p className="text-white font-mono text-sm">{selectedUser.mercadopago_customer_id || "-"}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-slate-400 text-sm">CPF/CNPJ:</Label>
-                    <p className="text-white font-medium">{selectedUser.cpf_cnpj || "-"}</p>
-                  </div>
-                  <div>
-                    <Label className="text-slate-400 text-sm">Telefone:</Label>
-                    <p className="text-white font-medium">{selectedUser.telefone || "-"}</p>
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-slate-400 text-sm">Endereço:</Label>
-                  <p className="text-white font-medium">{selectedUser.endereco || "-"}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-slate-400 text-sm">Data de Cadastro:</Label>
-                    <p className="text-white font-medium">{formatDate(selectedUser.data_criacao)}</p>
-                  </div>
-                  <div>
-                    <Label className="text-slate-400 text-sm">Expira em:</Label>
-                    <p className="text-white font-medium">{formatDate(selectedUser.data_expiracao_plano || selectedUser.data_expiracao_trial)}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsViewUserDialogOpen(false)} className="bg-slate-800 border-slate-700">
-                Fechar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
-        {/* Dialog para editar usuário */}
-        <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
-          <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-3xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-xl">
-                <Edit2 className="h-5 w-5 text-cyan-400" />
-                Editar Usuário
-              </DialogTitle>
-              <DialogDescription className="text-slate-400">
-                Atualize as informações do usuário
-              </DialogDescription>
-            </DialogHeader>
-            {editingUser && (
-              <form onSubmit={handleUpdateUser} className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-nome" className="text-slate-300">Nome Completo</Label>
-                    <Input
-                      id="edit-nome"
-                      value={newUserData.nome}
-                      onChange={(e) => setNewUserData({ ...newUserData, nome: e.target.value })}
-                      className="bg-slate-800 border-slate-700 text-white"
-                      required
-                      data-testid="input-edit-nome"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="edit-email" className="text-slate-300">Email</Label>
-                    <Input
-                      id="edit-email"
-                      type="email"
-                      value={newUserData.email}
-                      onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
-                      className="bg-slate-800 border-slate-700 text-white"
-                      required
-                      data-testid="input-edit-email"
-                    />
-                  </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Timeline de Atividades</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Cliente360Timeline userId={selectedClientFor360} />
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Notas Internas</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Cliente360Notes userId={selectedClientFor360} />
+                    </CardContent>
+                  </Card>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-plano" className="text-slate-300">Plano</Label>
-                    <Select
-                      value={newUserData.plano}
-                      onValueChange={handlePlanoChange}
-                    >
-                      <SelectTrigger id="edit-plano" className="bg-slate-800 border-slate-700 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="trial">Trial (7 dias grátis)</SelectItem>
-                        <SelectItem value="mensal">Mensal (30 dias)</SelectItem>
-                        <SelectItem value="anual">Anual (365 dias)</SelectItem>
-                        <SelectItem value="premium">Premium (3650 dias)</SelectItem>
-                      </SelectContent>
-                    </Select>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Informações do Cliente</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {(() => {
+                        const client = users.find(u => u.id === selectedClientFor360);
+                        const clientSubscriptions = subscriptions.filter(s => s.user_id === selectedClientFor360);
+                        const activeSubscription = clientSubscriptions.find(s => s.status === 'ativo');
+
+                        return (
+                          <>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Plano Atual</p>
+                              <p className="font-semibold">{client?.plano || 'Free'}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Status</p>
+                              <Badge variant={client?.status === 'ativo' ? 'default' : 'secondary'}>
+                                {client?.status || 'Desconhecido'}
+                              </Badge>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Assinaturas</p>
+                              <p className="font-semibold">{clientSubscriptions.length}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Data Cadastro</p>
+                              <p className="font-semibold">
+                                {client?.data_criacao
+                                  ? new Date(client.data_criacao).toLocaleDateString('pt-BR')
+                                  : '-'}
+                              </p>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Selecione um Cliente</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {users.map((user) => (
+                      <Button
+                        key={user.id}
+                        variant="outline"
+                        className="w-full justify-start"
+                        onClick={() => setSelectedClientFor360(user.id)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                            {user.nome.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="text-left">
+                            <p className="font-medium">{user.nome}</p>
+                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                          </div>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Dialog para visualizar detalhes do usuário */}
+          <Dialog open={isViewUserDialogOpen} onOpenChange={setIsViewUserDialogOpen}>
+            <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-3xl">
+              <DialogHeader>
+                <DialogTitle className="text-xl">Detalhes do Usuário</DialogTitle>
+                <DialogDescription className="text-slate-400">Informações completas do usuário selecionado</DialogDescription>
+              </DialogHeader>
+              {selectedUser && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-slate-400 text-sm">Nome:</Label>
+                      <p className="text-white font-medium">{selectedUser.nome}</p>
+                    </div>
+                    <div>
+                      <Label className="text-slate-400 text-sm">Email:</Label>
+                      <p className="text-white font-medium">{selectedUser.email}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-slate-400 text-sm">Plano:</Label>
+                      <p className="text-white font-medium">{selectedUser.plano}</p>
+                    </div>
+                    <div>
+                      <Label className="text-slate-400 text-sm">Status:</Label>
+                      <p className="text-white font-medium">{selectedUser.status}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-slate-400 text-sm">Administrador:</Label>
+                      <p className="text-white font-medium">{selectedUser.is_admin ? "Sim" : "Não"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-slate-400 text-sm">ID Cliente Mercado Pago:</Label>
+                      <p className="text-white font-mono text-sm">{selectedUser.mercadopago_customer_id || "-"}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-slate-400 text-sm">CPF/CNPJ:</Label>
+                      <p className="text-white font-medium">{selectedUser.cpf_cnpj || "-"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-slate-400 text-sm">Telefone:</Label>
+                      <p className="text-white font-medium">{selectedUser.telefone || "-"}</p>
+                    </div>
                   </div>
                   <div>
-                    <Label htmlFor="edit-dias-restantes" className="text-slate-300">
-                      Dias Restantes
-                      <span className="ml-1 text-xs text-slate-500">(define a validade do plano)</span>
-                    </Label>
-                    <Input
-                      id="edit-dias-restantes"
-                      type="number"
-                      min="0"
-                      value={diasRestantes}
-                      onChange={(e) => setDiasRestantes(e.target.value)}
-                      className="bg-slate-800 border-slate-700 text-white"
-                      placeholder="Ex: 30"
-                      data-testid="input-dias-restantes"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">
-                      {diasRestantes && parseInt(diasRestantes) > 0
-                        ? `Expira em: ${new Date(new Date().getTime() + parseInt(diasRestantes) * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`
-                        : "Informe os dias para calcular a data"}
-                    </p>
+                    <Label className="text-slate-400 text-sm">Endereço:</Label>
+                    <p className="text-white font-medium">{selectedUser.endereco || "-"}</p>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-max-funcionarios" className="text-slate-300">
-                      Limite de Funcionários
-                      <span className="ml-1 text-xs text-slate-500">(máximo que o cliente pode cadastrar)</span>
-                    </Label>
-                    <Input
-                      id="edit-max-funcionarios"
-                      type="number"
-                      min="1"
-                      value={newUserData.max_funcionarios}
-                      onChange={(e) => setNewUserData({ ...newUserData, max_funcionarios: parseInt(e.target.value) || 1 })}
-                      className="bg-slate-800 border-slate-700 text-white"
-                      placeholder="Ex: 10"
-                      data-testid="input-max-funcionarios"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">
-                      O cliente poderá cadastrar até {newUserData.max_funcionarios} funcionários
-                    </p>
-                  </div>
-                  <div className="flex items-end">
-                    <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3 flex-1">
-                      <p className="text-xs text-blue-300 mb-1">Controle Administrativo</p>
-                      <p className="text-sm text-blue-200">
-                        Altere esse valor para dar mais ou menos capacidade ao cliente
-                      </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-slate-400 text-sm">Data de Cadastro:</Label>
+                      <p className="text-white font-medium">{formatDate(selectedUser.data_criacao)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-slate-400 text-sm">Expira em:</Label>
+                      <p className="text-white font-medium">{formatDate(selectedUser.data_expiracao_plano || selectedUser.data_expiracao_trial)}</p>
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+              )}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsViewUserDialogOpen(false)} className="bg-slate-800 border-slate-700">
+                  Fechar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialog para editar usuário */}
+          <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+            <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-3xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <Edit2 className="h-5 w-5 text-cyan-400" />
+                  Editar Usuário
+                </DialogTitle>
+                <DialogDescription className="text-slate-400">
+                  Atualize as informações do usuário
+                </DialogDescription>
+              </DialogHeader>
+              {editingUser && (
+                <form onSubmit={handleUpdateUser} className="space-y-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-nome" className="text-slate-300">Nome Completo</Label>
+                      <Input
+                        id="edit-nome"
+                        value={newUserData.nome}
+                        onChange={(e) => setNewUserData({ ...newUserData, nome: e.target.value })}
+                        className="bg-slate-800 border-slate-700 text-white"
+                        required
+                        data-testid="input-edit-nome"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-email" className="text-slate-300">Email</Label>
+                      <Input
+                        id="edit-email"
+                        type="email"
+                        value={newUserData.email}
+                        onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                        className="bg-slate-800 border-slate-700 text-white"
+                        required
+                        data-testid="input-edit-email"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-plano" className="text-slate-300">Plano</Label>
+                      <Select
+                        value={newUserData.plano}
+                        onValueChange={handlePlanoChange}
+                      >
+                        <SelectTrigger id="edit-plano" className="bg-slate-800 border-slate-700 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="trial">Trial (7 dias grátis)</SelectItem>
+                          <SelectItem value="mensal">Mensal (30 dias)</SelectItem>
+                          <SelectItem value="anual">Anual (365 dias)</SelectItem>
+                          <SelectItem value="premium">Premium (3650 dias)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-dias-restantes" className="text-slate-300">
+                        Dias Restantes
+                        <span className="ml-1 text-xs text-slate-500">(define a validade do plano)</span>
+                      </Label>
+                      <Input
+                        id="edit-dias-restantes"
+                        type="number"
+                        min="0"
+                        value={diasRestantes}
+                        onChange={(e) => setDiasRestantes(e.target.value)}
+                        className="bg-slate-800 border-slate-700 text-white"
+                        placeholder="Ex: 30"
+                        data-testid="input-dias-restantes"
+                      />
+                      <p className="text-xs text-slate-500 mt-1">
+                        {diasRestantes && parseInt(diasRestantes) > 0
+                          ? `Expira em: ${new Date(new Date().getTime() + parseInt(diasRestantes) * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`
+                          : "Informe os dias para calcular a data"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-max-funcionarios" className="text-slate-300">
+                        Limite de Funcionários
+                        <span className="ml-1 text-xs text-slate-500">(máximo que o cliente pode cadastrar)</span>
+                      </Label>
+                      <Input
+                        id="edit-max-funcionarios"
+                        type="number"
+                        min="1"
+                        value={newUserData.max_funcionarios}
+                        onChange={(e) => setNewUserData({ ...newUserData, max_funcionarios: parseInt(e.target.value) || 1 })}
+                        className="bg-slate-800 border-slate-700 text-white"
+                        placeholder="Ex: 10"
+                        data-testid="input-max-funcionarios"
+                      />
+                      <p className="text-xs text-slate-500 mt-1">
+                        O cliente poderá cadastrar até {newUserData.max_funcionarios} funcionários
+                      </p>
+                    </div>
+                    <div className="flex items-end">
+                      <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3 flex-1">
+                        <p className="text-xs text-blue-300 mb-1">Controle Administrativo</p>
+                        <p className="text-sm text-blue-200">
+                          Altere esse valor para dar mais ou menos capacidade ao cliente
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-cpf_cnpj" className="text-slate-300">CPF/CNPJ</Label>
+                      <Input
+                        id="edit-cpf_cnpj"
+                        value={newUserData.cpf_cnpj}
+                        onChange={(e) => setNewUserData({ ...newUserData, cpf_cnpj: e.target.value })}
+                        className="bg-slate-800 border-slate-700 text-white"
+                        data-testid="input-edit-cpf"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-telefone" className="text-slate-300">Telefone</Label>
+                      <Input
+                        id="edit-telefone"
+                        value={newUserData.telefone}
+                        onChange={(e) => setNewUserData({ ...newUserData, telefone: e.target.value })}
+                        className="bg-slate-800 border-slate-700 text-white"
+                        data-testid="input-edit-telefone"
+                      />
+                    </div>
+                  </div>
                   <div>
-                    <Label htmlFor="edit-cpf_cnpj" className="text-slate-300">CPF/CNPJ</Label>
+                    <Label htmlFor="edit-senha" className="text-slate-300">Nova Senha (deixe em branco para não alterar)</Label>
                     <Input
-                      id="edit-cpf_cnpj"
-                      value={newUserData.cpf_cnpj}
-                      onChange={(e) => setNewUserData({ ...newUserData, cpf_cnpj: e.target.value })}
+                      id="edit-senha"
+                      type="password"
+                      value={newUserData.senha}
+                      onChange={(e) => setNewUserData({ ...newUserData, senha: e.target.value })}
                       className="bg-slate-800 border-slate-700 text-white"
-                      data-testid="input-edit-cpf"
+                      placeholder="Nova senha (opcional)"
+                      data-testid="input-edit-senha"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="edit-telefone" className="text-slate-300">Telefone</Label>
+                    <Label htmlFor="edit-endereco" className="text-slate-300">Endereço Completo</Label>
                     <Input
-                      id="edit-telefone"
-                      value={newUserData.telefone}
-                      onChange={(e) => setNewUserData({ ...newUserData, telefone: e.target.value })}
+                      id="edit-endereco"
+                      value={newUserData.endereco}
+                      onChange={(e) => setNewUserData({ ...newUserData, endereco: e.target.value })}
                       className="bg-slate-800 border-slate-700 text-white"
-                      data-testid="input-edit-telefone"
+                      data-testid="input-edit-endereco"
                     />
                   </div>
-                </div>
-                <div>
-                  <Label htmlFor="edit-senha" className="text-slate-300">Nova Senha (deixe em branco para não alterar)</Label>
-                  <Input
-                    id="edit-senha"
-                    type="password"
-                    value={newUserData.senha}
-                    onChange={(e) => setNewUserData({ ...newUserData, senha: e.target.value })}
-                    className="bg-slate-800 border-slate-700 text-white"
-                    placeholder="Nova senha (opcional)"
-                    data-testid="input-edit-senha"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-endereco" className="text-slate-300">Endereço Completo</Label>
-                  <Input
-                    id="edit-endereco"
-                    value={newUserData.endereco}
-                    onChange={(e) => setNewUserData({ ...newUserData, endereco: e.target.value })}
-                    className="bg-slate-800 border-slate-700 text-white"
-                    data-testid="input-edit-endereco"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="edit-is_admin"
-                    checked={newUserData.is_admin === "true"}
-                    onChange={(e) => setNewUserData({ ...newUserData, is_admin: e.target.checked ? "true" : "false" })}
-                    className="h-4 w-4"
-                    data-testid="checkbox-is-admin"
-                  />
-                  <Label htmlFor="edit-is_admin" className="text-slate-300">Administrador</Label>
-                </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="edit-is_admin"
+                      checked={newUserData.is_admin === "true"}
+                      onChange={(e) => setNewUserData({ ...newUserData, is_admin: e.target.checked ? "true" : "false" })}
+                      className="h-4 w-4"
+                      data-testid="checkbox-is-admin"
+                    />
+                    <Label htmlFor="edit-is_admin" className="text-slate-300">Administrador</Label>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setEditingUser(null)}
+                      className="bg-slate-800 border-slate-700"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500"
+                      disabled={updateUserMutation.isPending}
+                      data-testid="button-salvar-edicao"
+                    >
+                      {updateUserMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialog para cancelar assinatura */}
+          <Dialog open={isCancelSubscriptionDialogOpen} onOpenChange={setIsCancelSubscriptionDialogOpen}>
+            <DialogContent className="bg-slate-900 border-slate-700 text-white">
+              <DialogHeader>
+                <DialogTitle>Cancelar Assinatura</DialogTitle>
+                <DialogDescription className="text-slate-400">
+                  Você tem certeza que deseja cancelar esta assinatura? Por favor, informe o motivo.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <Textarea
+                  placeholder="Motivo do cancelamento..."
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  className="bg-slate-800 border-slate-700 min-h-[100px] text-white"
+                  data-testid="textarea-cancel-reason"
+                />
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setEditingUser(null)}
-                    className="bg-slate-800 border-slate-700"
-                  >
-                    <X className="h-4 w-4 mr-1" />
+                  <Button variant="outline" onClick={() => setIsCancelSubscriptionDialogOpen(false)} className="bg-slate-800 border-slate-700">
                     Cancelar
                   </Button>
                   <Button
-                    type="submit"
-                    className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500"
-                    disabled={updateUserMutation.isPending}
-                    data-testid="button-salvar-edicao"
+                    onClick={() => selectedSubscription && cancelSubscriptionMutation.mutate({ subscriptionId: selectedSubscription.id, reason: cancelReason })}
+                    disabled={cancelSubscriptionMutation.isPending}
+                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600"
+                    data-testid="button-confirmar-cancelamento"
                   >
-                    {updateUserMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                    {cancelSubscriptionMutation.isPending ? "Cancelando..." : "Confirmar Cancelamento"}
                   </Button>
                 </div>
-              </form>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Dialog para cancelar assinatura */}
-        <Dialog open={isCancelSubscriptionDialogOpen} onOpenChange={setIsCancelSubscriptionDialogOpen}>
-          <DialogContent className="bg-slate-900 border-slate-700 text-white">
-            <DialogHeader>
-              <DialogTitle>Cancelar Assinatura</DialogTitle>
-              <DialogDescription className="text-slate-400">
-                Você tem certeza que deseja cancelar esta assinatura? Por favor, informe o motivo.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <Textarea
-                placeholder="Motivo do cancelamento..."
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                className="bg-slate-800 border-slate-700 min-h-[100px] text-white"
-                data-testid="textarea-cancel-reason"
-              />
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setIsCancelSubscriptionDialogOpen(false)} className="bg-slate-800 border-slate-700">
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={() => selectedSubscription && cancelSubscriptionMutation.mutate({ subscriptionId: selectedSubscription.id, reason: cancelReason })}
-                  disabled={cancelSubscriptionMutation.isPending}
-                  className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600"
-                  data-testid="button-confirmar-cancelamento"
-                >
-                  {cancelSubscriptionMutation.isPending ? "Cancelando..." : "Confirmar Cancelamento"}
-                </Button>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
     </div>
   );

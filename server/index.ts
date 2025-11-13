@@ -253,7 +253,7 @@ app.use((req, res, next) => {
 
   // Sistema de Auto-Healing (verificações a cada 5 minutos)
   const { autoHealingService } = await import('./auto-healing');
-  autoHealingService.startHealthChecks();
+  autoHealingService.startAutoHealing(5);
 
   // Iniciar limpeza automática agendada
   if (process.env.NODE_ENV === 'production') {

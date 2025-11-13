@@ -1,5 +1,5 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { Home, Package, ClipboardList, FileText, Settings, CreditCard, Users, DollarSign, TrendingUp, BarChart3, Crown, Lock, LineChart, Scan, Wallet, ShoppingCart, PackageX } from "lucide-react";
+import { Home, Package, ClipboardList, FileText, Settings, CreditCard, Users, DollarSign, TrendingUp, BarChart3, Crown, Lock, LineChart, Scan, Wallet, ShoppingCart, PackageX, HelpCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useUser } from "@/hooks/use-user";
@@ -136,6 +136,17 @@ export default function DashboardSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {configMenuItems.map(renderMenuItem)}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  className="group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5"
+                >
+                  <Link href="/ajuda">
+                    <HelpCircle className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+                    <span className="flex-1 font-medium">Ajuda</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               {isAdmin && (
                 <SidebarMenuItem>
                   <SidebarMenuButton

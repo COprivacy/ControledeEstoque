@@ -4277,6 +4277,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(501).json({ error: "Método converterOrcamentoEmVenda não implementado" });
       }
 
+      // Buscar orçamento para validar estoque
+      const orcamento = await storage.getOrcamento(id);
+      
+      if (!orcamento) {
+        return res.status(404).json({ error: "Orçamento não encontrado" });
+      }
+
+      if (orcamento.user_id !== userId) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      if (orcamento.status === 'convertido') {
+        return res.status(400).json({ error: "Este orçamento já foi convertido em venda" });
+      }
+
+      // Validar estoque de todos os produtos
+      const itensOrcamento = Array.isArray(orcamento.itens) ? orcamento.itens : [];
+      const produtosInsuficientes: string[] = [];
+
+      for (const item of itensOrcamento as any[]) {
+        const produto = await storage.getProduto(item.produto_id);
+        
+        if (!produto) {
+          return res.status(404).json({ 
+            error: `Produto ${item.nome} não encontrado no sistema` 
+          });
+        }
+
+        if (produto.user_id !== userId) {
+          return res.status(403).json({ 
+            error: `Acesso negado ao produto ${item.nome}` 
+          });
+        }
+
+        if (produto.quantidade < item.quantidade) {
+          produtosInsuficientes.push(
+            `${item.nome}: disponível ${produto.quantidade}, necessário ${item.quantidade}`
+          );
+        }
+      }
+
+      // Se houver produtos com estoque insuficiente, retornar erro
+      if (produtosInsuficientes.length > 0) {
+        return res.status(400).json({ 
+          error: "Estoque insuficiente para converter este orçamento em venda",
+          detalhes: produtosInsuficientes
+        });
+      }
+
       // Buscar nome do vendedor
       let vendedorNome = 'Sistema';
       if (funcionarioId) {

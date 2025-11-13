@@ -188,21 +188,48 @@ export default function Orcamentos() {
   const converterMutation = useMutation({
     mutationFn: async ({ id, forma_pagamento }: { id: number; forma_pagamento: string }) => {
       const response = await apiRequest("POST", `/api/orcamentos/${id}/converter-venda`, { forma_pagamento });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw errorData;
+      }
+      
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orcamentos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/vendas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/produtos"] });
       toast({ title: "✅ Orçamento convertido em venda com sucesso!" });
       setIsConvertDialogOpen(false);
       setFormaPagamento("dinheiro");
       setOrcamentoToConvert(null);
     },
     onError: (error: any) => {
+      let errorMessage = error.error || error.message || "Tente novamente";
+      
+      // Se houver detalhes sobre produtos com estoque insuficiente, formatá-los
+      if (error.detalhes && Array.isArray(error.detalhes)) {
+        errorMessage = (
+          <div className="space-y-2">
+            <p className="font-semibold">{error.error || "Estoque insuficiente"}</p>
+            <div className="text-sm space-y-1">
+              {error.detalhes.map((detalhe: string, idx: number) => (
+                <div key={idx} className="flex items-start gap-2">
+                  <span className="text-red-500">•</span>
+                  <span>{detalhe}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+      
       toast({ 
-        title: "❌ Erro ao converter orçamento",
-        description: error.message || "Tente novamente",
-        variant: "destructive" 
+        title: "❌ Não é possível converter este orçamento",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 6000,
       });
     },
   });

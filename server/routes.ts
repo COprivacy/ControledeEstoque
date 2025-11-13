@@ -1035,35 +1035,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.headers['x-user-id'] as string;
       const isAdmin = req.headers['x-is-admin'] === 'true';
 
+      if (!isAdmin) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
       // Verificar se é o master admin
-      const userResult = await storage.query(
-        'SELECT email FROM usuarios WHERE id = $1',
-        [userId]
-      );
+      const user = await storage.getUserById(userId);
+      const isMasterAdmin = user?.email === 'pavisoft.suporte@gmail.com';
 
-      const isMasterAdmin = userResult.rows[0]?.email === 'pavisoft.suporte@gmail.com';
-
-      if (!isAdmin || !isMasterAdmin) {
+      if (!isMasterAdmin) {
         return res.status(403).json({ error: "Acesso negado - apenas master admin" });
       }
 
       const limit = parseInt(req.query.limit as string) || 500;
 
-      const query = `
-        SELECT * FROM system_logs 
-        WHERE level = 'INFO'
-        AND (
-          message LIKE '%LOGIN%' OR 
-          message LIKE '%LOGOUT%' OR 
-          message LIKE '%ACESSO%' OR
-          message LIKE '%ADMIN%'
-        )
-        ORDER BY timestamp DESC 
-        LIMIT $1
-      `;
+      // Buscar todos os logs de admin sem filtro por conta
+      const logs = await storage.getLogsAdmin?.();
+      
+      if (!logs) {
+        return res.json([]);
+      }
 
-      const result = await storage.query(query, [limit]);
-      res.json(result.rows);
+      // Filtrar e ordenar os logs
+      const filteredLogs = logs
+        .slice(0, limit)
+        .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+
+      // Adicionar nomes dos usuários
+      const allUsers = await storage.getUsers();
+      const allFuncionarios = await storage.getFuncionarios();
+      
+      const logsComNomes = filteredLogs.map(log => {
+        const usuario = allUsers.find(u => u.id === log.usuario_id);
+        const funcionario = allFuncionarios.find(f => f.id === log.usuario_id);
+        
+        return {
+          ...log,
+          usuario_nome: usuario?.nome || funcionario?.nome || 'Usuário Desconhecido',
+          usuario_email: usuario?.email || funcionario?.email || '',
+        };
+      });
+
+      res.json(logsComNomes);
     } catch (error: any) {
       logger.error('Erro ao buscar todos os logs:', error);
       res.status(500).json({ error: error.message });

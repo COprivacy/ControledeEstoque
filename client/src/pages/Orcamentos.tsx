@@ -11,8 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Plus, FileText, CheckCircle, XCircle, ShoppingCart, Printer, Eye, Trash2, Calendar, Mail, Phone, User, Search, Pencil, TrendingUp, DollarSign, Clock } from "lucide-react";
+import { Plus, FileText, CheckCircle, XCircle, ShoppingCart, Printer, Eye, Trash2, Calendar, Mail, Phone, User, Search, Pencil, TrendingUp, DollarSign, Clock, Archive } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Orcamento, Produto, Cliente } from "@shared/schema";
@@ -44,9 +45,18 @@ export default function Orcamentos() {
   const [itensCarrinho, setItensCarrinho] = useState<ItemCarrinho[]>([]);
   const [searchProduto, setSearchProduto] = useState("");
   const [searchOrcamento, setSearchOrcamento] = useState("");
+  const [mostrarArquivados, setMostrarArquivados] = useState(false);
 
   const { data: orcamentos = [], isLoading } = useQuery<Orcamento[]>({
-    queryKey: ["/api/orcamentos"],
+    queryKey: ["/api/orcamentos", { incluirArquivados: mostrarArquivados }],
+    queryFn: async () => {
+      const url = mostrarArquivados 
+        ? "/api/orcamentos?incluirArquivados=true"
+        : "/api/orcamentos";
+      const response = await fetch(url, { credentials: "include" });
+      if (!response.ok) throw new Error("Erro ao buscar orçamentos");
+      return response.json();
+    },
   });
 
   const { data: produtos = [] } = useQuery<Produto[]>({
@@ -1018,14 +1028,26 @@ export default function Orcamentos() {
               </CardDescription>
             </div>
             {orcamentos.length > 0 && (
-              <div className="w-full max-w-sm">
-                <div className="relative">
+              <div className="flex gap-2 items-center w-full max-w-lg">
+                <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Buscar por número, cliente ou email..."
                     value={searchOrcamento}
                     onChange={(e) => setSearchOrcamento(e.target.value)}
                     className="pl-9"
+                  />
+                </div>
+                <div className="flex items-center gap-2 border rounded-md px-3 py-2 whitespace-nowrap">
+                  <Archive className="h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor="mostrar-arquivados-orcamentos" className="cursor-pointer text-sm">
+                    Arquivados
+                  </Label>
+                  <Switch
+                    id="mostrar-arquivados-orcamentos"
+                    checked={mostrarArquivados}
+                    onCheckedChange={setMostrarArquivados}
+                    data-testid="switch-arquivados"
                   />
                 </div>
               </div>

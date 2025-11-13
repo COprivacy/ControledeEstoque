@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PackageX, Plus, Search, CheckCircle2, XCircle, Clock, Edit, Trash2, Package, FileDown, TrendingUp, TrendingDown, Filter, X, AlertTriangle, ShoppingCart, Undo2 } from "lucide-react";
+import { PackageX, Plus, Search, CheckCircle2, XCircle, Clock, Edit, Trash2, Package, FileDown, TrendingUp, TrendingDown, Filter, X, AlertTriangle, ShoppingCart, Undo2, Archive } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { apiRequest } from "@/lib/queryClient";
 import type { Devolucao, Produto } from "@shared/schema";
 import { formatDate } from "@/lib/dateUtils";
@@ -33,11 +34,20 @@ export default function Devolucoes() {
   const [filterMotivo, setFilterMotivo] = useState<string>("all");
   const [filterCategoria, setFilterCategoria] = useState<string>("all");
   const [searchVendas, setSearchVendas] = useState("");
+  const [mostrarArquivados, setMostrarArquivados] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: devolucoes = [], isLoading: loadingDevolucoes } = useQuery<Devolucao[]>({
-    queryKey: ["/api/devolucoes"],
+    queryKey: ["/api/devolucoes", { incluirArquivados: mostrarArquivados }],
+    queryFn: async () => {
+      const url = mostrarArquivados 
+        ? "/api/devolucoes?incluirArquivados=true"
+        : "/api/devolucoes";
+      const response = await fetch(url, { credentials: "include" });
+      if (!response.ok) throw new Error("Erro ao buscar devoluções");
+      return response.json();
+    },
   });
 
   const { data: produtos = [], isLoading: loadingProdutos } = useQuery<Produto[]>({
@@ -1195,6 +1205,18 @@ export default function Devolucoes() {
                   <SelectItem value="mes">Último Mês</SelectItem>
                 </SelectContent>
               </Select>
+              <div className="flex items-center gap-2 border rounded-md px-3 py-2">
+                <Archive className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="mostrar-arquivados" className="cursor-pointer text-sm whitespace-nowrap">
+                  Arquivados
+                </Label>
+                <Switch
+                  id="mostrar-arquivados"
+                  checked={mostrarArquivados}
+                  onCheckedChange={setMostrarArquivados}
+                  data-testid="switch-arquivados"
+                />
+              </div>
             </div>
           </div>
 

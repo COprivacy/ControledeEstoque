@@ -883,10 +883,11 @@ export default function Settings() {
             <CardContent className="space-y-6 pt-6">
               <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800">
                 <Shield className="h-4 w-4 text-blue-600" />
-                <AlertTitle className="text-blue-800 dark:text-blue-300">Otimização do Sistema</AlertTitle>
+                <AlertTitle className="text-blue-800 dark:text-blue-300">Sistema de Arquivamento Inteligente</AlertTitle>
                 <AlertDescription className="text-blue-700 dark:text-blue-400 text-sm">
-                  A limpeza automática remove dados antigos para manter o banco de dados leve e rápido. 
-                  Dados importantes como vendas recentes e produtos ativos nunca são excluídos.
+                  <strong>Importante:</strong> O sistema <u>ARQUIVA</u> dados antigos ao invés de deletá-los. 
+                  Isso mantém o sistema rápido, mas preserva os dados para relatórios, análises e comparativos mensais/anuais.
+                  Você nunca perde seus totais e pode consultar o histórico completo quando necessário.
                 </AlertDescription>
               </Alert>
 
@@ -897,7 +898,7 @@ export default function Settings() {
                       Histórico de Devoluções
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      Excluir devoluções aprovadas/rejeitadas automaticamente
+                      Arquivar devoluções antigas (mantém para relatórios)
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -922,7 +923,7 @@ export default function Settings() {
                       Orçamentos Antigos
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      Excluir orçamentos convertidos ou rejeitados
+                      Arquivar orçamentos antigos (mantém para análises)
                     </p>
                   </div>
                   <div className="flex items-center gap-3">

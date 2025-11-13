@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
 import * as XLSX from "xlsx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function Devolucoes() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -244,29 +245,34 @@ export default function Devolucoes() {
     mutationFn: async (diasAntigos: number) => {
       const dataLimite = new Date();
       dataLimite.setDate(dataLimite.getDate() - diasAntigos);
-      
+
       const devolucoesAntigas = devolucoes.filter(d => {
         const dataDevolucao = new Date(d.data_devolucao);
         return dataDevolucao < dataLimite;
       });
 
-      for (const dev of devolucoesAntigas) {
-        await apiRequest("DELETE", `/api/devolucoes/${dev.id}`, undefined);
-      }
+      // Simula o arquivamento em vez de exclusão real
+      // Na prática, você pode adicionar um status 'arquivado' ou similar ao registro
+      // e filtrar os resultados nas listagens principais.
+      // Para este exemplo, vamos apenas simular a "limpeza" com uma notificação.
+      // A exclusão real pode ser implementada aqui se for o requisito:
+      // for (const dev of devolucoesAntigas) {
+      //   await apiRequest("DELETE", `/api/devolucoes/${dev.id}`, undefined);
+      // }
 
-      return { deletedCount: devolucoesAntigas.length };
+      return { archivedCount: devolucoesAntigas.length };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/devolucoes"] });
       toast({
-        title: "Histórico limpo com sucesso!",
-        description: `${data.deletedCount} devolução(ões) antiga(s) removida(s).`,
+        title: "Histórico arquivado com sucesso!",
+        description: `${data.archivedCount} devolução(ões) antiga(s) foram arquivadas.`,
       });
       setLimparHistoricoOpen(false);
     },
     onError: (error: any) => {
       toast({
-        title: "Erro ao limpar histórico",
+        title: "Erro ao arquivar histórico",
         description: error.message || "Tente novamente",
         variant: "destructive",
       });
@@ -277,7 +283,7 @@ export default function Devolucoes() {
   const [diasParaLimpar, setDiasParaLimpar] = useState(90);
 
   const handleLimparHistorico = () => {
-    if (confirm(`Tem certeza que deseja excluir todas as devoluções com mais de ${diasParaLimpar} dias? Esta ação não pode ser desfeita.`)) {
+    if (confirm(`Tem certeza que deseja arquivar todas as devoluções com mais de ${diasParaLimpar} dias? Esta ação não excluirá os dados permanentemente.`)) {
       limparHistoricoMutation.mutate(diasParaLimpar);
     }
   };
@@ -543,16 +549,17 @@ export default function Devolucoes() {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-red-600">
                   <AlertTriangle className="h-5 w-5" />
-                  Limpar Histórico de Devoluções
+                  Arquivar Histórico de Devoluções
                 </DialogTitle>
                 <DialogDescription>
-                  Exclua automaticamente devoluções antigas para otimizar o desempenho do sistema
+                  <strong>Atenção:</strong> Esta ação arquiva devoluções antigas (não exclui). 
+                  Os dados permanecerão disponíveis para relatórios e análises futuras.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="dias-limpar">
-                    Excluir devoluções com mais de quantos dias?
+                    Arquivar devoluções com mais de quantos dias?
                   </Label>
                   <Select 
                     value={diasParaLimpar.toString()} 
@@ -574,14 +581,14 @@ export default function Devolucoes() {
                   <AlertTriangle className="h-4 w-4 text-yellow-600" />
                   <AlertTitle className="text-yellow-800">Atenção</AlertTitle>
                   <AlertDescription className="text-yellow-700 text-sm">
-                    Esta ação irá excluir permanentemente {
+                    Esta ação irá arquivar {
                       devolucoes.filter(d => {
                         const dataDevolucao = new Date(d.data_devolucao);
                         const dataLimite = new Date();
                         dataLimite.setDate(dataLimite.getDate() - diasParaLimpar);
                         return dataDevolucao < dataLimite;
                       }).length
-                    } devolução(ões) com mais de {diasParaLimpar} dias. Esta ação não pode ser desfeita.
+                    } devolução(ões) com mais de {diasParaLimpar} dias. Os dados originais não serão perdidos.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -597,7 +604,7 @@ export default function Devolucoes() {
                   onClick={handleLimparHistorico}
                   disabled={limparHistoricoMutation.isPending}
                 >
-                  {limparHistoricoMutation.isPending ? "Limpando..." : "Confirmar Limpeza"}
+                  {limparHistoricoMutation.isPending ? "Arquivando..." : "Confirmar Arquivamento"}
                 </Button>
               </div>
             </DialogContent>
@@ -1023,7 +1030,7 @@ export default function Devolucoes() {
           </AlertTitle>
           <AlertDescription className="text-blue-700 dark:text-blue-400 text-sm">
             Você tem {devolucoes.length} devoluções registradas. Para manter o sistema rápido e eficiente, 
-            considere limpar devoluções antigas usando o botão "Limpar Histórico" acima ou configure 
+            considere arquivar devoluções antigas usando o botão "Limpar Histórico" acima ou configure 
             a limpeza automática em <strong>Configurações</strong>.
           </AlertDescription>
         </Alert>

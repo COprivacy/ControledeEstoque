@@ -244,6 +244,7 @@ export default function Reports() {
     ? 0 // Não mostrar total diário quando há filtro customizado
     : vendas
         .filter((v: any) => {
+          // Incluir TODAS vendas, incluindo arquivadas, para totais corretos
           if (!v.data) return false;
           const vendaDate = new Date(v.data).toISOString().split('T')[0];
           return vendaDate === today;

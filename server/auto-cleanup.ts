@@ -55,10 +55,11 @@ export class AutoCleanupService {
         results.logs = await this.cleanupLogs(this.config.logs_dias);
       }
 
-      logger.info('Limpeza automática concluída', 'AUTO_CLEANUP', {
-        devolucoesRemovidas: results.devolucoes,
-        orcamentosRemovidos: results.orcamentos,
-        logsRemovidos: results.logs,
+      logger.info('Arquivamento automático concluído', 'AUTO_CLEANUP', {
+        devolucoesArquivadas: results.devolucoes,
+        orcamentosArquivados: results.orcamentos,
+        logsArquivados: results.logs,
+        nota: 'Dados arquivados permanecem disponíveis para relatórios'
       });
     } catch (error: any) {
       logger.error('Erro durante limpeza automática', 'AUTO_CLEANUP', {
@@ -80,15 +81,18 @@ export class AutoCleanupService {
         d.status !== "pendente"
       );
 
-      let deletedCount = 0;
+      let archivedCount = 0;
       for (const dev of devolucoesAntigas) {
-        const deleted = await storage.deleteDevolucao(dev.id);
-        if (deleted) deletedCount++;
+        // ARQUIVAR ao invés de deletar - mantém para relatórios
+        await storage.updateDevolucao(dev.id, { 
+          status: 'arquivada' as any // Marca como arquivada
+        });
+        archivedCount++;
       }
 
-      return deletedCount;
+      return archivedCount;
     } catch (error) {
-      logger.error('Erro ao limpar devoluções', 'AUTO_CLEANUP', { error });
+      logger.error('Erro ao arquivar devoluções', 'AUTO_CLEANUP', { error });
       return 0;
     }
   }
@@ -104,15 +108,18 @@ export class AutoCleanupService {
         (o.status === "convertido" || o.status === "rejeitado")
       );
 
-      let deletedCount = 0;
+      let archivedCount = 0;
       for (const orc of orcamentosAntigos) {
-        await storage.deleteOrcamento(orc.id);
-        deletedCount++;
+        // ARQUIVAR ao invés de deletar - mantém para relatórios
+        await storage.updateOrcamento(orc.id, {
+          status: 'arquivado' as any // Marca como arquivado
+        });
+        archivedCount++;
       }
 
-      return deletedCount;
+      return archivedCount;
     } catch (error) {
-      logger.error('Erro ao limpar orçamentos', 'AUTO_CLEANUP', { error });
+      logger.error('Erro ao arquivar orçamentos', 'AUTO_CLEANUP', { error });
       return 0;
     }
   }

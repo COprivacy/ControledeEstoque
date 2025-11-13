@@ -1214,12 +1214,14 @@ export default function Orcamentos() {
       </Dialog>
 
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-background">
           {selectedOrcamento && (
             <>
-              <DialogHeader>
-                <DialogTitle className="text-2xl">Orçamento {selectedOrcamento.numero}</DialogTitle>
-                <DialogDescription>
+              <DialogHeader className="border-b pb-4">
+                <DialogTitle className="text-2xl font-bold text-foreground">
+                  Orçamento {selectedOrcamento.numero}
+                </DialogTitle>
+                <DialogDescription className="text-base text-muted-foreground">
                   {selectedOrcamento.data_criacao && selectedOrcamento.data_criacao !== "" && !isNaN(new Date(selectedOrcamento.data_criacao).getTime())
                     ? `Criado em ${format(new Date(selectedOrcamento.data_criacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`
                     : "Data de criação não disponível"}
@@ -1227,85 +1229,87 @@ export default function Orcamentos() {
               </DialogHeader>
 
               <div className="space-y-6">
-                <Card>
-                  <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <User className="h-5 w-5" />
+                <Card className="border-2">
+                  <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50 border-b">
+                    <CardTitle className="text-base flex items-center gap-2 text-foreground">
+                      <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       Informações do Cliente
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4 pt-6">
+                  <CardContent className="space-y-4 pt-6 bg-card">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <div className="text-sm text-muted-foreground mb-1">Nome</div>
-                        <div className="font-medium">{selectedOrcamento.cliente_nome || "Não informado"}</div>
+                        <div className="text-sm font-medium text-muted-foreground mb-1">Nome</div>
+                        <div className="font-semibold text-foreground">{selectedOrcamento.cliente_nome || "Não informado"}</div>
                       </div>
                       <div>
-                        <div className="text-sm text-muted-foreground mb-1">Email</div>
-                        <div className="font-medium">{selectedOrcamento.cliente_email || "Não informado"}</div>
+                        <div className="text-sm font-medium text-muted-foreground mb-1">Email</div>
+                        <div className="font-semibold text-foreground">{selectedOrcamento.cliente_email || "Não informado"}</div>
                       </div>
                       <div>
-                        <div className="text-sm text-muted-foreground mb-1">Telefone</div>
-                        <div className="font-medium">{selectedOrcamento.cliente_telefone || "Não informado"}</div>
+                        <div className="text-sm font-medium text-muted-foreground mb-1">Telefone</div>
+                        <div className="font-semibold text-foreground">{selectedOrcamento.cliente_telefone || "Não informado"}</div>
                       </div>
                       <div>
-                        <div className="text-sm text-muted-foreground mb-1">Status</div>
+                        <div className="text-sm font-medium text-muted-foreground mb-1">Status</div>
                         <div className="mt-1">{getStatusBadge(selectedOrcamento.status || "pendente")}</div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <ShoppingCart className="h-5 w-5" />
+                <Card className="border-2">
+                  <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50 border-b">
+                    <CardTitle className="text-base flex items-center gap-2 text-foreground">
+                      <ShoppingCart className="h-5 w-5 text-green-600 dark:text-green-400" />
                       Produtos
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="pt-6">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/50">
-                          <TableHead>Produto</TableHead>
-                          <TableHead className="w-24 text-center">Qtd</TableHead>
-                          <TableHead className="w-32 text-right">Preço Unit.</TableHead>
-                          <TableHead className="w-32 text-right">Total</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {(Array.isArray(selectedOrcamento.itens) ? selectedOrcamento.itens : []).map((item: any, idx: number) => (
-                          <TableRow key={idx}>
-                            <TableCell className="font-medium">{item.nome}</TableCell>
-                            <TableCell className="text-center">{item.quantidade}</TableCell>
-                            <TableCell className="text-right text-muted-foreground">
-                              R$ {item.preco.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="text-right font-semibold">
-                              R$ {(item.preco * item.quantidade).toFixed(2)}
-                            </TableCell>
+                  <CardContent className="pt-6 bg-card">
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/80 hover:bg-muted">
+                            <TableHead className="font-semibold text-foreground">Produto</TableHead>
+                            <TableHead className="w-24 text-center font-semibold text-foreground">Qtd</TableHead>
+                            <TableHead className="w-32 text-right font-semibold text-foreground">Preço Unit.</TableHead>
+                            <TableHead className="w-32 text-right font-semibold text-foreground">Total</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {(Array.isArray(selectedOrcamento.itens) ? selectedOrcamento.itens : []).map((item: any, idx: number) => (
+                            <TableRow key={idx} className="hover:bg-muted/50">
+                              <TableCell className="font-medium text-foreground">{item.nome}</TableCell>
+                              <TableCell className="text-center text-foreground">{item.quantidade}</TableCell>
+                              <TableCell className="text-right text-foreground">
+                                R$ {item.preco.toFixed(2)}
+                              </TableCell>
+                              <TableCell className="text-right font-semibold text-foreground">
+                                R$ {(item.preco * item.quantidade).toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                     <Separator className="my-6" />
-                    <div className="space-y-3">
+                    <div className="space-y-3 bg-muted/30 p-4 rounded-lg">
                       <div className="flex justify-between text-base">
-                        <span className="text-muted-foreground">Subtotal</span>
-                        <span className="font-medium">R$ {selectedOrcamento.subtotal.toFixed(2)}</span>
+                        <span className="font-medium text-foreground">Subtotal</span>
+                        <span className="font-semibold text-foreground">R$ {selectedOrcamento.subtotal.toFixed(2)}</span>
                       </div>
                       {selectedOrcamento.desconto && selectedOrcamento.desconto > 0 && (
                         <div className="flex justify-between text-base">
-                          <span className="text-muted-foreground">Desconto</span>
-                          <span className="font-medium text-green-600">
+                          <span className="font-medium text-foreground">Desconto</span>
+                          <span className="font-semibold text-green-600 dark:text-green-400">
                             - R$ {selectedOrcamento.desconto.toFixed(2)}
                           </span>
                         </div>
                       )}
                       <Separator />
-                      <div className="flex justify-between text-xl">
-                        <span className="font-bold">Total</span>
-                        <span className="font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      <div className="flex justify-between items-center text-xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50 p-3 rounded-lg">
+                        <span className="font-bold text-foreground">TOTAL</span>
+                        <span className="font-bold text-2xl text-blue-600 dark:text-blue-400">
                           R$ {selectedOrcamento.valor_total.toFixed(2)}
                         </span>
                       </div>
@@ -1314,15 +1318,15 @@ export default function Orcamentos() {
                 </Card>
 
                 {selectedOrcamento.observacoes && (
-                  <Card>
-                    <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <FileText className="h-5 w-5" />
+                  <Card className="border-2">
+                    <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/50 dark:to-amber-950/50 border-b">
+                      <CardTitle className="text-base flex items-center gap-2 text-foreground">
+                        <FileText className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                         Observações
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="pt-6">
-                      <p className="text-sm whitespace-pre-wrap">
+                    <CardContent className="pt-6 bg-card">
+                      <p className="text-sm whitespace-pre-wrap text-foreground leading-relaxed">
                         {selectedOrcamento.observacoes}
                       </p>
                     </CardContent>
@@ -1330,7 +1334,7 @@ export default function Orcamentos() {
                 )}
               </div>
 
-              <DialogFooter className="gap-2">
+              <DialogFooter className="gap-2 border-t pt-4">
                 <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
                   Fechar
                 </Button>

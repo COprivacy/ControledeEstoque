@@ -1338,6 +1338,18 @@ export default function Orcamentos() {
                 <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
                   Fechar
                 </Button>
+                {selectedOrcamento.status === "pendente" && (
+                  <Button 
+                    onClick={() => {
+                      setIsViewDialogOpen(false);
+                      handleEditarOrcamento(selectedOrcamento);
+                    }}
+                    className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Editar
+                  </Button>
+                )}
                 <Button onClick={() => imprimirOrcamento(selectedOrcamento)} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
                   <Printer className="h-4 w-4 mr-2" />
                   Imprimir

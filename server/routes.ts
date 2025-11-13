@@ -1051,7 +1051,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Buscar todos os logs de admin sem filtro por conta
       const logs = await storage.getLogsAdmin?.();
-      
+
       if (!logs) {
         return res.json([]);
       }
@@ -1064,11 +1064,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Adicionar nomes dos usuários
       const allUsers = await storage.getUsers();
       const allFuncionarios = await storage.getFuncionarios();
-      
+
       const logsComNomes = filteredLogs.map(log => {
         const usuario = allUsers.find(u => u.id === log.usuario_id);
         const funcionario = allFuncionarios.find(f => f.id === log.usuario_id);
-        
+
         return {
           ...log,
           usuario_nome: usuario?.nome || funcionario?.nome || 'Usuário Desconhecido',
@@ -4279,7 +4279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Buscar orçamento para validar estoque
       const orcamento = await storage.getOrcamento(id);
-      
+
       if (!orcamento) {
         return res.status(404).json({ error: "Orçamento não encontrado" });
       }
@@ -4298,7 +4298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const item of itensOrcamento as any[]) {
         const produto = await storage.getProduto(item.produto_id);
-        
+
         if (!produto) {
           return res.status(404).json({ 
             error: `Produto ${item.nome} não encontrado no sistema` 
@@ -4625,6 +4625,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Erro ao salvar configuração" });
     }
   });
+
+  // Rota para limpeza automática de devoluções, orçamentos e logs
+  app.post("/api/limpeza-automatica", getUserId, async (req, res) => {
+    try {
+      const effectiveUserId = req.headers["effective-user-id"] as string;
+      const { tipo, diasAntigos } = req.body;
+
+      if (!tipo || !diasAntigos) {
+        return res.status(400).json({ error: "Tipo e diasAntigos são obrigatórios" });
+      }
+
+      const dataLimite = new Date();
+      dataLimite.setDate(dataLimite.getDate() - diasAntigos);
+      let deletedCount = 0;
+
+      switch (tipo) {
+        case "devolucoes":
+          if (!storage.getDevolucoes || !storage.deleteDevolucao) {
+            return res.status(501).json({ error: "Métodos de devolução não implementados" });
+          }
+          const devolucoes = await storage.getDevolucoes();
+          const devolucoesAntigas = devolucoes.filter(d => 
+            d.user_id === effectiveUserId && 
+            new Date(d.data_devolucao) < dataLimite &&
+            d.status !== "pendente" // Não deletar devoluções pendentes
+          );
+
+          for (const dev of devolucoesAntigas) {
+            await storage.deleteDevolucao(dev.id);
+            deletedCount++;
+          }
+          break;
+
+        case "orcamentos":
+          if (!storage.getOrcamentos || !storage.deleteOrcamento) {
+            return res.status(501).json({ error: "Métodos de orçamento não implementados" });
+          }
+          const orcamentos = await storage.getOrcamentos();
+          const orcamentosAntigos = orcamentos.filter(o => 
+            o.user_id === effectiveUserId && 
+            new Date(o.data_criacao) < dataLimite &&
+            (o.status === "convertido" || o.status === "rejeitado")
+          );
+
+          for (const orc of orcamentosAntigos) {
+            await storage.deleteOrcamento(orc.id);
+            deletedCount++;
+          }
+          break;
+
+        case "logs":
+          // Implementar limpeza de logs se necessário
+          // Exemplo: await storage.deleteLogsOlderThan(dataLimite);
+          // deletedCount = ...;
+          break;
+
+        default:
+          return res.status(400).json({ error: "Tipo de limpeza inválido" });
+      }
+
+      await storage.logAdminAction?.(
+        effectiveUserId,
+        `LIMPEZA_AUTO_${tipo.toUpperCase()}`,
+        `Limpeza automática: ${deletedCount} registro(s) removido(s) com mais de ${diasAntigos} dias`
+      );
+
+      res.json({ 
+        success: true, 
+        deletedCount,
+        tipo,
+        diasAntigos 
+      });
+    } catch (error: any) {
+      logger.error('Erro na limpeza automática:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;

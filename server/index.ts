@@ -10,6 +10,7 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { sql } from 'drizzle-orm';
 import ws from 'ws';
+import { autoCleanupService } from './auto-cleanup';
 
 neonConfig.webSocketConstructor = ws;
 
@@ -252,7 +253,13 @@ app.use((req, res, next) => {
 
   // Sistema de Auto-Healing (verificações a cada 5 minutos)
   const { autoHealingService } = await import('./auto-healing');
-  autoHealingService.startAutoHealing(5);
+  autoHealingService.startHealthChecks();
+
+  // Iniciar limpeza automática agendada
+  if (process.env.NODE_ENV === 'production') {
+    autoCleanupService.startScheduledCleanup();
+    logger.info('Serviço de limpeza automática iniciado', 'STARTUP');
+  }
 
   logger.info('Servidor iniciado', 'STARTUP', { port, env: app.get("env") });
 

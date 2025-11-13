@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Crown, Upload, Palette, Save, RotateCcw, Monitor, Bell, Globe, Gauge, AlertTriangle, Shield } from "lucide-react";
+import { Crown, Upload, Palette, Save, RotateCcw, Monitor, Bell, Globe, Gauge, AlertTriangle, Shield, RefreshCw, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -866,6 +866,147 @@ export default function Settings() {
                   />
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Limpeza Automática de Dados */}
+          <Card className="backdrop-blur-sm bg-card/80 border-2 border-purple-500/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:border-purple-500/50 animate-in slide-in-from-bottom duration-700 delay-325">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <RefreshCw className="h-5 w-5 text-purple-600 animate-pulse" />
+                Limpeza Automática de Dados
+              </CardTitle>
+              <CardDescription>
+                Configure a limpeza automática para manter o sistema otimizado
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+              <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800">
+                <Shield className="h-4 w-4 text-blue-600" />
+                <AlertTitle className="text-blue-800 dark:text-blue-300">Otimização do Sistema</AlertTitle>
+                <AlertDescription className="text-blue-700 dark:text-blue-400 text-sm">
+                  A limpeza automática remove dados antigos para manter o banco de dados leve e rápido. 
+                  Dados importantes como vendas recentes e produtos ativos nunca são excluídos.
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-purple-50/50 to-violet-50/50 dark:from-purple-950/10 dark:to-violet-950/10">
+                  <div className="space-y-1">
+                    <Label className="font-semibold text-purple-900 dark:text-purple-100">
+                      Histórico de Devoluções
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Excluir devoluções aprovadas/rejeitadas automaticamente
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Select defaultValue="90">
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="30">30 dias</SelectItem>
+                        <SelectItem value="60">60 dias</SelectItem>
+                        <SelectItem value="90">90 dias</SelectItem>
+                        <SelectItem value="180">6 meses</SelectItem>
+                        <SelectItem value="never">Nunca</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-green-50/50 to-emerald-50/50 dark:from-green-950/10 dark:to-emerald-950/10">
+                  <div className="space-y-1">
+                    <Label className="font-semibold text-green-900 dark:text-green-100">
+                      Orçamentos Antigos
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Excluir orçamentos convertidos ou rejeitados
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Select defaultValue="180">
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="60">60 dias</SelectItem>
+                        <SelectItem value="90">90 dias</SelectItem>
+                        <SelectItem value="180">6 meses</SelectItem>
+                        <SelectItem value="365">1 ano</SelectItem>
+                        <SelectItem value="never">Nunca</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-blue-50/50 to-cyan-50/50 dark:from-blue-950/10 dark:to-cyan-950/10">
+                  <div className="space-y-1">
+                    <Label className="font-semibold text-blue-900 dark:text-blue-100">
+                      Logs de Auditoria
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Manter logs de ações do sistema por período limitado
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Select defaultValue="90">
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="30">30 dias</SelectItem>
+                        <SelectItem value="60">60 dias</SelectItem>
+                        <SelectItem value="90">90 dias</SelectItem>
+                        <SelectItem value="180">6 meses</SelectItem>
+                        <SelectItem value="365">1 ano</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-orange-50/50 to-amber-50/50 dark:from-orange-950/10 dark:to-amber-950/10">
+                  <div className="space-y-1">
+                    <Label className="font-semibold text-orange-900 dark:text-orange-100">
+                      Histórico de Caixas Fechados
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Limpar automaticamente caixas fechados antigos
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Select defaultValue="365">
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="90">90 dias</SelectItem>
+                        <SelectItem value="180">6 meses</SelectItem>
+                        <SelectItem value="365">1 ano</SelectItem>
+                        <SelectItem value="never">Nunca</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between p-4 border-2 border-dashed border-purple-300 rounded-lg bg-purple-50/30 dark:bg-purple-950/10">
+                <div className="space-y-1">
+                  <Label className="font-semibold text-purple-900 dark:text-purple-100 flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Próxima Limpeza Automática
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    A limpeza é executada diariamente às 03:00 da madrugada
+                  </p>
+                </div>
+                <Badge className="bg-purple-600 text-white">
+                  Ativa
+                </Badge>
+              </div>
             </CardContent>
           </Card>
 

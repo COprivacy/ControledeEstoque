@@ -5,7 +5,8 @@ import ReportsCard from "@/components/ReportsCard";
 import SalesTable from "@/components/SalesTable";
 import ExpiringProductsReport from "@/components/ExpiringProductsReport";
 import { Button } from "@/components/ui/button";
-import { Trash2, Download, Crown } from "lucide-react";
+import { Trash2, Download, Crown, Shield } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -319,6 +320,21 @@ export default function Reports() {
       </div>
 
       <ExpiringProductsReport products={expiringProducts} />
+
+      {/* Alerta de Otimização */}
+      {vendas.length > 100 && (
+        <Alert className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 border-purple-200 dark:border-purple-800">
+          <Shield className="h-4 w-4 text-purple-600" />
+          <AlertTitle className="text-purple-800 dark:text-purple-300">
+            Sistema com Alto Volume de Dados
+          </AlertTitle>
+          <AlertDescription className="text-purple-700 dark:text-purple-400 text-sm">
+            Você possui {vendas.length} vendas no histórico. Para otimizar o desempenho, 
+            configure a limpeza automática de dados antigos em <strong>Configurações → Limpeza Automática</strong>.
+            Vendas recentes e dados importantes nunca serão excluídos.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Histórico de Vendas</h2>

@@ -240,6 +240,48 @@ export default function Devolucoes() {
     }
   };
 
+  const limparHistoricoMutation = useMutation({
+    mutationFn: async (diasAntigos: number) => {
+      const dataLimite = new Date();
+      dataLimite.setDate(dataLimite.getDate() - diasAntigos);
+      
+      const devolucoesAntigas = devolucoes.filter(d => {
+        const dataDevolucao = new Date(d.data_devolucao);
+        return dataDevolucao < dataLimite;
+      });
+
+      for (const dev of devolucoesAntigas) {
+        await apiRequest("DELETE", `/api/devolucoes/${dev.id}`, undefined);
+      }
+
+      return { deletedCount: devolucoesAntigas.length };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/devolucoes"] });
+      toast({
+        title: "Histórico limpo com sucesso!",
+        description: `${data.deletedCount} devolução(ões) antiga(s) removida(s).`,
+      });
+      setLimparHistoricoOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao limpar histórico",
+        description: error.message || "Tente novamente",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [limparHistoricoOpen, setLimparHistoricoOpen] = useState(false);
+  const [diasParaLimpar, setDiasParaLimpar] = useState(90);
+
+  const handleLimparHistorico = () => {
+    if (confirm(`Tem certeza que deseja excluir todas as devoluções com mais de ${diasParaLimpar} dias? Esta ação não pode ser desfeita.`)) {
+      limparHistoricoMutation.mutate(diasParaLimpar);
+    }
+  };
+
   const [itensSelecionados, setItensSelecionados] = useState<{[key: string]: number}>({});
 
   const handleNewDevolucao = () => {
@@ -487,6 +529,80 @@ export default function Devolucoes() {
         </div>
 
         <div className="flex gap-2">
+          <Dialog open={limparHistoricoOpen} onOpenChange={setLimparHistoricoOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white border-0"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Limpar Histórico
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-red-600">
+                  <AlertTriangle className="h-5 w-5" />
+                  Limpar Histórico de Devoluções
+                </DialogTitle>
+                <DialogDescription>
+                  Exclua automaticamente devoluções antigas para otimizar o desempenho do sistema
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dias-limpar">
+                    Excluir devoluções com mais de quantos dias?
+                  </Label>
+                  <Select 
+                    value={diasParaLimpar.toString()} 
+                    onValueChange={(value) => setDiasParaLimpar(parseInt(value))}
+                  >
+                    <SelectTrigger id="dias-limpar">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="30">30 dias</SelectItem>
+                      <SelectItem value="60">60 dias</SelectItem>
+                      <SelectItem value="90">90 dias (recomendado)</SelectItem>
+                      <SelectItem value="180">180 dias (6 meses)</SelectItem>
+                      <SelectItem value="365">365 dias (1 ano)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Alert className="bg-yellow-50 border-yellow-200">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <AlertTitle className="text-yellow-800">Atenção</AlertTitle>
+                  <AlertDescription className="text-yellow-700 text-sm">
+                    Esta ação irá excluir permanentemente {
+                      devolucoes.filter(d => {
+                        const dataDevolucao = new Date(d.data_devolucao);
+                        const dataLimite = new Date();
+                        dataLimite.setDate(dataLimite.getDate() - diasParaLimpar);
+                        return dataDevolucao < dataLimite;
+                      }).length
+                    } devolução(ões) com mais de {diasParaLimpar} dias. Esta ação não pode ser desfeita.
+                  </AlertDescription>
+                </Alert>
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setLimparHistoricoOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleLimparHistorico}
+                  disabled={limparHistoricoMutation.isPending}
+                >
+                  {limparHistoricoMutation.isPending ? "Limpando..." : "Confirmar Limpeza"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Button
             variant="outline"
             onClick={handleExportExcel}
@@ -897,6 +1013,21 @@ export default function Devolucoes() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Alerta sobre Limpeza Automática */}
+      {devolucoes.length > 50 && (
+        <Alert className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-800">
+          <AlertTriangle className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="text-blue-800 dark:text-blue-300">
+            Dica: Otimize o Desempenho do Sistema
+          </AlertTitle>
+          <AlertDescription className="text-blue-700 dark:text-blue-400 text-sm">
+            Você tem {devolucoes.length} devoluções registradas. Para manter o sistema rápido e eficiente, 
+            considere limpar devoluções antigas usando o botão "Limpar Histórico" acima ou configure 
+            a limpeza automática em <strong>Configurações</strong>.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Análise de Produtos Mais Devolvidos */}
       {topProdutosDevolucoes.length > 0 && (

@@ -4067,6 +4067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/devolucoes", getUserId, async (req, res) => {
     try {
       const userId = req.headers["effective-user-id"] as string;
+      const incluirArquivados = req.query.incluirArquivados === 'true';
 
       if (!storage.getDevolucoes) {
         return res
@@ -4075,10 +4076,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allDevolucoes = await storage.getDevolucoes();
-      const devolucoes = allDevolucoes.filter((d) => d.user_id === userId);
+      let devolucoes = allDevolucoes.filter((d) => d.user_id === userId);
+      
+      // Filtrar dados arquivados por padrão
+      if (!incluirArquivados) {
+        devolucoes = devolucoes.filter((d) => d.status !== 'arquivada');
+      }
 
       console.log(
-        `✅ Devoluções buscadas - User: ${userId}, Total: ${devolucoes.length}`,
+        `✅ Devoluções buscadas - User: ${userId}, Total: ${devolucoes.length}, Arquivados: ${incluirArquivados}`,
       );
       res.json(devolucoes);
     } catch (error) {
@@ -4235,9 +4241,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/orcamentos", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers["effective-user-id"] as string;
+      const incluirArquivados = req.query.incluirArquivados === 'true';
+      
       const allOrcamentos = await storage.getOrcamentos();
-      const orcamentos = allOrcamentos.filter((o) => o.user_id === effectiveUserId);
-      console.log(`✅ Orçamentos buscados - User: ${effectiveUserId}, Total: ${orcamentos.length}`);
+      let orcamentos = allOrcamentos.filter((o) => o.user_id === effectiveUserId);
+      
+      // Filtrar dados arquivados por padrão
+      if (!incluirArquivados) {
+        orcamentos = orcamentos.filter((o) => o.status !== 'arquivado');
+      }
+      
+      console.log(`✅ Orçamentos buscados - User: ${effectiveUserId}, Total: ${orcamentos.length}, Arquivados: ${incluirArquivados}`);
       res.json(orcamentos);
     } catch (error) {
       console.error("Erro ao buscar orçamentos:", error);

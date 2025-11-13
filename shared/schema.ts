@@ -383,7 +383,7 @@ export const insertDevolucaoSchema = createInsertSchema(devolucoes).omit({
 }).extend({
   quantidade: z.coerce.number().int().positive(),
   valor_total: z.coerce.number().positive(),
-  status: z.enum(["pendente", "aprovada", "rejeitada"]).default("pendente"),
+  status: z.enum(["pendente", "aprovada", "rejeitada", "arquivada"]).default("pendente"),
 });
 
 export type InsertDevolucao = typeof devolucoes.$inferInsert;
@@ -428,7 +428,7 @@ export const insertOrcamentoSchema = createInsertSchema(orcamentos).omit({
   cliente_cpf_cnpj: z.string().optional().nullable(),
   cliente_endereco: z.string().optional().nullable(),
   validade: z.string().optional().nullable(),
-  status: z.string().optional(),
+  status: z.enum(["pendente", "aprovado", "rejeitado", "convertido", "arquivado"]).optional(),
   subtotal: z.coerce.number().min(0),
   desconto: z.coerce.number().min(0).default(0),
   valor_total: z.coerce.number().min(0),

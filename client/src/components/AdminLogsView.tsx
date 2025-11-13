@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -54,7 +55,6 @@ export function AdminLogsView() {
 
       const data = await response.json();
 
-      // Processar logs para formato esperado - mostrar todos os logs do sistema
       const processedLogs: AdminLog[] = data
         .map((log: any, index: number) => ({
           id: index + 1,
@@ -163,9 +163,14 @@ export function AdminLogsView() {
     return "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/30";
   };
 
+  const logsLast24h = logs.filter(log => {
+    const logDate = new Date(log.timestamp);
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    return logDate >= oneDayAgo;
+  }).length;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
@@ -181,7 +186,6 @@ export function AdminLogsView() {
         </Button>
       </div>
 
-      {/* Estatísticas Rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -204,13 +208,7 @@ export function AdminLogsView() {
             <CardTitle className="text-sm font-medium">Últimas 24h</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {logs.filter(log => {
-                const logDate = new Date(log.timestamp);
-                const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-                return logDate >= oneDayAgo;
-              }).length}
-            </div>
+            <div className="text-2xl font-bold">{logsLast24h}</div>
           </CardContent>
         </Card>
         <Card>
@@ -223,7 +221,6 @@ export function AdminLogsView() {
         </Card>
       </div>
 
-      {/* Filtros */}
       <Card>
         <CardContent className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -245,7 +242,7 @@ export function AdminLogsView() {
               <SelectContent>
                 <SelectItem value="all">Todos os Admins</SelectItem>
                 {uniqueAdmins.map(admin => (
-                  <SelectItem key={admin} value={admin}>{admin}</SelectItem>
+                  <SelectItem key={admin} value={admin || ''}>{admin}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -266,7 +263,6 @@ export function AdminLogsView() {
         </CardContent>
       </Card>
 
-      {/* Tabela de Logs */}
       {loading ? (
         <Card>
           <CardContent className="py-12 text-center">
@@ -327,7 +323,6 @@ export function AdminLogsView() {
             </Table>
           </div>
 
-          {/* Paginação */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
               <p className="text-sm text-muted-foreground">
@@ -359,7 +354,7 @@ export function AdminLogsView() {
 
       <div className="p-4 bg-muted rounded-lg">
         <p className="text-sm font-medium mb-2">
-          {filteredLogs.length} log{filteredLogs.length !== 1 ? 's' : ''} encontrado{filteredLogs.length !== 1 ? 's' : ''} com os filtros aplicados
+          {filteredLogs.length} log{filteredLogs.length !== 1 ? 's' : ''} encontrado{filteredLogs.length !== 1 ? 's' : ''}
         </p>
         <p className="text-xs text-muted-foreground">
           Use os filtros acima para refinar a busca

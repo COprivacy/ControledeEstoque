@@ -556,9 +556,16 @@ function MercadoPagoConfigTab() {
     },
     onSuccess: (data) => {
       toast({
-        title: data.success ? "Conexão bem-sucedida!" : "Falha na conexão",
+        title: data.success ? "✅ Conexão bem-sucedida!" : "❌ Falha na conexão",
         description: data.message,
         variant: data.success ? "default" : "destructive",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "❌ Erro ao testar conexão",
+        description: error.message || "Erro desconhecido ao conectar com Mercado Pago",
+        variant: "destructive",
       });
     },
   });

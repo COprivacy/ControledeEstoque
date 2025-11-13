@@ -60,13 +60,46 @@ export class MercadoPagoService {
 
   async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
-      await this.paymentClient.search({
-        options: {
-          limit: 1,
+      // Testa a conexão fazendo uma busca simples de pagamentos
+      // Endpoint mais confiável que aceita credenciais de teste e produção
+      const response = await fetch('https://api.mercadopago.com/v1/payments/search?limit=1', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.client.options.accessToken}`,
+          'Content-Type': 'application/json'
         }
       });
-      return { success: true, message: 'Conexão estabelecida com sucesso com o Mercado Pago!' };
+
+      if (response.ok) {
+        return { 
+          success: true, 
+          message: 'Conexão estabelecida com sucesso com o Mercado Pago!' 
+        };
+      } else if (response.status === 401) {
+        return {
+          success: false,
+          message: 'Access Token inválido. Verifique suas credenciais no painel do Mercado Pago.'
+        };
+      } else if (response.status === 403) {
+        return {
+          success: false,
+          message: 'Acesso negado. Verifique as permissões do seu Access Token.'
+        };
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        return {
+          success: false,
+          message: errorData.message || `Erro HTTP ${response.status}: ${response.statusText}`
+        };
+      }
     } catch (error: any) {
+      // Erro de rede ou outro erro não relacionado à API
+      if (error.message && error.message.includes('fetch')) {
+        return { 
+          success: false, 
+          message: 'Erro de conexão. Verifique sua internet ou se o Mercado Pago está acessível.'
+        };
+      }
       return { 
         success: false, 
         message: error.message || 'Erro ao conectar com o Mercado Pago' 

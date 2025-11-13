@@ -155,7 +155,7 @@ export default function DashboardSidebar() {
                     asChild
                     className="group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5"
                   >
-                    <Link href="/admin-master">
+                    <Link href="/admin-publico">
                       <Crown className="h-4 w-4 text-amber-500 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
                       <span className="flex-1 font-medium bg-gradient-to-r from-amber-500 to-yellow-500 bg-clip-text text-transparent">
                         Admin Master

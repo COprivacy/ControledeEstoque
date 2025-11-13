@@ -143,7 +143,7 @@ export default function DashboardSidebar() {
                 >
                   <Link href="/ajuda">
                     <HelpCircle className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
-                    <span className="flex-1 font-medium">Ajuda</span>
+                    <span className="flex-1 font-medium">Ajuda e Termos</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

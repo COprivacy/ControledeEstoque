@@ -1207,9 +1207,9 @@ export class PostgresStorage implements IStorage {
         'communication' as event_type,
         id,
         admin_id as actor_id,
-        message as description,
+        content as description,
         subject,
-        jsonb_build_object('type', communication_type, 'status', status) as metadata,
+        jsonb_build_object('type', type) as metadata,
         sent_at as event_date
       FROM client_communications
       WHERE user_id = ${userId}

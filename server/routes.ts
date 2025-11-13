@@ -4259,7 +4259,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user_id: userId,
         admin_id: adminId,
         content: req.body.content,
-        created_at: new Date().toISOString(),
       });
 
       res.json(note);
@@ -4319,7 +4318,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         file_type: req.body.file_type,
         file_size: req.body.file_size,
         description: req.body.description,
-        uploaded_at: new Date().toISOString(),
       });
 
       res.json(document);
@@ -4366,7 +4364,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         interaction_type: req.body.interaction_type,
         description: req.body.description,
         metadata: req.body.metadata,
-        created_at: new Date().toISOString(),
       });
 
       res.json(interaction);
@@ -4403,7 +4400,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reason: req.body.reason,
         changed_by: adminId,
         metadata: req.body.metadata,
-        changed_at: new Date().toISOString(),
       });
 
       res.json(change);
@@ -4440,7 +4436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subject: req.body.subject,
         content: req.body.content,
         metadata: req.body.metadata,
-        sent_at: new Date().toISOString()});
+      });
 
       res.json(communication);
     } catch (error) {

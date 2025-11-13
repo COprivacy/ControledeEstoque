@@ -63,6 +63,7 @@ import {
 } from "@/components/ui/chart";
 import { Cliente360Timeline } from "@/components/Cliente360Timeline";
 import { Cliente360Notes } from "@/components/Cliente360Notes";
+import { AdminLogsView } from "@/components/AdminLogsView";
 
 // Componente de Edição/Criação de Usuário
 function UserEditDialog({
@@ -259,7 +260,7 @@ function UserEditDialog({
                     ? Math.max(
                         0,
                         Math.ceil(
-                          (new Date(user.data_expiracao_plano || user.data_expiracao_trial!).getTime() - 
+                          (new Date(user.data_expiracao_plano || user.data_expiracao_trial!).getTime() -
                            new Date().getTime()) / (1000 * 60 * 60 * 24)
                         )
                       )
@@ -269,9 +270,9 @@ function UserEditDialog({
                   const dias = parseInt(e.target.value) || 0;
                   const novaData = new Date();
                   novaData.setDate(novaData.getDate() + dias);
-                  setFormData({ 
-                    ...formData, 
-                    data_expiracao_plano: novaData.toISOString() 
+                  setFormData({
+                    ...formData,
+                    data_expiracao_plano: novaData.toISOString()
                   });
                 }}
               />
@@ -322,7 +323,7 @@ function GestaoAvancadaTab({ users }: { users: User[] }) {
 
   const alterarPlanoEmLote = useMutation({
     mutationFn: async ({ userIds, novoPlano }: { userIds: string[], novoPlano: string }) => {
-      const promises = userIds.map(id => 
+      const promises = userIds.map(id =>
         apiRequest("PATCH", `/api/users/${id}`, { plano: novoPlano })
       );
       await Promise.all(promises);
@@ -672,7 +673,7 @@ function MercadoPagoConfigTab() {
               Testar Conexão
             </Button>
           </div>
-          
+
           {mpConfigData && mpConfigData.webhook_url && (
             <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-900">
               <div className="flex items-start gap-3">
@@ -1024,6 +1025,219 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
   );
 }
 
+// Componente de Configuração Mercado Pago
+// This component is duplicated, please remove one instance.
+function MercadoPagoConfigTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [mpConfig, setMpConfig] = useState({
+    access_token: "",
+    public_key: "",
+    webhook_url: "" // Adicionado campo webhook_url
+  });
+
+  // Carregar configuração do Mercado Pago
+  const { data: mpConfigData, isLoading: isLoadingMpConfig } = useQuery({
+    queryKey: ["/api/config-mercadopago"],
+    retry: 1,
+  });
+
+  useEffect(() => {
+    if (mpConfigData) {
+      setMpConfig({
+        access_token: mpConfigData.access_token || "",
+        public_key: mpConfigData.public_key || "",
+        webhook_url: mpConfigData.webhook_url || "" // Atualizado para carregar webhook_url
+      });
+    }
+  }, [mpConfigData]);
+
+  const saveMercadoPagoConfig = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/config-mercadopago", mpConfig);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Configuração salva!",
+        description: "As configurações do Mercado Pago foram atualizadas.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/config-mercadopago"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const testMercadoPagoConnection = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/config-mercadopago/test", {
+        access_token: mpConfig.access_token,
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.success ? "✅ Conexão bem-sucedida!" : "❌ Falha na conexão",
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "❌ Erro ao testar conexão",
+        description: error.message || "Erro desconhecido ao conectar com Mercado Pago",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Status da integração
+  const getIntegrationStatus = () => {
+    if (isLoadingMpConfig) return { color: "bg-gray-500", text: "Verificando...", icon: Loader2 };
+    if (!mpConfigData || !mpConfigData.access_token) return { color: "bg-red-500", text: "Não Configurado", icon: XCircle };
+    if (mpConfigData.status_conexao === "conectado") return { color: "bg-green-500", text: "Conectado", icon: CheckCircle };
+    return { color: "bg-yellow-500", text: "Configurado (não testado)", icon: AlertCircle };
+  };
+
+  const status = getIntegrationStatus();
+  const StatusIcon = status.icon;
+
+  return (
+    <div className="space-y-6">
+      {/* Status da Integração Mercado Pago */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-blue-600" />
+            Status da Integração
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 ${status.color} rounded-full`}>
+                <StatusIcon className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold">Mercado Pago</p>
+                <p className="text-sm text-muted-foreground">Gateway de Pagamento</p>
+              </div>
+            </div>
+            <Badge className={status.color}>{status.text}</Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Configuração Mercado Pago */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-blue-600" />
+            Credenciais da API
+          </CardTitle>
+          <CardDescription>
+            Configure as credenciais da API do Mercado Pago para processar pagamentos
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Access Token</Label>
+            <Input
+              type="password"
+              value={mpConfig.access_token}
+              onChange={(e) => setMpConfig({ ...mpConfig, access_token: e.target.value })}
+              placeholder="APP_USR-..."
+              data-testid="input-mp-access-token"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Public Key</Label>
+            <Input
+              value={mpConfig.public_key}
+              onChange={(e) => setMpConfig({ ...mpConfig, public_key: e.target.value })}
+              placeholder="APP_USR-..."
+              data-testid="input-mp-public-key"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="mp-webhook">Webhook URL</Label>
+            <Input
+              id="mp-webhook"
+              value={mpConfig.webhook_url}
+              onChange={(e) => setMpConfig({ ...mpConfig, webhook_url: e.target.value })}
+              placeholder="https://seu-dominio.com/api/webhooks/mercadopago"
+              data-testid="input-mp-webhook"
+            />
+            <p className="text-xs text-muted-foreground">
+              ℹ️ URL onde o Mercado Pago enviará notificações de pagamento
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => saveMercadoPagoConfig.mutate()}
+              disabled={saveMercadoPagoConfig.isPending}
+              data-testid="button-save-mp-config"
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {saveMercadoPagoConfig.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Save className="h-4 w-4 mr-2" />
+              Salvar Configuração
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => testMercadoPagoConnection.mutate()}
+              disabled={testMercadoPagoConnection.isPending || !mpConfig.access_token}
+              data-testid="button-test-mp-connection"
+            >
+              {testMercadoPagoConnection.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Testar Conexão
+            </Button>
+          </div>
+
+          {mpConfigData && mpConfigData.webhook_url && (
+            <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-900">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold text-green-700 dark:text-green-400">Webhook Configurado</p>
+                  <p className="text-sm text-green-600 dark:text-green-300 mt-1 break-all">
+                    {mpConfigData.webhook_url}
+                  </p>
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                    ✅ Configure esta URL no painel do Mercado Pago quando tiver seu domínio premium
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
+// Componente de Métricas (Placeholder - assumindo que ele existe em outro lugar)
+function MetricsView() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Métricas</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p>Exibindo métricas detalhadas aqui...</p>
+        {/* Conteúdo real das métricas */}
+      </CardContent>
+    </Card>
+  );
+}
+
+
 type Subscription = {
   id: number;
   user_id: string;
@@ -1065,7 +1279,7 @@ export default function AdminPublico() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClientFor360, setSelectedClientFor360] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'clientes' | 'assinaturas' | 'configuracoes' | 'sistema' | 'metricas'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'clientes' | 'assinaturas' | 'configuracoes' | 'sistema' | 'metricas' | 'logs'>('dashboard');
   const [configTab, setConfigTab] = useState<'config' | 'mercadopago'>('config');
   const [userEditDialogOpen, setUserEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -1276,6 +1490,17 @@ export default function AdminPublico() {
             <BarChart3 className="h-5 w-5 mr-3" />
             {sidebarOpen && "Métricas"}
           </Button>
+          <Button
+            variant="ghost"
+            className={`w-full justify-start hover:bg-slate-700 ${!selectedClientFor360 && activeTab === 'logs' ? 'bg-slate-700' : ''}`}
+            onClick={() => {
+              setSelectedClientFor360(null);
+              setActiveTab('logs');
+            }}
+          >
+            <FileText className="h-5 w-5 mr-3" />
+            {sidebarOpen && "Logs Admin"}
+          </Button>
         </nav>
 
         <div className="p-4 border-t border-slate-700">
@@ -1296,7 +1521,7 @@ export default function AdminPublico() {
         <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              {selectedClientFor360 ? 'Cliente 360°' : 'Painel Principal'}
+              {selectedClientFor360 ? 'Cliente 360°' : activeTab === 'logs' ? 'Logs de Administradores' : 'Painel Principal'}
             </h1>
             <p className="text-sm text-slate-600 dark:text-slate-400">
               Bem-vindo, Administrador Master
@@ -1313,6 +1538,10 @@ export default function AdminPublico() {
               onClick={() => {
                 queryClient.invalidateQueries({ queryKey: ["/api/subscriptions"] });
                 queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+                // Invalidate logs if the logs tab is active
+                if (activeTab === 'logs') {
+                  queryClient.invalidateQueries({ queryKey: ["/api/admin/logs"] });
+                }
               }}
               variant="outline"
               size="sm"
@@ -1663,6 +1892,9 @@ export default function AdminPublico() {
                 </CardContent>
               </Card>
             </div>
+          ) : activeTab === 'logs' ? (
+            // Aba de Logs de Administrador
+            <AdminLogsView />
           ) : (
             // Dashboard Principal
             <>

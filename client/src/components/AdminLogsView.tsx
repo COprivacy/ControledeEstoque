@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -108,11 +109,11 @@ export function AdminLogsView() {
     setCurrentPage(1);
   };
 
-  const uniqueAdmins = Array.from(new Set(logs.map(log => log.admin_email))).filter(Boolean);
+  const uniqueAdmins = Array.from(new Set(logs.map(log => log.admin_email).filter(Boolean)));
   const uniqueActions = Array.from(new Set(logs.map(log => {
     const match = log.action.match(/^[A-Z_]+/);
     return match ? match[0] : log.action;
-  }))).filter(Boolean);
+  }).filter(Boolean)));
 
   const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
   const paginatedLogs = filteredLogs.slice(
@@ -354,7 +355,7 @@ export function AdminLogsView() {
 
       <div className="p-4 bg-muted rounded-lg">
         <p className="text-sm font-medium mb-2">
-          {filteredLogs.length} log{filteredLogs.length !== 1 ? 's' : ''} encontrado{filteredLogs.length !== 1 ? 's' : ''}
+          {filteredLogs.length} registro{filteredLogs.length !== 1 ? 's' : ''} encontrado{filteredLogs.length !== 1 ? 's' : ''}
         </p>
         <p className="text-xs text-muted-foreground">
           Use os filtros acima para refinar a busca

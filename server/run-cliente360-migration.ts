@@ -1,7 +1,11 @@
 
 import { Pool } from '@neondatabase/serverless';
 import { readFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 async function runMigration() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL! });

@@ -3209,14 +3209,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
 
-
           // Atualizar usuário
           await storage.updateUser(userId, {
             max_funcionarios: novoLimite,
-            max_funcionarios_base: user.max_funcionarios_base || 1, // Preservar limite base
+            max_funcionarios_base: user.max_funcionarios_base || 1,
             data_expiracao_pacote_funcionarios: dataVencimento.toISOString(),
           });
 
+          // 🔥 NOVO: Reativar funcionários bloqueados POR FALTA DE LIMITE
+          // (mas APENAS se a conta principal estiver ativa)
+          if (user.status === 'ativo' && storage.getFuncionarios) {
+            const funcionarios = await storage.getFuncionarios();
+            const funcionariosBloqueados = funcionarios
+              .filter(f => f.conta_id === userId && f.status === 'bloqueado')
+              .sort((a, b) => new Date(a.data_criacao || 0).getTime() - new Date(b.data_criacao || 0).getTime())
+              .slice(0, quantidadeAdicional);
+
+            for (const funcionario of funcionariosBloqueados) {
+              await storage.updateFuncionario(funcionario.id, {
+                status: 'ativo',
+              });
+
+              logger.info('Funcionário reativado após compra de pacote', 'WEBHOOK', {
+                funcionarioId: funcionario.id,
+                funcionarioNome: funcionario.nome,
+                contaId: userId,
+              });
+            }
+
+            if (funcionariosBloqueados.length > 0) {
+              console.log(
+                `✅ [WEBHOOK] ${funcionariosBloqueados.length} funcionário(s) reativado(s) automaticamente`,
+              );
+            }
+          }
 
           console.log(
             `✅ [WEBHOOK] Pagamento confirmado - Pacote: ${pacoteId}`,
@@ -3228,7 +3254,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(
             `✅ [WEBHOOK] Vencimento: ${dataVencimento.toLocaleDateString('pt-BR')}`,
           );
-
 
           logger.info("Pacote de funcionários ativado", "WEBHOOK", {
             userId,

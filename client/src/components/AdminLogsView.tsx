@@ -67,16 +67,17 @@ export function AdminLogsView({ isPublicAdmin = false }: AdminLogsViewProps) {
       const data = await response.json();
 
       const processedLogs: AdminLog[] = data
+        .filter((log: any) => log && log.timestamp) // Filtrar logs inválidos
         .map((log: any, index: number) => ({
           id: index + 1,
-          timestamp: log.timestamp,
-          admin_email: log.userId || log.context || 'Sistema',
-          admin_name: log.data?.userName || log.context || 'Sistema',
-          action: log.message,
-          target_user: log.data?.targetUser,
-          details: JSON.stringify(log.data || {}),
-          ip_address: log.data?.ip,
-          user_agent: log.data?.userAgent,
+          timestamp: log.timestamp || new Date().toISOString(),
+          admin_email: log.usuario_email || log.userId || log.context || 'Sistema',
+          admin_name: log.usuario_nome || log.data?.userName || log.context || 'Sistema',
+          action: log.acao || log.message || 'Ação desconhecida',
+          target_user: log.data?.targetUser || '',
+          details: log.detalhes || JSON.stringify(log.data || {}),
+          ip_address: log.ip_address || log.data?.ip || '',
+          user_agent: log.user_agent || log.data?.userAgent || '',
           session_duration: log.data?.sessionDuration,
         }));
 
@@ -108,7 +109,7 @@ export function AdminLogsView({ isPublicAdmin = false }: AdminLogsViewProps) {
     }
 
     if (actionFilter !== "all") {
-      filtered = filtered.filter(log => log.action.includes(actionFilter));
+      filtered = filtered.filter(log => log.action?.includes(actionFilter));
     }
 
     if (adminFilter !== "all") {
@@ -121,6 +122,7 @@ export function AdminLogsView({ isPublicAdmin = false }: AdminLogsViewProps) {
 
   const uniqueAdmins = Array.from(new Set(logs.map(log => log.admin_email).filter(Boolean)));
   const uniqueActions = Array.from(new Set(logs.map(log => {
+    if (!log.action) return null;
     const match = log.action.match(/^[A-Z_]+/);
     return match ? match[0] : log.action;
   }).filter(Boolean)));

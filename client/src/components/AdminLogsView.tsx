@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Filter, Download, Clock, User, Activity, Shield, Eye, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Filter, Download, Clock, User, Activity, Shield, Eye, Edit, Trash2, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface AdminLog {
@@ -55,14 +55,13 @@ export function AdminLogsView() {
 
       const data = await response.json();
       
-      // Processar logs para formato esperado
+      // Processar logs para formato esperado - mostrar todos os logs do sistema
       const processedLogs: AdminLog[] = data
-        .filter((log: any) => log.context?.includes('ADMIN') || log.context?.includes('USER'))
         .map((log: any, index: number) => ({
           id: index + 1,
           timestamp: log.timestamp,
-          admin_email: log.userId || 'Sistema',
-          admin_name: log.data?.userName || 'Sistema',
+          admin_email: log.userId || log.context || 'Sistema',
+          admin_name: log.data?.userName || log.context || 'Sistema',
           action: log.message,
           target_user: log.data?.targetUser,
           details: JSON.stringify(log.data || {}),

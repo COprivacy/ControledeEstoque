@@ -64,7 +64,7 @@ export default function Ajuda() {
     },
     {
       question: "Como funciona o período de teste?",
-      answer: "Ao se cadastrar, você tem acesso gratuito a todos os recursos Premium por 30 dias. Após este período, você pode escolher um plano adequado.",
+      answer: "Ao se cadastrar, você tem acesso gratuito a todos os recursos Premium por 7 dias. Após este período, você pode escolher um plano adequado para continuar usando o sistema.",
       category: "planos"
     },
     {
@@ -73,14 +73,19 @@ export default function Ajuda() {
       category: "geral"
     },
     {
-      question: "Como configurar o pacote de funcionários?",
-      answer: "No painel Admin, acesse 'Pacotes' e escolha a quantidade adicional de funcionários. O sistema ativará automaticamente os funcionários bloqueados quando o pagamento for confirmado.",
+      question: "Como funcionam os pacotes de funcionários?",
+      answer: "O sistema inclui 1 funcionário por padrão. Você pode contratar pacotes adicionais de 5, 10, 20 ou 50 funcionários. Quando o pacote vence por falta de pagamento, os funcionários extras são bloqueados. Ao renovar, os mesmos funcionários que estavam bloqueados são reativados automaticamente.",
       category: "admin"
     },
     {
       question: "O que acontece se meu plano vencer?",
-      answer: "Você receberá avisos 7, 3 e 1 dia antes do vencimento. Se o plano vencer, sua conta será bloqueada até a renovação. Todos os dados são preservados.",
+      answer: "Você receberá avisos 7, 3 e 1 dia antes do vencimento. Se o plano vencer, sua conta será bloqueada até a renovação. Todos os dados são preservados e você terá acesso novamente assim que renovar o plano.",
       category: "planos"
+    },
+    {
+      question: "Como funciona o bloqueio de funcionários?",
+      answer: "Se o pacote de funcionários vencer, apenas os funcionários extras (além do padrão) são bloqueados. O funcionário padrão do sistema continua ativo se o plano principal estiver pago.",
+      category: "admin"
     }
   ];
 
@@ -497,7 +502,7 @@ export default function Ajuda() {
 
                       <h3 className="text-xl font-semibold text-white mb-3">3.3 Período de Teste</h3>
                       <p>
-                        Novos usuários têm direito a um período de teste gratuito de 30 dias com acesso completo aos recursos Premium. Após esse período, é necessário escolher um plano de assinatura.
+                        Novos usuários têm direito a um período de teste gratuito de 7 dias com acesso completo aos recursos Premium. Após esse período, é necessário escolher um plano de assinatura para continuar usando o sistema.
                       </p>
                     </section>
 
@@ -530,9 +535,34 @@ export default function Ajuda() {
                       </p>
                     </section>
 
-                    {/* 5. Uso Aceitável */}
+                    {/* 5. Pacotes de Funcionários */}
                     <section>
-                      <h2 className="text-2xl font-semibold text-white mb-4">5. Uso Aceitável</h2>
+                      <h2 className="text-2xl font-semibold text-white mb-4">5. Pacotes de Funcionários</h2>
+                      <h3 className="text-xl font-semibold text-white mb-3">5.1 Funcionário Padrão</h3>
+                      <p className="mb-4">
+                        Todos os planos incluem 1 (um) funcionário padrão sem custos adicionais. Este funcionário permanece ativo enquanto o plano principal estiver pago.
+                      </p>
+
+                      <h3 className="text-xl font-semibold text-white mb-3">5.2 Funcionários Adicionais</h3>
+                      <p className="mb-4">
+                        Você pode contratar pacotes de funcionários adicionais (5, 10, 20 ou 50 funcionários) mediante pagamento de taxa adicional. Os pacotes têm cobrança recorrente mensal.
+                      </p>
+
+                      <h3 className="text-xl font-semibold text-white mb-3">5.3 Bloqueio e Reativação</h3>
+                      <p className="mb-4">
+                        Se o pacote de funcionários não for renovado:
+                      </p>
+                      <ul className="list-disc pl-6 space-y-2 mb-4">
+                        <li>Os funcionários extras contratados serão bloqueados automaticamente</li>
+                        <li>O funcionário padrão continuará ativo (se o plano principal estiver pago)</li>
+                        <li>Ao renovar o pacote, os mesmos funcionários bloqueados são reativados automaticamente</li>
+                        <li>Não é necessário recadastrar os funcionários após renovação</li>
+                      </ul>
+                    </section>
+
+                    {/* 6. Uso Aceitável */}
+                    <section>
+                      <h2 className="text-2xl font-semibold text-white mb-4">6. Uso Aceitável</h2>
                       <p className="mb-4">Você concorda em NÃO utilizar o Serviço para:</p>
                       <ul className="list-disc pl-6 space-y-2">
                         <li>Violar qualquer lei ou regulamento aplicável</li>
@@ -545,9 +575,9 @@ export default function Ajuda() {
                       </ul>
                     </section>
 
-                    {/* 6. Propriedade Intelectual */}
+                    {/* 7. Propriedade Intelectual */}
                     <section>
-                      <h2 className="text-2xl font-semibold text-white mb-4">6. Propriedade Intelectual</h2>
+                      <h2 className="text-2xl font-semibold text-white mb-4">7. Propriedade Intelectual</h2>
                       <p className="mb-4">
                         Todo o conteúdo, funcionalidades e recursos do Pavisoft, incluindo mas não limitado a textos, gráficos, logotipos, ícones, imagens, código e software, são propriedade exclusiva da Pavisoft Sistemas ou de seus licenciadores.
                       </p>
@@ -556,9 +586,9 @@ export default function Ajuda() {
                       </p>
                     </section>
 
-                    {/* 7. Proteção de Dados */}
+                    {/* 8. Proteção de Dados */}
                     <section>
-                      <h2 className="text-2xl font-semibold text-white mb-4">7. Proteção de Dados (LGPD)</h2>
+                      <h2 className="text-2xl font-semibold text-white mb-4">8. Proteção de Dados (LGPD)</h2>
                       <p className="mb-4">
                         O tratamento de dados pessoais no Pavisoft está em conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018). Para mais detalhes, consulte nossa <Link href="/privacy" className="text-blue-400 hover:text-blue-300">Política de Privacidade</Link>.
                       </p>
@@ -570,9 +600,9 @@ export default function Ajuda() {
                       </p>
                     </section>
 
-                    {/* 8. Segurança */}
+                    {/* 9. Segurança */}
                     <section>
-                      <h2 className="text-2xl font-semibold text-white mb-4">8. Segurança</h2>
+                      <h2 className="text-2xl font-semibold text-white mb-4">9. Segurança</h2>
                       <p className="mb-4">
                         Implementamos medidas de segurança técnicas e organizacionais adequadas para proteger seus dados. No entanto, nenhum sistema é 100% seguro, e não podemos garantir segurança absoluta.
                       </p>
@@ -581,9 +611,9 @@ export default function Ajuda() {
                       </p>
                     </section>
 
-                    {/* 9. Disponibilidade do Serviço */}
+                    {/* 10. Disponibilidade do Serviço */}
                     <section>
-                      <h2 className="text-2xl font-semibold text-white mb-4">9. Disponibilidade do Serviço</h2>
+                      <h2 className="text-2xl font-semibold text-white mb-4">10. Disponibilidade do Serviço</h2>
                       <p className="mb-4">
                         Nos esforçamos para manter o Serviço disponível 24/7, mas não garantimos disponibilidade ininterrupta. Podemos realizar manutenções programadas mediante aviso prévio.
                       </p>
@@ -592,9 +622,9 @@ export default function Ajuda() {
                       </p>
                     </section>
 
-                    {/* 10. Limitação de Responsabilidade */}
+                    {/* 11. Limitação de Responsabilidade */}
                     <section>
-                      <h2 className="text-2xl font-semibold text-white mb-4">10. Limitação de Responsabilidade</h2>
+                      <h2 className="text-2xl font-semibold text-white mb-4">11. Limitação de Responsabilidade</h2>
                       <p className="mb-4">
                         O Serviço é fornecido "como está" e "conforme disponível". Não garantimos que o Serviço será livre de erros ou interrupções.
                       </p>
@@ -612,9 +642,9 @@ export default function Ajuda() {
                       </p>
                     </section>
 
-                    {/* 11. Fiscalização */}
+                    {/* 12. Fiscalização */}
                     <section>
-                      <h2 className="text-2xl font-semibold text-white mb-4">11. Conformidade Fiscal</h2>
+                      <h2 className="text-2xl font-semibold text-white mb-4">12. Conformidade Fiscal</h2>
                       <p className="mb-4">
                         O Pavisoft oferece recursos para emissão de notas fiscais eletrônicas. Você é responsável por:
                       </p>
@@ -629,9 +659,9 @@ export default function Ajuda() {
                       </p>
                     </section>
 
-                    {/* 12. Modificações do Serviço */}
+                    {/* 13. Modificações do Serviço */}
                     <section>
-                      <h2 className="text-2xl font-semibold text-white mb-4">12. Modificações do Serviço</h2>
+                      <h2 className="text-2xl font-semibold text-white mb-4">13. Modificações do Serviço</h2>
                       <p className="mb-4">
                         Reservamos o direito de modificar, suspender ou descontinuar qualquer parte do Serviço a qualquer momento, mediante aviso prévio quando possível.
                       </p>
@@ -640,9 +670,9 @@ export default function Ajuda() {
                       </p>
                     </section>
 
-                    {/* 13. Rescisão */}
+                    {/* 14. Rescisão */}
                     <section>
-                      <h2 className="text-2xl font-semibold text-white mb-4">13. Rescisão</h2>
+                      <h2 className="text-2xl font-semibold text-white mb-4">14. Rescisão</h2>
                       <p className="mb-4">
                         Podemos suspender ou encerrar sua conta se você violar estes Termos de Uso. Você pode encerrar sua conta a qualquer momento através do painel de administração.
                       </p>
@@ -651,9 +681,9 @@ export default function Ajuda() {
                       </p>
                     </section>
 
-                    {/* 14. Alterações nos Termos */}
+                    {/* 15. Alterações nos Termos */}
                     <section>
-                      <h2 className="text-2xl font-semibold text-white mb-4">14. Alterações nos Termos</h2>
+                      <h2 className="text-2xl font-semibold text-white mb-4">15. Alterações nos Termos</h2>
                       <p className="mb-4">
                         Podemos atualizar estes Termos periodicamente. Notificaremos você sobre alterações significativas com pelo menos 30 dias de antecedência via email ou notificação no sistema.
                       </p>
@@ -662,9 +692,9 @@ export default function Ajuda() {
                       </p>
                     </section>
 
-                    {/* 15. Lei Aplicável */}
+                    {/* 16. Lei Aplicável */}
                     <section>
-                      <h2 className="text-2xl font-semibold text-white mb-4">15. Lei Aplicável e Foro</h2>
+                      <h2 className="text-2xl font-semibold text-white mb-4">16. Lei Aplicável e Foro</h2>
                       <p className="mb-4">
                         Estes Termos são regidos pelas leis da República Federativa do Brasil.
                       </p>
@@ -673,9 +703,9 @@ export default function Ajuda() {
                       </p>
                     </section>
 
-                    {/* 16. Contato */}
+                    {/* 17. Contato */}
                     <section>
-                      <h2 className="text-2xl font-semibold text-white mb-4">16. Contato</h2>
+                      <h2 className="text-2xl font-semibold text-white mb-4">17. Contato</h2>
                       <p className="mb-4">
                         Para questões sobre estes Termos de Uso, entre em contato conosco:
                       </p>

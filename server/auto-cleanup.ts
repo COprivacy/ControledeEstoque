@@ -24,6 +24,28 @@ export class AutoCleanupService {
     this.config = { ...DEFAULT_CONFIG, ...config };
   }
 
+  // Carregar configurações salvas
+  async loadConfig(): Promise<void> {
+    try {
+      // Aqui você pode implementar um método no storage para buscar configurações
+      // Por enquanto, usa as configurações padrão
+      logger.info('Configurações de limpeza carregadas', 'AUTO_CLEANUP', this.config);
+    } catch (error: any) {
+      logger.warn('Usando configurações padrão de limpeza', 'AUTO_CLEANUP', { error: error.message });
+    }
+  }
+
+  // Atualizar configurações
+  updateConfig(newConfig: Partial<CleanupConfig>): void {
+    this.config = { ...this.config, ...newConfig };
+    logger.info('Configurações de limpeza atualizadas', 'AUTO_CLEANUP', this.config);
+  }
+
+  // Obter configurações atuais
+  getConfig(): CleanupConfig {
+    return { ...this.config };
+  }
+
   async executeCleanup(): Promise<void> {
     if (this.isRunning) {
       logger.warn('Limpeza automática já está em execução', 'AUTO_CLEANUP');

@@ -31,6 +31,48 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+// Middleware para verificar autenticação geral (necessário para endpoints de config)
+async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const userId = req.headers["x-user-id"] as string;
+  const userType = req.headers["x-user-type"] as string;
+  const contaId = req.headers["x-conta-id"] as string;
+
+  if (!userId) {
+    return res
+      .status(401)
+      .json({
+        error: "Autenticação necessária. Header x-user-id não fornecido.",
+      });
+  }
+
+  // Se for funcionário, VALIDAR se o conta_id é legítimo
+  if (userType === "funcionario" && contaId) {
+    try {
+      const allFuncionarios = await storage.getFuncionarios();
+      const funcionario = allFuncionarios.find((f) => f.id === userId);
+
+      // VALIDAÇÃO CRÍTICA: Verificar se o funcionário existe e pertence à conta informada
+      if (!funcionario || funcionario.conta_id !== contaId) {
+        return res
+          .status(403)
+          .json({
+            error: "Acesso negado. Funcionário não autorizado para esta conta.",
+          });
+      }
+      req.headers["effective-user-id"] = contaId;
+      req.headers["funcionario-id"] = userId; // Armazena ID do funcionário para auditoria
+    } catch (error) {
+      console.error("Erro ao validar funcionário:", error);
+      return res.status(500).json({ error: "Erro ao validar autenticação" });
+    }
+  } else {
+    req.headers["effective-user-id"] = userId;
+  }
+
+  next();
+}
+
+
 // Helper para obter effectiveUserId de forma segura
 function getEffectiveUserId(req: Request): string | null {
   return req.headers["effective-user-id"] as string;
@@ -3532,7 +3574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         summary: autoHealingService.getSystemStatus().summary
       });
     } catch (error: any) {
-      console.error("Erro ao executar verificações:", error);
+      console.error("Erro ao executar verificações de saúde:", error);
       res.status(500).json({ error: error.message });
     }
   });
@@ -3548,6 +3590,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+
+  // Endpoints para configurações de limpeza automática
+  app.get("/api/auto-cleanup/config", requireAuth, async (req, res) => {
+    try {
+      const { autoCleanupService } = await import("./auto-cleanup");
+      const config = autoCleanupService.getConfig();
+      res.json(config);
+    } catch (error: any) {
+      console.error("Erro ao obter configurações de limpeza:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/auto-cleanup/config", requireAuth, async (req, res) => {
+    try {
+      const { autoCleanupService } = await import("./auto-cleanup");
+      const { devolucoes_dias, orcamentos_dias, logs_dias, caixas_dias } = req.body;
+
+      // Validar valores
+      const config: any = {};
+      if (devolucoes_dias !== undefined && devolucoes_dias !== 'never') {
+        config.devolucoes_dias = parseInt(devolucoes_dias);
+      } else if (devolucoes_dias === 'never') {
+        config.devolucoes_dias = null;
+      }
+
+      if (orcamentos_dias !== undefined && orcamentos_dias !== 'never') {
+        config.orcamentos_dias = parseInt(orcamentos_dias);
+      } else if (orcamentos_dias === 'never') {
+        config.orcamentos_dias = null;
+      }
+      
+      if (logs_dias !== undefined) {
+        config.logs_dias = parseInt(logs_dias);
+      } else {
+        config.logs_dias = null;
+      }
+
+      if (caixas_dias !== undefined && caixas_dias !== 'never') {
+        config.caixas_dias = parseInt(caixas_dias);
+      } else if (caixas_dias === 'never') {
+        config.caixas_dias = null;
+      }
+
+      autoCleanupService.updateConfig(config);
+
+      res.json({
+        success: true,
+        message: "Configurações atualizadas com sucesso",
+        config: autoCleanupService.getConfig()
+      });
+    } catch (error: any) {
+      console.error("Erro ao atualizar configurações de limpeza:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/auto-cleanup/execute", requireAdmin, async (req, res) => {
+    try {
+      const { autoCleanupService } = await import("./auto-cleanup");
+      await autoCleanupService.executeCleanup();
+      res.json({
+        success: true,
+        message: "Limpeza automática executada com sucesso"
+      });
+    } catch (error: any) {
+      console.error("Erro ao executar limpeza automática:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
 
   // Verificar status de bloqueio do usuário
   app.get("/api/user/check-blocked", async (req, res) => {

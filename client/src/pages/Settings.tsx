@@ -235,24 +235,39 @@ export default function Settings() {
 
     setIsSaving(true); // Ativa o estado de salvando
 
-    // Salvar configurações no localStorage
-    localStorage.setItem("customization", JSON.stringify(config));
+    try {
+      // Salvar configurações no localStorage
+      localStorage.setItem("customization", JSON.stringify(config));
 
-    // Aplicar customizações
-    applyThemeColors(config);
-    applyFontSize(config.fontSize);
-    applyBorderRadius(config.borderRadius);
-    applyInterfaceSettings();
+      // Aplicar customizações
+      applyThemeColors(config);
+      applyFontSize(config.fontSize);
+      applyBorderRadius(config.borderRadius);
+      applyInterfaceSettings();
 
-    toast({
-      title: "Configurações salvas!",
-      description: "A personalização foi aplicada com sucesso",
-    });
+      // Salvar configurações de limpeza automática no backend
+      const cleanupConfig = {
+        devolucoes_dias: document.querySelector<HTMLInputElement>('[data-cleanup="devolucoes"]')?.value || '90',
+        orcamentos_dias: document.querySelector<HTMLInputElement>('[data-cleanup="orcamentos"]')?.value || '180',
+        logs_dias: document.querySelector<HTMLInputElement>('[data-cleanup="logs"]')?.value || '90',
+        caixas_dias: document.querySelector<HTMLInputElement>('[data-cleanup="caixas"]')?.value || '365',
+      };
 
-    // Simula um atraso para a demonstração do estado de salvando
-    await new Promise(resolve => setTimeout(resolve, 1500));
+      await apiRequest("POST", "/api/auto-cleanup/config", cleanupConfig);
 
-    setIsSaving(false); // Desativa o estado de salvando
+      toast({
+        title: "Configurações salvas!",
+        description: "Todas as configurações foram aplicadas com sucesso",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message || "Algumas configurações podem não ter sido salvas",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleReset = () => {
@@ -902,7 +917,10 @@ export default function Settings() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Select defaultValue="90">
+                    <Select defaultValue="90" onValueChange={(value) => {
+                      const input = document.querySelector<HTMLInputElement>('[data-cleanup="devolucoes"]');
+                      if (input) input.value = value;
+                    }}>
                       <SelectTrigger className="w-[140px]">
                         <SelectValue />
                       </SelectTrigger>
@@ -914,6 +932,7 @@ export default function Settings() {
                         <SelectItem value="never">Nunca</SelectItem>
                       </SelectContent>
                     </Select>
+                    <input type="hidden" data-cleanup="devolucoes" defaultValue="90" />
                   </div>
                 </div>
 
@@ -927,7 +946,10 @@ export default function Settings() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Select defaultValue="180">
+                    <Select defaultValue="180" onValueChange={(value) => {
+                      const input = document.querySelector<HTMLInputElement>('[data-cleanup="orcamentos"]');
+                      if (input) input.value = value;
+                    }}>
                       <SelectTrigger className="w-[140px]">
                         <SelectValue />
                       </SelectTrigger>
@@ -939,6 +961,7 @@ export default function Settings() {
                         <SelectItem value="never">Nunca</SelectItem>
                       </SelectContent>
                     </Select>
+                    <input type="hidden" data-cleanup="orcamentos" defaultValue="180" />
                   </div>
                 </div>
 
@@ -952,7 +975,10 @@ export default function Settings() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Select defaultValue="90">
+                    <Select defaultValue="90" onValueChange={(value) => {
+                      const input = document.querySelector<HTMLInputElement>('[data-cleanup="logs"]');
+                      if (input) input.value = value;
+                    }}>
                       <SelectTrigger className="w-[140px]">
                         <SelectValue />
                       </SelectTrigger>
@@ -964,6 +990,7 @@ export default function Settings() {
                         <SelectItem value="365">1 ano</SelectItem>
                       </SelectContent>
                     </Select>
+                    <input type="hidden" data-cleanup="logs" defaultValue="90" />
                   </div>
                 </div>
 
@@ -977,7 +1004,10 @@ export default function Settings() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Select defaultValue="365">
+                    <Select defaultValue="365" onValueChange={(value) => {
+                      const input = document.querySelector<HTMLInputElement>('[data-cleanup="caixas"]');
+                      if (input) input.value = value;
+                    }}>
                       <SelectTrigger className="w-[140px]">
                         <SelectValue />
                       </SelectTrigger>
@@ -988,6 +1018,7 @@ export default function Settings() {
                         <SelectItem value="never">Nunca</SelectItem>
                       </SelectContent>
                     </Select>
+                    <input type="hidden" data-cleanup="caixas" defaultValue="365" />
                   </div>
                 </div>
               </div>

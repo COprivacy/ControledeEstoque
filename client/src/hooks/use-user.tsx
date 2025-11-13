@@ -43,6 +43,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Atualizar localStorage quando o usuário mudar
     if (user) {
       localStorage.setItem("user", JSON.stringify(user));
     } else {

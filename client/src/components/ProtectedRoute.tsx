@@ -106,7 +106,7 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
                   🔒 Acesso Suspenso
                 </h2>
                 <p className="text-lg text-gray-700 dark:text-gray-300 max-w-md" data-testid="text-blocked-description">
-                  {user?.plano === "trial" 
+                  {user?.plano === "trial"
                     ? "Seu período de teste gratuito expirou. Faça upgrade para continuar usando o sistema."
                     : "Identificamos uma pendência no pagamento da sua assinatura. Regularize para reativar o acesso."}
                 </p>
@@ -121,7 +121,7 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">Plano Anterior:</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
-                    {user?.plano === "trial" ? "Trial Gratuito" : 
+                    {user?.plano === "trial" ? "Trial Gratuito" :
                      user?.plano === "premium_mensal" ? "Premium Mensal" :
                      user?.plano === "premium_anual" ? "Premium Anual" : "Free"}
                   </span>
@@ -163,8 +163,8 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
               {/* Link de Ajuda */}
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
                 Precisa de ajuda? Entre em contato:{" "}
-                <a 
-                  href="https://wa.me/5581989842677" 
+                <a
+                  href="https://wa.me/5581989842677"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 dark:text-blue-400 hover:underline font-medium"

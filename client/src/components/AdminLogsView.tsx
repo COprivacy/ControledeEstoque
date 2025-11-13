@@ -65,20 +65,23 @@ export function AdminLogsView({ isPublicAdmin = false }: AdminLogsViewProps) {
       if (!response.ok) throw new Error("Erro ao buscar logs");
 
       const data = await response.json();
+      
+      console.log('📊 Dados recebidos da API:', data);
+      console.log('📊 Total de logs:', data.length);
 
       const processedLogs: AdminLog[] = data
-        .filter((log: any) => log && log.timestamp) // Filtrar logs inválidos
+        .filter((log: any) => log && (log.timestamp || log.data)) // Filtrar logs inválidos
         .map((log: any, index: number) => ({
-          id: index + 1,
-          timestamp: log.timestamp || new Date().toISOString(),
-          admin_email: log.usuario_email || log.userId || log.context || 'Sistema',
-          admin_name: log.usuario_nome || log.data?.userName || log.context || 'Sistema',
-          action: log.acao || log.message || 'Ação desconhecida',
-          target_user: log.data?.targetUser || '',
-          details: log.detalhes || JSON.stringify(log.data || {}),
-          ip_address: log.ip_address || log.data?.ip || '',
-          user_agent: log.user_agent || log.data?.userAgent || '',
-          session_duration: log.data?.sessionDuration,
+          id: log.id || index + 1,
+          timestamp: log.data || log.timestamp || new Date().toISOString(),
+          admin_email: log.usuario_email || log.admin_email || log.userId || log.context || 'Sistema',
+          admin_name: log.usuario_nome || log.admin_name || log.userName || 'Sistema',
+          action: log.acao || log.action || log.message || 'Ação desconhecida',
+          target_user: log.target_user || '',
+          details: log.detalhes || log.details || '',
+          ip_address: log.ip_address || '',
+          user_agent: log.user_agent || '',
+          session_duration: log.session_duration,
         }));
 
       setLogs(processedLogs);
@@ -100,31 +103,32 @@ export function AdminLogsView({ isPublicAdmin = false }: AdminLogsViewProps) {
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(log =>
-        log.admin_email?.toLowerCase().includes(search) ||
-        log.admin_name?.toLowerCase().includes(search) ||
-        log.action?.toLowerCase().includes(search) ||
-        log.details?.toLowerCase().includes(search) ||
-        log.target_user?.toLowerCase().includes(search)
+        (log.admin_email && log.admin_email.toLowerCase().includes(search)) ||
+        (log.admin_name && log.admin_name.toLowerCase().includes(search)) ||
+        (log.action && log.action.toLowerCase().includes(search)) ||
+        (log.details && log.details.toLowerCase().includes(search)) ||
+        (log.target_user && log.target_user.toLowerCase().includes(search))
       );
     }
 
     if (actionFilter !== "all") {
-      filtered = filtered.filter(log => log.action?.includes(actionFilter));
+      filtered = filtered.filter(log => log.action && log.action.includes(actionFilter));
     }
 
     if (adminFilter !== "all") {
-      filtered = filtered.filter(log => log.admin_email === adminFilter);
+      filtered = filtered.filter(log => log.admin_email && log.admin_email === adminFilter);
     }
 
     setFilteredLogs(filtered);
     setCurrentPage(1);
   };
 
-  const uniqueAdmins = Array.from(new Set(logs.map(log => log.admin_email).filter(Boolean)));
+  const uniqueAdmins = Array.from(new Set(logs.map(log => log.admin_email || log.usuario_email).filter(Boolean)));
   const uniqueActions = Array.from(new Set(logs.map(log => {
-    if (!log.action) return null;
-    const match = log.action.match(/^[A-Z_]+/);
-    return match ? match[0] : log.action;
+    const action = log.action || log.acao;
+    if (!action) return null;
+    const match = action.match(/^[A-Z_]+/);
+    return match ? match[0] : action;
   }).filter(Boolean)));
 
   const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);

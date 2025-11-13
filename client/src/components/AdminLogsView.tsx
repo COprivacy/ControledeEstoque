@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,8 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 interface AdminLog {
   id: number;
   timestamp: string;
-  admin_email: string;
-  admin_name: string;
+  admin_email?: string;
+  admin_name?: string;
   action: string;
   target_user?: string;
   details: string;
@@ -54,7 +53,7 @@ export function AdminLogsView() {
       if (!response.ok) throw new Error("Erro ao buscar logs");
 
       const data = await response.json();
-      
+
       // Processar logs para formato esperado - mostrar todos os logs do sistema
       const processedLogs: AdminLog[] = data
         .map((log: any, index: number) => ({
@@ -357,6 +356,15 @@ export function AdminLogsView() {
           )}
         </Card>
       )}
+
+      <div className="p-4 bg-muted rounded-lg">
+        <p className="text-sm font-medium mb-2">
+          {filteredLogs.length} log{filteredLogs.length !== 1 ? 's' : ''} encontrado{filteredLogs.length !== 1 ? 's' : ''} com os filtros aplicados
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Use os filtros acima para refinar a busca
+        </p>
+      </div>
     </div>
   );
 }

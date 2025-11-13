@@ -4237,6 +4237,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para listar apenas devoluções arquivadas
+  app.get("/api/devolucoes/arquivadas", getUserId, async (req, res) => {
+    try {
+      const userId = req.headers["effective-user-id"] as string;
+
+      if (!storage.getDevolucoes) {
+        return res
+          .status(501)
+          .json({ error: "Método getDevolucoes não implementado" });
+      }
+
+      const allDevolucoes = await storage.getDevolucoes();
+      const devolucoesArquivadas = allDevolucoes.filter(
+        (d) => d.user_id === userId && d.status === 'arquivada'
+      );
+
+      console.log(
+        `✅ Devoluções arquivadas buscadas - User: ${userId}, Total: ${devolucoesArquivadas.length}`,
+      );
+      res.json(devolucoesArquivadas);
+    } catch (error) {
+      console.error("Erro ao buscar devoluções arquivadas:", error);
+      res.status(500).json({ error: "Erro ao buscar devoluções arquivadas" });
+    }
+  });
+
   // Rotas de orçamentos
   app.get("/api/orcamentos", getUserId, async (req, res) => {
     try {
@@ -4386,6 +4412,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao deletar orçamento:", error);
       res.status(500).json({ error: "Erro ao deletar orçamento" });
+    }
+  });
+
+  // Endpoint para listar apenas orçamentos arquivados
+  app.get("/api/orcamentos/arquivados", getUserId, async (req, res) => {
+    try {
+      const effectiveUserId = req.headers["effective-user-id"] as string;
+
+      const allOrcamentos = await storage.getOrcamentos();
+      const orcamentosArquivados = allOrcamentos.filter(
+        (o) => o.user_id === effectiveUserId && o.status === 'arquivado'
+      );
+
+      console.log(
+        `✅ Orçamentos arquivados buscados - User: ${effectiveUserId}, Total: ${orcamentosArquivados.length}`,
+      );
+      res.json(orcamentosArquivados);
+    } catch (error) {
+      console.error("Erro ao buscar orçamentos arquivados:", error);
+      res.status(500).json({ error: "Erro ao buscar orçamentos arquivados" });
     }
   });
 

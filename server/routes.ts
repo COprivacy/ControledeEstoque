@@ -1001,20 +1001,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Logs do Sistema - Sistema de logs estruturados técnicos
-  app.get("/api/system-logs", requireAdmin, async (req, res) => {
+  // Rota para buscar logs do sistema (apenas admins)
+  app.get("/api/system-logs", async (req, res) => {
     try {
-      const { date, level, limit } = req.query;
-      const logs = await logger.getLogs(
-        date as string,
-        level as LogLevel,
-        limit ? parseInt(limit as string) : 100,
-      );
-      res.json(logs);
-    } catch (error) {
-      logger.error("Erro ao buscar logs", "API", { error });
-      res.status(500).json({ error: "Erro ao buscar logs" });
+      const userId = req.headers['x-user-id'] as string;
+      const isAdmin = req.headers['x-is-admin'] === 'true';
+
+      if (!isAdmin) {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      const level = req.query.level as string || 'INFO';
+      const limit = parseInt(req.query.limit as string) || 100;
+
+      const query = `
+        SELECT * FROM system_logs 
+        WHERE level = $1 
+        ORDER BY timestamp DESC 
+        LIMIT $2
+      `;
+
+      const result = await storage.query(query, [level, limit]);
+      res.json(result.rows);
+    } catch (error: any) {
+      logger.error('Erro ao buscar logs do sistema:', error);
+      res.status(500).json({ error: error.message });
     }
   });
+
+  // Rota para admin público buscar TODOS os logs (sem filtro de usuário)
+  app.get("/api/admin/all-logs", async (req, res) => {
+    try {
+      const userId = req.headers['x-user-id'] as string;
+      const isAdmin = req.headers['x-is-admin'] === 'true';
+
+      // Verificar se é o master admin
+      const userResult = await storage.query(
+        'SELECT email FROM usuarios WHERE id = $1',
+        [userId]
+      );
+
+      const isMasterAdmin = userResult.rows[0]?.email === 'pavisoft.suporte@gmail.com';
+
+      if (!isAdmin || !isMasterAdmin) {
+        return res.status(403).json({ error: "Acesso negado - apenas master admin" });
+      }
+
+      const limit = parseInt(req.query.limit as string) || 500;
+
+      const query = `
+        SELECT * FROM system_logs 
+        WHERE level = 'INFO'
+        AND (
+          message LIKE '%LOGIN%' OR 
+          message LIKE '%LOGOUT%' OR 
+          message LIKE '%ACESSO%' OR
+          message LIKE '%ADMIN%'
+        )
+        ORDER BY timestamp DESC 
+        LIMIT $1
+      `;
+
+      const result = await storage.query(query, [limit]);
+      res.json(result.rows);
+    } catch (error: any) {
+      logger.error('Erro ao buscar todos os logs:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
 
   // Backups não são mais necessários - usando backups nativos do Neon PostgreSQL
 
@@ -2472,7 +2527,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ],
         payer: {
           email,
-          name: nome,
+          name,
           identification: cpfCnpj
             ? {
                 type: cpfCnpj.replace(/\D/g, "").length === 11 ? "CPF" : "CNPJ",
@@ -3575,7 +3630,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/caixas/aberto", getUserId, async (req, res) => {
     try {
       const userId = req.headers["effective-user-id"] as string;
-      const funcionarioId = req.headers["funcionario-id"] as string;
+      const funcionarioId = req.headers["funcionario-id"] as string; // Validado pelo middleware
+      const userType = req.headers["x-user-type"] as string;
 
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });

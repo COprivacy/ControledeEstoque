@@ -23,7 +23,11 @@ interface AdminLog {
   session_duration?: number;
 }
 
-export function AdminLogsView() {
+interface AdminLogsViewProps {
+  isPublicAdmin?: boolean;
+}
+
+export function AdminLogsView({ isPublicAdmin = false }: AdminLogsViewProps) {
   const [logs, setLogs] = useState<AdminLog[]>([]);
   const [filteredLogs, setFilteredLogs] = useState<AdminLog[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -45,7 +49,13 @@ export function AdminLogsView() {
   const fetchAdminLogs = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/system-logs?level=INFO&limit=500", {
+      
+      // Se for admin público, usa endpoint diferente sem filtro de usuário
+      const endpoint = isPublicAdmin 
+        ? "/api/admin/all-logs?limit=500"
+        : "/api/system-logs?level=INFO&limit=500";
+      
+      const response = await fetch(endpoint, {
         headers: {
           'x-user-id': localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!).id : '',
           'x-is-admin': 'true',

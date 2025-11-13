@@ -1699,7 +1699,7 @@ export default function AdminPublico() {
             </div>
           ) : activeTab === 'logs' ? (
             // Aba de Logs de Administrador
-            <AdminLogsView />
+            <AdminLogsView isPublicAdmin={true} />
           ) : (
             // Dashboard Principal
             <>

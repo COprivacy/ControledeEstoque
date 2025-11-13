@@ -3,10 +3,10 @@ import { storage } from './storage';
 import { logger } from './logger';
 
 interface CleanupConfig {
-  devolucoes_dias: number;
-  orcamentos_dias: number;
-  logs_dias: number;
-  caixas_dias: number;
+  devolucoes_dias: number | null;
+  orcamentos_dias: number | null;
+  logs_dias: number | null;
+  caixas_dias: number | null;
 }
 
 const DEFAULT_CONFIG: CleanupConfig = {
@@ -62,18 +62,18 @@ export class AutoCleanupService {
         logs: 0,
       };
 
-      // Limpar devoluções antigas
-      if (this.config.devolucoes_dias > 0) {
+      // Limpar devoluções antigas (se configurado)
+      if (this.config.devolucoes_dias !== null && this.config.devolucoes_dias > 0) {
         results.devolucoes = await this.cleanupDevolucoes(this.config.devolucoes_dias);
       }
 
-      // Limpar orçamentos antigos
-      if (this.config.orcamentos_dias > 0) {
+      // Limpar orçamentos antigos (se configurado)
+      if (this.config.orcamentos_dias !== null && this.config.orcamentos_dias > 0) {
         results.orcamentos = await this.cleanupOrcamentos(this.config.orcamentos_dias);
       }
 
-      // Limpar logs antigos
-      if (this.config.logs_dias > 0) {
+      // Limpar logs antigos (se configurado)
+      if (this.config.logs_dias !== null && this.config.logs_dias > 0) {
         results.logs = await this.cleanupLogs(this.config.logs_dias);
       }
 

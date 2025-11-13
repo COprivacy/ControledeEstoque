@@ -254,7 +254,11 @@ export default function Settings() {
         caixas_dias: document.querySelector<HTMLInputElement>('[data-cleanup="caixas"]')?.value || '365',
       };
 
-      await apiRequest("POST", "/api/auto-cleanup/config", cleanupConfig);
+      try {
+        await apiRequest("POST", "/api/auto-cleanup/config", cleanupConfig);
+      } catch (cleanupError: any) {
+        console.warn("Configurações de limpeza não salvas:", cleanupError.message);
+      }
 
       toast({
         title: "Configurações salvas!",

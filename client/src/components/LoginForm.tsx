@@ -67,25 +67,31 @@ export default function LoginForm({
 
       const data = await response.json();
 
-      if (response.ok && data.success) {
+      // Verificar se foi bem-sucedido
+      if (response.ok && data.success === true) {
         toast({
-          title: "Email enviado!",
+          title: "✅ Email enviado!",
           description: "Verifique seu email e insira o código recebido",
         });
         setResetStep('code');
       } else {
-        // Mostrar erro específico se email não encontrado
+        // Mostrar erro específico
+        const errorMessage = data.error || data.message || "Erro ao enviar email de recuperação";
+        
         toast({
-          title: "Erro",
-          description: data.error || data.message || "Erro ao enviar email de recuperação",
+          title: "❌ Erro",
+          description: errorMessage,
           variant: "destructive",
         });
-        // NÃO avançar para próxima tela
+        
+        // NÃO avançar para próxima tela quando houver erro
+        console.error("Erro na recuperação de senha:", errorMessage);
       }
     } catch (error) {
+      console.error("Erro na requisição:", error);
       toast({
-        title: "Erro",
-        description: "Erro ao processar solicitação",
+        title: "❌ Erro",
+        description: "Erro de conexão. Verifique sua internet e tente novamente.",
         variant: "destructive",
       });
     } finally {

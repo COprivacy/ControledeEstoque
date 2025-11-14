@@ -341,18 +341,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email } = req.body;
 
       if (!email) {
-        return res.status(400).json({ error: "Email é obrigatório" });
+        return res.status(400).json({ 
+          success: false,
+          error: "Email é obrigatório" 
+        });
       }
 
       // Buscar usuário por email
       const user = await storage.getUserByEmail(email);
 
-      // Se o usuário não existir, retornar erro específico
+      // Se o usuário não existir, retornar erro específico e NÃO continuar
       if (!user) {
         if (process.env.NODE_ENV === "development") {
           console.log(`⚠️ Tentativa de recuperação para email inexistente: ${email}`);
         }
         
+        // Retornar erro e encerrar a requisição
         return res.status(404).json({
           success: false,
           error: "Email não encontrado em nossa base de dados",
@@ -364,41 +368,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 15); // Código expira em 15 minutos
 
-      try {
-        // Salvar código no banco de dados
-        await storage.createPasswordResetCode(email, code, expiresAt.toISOString());
+      // Salvar código no banco de dados
+      await storage.createPasswordResetCode(email, code, expiresAt.toISOString());
 
-        const { EmailService } = await import("./email-service");
-        const emailService = new EmailService();
+      const { EmailService } = await import("./email-service");
+      const emailService = new EmailService();
 
-        await emailService.sendPasswordResetCode({
-          to: email,
-          userName: user.nome,
-          code,
-        });
+      await emailService.sendPasswordResetCode({
+        to: email,
+        userName: user.nome,
+        code,
+      });
 
-        if (process.env.NODE_ENV === "development") {
-          console.log(
-            `📧 Código de recuperação enviado para ${email}: ${code}`,
-          );
-        }
-
-        res.json({
-          success: true,
-          message: "Código de recuperação enviado para seu email",
-          // SECURITY: Código NÃO é retornado - apenas enviado por email
-          ...(process.env.NODE_ENV === "development" && { code }), // Apenas em dev para testes
-        });
-      } catch (emailError) {
-        console.error("❌ Erro ao enviar email de recuperação:", emailError);
-        res.status(500).json({
-          success: false,
-          error: "Erro ao enviar email. Tente novamente em alguns instantes.",
-        });
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          `📧 Código de recuperação enviado para ${email}: ${code}`,
+        );
       }
+
+      return res.json({
+        success: true,
+        message: "Código de recuperação enviado para seu email",
+        // SECURITY: Código NÃO é retornado - apenas enviado por email
+        ...(process.env.NODE_ENV === "development" && { code }), // Apenas em dev para testes
+      });
+
     } catch (error) {
-      console.error("Erro ao processar recuperação de senha:", error);
-      res.status(500).json({ error: "Erro ao processar solicitação" });
+      console.error("❌ Erro ao processar recuperação de senha:", error);
+      return res.status(500).json({ 
+        success: false,
+        error: "Erro ao processar solicitação. Tente novamente." 
+      });
     }
   });
 

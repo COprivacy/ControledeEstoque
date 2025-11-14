@@ -478,6 +478,13 @@ export default function Admin() {
     cargo: "",
   });
 
+  // Limpar formulário quando o diálogo de criação for fechado
+  useEffect(() => {
+    if (!createUserOpen) {
+      setNewEmployee({ nome: "", email: "", senha: "", cargo: "" });
+    }
+  }, [createUserOpen]);
+
   const [permissions, setPermissions] = useState<Record<string, Permission>>({});
 
   // Initial state from localStorage
@@ -585,11 +592,14 @@ export default function Admin() {
         title: "Funcionário adicionado",
         description: "Novo funcionário criado com sucesso!",
       });
-      setCreateUserOpen(false);
+      // Resetar o formulário ANTES de fechar o diálogo
       setNewEmployee({ nome: "", email: "", senha: "", cargo: "" });
+      setCreateUserOpen(false);
     },
     onError: (error: any) => {
       if (error.limite_atingido) {
+        // Resetar o formulário também em caso de limite atingido
+        setNewEmployee({ nome: "", email: "", senha: "", cargo: "" });
         setCreateUserOpen(false);
         setShowPricingDialog(true);
       } else {

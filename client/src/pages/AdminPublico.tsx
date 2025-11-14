@@ -1078,6 +1078,9 @@ export default function AdminPublico() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [limparLogsDialogOpen, setLimparLogsDialogOpen] = useState(false);
 
+  // Recupera o usuário logado do localStorage
+  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("user") || "{}") : {};
+
 
   const { data: subscriptions = [], isLoading: isLoadingSubscriptions, error: subscriptionsError } = useQuery<Subscription[]>({
     queryKey: ["/api/subscriptions"],
@@ -1202,9 +1205,6 @@ export default function AdminPublico() {
       </div>
     );
   }
-
-  // Recupera o usuário logado do localStorage
-  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("user") || "{}") : {};
 
   const planosFreeCount = users.filter(u => u.plano === 'free' || u.plano === 'trial').length;
 

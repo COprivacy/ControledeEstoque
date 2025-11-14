@@ -91,32 +91,11 @@ export default function Ajuda() {
 
   const tutoriais = [
     {
-      titulo: "Primeiros Passos no Pavisoft",
-      descricao: "Aprenda a configurar sua conta e começar a usar o sistema",
-      duracao: "8 min",
-      nivel: "Iniciante",
-      icon: Zap
-    },
-    {
-      titulo: "Configuração de Notas Fiscais",
-      descricao: "Passo a passo para emitir NFC-e e NF-e",
-      duracao: "15 min",
-      nivel: "Intermediário",
-      icon: FileText
-    },
-    {
-      titulo: "Gestão de Funcionários",
-      descricao: "Como adicionar e gerenciar permissões de usuários",
-      duracao: "10 min",
-      nivel: "Intermediário",
-      icon: Headphones
-    },
-    {
-      titulo: "Relatórios Financeiros Completos",
-      descricao: "Domine os relatórios de DRE, fluxo de caixa e contas",
-      duracao: "12 min",
-      nivel: "Avançado",
-      icon: BookOpen
+      titulo: "Tutorial Completo do Pavisoft",
+      descricao: "Vídeo completo mostrando todas as funcionalidades do sistema",
+      duracao: "Em breve",
+      nivel: "Todos os níveis",
+      icon: Video
     }
   ];
 
@@ -126,7 +105,7 @@ export default function Ajuda() {
       titulo: "WhatsApp",
       descricao: "Atendimento rápido via WhatsApp",
       disponibilidade: "Seg-Sex: 8h às 18h",
-      link: "https://wa.me/5598985085498",
+      link: "https://wa.me/5598984267488",
       badge: "Mais Rápido",
       badgeColor: "bg-green-500"
     },
@@ -142,9 +121,9 @@ export default function Ajuda() {
     {
       icon: Phone,
       titulo: "Telefone",
-      descricao: "(98) 98508-5498",
+      descricao: "(98) 98426-7488",
       disponibilidade: "Seg-Sex: 8h às 18h",
-      link: "tel:+5598985085498",
+      link: "tel:+5598984267488",
       badge: "Urgências",
       badgeColor: "bg-orange-500"
     }
@@ -154,37 +133,37 @@ export default function Ajuda() {
     {
       categoria: "🚀 Começando",
       artigos: [
-        "Como criar sua primeira conta",
-        "Configuração inicial do sistema",
-        "Cadastro de produtos em massa",
-        "Primeiras vendas no PDV"
+        "Crie sua conta no Pavisoft e escolha um plano (7 dias grátis para testar)",
+        "Configure os dados da sua empresa em Configurações",
+        "Cadastre seus produtos com código de barras, preço e estoque",
+        "Realize sua primeira venda no PDV usando o leitor de código de barras"
       ]
     },
     {
       categoria: "📊 Gestão",
       artigos: [
-        "Controle de estoque avançado",
-        "Gerenciamento de fornecedores",
-        "Sistema de devoluções",
-        "Relatórios personalizados"
+        "Acompanhe seu estoque em tempo real e receba alertas de produtos acabando",
+        "Cadastre fornecedores e registre suas compras com histórico completo",
+        "Processe devoluções de clientes mantendo controle total das operações",
+        "Gere relatórios detalhados de vendas, produtos mais vendidos e análises"
       ]
     },
     {
       categoria: "💰 Financeiro",
       artigos: [
-        "Contas a pagar e receber",
-        "Fluxo de caixa projetado",
-        "DRE simplificado",
-        "Controle de inadimplência"
+        "Registre contas a pagar e receber com vencimentos e status",
+        "Visualize o fluxo de caixa projetado baseado nas vendas do PDV",
+        "Acompanhe DRE com receitas, despesas e lucro líquido do período",
+        "Gerencie clientes inadimplentes e envie lembretes de pagamento"
       ]
     },
     {
       categoria: "🧾 Fiscal",
       artigos: [
-        "Configuração de certificado digital",
-        "Emissão de NFC-e",
-        "Emissão de NF-e",
-        "Cancelamento de notas"
+        "Configure seu certificado digital A1 em Configurações Fiscais",
+        "Emita NFC-e diretamente do PDV após finalizar vendas",
+        "Emita NF-e para vendas que necessitam nota fiscal completa",
+        "Cancele ou consulte notas fiscais emitidas pelo sistema"
       ]
     }
   ];
@@ -202,9 +181,9 @@ export default function Ajuda() {
                 </span>
               </div>
             </Link>
-            <Link href="/">
+            <Link href="/dashboard">
               <Button variant="outline" className="border-blue-400/30 hover:border-blue-400 hover:bg-blue-500/10">
-                Voltar ao Site
+                Voltar ao Sistema
               </Button>
             </Link>
           </div>
@@ -310,7 +289,7 @@ export default function Ajuda() {
                     Perguntas Frequentes
                   </TabsTrigger>
                   <TabsTrigger value="tutoriais" className="data-[state=active]:bg-blue-500/20">
-                    Tutoriais em Vídeo
+                    Tutorial em Vídeo
                   </TabsTrigger>
                   <TabsTrigger value="base" className="data-[state=active]:bg-blue-500/20">
                     Base de Conhecimento
@@ -348,13 +327,13 @@ export default function Ajuda() {
                 <TabsContent value="tutoriais">
                   <Card className="bg-slate-900/50 border-blue-500/20">
                     <CardHeader>
-                      <CardTitle className="text-2xl text-white">Tutoriais em Vídeo</CardTitle>
+                      <CardTitle className="text-2xl text-white">Tutorial em Vídeo</CardTitle>
                       <CardDescription className="text-gray-400">
-                        Aprenda assistindo nossos guias passo a passo
+                        Aprenda assistindo nosso guia completo do sistema
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid md:grid-cols-2 gap-4">
+                      <div className="max-w-2xl mx-auto">
                         {tutoriais.map((tutorial, index) => (
                           <Card key={index} className="bg-slate-800/50 border-blue-500/20 hover:border-blue-500/40 transition-all cursor-pointer group">
                             <CardContent className="pt-6">
@@ -433,7 +412,7 @@ export default function Ajuda() {
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <Button 
                       className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                      onClick={() => window.open('https://wa.me/5598985085498', '_blank')}
+                      onClick={() => window.open('https://wa.me/5598984267488', '_blank')}
                     >
                       <MessageCircle className="mr-2 h-4 w-4" />
                       WhatsApp
@@ -712,8 +691,8 @@ export default function Ajuda() {
                       <ul className="list-none space-y-2">
                         <li><strong>Email:</strong> termos@pavisoft.com.br</li>
                         <li><strong>Suporte:</strong> pavisoft.suporte@gmail.com</li>
-                        <li><strong>WhatsApp:</strong> (98) 98508-5498</li>
-                        <li><strong>Telefone:</strong> (98) 98508-5498</li>
+                        <li><strong>WhatsApp:</strong> (98) 98426-7488</li>
+                        <li><strong>Telefone:</strong> (98) 98426-7488</li>
                       </ul>
                     </section>
 

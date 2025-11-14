@@ -40,7 +40,11 @@ export default function LoginForm({
   const [isFuncionario, setIsFuncionario] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isSubmittingForgotPassword, setIsSubmittingForgotPassword] = useState(false);
+  const [resetStep, setResetStep] = useState<'email' | 'code'>('email');
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -52,36 +56,103 @@ export default function LoginForm({
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSendingEmail(true);
-    
+    setIsSubmittingForgotPassword(true);
+
     try {
       const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: forgotPasswordEmail }),
       });
 
-      if (!response.ok) {
-        throw new Error("Erro ao enviar email de recuperação");
-      }
+      const data = await response.json();
 
-      toast({
-        title: "Email enviado!",
-        description: "Verifique sua caixa de entrada para redefinir sua senha.",
-      });
-      
-      setIsForgotPasswordOpen(false);
-      setForgotPasswordEmail("");
+      if (data.success) {
+        toast({
+          title: "Email enviado!",
+          description: "Verifique seu email e insira o código recebido",
+        });
+        setResetStep('code');
+      } else {
+        toast({
+          title: "Erro",
+          description: data.message || "Erro ao enviar email de recuperação",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Erro",
-        description: error instanceof Error ? error.message : "Não foi possível enviar o email",
+        description: "Erro ao processar solicitação",
         variant: "destructive",
       });
     } finally {
-      setIsSendingEmail(false);
+      setIsSubmittingForgotPassword(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (newPassword !== confirmNewPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Erro",
+        description: "A senha deve ter no mínimo 6 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmittingForgotPassword(true);
+
+    try {
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: forgotPasswordEmail,
+          code: resetCode,
+          newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "Sucesso!",
+          description: "Senha alterada com sucesso. Faça login com a nova senha",
+        });
+        setIsForgotPasswordOpen(false);
+        setForgotPasswordEmail("");
+        setResetCode("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setResetStep('email');
+      } else {
+        toast({
+          title: "Erro",
+          description: data.message || "Erro ao resetar senha",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao processar solicitação",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingForgotPassword(false);
     }
   };
 
@@ -96,7 +167,7 @@ export default function LoginForm({
       }}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-black/40 to-black/50 backdrop-blur-sm"></div>
-      
+
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8 space-y-3" data-testid="brand-header">
           <div className="flex items-center justify-center gap-3 mb-2">
@@ -143,7 +214,7 @@ export default function LoginForm({
                   Funcionário
                 </Button>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">Email</Label>
                 <div className="relative">
@@ -160,7 +231,7 @@ export default function LoginForm({
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
@@ -175,42 +246,112 @@ export default function LoginForm({
                       </button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">
-                      <form onSubmit={handleForgotPassword}>
-                        <DialogHeader>
-                          <DialogTitle className="text-xl">Recuperar Senha</DialogTitle>
-                          <DialogDescription className="pt-2">
-                            Digite seu email cadastrado e enviaremos um link para redefinir sua senha.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="forgot-email">Email</Label>
-                            <div className="relative">
-                              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      {resetStep === 'email' ? (
+                        <form onSubmit={handleForgotPassword}>
+                          <DialogHeader>
+                            <DialogTitle className="text-xl">Recuperar Senha</DialogTitle>
+                            <DialogDescription className="pt-2">
+                              Digite seu email cadastrado e enviaremos um código para redefinir sua senha.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="forgot-email">Email</Label>
+                              <div className="relative">
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  id="forgot-email"
+                                  type="email"
+                                  placeholder="seu@email.com"
+                                  className="pl-10"
+                                  value={forgotPasswordEmail}
+                                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                                  required
+                                  data-testid="input-forgot-email"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button 
+                              type="submit" 
+                              className="w-full"
+                              disabled={isSubmittingForgotPassword}
+                              data-testid="button-send-reset-email"
+                            >
+                              {isSubmittingForgotPassword ? "Enviando..." : "Enviar código"}
+                            </Button>
+                          </DialogFooter>
+                        </form>
+                      ) : (
+                        <form onSubmit={handleResetPassword}>
+                          <DialogHeader>
+                            <DialogTitle className="text-xl">Digite o código</DialogTitle>
+                            <DialogDescription className="pt-2">
+                              Insira o código de 6 dígitos enviado para <strong>{forgotPasswordEmail}</strong>
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="reset-code">Código de Verificação</Label>
                               <Input
-                                id="forgot-email"
-                                type="email"
-                                placeholder="seu@email.com"
-                                className="pl-10"
-                                value={forgotPasswordEmail}
-                                onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                                id="reset-code"
+                                type="text"
+                                placeholder="000000"
+                                maxLength={6}
+                                value={resetCode}
+                                onChange={(e) => setResetCode(e.target.value.replace(/\D/g, ''))}
                                 required
-                                data-testid="input-forgot-email"
+                                className="text-center text-2xl tracking-widest"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="new-password">Nova Senha</Label>
+                              <Input
+                                id="new-password"
+                                type="password"
+                                placeholder="Mínimo 6 caracteres"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="confirm-new-password">Confirmar Nova Senha</Label>
+                              <Input
+                                id="confirm-new-password"
+                                type="password"
+                                placeholder="Digite a senha novamente"
+                                value={confirmNewPassword}
+                                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                required
                               />
                             </div>
                           </div>
-                        </div>
-                        <DialogFooter>
-                          <Button 
-                            type="submit" 
-                            className="w-full"
-                            disabled={isSendingEmail}
-                            data-testid="button-send-recovery-email"
-                          >
-                            {isSendingEmail ? "Enviando..." : "Enviar link de recuperação"}
-                          </Button>
-                        </DialogFooter>
-                      </form>
+                          <DialogFooter className="flex-col gap-2">
+                            <Button 
+                              type="submit" 
+                              className="w-full"
+                              disabled={isSubmittingForgotPassword}
+                            >
+                              {isSubmittingForgotPassword ? "Alterando..." : "Alterar senha"}
+                            </Button>
+                            <Button 
+                              type="button"
+                              variant="outline"
+                              className="w-full"
+                              onClick={() => {
+                                setResetStep('email');
+                                setResetCode("");
+                                setNewPassword("");
+                                setConfirmNewPassword("");
+                              }}
+                            >
+                              Voltar
+                            </Button>
+                          </DialogFooter>
+                        </form>
+                      )}
                     </DialogContent>
                   </Dialog>
                 </div>
@@ -250,7 +391,7 @@ export default function LoginForm({
               >
                 {isLoading ? "Entrando..." : "Entrar"}
               </Button>
-              
+
               {onRegisterClick && (
                 <>
                   <div className="relative w-full">

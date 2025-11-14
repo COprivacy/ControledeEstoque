@@ -346,7 +346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Buscar usuário por email
       const user = await storage.getUserByEmail(email);
-      
+
       // Por segurança, sempre retornar sucesso mesmo se o usuário não existir
       // Isso previne enumeração de contas
       if (!user) {
@@ -355,7 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         // Simula delay de envio de email para não revelar timing
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         // Retorna sucesso mesmo assim para não revelar que o email não existe
         return res.json({
           success: true,
@@ -365,12 +365,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Gerar código de 6 dígitos APENAS se o usuário existir
       const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 15); // Código expira em 15 minutos
 
       try {
+        // Salvar código no banco de dados
+        await storage.db.query(
+          `INSERT INTO password_reset_codes (email, code, expires_at, used) 
+           VALUES ($1, $2, $3, false)`,
+          [email, code, expiresAt.toISOString()]
+        );
+
         const { EmailService } = await import("./email-service");
         const emailService = new EmailService();
 
-        await emailService.sendVerificationCode({
+        await emailService.sendPasswordResetCode({
           to: email,
           userName: user.nome,
           code,
@@ -399,6 +408,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao processar recuperação de senha:", error);
       res.status(500).json({ error: "Erro ao processar solicitação" });
+    }
+  });
+
+  // Endpoint para validar código e resetar senha
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { email, code, newPassword } = req.body;
+
+      if (!email || !code || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: "Email, código e nova senha são obrigatórios",
+        });
+      }
+
+      // Buscar o código armazenado para este email
+      const result = await storage.db.query(
+        `SELECT code, expires_at FROM password_reset_codes 
+         WHERE email = $1 AND used = false 
+         ORDER BY created_at DESC LIMIT 1`,
+        [email]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Código inválido ou expirado",
+        });
+      }
+
+      const storedCode = result.rows[0];
+
+      // Verificar se o código expirou
+      if (new Date() > new Date(storedCode.expires_at)) {
+        return res.status(400).json({
+          success: false,
+          message: "Código expirado. Solicite um novo código",
+        });
+      }
+
+      // Verificar se o código está correto
+      if (storedCode.code !== code) {
+        return res.status(400).json({
+          success: false,
+          message: "Código inválido",
+        });
+      }
+
+      // Buscar usuário
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "Usuário não encontrado",
+        });
+      }
+
+      // Hash da nova senha
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Atualizar senha
+      await storage.db.query(
+        `UPDATE usuarios SET senha = $1 WHERE email = $2`,
+        [hashedPassword, email]
+      );
+
+      // Marcar código como usado
+      await storage.db.query(
+        `UPDATE password_reset_codes SET used = true WHERE email = $1 AND code = $2`,
+        [email, code]
+      );
+
+      console.log(`✅ Senha resetada com sucesso para: ${email}`);
+
+      return res.json({
+        success: true,
+        message: "Senha alterada com sucesso",
+      });
+    } catch (error) {
+      console.error("Erro ao resetar senha:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Erro ao resetar senha",
+      });
     }
   });
 

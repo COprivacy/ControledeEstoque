@@ -487,7 +487,13 @@ export class PostgresStorage implements IStorage {
   }
 
   async getLogsAdmin(): Promise<LogAdmin[]> {
-    return await this.db.select().from(logsAdmin).orderBy(desc(logsAdmin.id));
+    const result = await this.db.select().from(logsAdmin).orderBy(desc(logsAdmin.id));
+    return result;
+  }
+
+  async deleteAllLogsAdmin(): Promise<number> {
+    const result = await this.db.delete(logsAdmin).returning();
+    return result.length;
   }
 
   async getLogsAdminByAccount(contaId: string): Promise<LogAdmin[]> {
@@ -495,9 +501,9 @@ export class PostgresStorage implements IStorage {
       .select({ id: funcionarios.id })
       .from(funcionarios)
       .where(eq(funcionarios.conta_id, contaId));
-    
+
     const ids = [contaId, ...funcionariosIds.map(f => f.id)];
-    
+
     return await this.db
       .select()
       .from(logsAdmin)
@@ -522,12 +528,12 @@ export class PostgresStorage implements IStorage {
   async logAdminAction(actorId: string, action: string, details?: string, context?: { ip?: string; userAgent?: string; contaId?: string }): Promise<void> {
     try {
       let contaId = context?.contaId || actorId;
-      
+
       const funcionario = await this.db.select().from(funcionarios).where(eq(funcionarios.id, actorId)).limit(1);
       if (funcionario[0]) {
         contaId = funcionario[0].conta_id;
       }
-      
+
       await this.createLogAdmin({
         usuario_id: actorId,
         conta_id: contaId,
@@ -1049,10 +1055,10 @@ export class PostgresStorage implements IStorage {
     // Sanitizar: permitir apenas campos mutáveis
     const { content } = updates;
     const sanitizedUpdates: any = {};
-    
+
     if (content !== undefined) sanitizedUpdates.content = content;
     sanitizedUpdates.updated_at = sql`NOW()`;
-    
+
     const [updated] = await this.db
       .update(clientNotes)
       .set(sanitizedUpdates)
@@ -1166,9 +1172,9 @@ export class PostgresStorage implements IStorage {
         created_at as event_date
       FROM client_notes
       WHERE user_id = ${userId}
-      
+
       UNION ALL
-      
+
       SELECT 
         'document' as event_type,
         id,
@@ -1179,9 +1185,9 @@ export class PostgresStorage implements IStorage {
         uploaded_at as event_date
       FROM client_documents
       WHERE user_id = ${userId}
-      
+
       UNION ALL
-      
+
       SELECT 
         'interaction' as event_type,
         id,
@@ -1192,9 +1198,9 @@ export class PostgresStorage implements IStorage {
         created_at as event_date
       FROM client_interactions
       WHERE user_id = ${userId}
-      
+
       UNION ALL
-      
+
       SELECT 
         'plan_change' as event_type,
         id,
@@ -1205,9 +1211,9 @@ export class PostgresStorage implements IStorage {
         changed_at as event_date
       FROM plan_changes_history
       WHERE user_id = ${userId}
-      
+
       UNION ALL
-      
+
       SELECT 
         'communication' as event_type,
         id,
@@ -1218,7 +1224,7 @@ export class PostgresStorage implements IStorage {
         sent_at as event_date
       FROM client_communications
       WHERE user_id = ${userId}
-      
+
       ORDER BY event_date DESC
       LIMIT ${limit} OFFSET ${offset}
     `);

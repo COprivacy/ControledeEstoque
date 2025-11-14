@@ -750,6 +750,20 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
     }
   };
 
+  // Adjusting thresholds for system status based on the problem description
+  const getSystemStatus = (checks: any[] | undefined) => {
+    if (!checks) return 'degraded'; // Assume degraded if no checks data yet
+    const criticalCount = checks.filter(check => check.status === 'critical').length;
+    const degradedCount = checks.filter(check => check.status === 'degraded').length;
+
+    // If there are critical issues, system is offline
+    if (criticalCount > 0) return 'offline';
+    // If there are degraded issues and no critical ones, system is degraded
+    if (degradedCount > 0) return 'degraded';
+    // Otherwise, system is online
+    return 'online';
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'online': return 'bg-green-500';
@@ -767,6 +781,8 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
       default: return <AlertCircle className="h-4 w-4 text-gray-500" />;
     }
   };
+
+  const systemStatus = getSystemStatus(healthStatus?.checks);
 
   return (
     <div className="space-y-6">
@@ -798,18 +814,18 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
           <div className="space-y-4">
             {/* Status Geral - Melhorado */}
             <div className={`flex items-center justify-between p-6 rounded-lg border-2 ${
-              healthStatus?.status === 'online' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900' :
-              healthStatus?.status === 'degraded' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900' :
+              systemStatus === 'online' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900' :
+              systemStatus === 'degraded' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900' :
               'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-900'
             }`}>
               <div className="flex items-center gap-4">
                 <div className={`p-3 rounded-full ${
-                  healthStatus?.status === 'online' ? 'bg-emerald-500' :
-                  healthStatus?.status === 'degraded' ? 'bg-amber-500' : 'bg-rose-500'
+                  systemStatus === 'online' ? 'bg-emerald-500' :
+                  systemStatus === 'degraded' ? 'bg-amber-500' : 'bg-rose-500'
                 }`}>
-                  {healthStatus?.status === 'online' ? (
+                  {systemStatus === 'online' ? (
                     <CheckCircle className="h-6 w-6 text-white" />
-                  ) : healthStatus?.status === 'degraded' ? (
+                  ) : systemStatus === 'degraded' ? (
                     <AlertCircle className="h-6 w-6 text-white" />
                   ) : (
                     <XCircle className="h-6 w-6 text-white" />
@@ -817,8 +833,8 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
                 </div>
                 <div>
                   <p className="text-lg font-bold mb-1">
-                    {healthStatus?.status === 'online' ? 'Sistema Operacional' :
-                     healthStatus?.status === 'degraded' ? 'Sistema com Alertas' :
+                    {systemStatus === 'online' ? 'Sistema Operacional' :
+                     systemStatus === 'degraded' ? 'Sistema com Alertas' :
                      'Sistema com Problemas'}
                   </p>
                   <p className="text-sm text-muted-foreground">
@@ -832,12 +848,12 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
                 </div>
               </div>
               <Badge className={`text-sm px-3 py-1 ${
-                healthStatus?.status === 'online' ? 'bg-emerald-500 hover:bg-emerald-600' :
-                healthStatus?.status === 'degraded' ? 'bg-amber-500 hover:bg-amber-600' :
+                systemStatus === 'online' ? 'bg-emerald-500 hover:bg-emerald-600' :
+                systemStatus === 'degraded' ? 'bg-amber-500 hover:bg-amber-600' :
                 'bg-rose-500 hover:bg-rose-600'
               }`}>
-                {healthStatus?.status === 'online' ? 'Online' :
-                 healthStatus?.status === 'degraded' ? 'Degradado' : 'Offline'}
+                {systemStatus === 'online' ? 'Online' :
+                 systemStatus === 'degraded' ? 'Degradado' : 'Offline'}
               </Badge>
             </div>
 

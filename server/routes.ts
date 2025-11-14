@@ -1125,6 +1125,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para limpar TODOS os logs de administradores (apenas master admin)
+  app.delete("/api/admin/all-logs", requireAdmin, async (req, res) => {
+    try {
+      const userId = req.headers['x-user-id'] as string;
+      const user = await storage.getUserById(userId);
+      const isMasterAdmin = user?.email === 'pavisoft.suporte@gmail.com';
+
+      if (!isMasterAdmin) {
+        return res.status(403).json({ error: "Acesso negado - apenas master admin" });
+      }
+
+      if (!storage.deleteAllLogsAdmin) {
+        return res.status(501).json({ error: "Método deleteAllLogsAdmin não implementado" });
+      }
+
+      const deletedCount = await storage.deleteAllLogsAdmin();
+
+      logger.warn('Todos os logs de administradores foram limpos', 'ADMIN_LOGS', {
+        adminId: userId,
+        adminEmail: user?.email,
+        deletedCount
+      });
+
+      res.json({ 
+        success: true, 
+        deletedCount,
+        message: `${deletedCount} log(s) removido(s)` 
+      });
+    } catch (error: any) {
+      logger.error('Erro ao limpar logs:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
 
   // Backups não são mais necessários - usando backups nativos do Neon PostgreSQL
 

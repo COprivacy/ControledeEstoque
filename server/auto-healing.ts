@@ -199,7 +199,7 @@ class AutoHealingService {
       const memTotalMB = Math.round(memUsage.heapTotal / 1024 / 1024);
       const memPercent = (memUsedMB / memTotalMB) * 100;
 
-      if (memPercent > 90) {
+      if (memPercent > 95) {
         this.addHealthCheck('memory_usage', 'critical', `Memória crítica: ${memPercent.toFixed(1)}% (${memUsedMB}MB/${memTotalMB}MB)`);
         
         // Tentar liberar memória
@@ -208,7 +208,7 @@ class AutoHealingService {
           this.healthChecks[this.healthChecks.length - 1].autoFixed = true;
           this.healthChecks[this.healthChecks.length - 1].status = 'healthy';
         }
-      } else if (memPercent > 70) {
+      } else if (memPercent > 85) {
         this.addHealthCheck('memory_usage', 'degraded', `Memória elevada: ${memPercent.toFixed(1)}% (${memUsedMB}MB/${memTotalMB}MB)`);
       } else {
         this.addHealthCheck('memory_usage', 'healthy', `Memória normal: ${memPercent.toFixed(1)}% (${memUsedMB}MB/${memTotalMB}MB)`);

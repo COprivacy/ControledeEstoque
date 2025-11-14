@@ -10,6 +10,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatDateTime } from "@/lib/dateUtils";
@@ -20,6 +22,8 @@ export default function Reports() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [mostrarArquivados, setMostrarArquivados] = useState(false);
+  const [filterFormaPagamento, setFilterFormaPagamento] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
@@ -196,6 +200,16 @@ export default function Reports() {
     refetchInterval: 5000, // Atualiza a cada 5 segundos
   });
 
+  // Filtrar vendas localmente
+  const filteredVendas = vendas.filter((venda: any) => {
+    const matchesFormaPagamento = filterFormaPagamento === "all" || venda.forma_pagamento === filterFormaPagamento;
+    const matchesSearch = !searchTerm || 
+      venda.produto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      venda.vendedor?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesFormaPagamento && matchesSearch;
+  });
+
   const { data: expiringProducts = [] } = useQuery({
     queryKey: ["/api/reports/expiring"],
     queryFn: async () => {
@@ -356,6 +370,59 @@ export default function Reports() {
         </div>
       </div>
 
+      {/* Filtros Avançados */}
+      <div className="flex flex-wrap gap-3 items-center justify-between p-4 bg-card rounded-lg border shadow-sm">
+        <div className="flex flex-wrap gap-3 items-center flex-1">
+          <div className="relative min-w-[200px]">
+            <Input
+              placeholder="Buscar por produto ou vendedor..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          <Select value={filterFormaPagamento} onValueChange={setFilterFormaPagamento}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Forma de Pagamento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as Formas</SelectItem>
+              <SelectItem value="dinheiro">💵 Dinheiro</SelectItem>
+              <SelectItem value="cartao_credito">💳 Cartão Crédito</SelectItem>
+              <SelectItem value="cartao_debito">💳 Cartão Débito</SelectItem>
+              <SelectItem value="pix">📱 PIX</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="flex items-center gap-2 border rounded-md px-3 py-2 whitespace-nowrap">
+            <Archive className="h-4 w-4 text-muted-foreground" />
+            <Label htmlFor="mostrar-arquivados-vendas" className="cursor-pointer text-sm">
+              Arquivados
+            </Label>
+            <Switch
+              id="mostrar-arquivados-vendas"
+              checked={mostrarArquivados}
+              onCheckedChange={setMostrarArquivados}
+            />
+          </div>
+        </div>
+
+        {(searchTerm || filterFormaPagamento !== "all") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSearchTerm("");
+              setFilterFormaPagamento("all");
+            }}
+            className="text-xs"
+          >
+            Limpar Filtros
+          </Button>
+        )}
+      </div>
+
       <ExpiringProductsReport products={expiringProducts} />
 
       {/* Alerta de Otimização */}
@@ -403,7 +470,7 @@ export default function Reports() {
         </div>
       </div>
 
-      <SalesTable sales={vendas} />
+      <SalesTable sales={filteredVendas} />
     </div>
   );
 }

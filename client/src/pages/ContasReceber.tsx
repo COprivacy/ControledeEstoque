@@ -9,6 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, DollarSign, Calendar, TrendingUp } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function ContasReceber() {
@@ -16,6 +18,9 @@ export default function ContasReceber() {
   const queryClient = useQueryClient();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingConta, setEditingConta] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterCategoria, setFilterCategoria] = useState<string>("all");
 
   const { data: contas = [], isLoading } = useQuery({
     queryKey: ["/api/contas-receber"],
@@ -97,11 +102,25 @@ export default function ContasReceber() {
     updateMutation.mutate({ id: editingConta.id, data });
   };
 
-  const totalPendente = contas
+  // Categorias únicas
+  const categorias = Array.from(new Set(contas.map((c: any) => c.categoria).filter(Boolean)));
+
+  // Filtrar contas
+  const filteredContas = contas.filter((conta: any) => {
+    const matchesSearch = !searchTerm || 
+      conta.descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      conta.categoria?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === "all" || conta.status === filterStatus;
+    const matchesCategoria = filterCategoria === "all" || conta.categoria === filterCategoria;
+    
+    return matchesSearch && matchesStatus && matchesCategoria;
+  });
+
+  const totalPendente = filteredContas
     .filter((c: any) => c.status === "pendente")
     .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
 
-  const totalRecebido = contas
+  const totalRecebido = filteredContas
     .filter((c: any) => c.status === "recebido")
     .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
 
@@ -186,11 +205,44 @@ export default function ContasReceber() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Contas a Receber</CardTitle>
-          <CardDescription>Visualize e gerencie todas as suas contas a receber</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Lista de Contas a Receber</CardTitle>
+              <CardDescription>Visualize e gerencie todas as suas contas a receber</CardDescription>
+            </div>
+            <div className="flex gap-2 items-center">
+              <Input
+                placeholder="Buscar contas..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-[200px]"
+              />
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="recebido">Recebido</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterCategoria} onValueChange={setFilterCategoria}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {categorias.map((cat: any) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {contas.length === 0 ? (
+          {filteredContas.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <p>Nenhuma conta a receber cadastrada</p>
               <p className="text-sm mt-2">Clique em "Nova Conta" para adicionar uma conta a receber</p>
@@ -208,7 +260,7 @@ export default function ContasReceber() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {contas.map((conta: any) => (
+                {filteredContas.map((conta: any) => (
                   <TableRow key={conta.id}>
                     <TableCell>{conta.descricao}</TableCell>
                     <TableCell>{conta.categoria || "-"}</TableCell>

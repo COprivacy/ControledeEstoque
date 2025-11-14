@@ -121,6 +121,74 @@ export class EmailService {
     `;
   }
 
+  async sendPasswordResetCode(config: {
+    to: string;
+    userName: string;
+    code: string;
+  }) {
+    const content = `
+<tr>
+  <td style="padding: 48px 40px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td>
+          <p style="font-size: 18px; color: #1e293b; margin: 0 0 8px 0; font-weight: 600;">
+            Olá, ${config.userName}! 👋
+          </p>
+          <p style="color: #64748b; font-size: 15px; line-height: 1.7; margin: 0 0 32px 0;">
+            Recebemos uma solicitação para redefinir a senha da sua conta. Use o código de verificação abaixo para confirmar sua identidade e criar uma nova senha.
+          </p>
+
+          <!-- Code Box -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 32px 0;">
+            <tr>
+              <td style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 32px; text-align: center;">
+                <p style="color: #1e40af; font-size: 13px; font-weight: 700; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 1.5px;">
+                  SEU CÓDIGO DE RECUPERAÇÃO
+                </p>
+                <div style="background: #ffffff; border-radius: 8px; padding: 20px; margin: 0 auto; display: inline-block; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);">
+                  <p style="font-size: 42px; font-weight: 700; color: #1e40af; letter-spacing: 8px; font-family: 'Courier New', Courier, monospace; margin: 0;">
+                    ${config.code}
+                  </p>
+                </div>
+                <p style="color: #3b82f6; font-size: 12px; margin: 16px 0 0 0; font-weight: 500;">
+                  Válido por 15 minutos
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Warning Box -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+            <tr>
+              <td style="background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 20px;">
+                <p style="color: #92400e; font-size: 14px; margin: 0; line-height: 1.6;">
+                  <strong>⚠️ Importante:</strong> Se você não solicitou esta alteração, ignore este email. Sua senha permanecerá inalterada e sua conta continuará segura.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <p style="color: #64748b; font-size: 14px; line-height: 1.7; margin: 24px 0 0 0;">
+            <strong style="color: #475569;">Dica de segurança:</strong> Nunca compartilhe este código com ninguém, nem mesmo com a equipe do Pavisoft. Nossos funcionários jamais solicitarão este código.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+    `;
+
+    const html = this.getBaseTemplate(content, '#eff6ff');
+
+    await this.transporter.sendMail({
+      from: process.env.SMTP_FROM || 'Pavisoft Sistemas <noreply@pavisoft.com>',
+      to: config.to,
+      subject: '🔐 Código de Recuperação de Senha - Pavisoft Sistemas',
+      html,
+    });
+  }
+
   async sendVerificationCode(config: {
     to: string;
     userName: string;

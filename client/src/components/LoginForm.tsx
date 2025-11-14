@@ -67,18 +67,20 @@ export default function LoginForm({
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok && data.success) {
         toast({
           title: "Email enviado!",
           description: "Verifique seu email e insira o código recebido",
         });
         setResetStep('code');
       } else {
+        // Mostrar erro específico se email não encontrado
         toast({
           title: "Erro",
-          description: data.message || "Erro ao enviar email de recuperação",
+          description: data.error || data.message || "Erro ao enviar email de recuperação",
           variant: "destructive",
         });
+        // NÃO avançar para próxima tela
       }
     } catch (error) {
       toast({

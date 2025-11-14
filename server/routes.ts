@@ -347,19 +347,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Buscar usuário por email
       const user = await storage.getUserByEmail(email);
 
-      // Por segurança, sempre retornar sucesso mesmo se o usuário não existir
-      // Isso previne enumeração de contas
+      // Se o usuário não existir, retornar erro específico
       if (!user) {
         if (process.env.NODE_ENV === "development") {
           console.log(`⚠️ Tentativa de recuperação para email inexistente: ${email}`);
         }
-        // Simula delay de envio de email para não revelar timing
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Retorna sucesso mesmo assim para não revelar que o email não existe
-        return res.json({
-          success: true,
-          message: "Se o email existir em nossa base, você receberá instruções de recuperação",
+        
+        return res.status(404).json({
+          success: false,
+          error: "Email não encontrado em nossa base de dados",
         });
       }
 
@@ -389,16 +385,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json({
           success: true,
-          message: "Se o email existir em nossa base, você receberá instruções de recuperação",
+          message: "Código de recuperação enviado para seu email",
           // SECURITY: Código NÃO é retornado - apenas enviado por email
           ...(process.env.NODE_ENV === "development" && { code }), // Apenas em dev para testes
         });
       } catch (emailError) {
         console.error("❌ Erro ao enviar email de recuperação:", emailError);
-        // Mesmo em caso de erro de email, retorna sucesso por segurança
-        res.json({
-          success: true,
-          message: "Se o email existir em nossa base, você receberá instruções de recuperação",
+        res.status(500).json({
+          success: false,
+          error: "Erro ao enviar email. Tente novamente em alguns instantes.",
         });
       }
     } catch (error) {

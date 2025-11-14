@@ -335,6 +335,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para recuperação de senha (esqueceu a senha)
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ error: "Email é obrigatório" });
+      }
+
+      // Buscar usuário por email
+      const user = await storage.getUserByEmail(email);
+      
+      // Por segurança, sempre retornar sucesso mesmo se o usuário não existir
+      // Isso previne enumeração de contas
+      if (!user) {
+        if (process.env.NODE_ENV === "development") {
+          console.log(`⚠️ Tentativa de recuperação para email inexistente: ${email}`);
+        }
+        // Retorna sucesso mesmo assim para não revelar que o email não existe
+        return res.json({
+          success: true,
+          message: "Se o email existir em nossa base, você receberá instruções de recuperação",
+        });
+      }
+
+      // Gerar código de 6 dígitos
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+      try {
+        const { EmailService } = await import("./email-service");
+        const emailService = new EmailService();
+
+        await emailService.sendVerificationCode({
+          to: email,
+          userName: user.nome,
+          code,
+        });
+
+        if (process.env.NODE_ENV === "development") {
+          console.log(
+            `📧 Código de recuperação enviado para ${email}: ${code}`,
+          );
+        }
+
+        res.json({
+          success: true,
+          message: "Se o email existir em nossa base, você receberá instruções de recuperação",
+          // SECURITY: Código NÃO é retornado - apenas enviado por email
+          ...(process.env.NODE_ENV === "development" && { code }), // Apenas em dev para testes
+        });
+      } catch (emailError) {
+        console.error("❌ Erro ao enviar email de recuperação:", emailError);
+        // Mesmo em caso de erro de email, retorna sucesso por segurança
+        res.json({
+          success: true,
+          message: "Se o email existir em nossa base, você receberá instruções de recuperação",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao processar recuperação de senha:", error);
+      res.status(500).json({ error: "Erro ao processar solicitação" });
+    }
+  });
+
   // Rate limiting para tentativas de senha master
   const masterPasswordAttempts = new Map<
     string,

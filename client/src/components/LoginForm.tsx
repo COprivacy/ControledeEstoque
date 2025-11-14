@@ -268,7 +268,11 @@ export default function LoginForm({
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">
                       {resetStep === 'email' ? (
-                        <form onSubmit={handleForgotPassword}>
+                        <form onSubmit={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleForgotPassword(e);
+                        }}>
                           <DialogHeader>
                             <DialogTitle className="text-xl">Recuperar Senha</DialogTitle>
                             <DialogDescription className="pt-2">
@@ -305,7 +309,11 @@ export default function LoginForm({
                           </DialogFooter>
                         </form>
                       ) : (
-                        <form onSubmit={handleResetPassword}>
+                        <form onSubmit={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleResetPassword(e);
+                        }}>
                           <DialogHeader>
                             <DialogTitle className="text-xl">Digite o código</DialogTitle>
                             <DialogDescription className="pt-2">
@@ -361,7 +369,9 @@ export default function LoginForm({
                               type="button"
                               variant="outline"
                               className="w-full"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
                                 setResetStep('email');
                                 setResetCode("");
                                 setNewPassword("");

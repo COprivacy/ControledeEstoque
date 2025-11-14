@@ -251,20 +251,17 @@ export default function Settings() {
       const cleanupConfig = {
         devolucoes_dias: document.querySelector<HTMLInputElement>('[data-cleanup="devolucoes"]')?.value || '90',
         orcamentos_dias: document.querySelector<HTMLInputElement>('[data-cleanup="orcamentos"]')?.value || '180',
-        vendas_dias: document.querySelector<HTMLInputElement>('[data-cleanup="vendas"]')?.value || '365',
-        clientes_dias: document.querySelector<HTMLInputElement>('[data-cleanup="clientes"]')?.value || '730',
-        fornecedores_dias: document.querySelector<HTMLInputElement>('[data-cleanup="fornecedores"]')?.value || '730',
-        produtos_dias: document.querySelector<HTMLInputElement>('[data-cleanup="produtos"]')?.value || '730',
-        contas_pagar_dias: document.querySelector<HTMLInputElement>('[data-cleanup="contas_pagar"]')?.value || '365',
-        contas_receber_dias: document.querySelector<HTMLInputElement>('[data-cleanup="contas_receber"]')?.value || '365',
         logs_dias: document.querySelector<HTMLInputElement>('[data-cleanup="logs"]')?.value || '90',
         caixas_dias: document.querySelector<HTMLInputElement>('[data-cleanup="caixas"]')?.value || '365',
+        contas_pagar_dias: document.querySelector<HTMLInputElement>('[data-cleanup="contas_pagar"]')?.value || '365',
+        contas_receber_dias: document.querySelector<HTMLInputElement>('[data-cleanup="contas_receber"]')?.value || '365',
+        relatorios_dias: document.querySelector<HTMLInputElement>('[data-cleanup="relatorios"]')?.value || '365',
       };
 
       try {
         await apiRequest("POST", "/api/auto-cleanup/config", cleanupConfig);
       } catch (cleanupError: any) {
-        console.warn("Configurações de limpeza não salvas:", cleanupError.message);
+        console.warn("Configurações de limpeza não salvas:", cleanupErrorleanupError.message);
       }
 
       toast({

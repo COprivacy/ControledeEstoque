@@ -7,6 +7,9 @@ interface CleanupConfig {
   orcamentos_dias: number | null;
   logs_dias: number | null;
   caixas_dias: number | null;
+  contas_pagar_dias: number | null;
+  contas_receber_dias: number | null;
+  relatorios_dias: number | null;
 }
 
 const DEFAULT_CONFIG: CleanupConfig = {
@@ -14,6 +17,9 @@ const DEFAULT_CONFIG: CleanupConfig = {
   orcamentos_dias: 180,
   logs_dias: 90,
   caixas_dias: 365,
+  contas_pagar_dias: 365,
+  contas_receber_dias: 365,
+  relatorios_dias: 365,
 };
 
 export class AutoCleanupService {
@@ -60,6 +66,10 @@ export class AutoCleanupService {
         devolucoes: 0,
         orcamentos: 0,
         logs: 0,
+        caixas: 0,
+        contas_pagar: 0,
+        contas_receber: 0,
+        relatorios: 0,
       };
 
       // Limpar devoluções antigas (se configurado)
@@ -77,10 +87,34 @@ export class AutoCleanupService {
         results.logs = await this.cleanupLogs(this.config.logs_dias);
       }
 
+      // Limpar caixas antigos (se configurado)
+      if (this.config.caixas_dias !== null && this.config.caixas_dias > 0) {
+        results.caixas = await this.cleanupCaixas(this.config.caixas_dias);
+      }
+
+      // Limpar contas a pagar antigas (se configurado)
+      if (this.config.contas_pagar_dias !== null && this.config.contas_pagar_dias > 0) {
+        results.contas_pagar = await this.cleanupContasPagar(this.config.contas_pagar_dias);
+      }
+
+      // Limpar contas a receber antigas (se configurado)
+      if (this.config.contas_receber_dias !== null && this.config.contas_receber_dias > 0) {
+        results.contas_receber = await this.cleanupContasReceber(this.config.contas_receber_dias);
+      }
+
+      // Limpar relatórios antigos (se configurado)
+      if (this.config.relatorios_dias !== null && this.config.relatorios_dias > 0) {
+        results.relatorios = await this.cleanupRelatorios(this.config.relatorios_dias);
+      }
+
       logger.info('Arquivamento automático concluído', 'AUTO_CLEANUP', {
         devolucoesArquivadas: results.devolucoes,
         orcamentosArquivados: results.orcamentos,
         logsArquivados: results.logs,
+        caixasArquivados: results.caixas,
+        contasPagarArquivadas: results.contas_pagar,
+        contasReceberArquivadas: results.contas_receber,
+        relatoriosArquivados: results.relatorios,
         nota: 'Dados arquivados permanecem disponíveis para relatórios'
       });
     } catch (error: any) {
@@ -150,6 +184,105 @@ export class AutoCleanupService {
     // Implementar quando tivermos uma função de limpeza de logs
     // Por enquanto, retornar 0
     return 0;
+  }
+
+  private async cleanupCaixas(diasAntigos: number): Promise<number> {
+    try {
+      const dataLimite = new Date();
+      dataLimite.setDate(dataLimite.getDate() - diasAntigos);
+
+      const todosCaixas = await storage.getCaixas();
+      const caixasAntigos = todosCaixas.filter(c => 
+        new Date(c.data_fechamento || c.data_abertura) < dataLimite &&
+        c.status === "fechado"
+      );
+
+      let archivedCount = 0;
+      for (const caixa of caixasAntigos) {
+        // ARQUIVAR ao invés de deletar - mantém para relatórios
+        await storage.updateCaixa(caixa.id, { 
+          status: 'arquivado' as any // Marca como arquivado
+        });
+        archivedCount++;
+      }
+
+      return archivedCount;
+    } catch (error) {
+      logger.error('Erro ao arquivar caixas', 'AUTO_CLEANUP', { error });
+      return 0;
+    }
+  }
+
+  private async cleanupContasPagar(diasAntigos: number): Promise<number> {
+    try {
+      const dataLimite = new Date();
+      dataLimite.setDate(dataLimite.getDate() - diasAntigos);
+
+      const todasContas = await storage.getContasPagar();
+      const contasAntigas = todasContas.filter(c => 
+        new Date(c.data_pagamento || c.data_vencimento) < dataLimite &&
+        c.status === "pago"
+      );
+
+      let archivedCount = 0;
+      for (const conta of contasAntigas) {
+        // ARQUIVAR ao invés de deletar - mantém para relatórios
+        await storage.updateContaPagar(conta.id, { 
+          status: 'arquivado' as any // Marca como arquivado
+        });
+        archivedCount++;
+      }
+
+      return archivedCount;
+    } catch (error) {
+      logger.error('Erro ao arquivar contas a pagar', 'AUTO_CLEANUP', { error });
+      return 0;
+    }
+  }
+
+  private async cleanupContasReceber(diasAntigos: number): Promise<number> {
+    try {
+      const dataLimite = new Date();
+      dataLimite.setDate(dataLimite.getDate() - diasAntigos);
+
+      const todasContas = await storage.getContasReceber();
+      const contasAntigas = todasContas.filter(c => 
+        new Date(c.data_recebimento || c.data_vencimento) < dataLimite &&
+        c.status === "recebido"
+      );
+
+      let archivedCount = 0;
+      for (const conta of contasAntigas) {
+        // ARQUIVAR ao invés de deletar - mantém para relatórios
+        await storage.updateContasReceber(conta.id, { 
+          status: 'arquivado' as any // Marca como arquivado
+        });
+        archivedCount++;
+      }
+
+      return archivedCount;
+    } catch (error) {
+      logger.error('Erro ao arquivar contas a receber', 'AUTO_CLEANUP', { error });
+      return 0;
+    }
+  }
+
+  private async cleanupRelatorios(diasAntigos: number): Promise<number> {
+    try {
+      const dataLimite = new Date();
+      dataLimite.setDate(dataLimite.getDate() - diasAntigos);
+
+      // Buscar relatórios gerados (se houver uma tabela de relatórios salvos)
+      // Por enquanto, retornar 0 até que a funcionalidade de salvar relatórios seja implementada
+      logger.info('Limpeza de relatórios antigos ainda não implementada', 'AUTO_CLEANUP', {
+        nota: 'Aguardando implementação de salvamento de relatórios'
+      });
+      
+      return 0;
+    } catch (error) {
+      logger.error('Erro ao arquivar relatórios', 'AUTO_CLEANUP', { error });
+      return 0;
+    }
   }
 
   startScheduledCleanup(): void {

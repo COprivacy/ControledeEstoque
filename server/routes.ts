@@ -1741,14 +1741,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const allVendas = await storage.getVendas(startDate, endDate);
       let vendas = allVendas.filter((v) => v.user_id === effectiveUserId);
-      
+
       // Filtrar vendas arquivadas se necessário
       // NOTA: Atualmente vendas não têm campo 'status' para arquivamento
       // mas mantém compatibilidade com futuras implementações
       if (!incluirArquivados && vendas.some((v: any) => v.status === 'arquivada')) {
         vendas = vendas.filter((v: any) => v.status !== 'arquivada');
       }
-      
+
       res.json(vendas);
     } catch (error) {
       console.error("Erro ao buscar vendas:", error);
@@ -1827,7 +1827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/vendas", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers["effective-user-id"] as string;
-      
+
       if (!effectiveUserId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
       }
@@ -3636,7 +3636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auto-cleanup/config", requireAuth, async (req, res) => {
     try {
       const { autoCleanupService } = await import("./auto-cleanup");
-      const { devolucoes_dias, orcamentos_dias, logs_dias, caixas_dias } = req.body;
+      const { devolucoes_dias, orcamentos_dias, logs_dias, caixas_dias, contas_pagar_dias, contas_receber_dias, relatorios_dias } = req.body;
 
       // Validar valores
       const config: any = {};
@@ -3651,7 +3651,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (orcamentos_dias === 'never') {
         config.orcamentos_dias = null;
       }
-      
+
       if (logs_dias !== undefined) {
         config.logs_dias = parseInt(logs_dias);
       } else {
@@ -3662,6 +3662,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         config.caixas_dias = parseInt(caixas_dias);
       } else if (caixas_dias === 'never') {
         config.caixas_dias = null;
+      }
+
+      if (contas_pagar_dias !== undefined && contas_pagar_dias !== 'never') {
+        config.contas_pagar_dias = parseInt(contas_pagar_dias);
+      } else if (contas_pagar_dias === 'never') {
+        config.contas_pagar_dias = null;
+      }
+
+      if (contas_receber_dias !== undefined && contas_receber_dias !== 'never') {
+        config.contas_receber_dias = parseInt(contas_receber_dias);
+      } else if (contas_receber_dias === 'never') {
+        config.contas_receber_dias = null;
+      }
+
+      if (relatorios_dias !== undefined) {
+        config.relatorios_dias = parseInt(relatorios_dias);
+      } else {
+        config.relatorios_dias = null;
       }
 
       autoCleanupService.updateConfig(config);
@@ -3744,7 +3762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       let caixas = await storage.getCaixas(userId);
-      
+
       // Filtrar caixas arquivados se necessário
       // NOTA: Atualmente caixas não têm campo 'status' para arquivamento
       // mas mantém compatibilidade com futuras implementações
@@ -4115,7 +4133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const allDevolucoes = await storage.getDevolucoes();
       let devolucoes = allDevolucoes.filter((d) => d.user_id === userId);
-      
+
       // Filtrar dados arquivados por padrão
       if (!incluirArquivados) {
         devolucoes = devolucoes.filter((d) => d.status !== 'arquivada');
@@ -4306,15 +4324,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const effectiveUserId = req.headers["effective-user-id"] as string;
       const incluirArquivados = req.query.incluirArquivados === 'true';
-      
+
       const allOrcamentos = await storage.getOrcamentos();
       let orcamentos = allOrcamentos.filter((o) => o.user_id === effectiveUserId);
-      
+
       // Filtrar dados arquivados por padrão
       if (!incluirArquivados) {
         orcamentos = orcamentos.filter((o) => o.status !== 'arquivado');
       }
-      
+
       console.log(`✅ Orçamentos buscados - User: ${effectiveUserId}, Total: ${orcamentos.length}, Arquivados: ${incluirArquivados}`);
       res.json(orcamentos);
     } catch (error) {

@@ -74,8 +74,6 @@ export function AdminLogsView({ isPublicAdmin = false }: AdminLogsViewProps) {
         setLogs([]);
         return;
       }
-      
-      setLogs(data);length);
 
       const processedLogs: AdminLog[] = data
         .filter((log: any) => log && (log.timestamp || log.data)) // Filtrar logs inválidos
@@ -131,9 +129,9 @@ export function AdminLogsView({ isPublicAdmin = false }: AdminLogsViewProps) {
     setCurrentPage(1);
   };
 
-  const uniqueAdmins = Array.from(new Set(logs.map(log => log.admin_email || log.usuario_email).filter(Boolean)));
+  const uniqueAdmins = Array.from(new Set(logs.map(log => log.admin_email).filter(Boolean)));
   const uniqueActions = Array.from(new Set(logs.map(log => {
-    const action = log.action || log.acao;
+    const action = log.action;
     if (!action) return null;
     const match = action.match(/^[A-Z_]+/);
     return match ? match[0] : action;

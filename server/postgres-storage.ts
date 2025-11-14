@@ -218,6 +218,11 @@ export class PostgresStorage implements IStorage {
         return await this.getUserById(id);
       }
 
+      // Normalizar plano se estiver sendo atualizado
+      if (cleanUpdates.plano) {
+        cleanUpdates.plano = this.normalizePlanName(cleanUpdates.plano as string);
+      }
+
       const result = await this.db
         .update(users)
         .set(cleanUpdates)

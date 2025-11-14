@@ -353,6 +353,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (process.env.NODE_ENV === "development") {
           console.log(`⚠️ Tentativa de recuperação para email inexistente: ${email}`);
         }
+        // Simula delay de envio de email para não revelar timing
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         // Retorna sucesso mesmo assim para não revelar que o email não existe
         return res.json({
           success: true,
@@ -360,7 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Gerar código de 6 dígitos
+      // Gerar código de 6 dígitos APENAS se o usuário existir
       const code = Math.floor(100000 + Math.random() * 900000).toString();
 
       try {

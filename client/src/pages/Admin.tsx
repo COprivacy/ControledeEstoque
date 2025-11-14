@@ -898,13 +898,12 @@ export default function Admin() {
               <CardContent className="space-y-4">
                 <div className="p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
                   <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Plano</p>
-                  <Badge variant={currentUser.plano === "premium_mensal" || currentUser.plano === "premium_anual" || currentUser.plano === "mensal" || currentUser.plano === "anual" ? "default" : "secondary"} className="text-sm px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 border-0">
-                    {currentUser.plano === "trial" && "7 Dias Free Trial"}
-                    {currentUser.plano === "mensal" && "Plano Mensal"}
-                    {currentUser.plano === "anual" && "Plano Anual"}
-                    {currentUser.plano === "premium_mensal" && "Plano Mensal Premium"}
-                    {currentUser.plano === "premium_anual" && "Plano Anual Premium"}
-                    {!["trial", "mensal", "anual", "premium_mensal", "premium_anual"].includes(currentUser.plano) && "Free"}
+                  <Badge variant={currentUser.plano === "premium_mensal" || currentUser.plano === "premium_anual" ? "default" : "secondary"} className="text-sm px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 border-0">
+                    {currentUser.plano === "trial" && "Trial (7 dias grátis)"}
+                    {currentUser.plano === "free" && "Gratuito"}
+                    {currentUser.plano === "premium_mensal" && "Premium Mensal"}
+                    {currentUser.plano === "premium_anual" && "Premium Anual"}
+                    {!["trial", "free", "premium_mensal", "premium_anual"].includes(currentUser.plano) && "Gratuito"}
                   </Badge>
                 </div>
                 {(currentUser.data_expiracao_plano || currentUser.data_expiracao_trial) && (
@@ -923,7 +922,7 @@ export default function Admin() {
             </Card>
           </div>
 
-          {(currentUser.plano === "trial" || currentUser.plano === "free" || currentUser.plano === "mensal" || currentUser.plano === "anual") && ( // Adjusted condition to show upgrade prompt for relevant plans
+          {(currentUser.plano === "trial" || currentUser.plano === "free") && (
             <Card className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 border-0 shadow-2xl">
               <div className="absolute inset-0 bg-black/10 backdrop-blur-sm"></div>
               <CardContent className="relative p-8">

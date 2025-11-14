@@ -67,7 +67,15 @@ export function AdminLogsView({ isPublicAdmin = false }: AdminLogsViewProps) {
       const data = await response.json();
       
       console.log('📊 Dados recebidos da API:', data);
-      console.log('📊 Total de logs:', data.length);
+      console.log('📊 Total de logs:', Array.isArray(data) ? data.length : 0);
+      
+      if (!Array.isArray(data)) {
+        console.warn('⚠️ Dados de logs não são um array:', data);
+        setLogs([]);
+        return;
+      }
+      
+      setLogs(data);length);
 
       const processedLogs: AdminLog[] = data
         .filter((log: any) => log && (log.timestamp || log.data)) // Filtrar logs inválidos

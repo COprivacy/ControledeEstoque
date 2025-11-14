@@ -1013,8 +1013,6 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
   );
 }
 
-
-
 // Componente de Métricas (Placeholder - assumindo que ele existe em outro lugar)
 function MetricsView() {
   return (
@@ -1528,7 +1526,13 @@ export default function AdminPublico() {
                               <TableCell className="font-medium">{user.nome || '-'}</TableCell>
                               <TableCell>{user.email || '-'}</TableCell>
                               <TableCell>
-                                <Badge variant="outline">{user.plano || 'Free'}</Badge>
+                                <Badge variant="outline">
+                                  {user.plano === "trial" && "Trial"}
+                                  {user.plano === "free" && "Free"}
+                                  {user.plano === "premium_mensal" && "Premium Mensal"}
+                                  {user.plano === "premium_anual" && "Premium Anual"}
+                                  {!["trial", "free", "premium_mensal", "premium_anual"].includes(user.plano) && "Free"}
+                                </Badge>
                               </TableCell>
                               <TableCell>{getStatusBadge(user.status || 'expirado')}</TableCell>
                               <TableCell>{formatDate(user.data_criacao)}</TableCell>
@@ -1997,7 +2001,13 @@ export default function AdminPublico() {
                               <TableCell className="font-medium">{user.nome || '-'}</TableCell>
                               <TableCell>{user.email || '-'}</TableCell>
                               <TableCell>
-                                <Badge variant="outline">{user.plano || 'Free'}</Badge>
+                                <Badge variant="outline">
+                                  {user.plano === "trial" && "Trial"}
+                                  {user.plano === "free" && "Free"}
+                                  {user.plano === "premium_mensal" && "Premium Mensal"}
+                                  {user.plano === "premium_anual" && "Premium Anual"}
+                                  {!["trial", "free", "premium_mensal", "premium_anual"].includes(user.plano) && "Free"}
+                                </Badge>
                               </TableCell>
                               <TableCell>{getStatusBadge(user.status || 'expirado')}</TableCell>
                               <TableCell>

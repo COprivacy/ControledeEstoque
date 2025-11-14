@@ -466,8 +466,6 @@ function GestaoAvancadaTab({ users }: { users: User[] }) {
           </div>
         </CardContent>
       </Card>
-
-      >
     </div>
   );
 }
@@ -1586,19 +1584,10 @@ export default function AdminPublico() {
               </Card>
             </div>
           ) : activeTab === 'configuracoes' ? (
-            // Aba de Configurações
-            <Tabs value={configTab} onValueChange={(value) => setConfigTab(value as typeof configTab)} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="config" data-testid="tab-configuracoes">Gestão Avançada</TabsTrigger>
-                <TabsTrigger value="mercadopago" data-testid="tab-mercadopago">Mercado Pago</TabsTrigger>
-              </TabsList>
-              <TabsContent value="config">
-                <GestaoAvancadaTab users={users} />
-              </TabsContent>
-              <TabsContent value="mercadopago">
-                <MercadoPagoConfigTab />
-              </TabsContent>
-            </Tabs>
+            // Aba de Configurações - Apenas Mercado Pago
+            <div className="space-y-6">
+              <MercadoPagoConfigTab />
+            </div>
           ) : activeTab === 'sistema' ? (
             // Aba de Sistema
             <SistemaTab users={users} subscriptions={subscriptions} />

@@ -879,25 +879,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para testar configuração do Mercado Pago
   app.post("/api/config-mercadopago/test", async (req, res) => {
     try {
       const { access_token } = req.body;
 
       if (!access_token) {
-        return res.status(400).json({ error: "Access Token é obrigatório" });
+        return res.status(400).json({
+          success: false,
+          message: "Access token não fornecido",
+        });
       }
 
-      const { MercadoPagoService } = await import("./mercadopago");
-      const mercadopago = new MercadoPagoService({ accessToken: access_token });
-      const result = await mercadopago.testConnection();
-
-      if (result.success) {
-        await storage.updateConfigMercadoPagoStatus("conectado");
+      // Validar formato do token
+      if (!access_token.startsWith('APP_USR-') && !access_token.startsWith('TEST-')) {
+        return res.json({
+          success: false,
+          message: "Formato do Access Token inválido. Deve começar com 'APP_USR-' ou 'TEST-'",
+        });
       }
 
-      res.json(result);
-    } catch (error: any) {
-      res.status(500).json({ success: false, message: error.message });
+      // Testar conexão com Mercado Pago
+      const response = await fetch("https://api.mercadopago.com/v1/payment_methods", {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      });
+
+      const responseData = await response.json();
+
+      if (response.ok) {
+        logger.info("Conexão Mercado Pago testada com sucesso", "MERCADOPAGO");
+        return res.json({
+          success: true,
+          message: "✅ Conexão com Mercado Pago estabelecida com sucesso!",
+        });
+      } else {
+        logger.warn("Erro ao testar Mercado Pago", "MERCADOPAGO", {
+          status: response.status,
+          error: responseData,
+        });
+
+        let errorMessage = "Erro ao conectar com Mercado Pago";
+        if (response.status === 401) {
+          errorMessage = "❌ Access Token inválido ou expirado. Verifique suas credenciais no painel do Mercado Pago";
+        } else if (response.status === 403) {
+          errorMessage = "❌ Access Token sem permissões necessárias. Gere um novo token com permissões completas";
+        } else if (responseData?.message) {
+          errorMessage = `❌ ${responseData.message}`;
+        }
+
+        return res.json({
+          success: false,
+          message: errorMessage,
+        });
+      }
+    } catch (error) {
+      logger.error("Erro ao testar Mercado Pago", "MERCADOPAGO", { error });
+      return res.status(500).json({
+        success: false,
+        message: "❌ Erro de conexão. Verifique sua internet e tente novamente",
+      });
     }
   });
 

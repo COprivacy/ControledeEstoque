@@ -3724,6 +3724,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.headers["effective-user-id"] as string;
       const contaId = req.query.conta_id as string;
+      const incluirArquivados = req.query.incluirArquivados === 'true';
 
       if (!userId) {
         return res.status(401).json({ error: "Usuário não autenticado" });
@@ -3742,7 +3743,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ error: "Método getCaixas não implementado" });
       }
 
-      const caixas = await storage.getCaixas(userId);
+      let caixas = await storage.getCaixas(userId);
+      
+      // Filtrar caixas arquivados se necessário
+      // NOTA: Atualmente caixas não têm campo 'status' para arquivamento
+      // mas mantém compatibilidade com futuras implementações
+      if (!incluirArquivados && caixas.some((c: any) => c.status === 'arquivado')) {
+        caixas = caixas.filter((c: any) => c.status !== 'arquivado');
+      }
 
       // Adicionar nome do operador a cada caixa
       const caixasComOperador = await Promise.all(

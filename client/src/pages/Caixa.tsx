@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Lock, Unlock, Plus, Minus, History, DollarSign, TrendingUp, TrendingDown, ShoppingCart } from "lucide-react"; // Added ShoppingCart icon
+import { Wallet, Lock, Unlock, Plus, Minus, History, DollarSign, TrendingUp, TrendingDown, ShoppingCart, Archive } from "lucide-react"; // Added ShoppingCart icon
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -22,6 +23,7 @@ export default function Caixa() {
   const [isFecharDialogOpen, setIsFecharDialogOpen] = useState(false);
   const [isMovimentacaoDialogOpen, setIsMovimentacaoDialogOpen] = useState(false);
   const [tipoMovimentacao, setTipoMovimentacao] = useState<"suprimento" | "retirada">("suprimento");
+  const [incluirArquivados, setIncluirArquivados] = useState(false);
   const { toast } = useToast();
   const { hasPermission } = usePermissions();
   const queryClient = useQueryClient();
@@ -57,11 +59,11 @@ export default function Caixa() {
     }
   };
 
-  const fetchHistoricoCaixas = async () => {
+  const fetchHistoricoCaixas = async (incluirArquivados: boolean = false) => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       const userId = user.id || "";
-      const response = await fetch(`/api/caixas?conta_id=${userId}`, {
+      const response = await fetch(`/api/caixas?conta_id=${userId}&incluirArquivados=${incluirArquivados}`, {
         headers: {
           "x-user-id": userId,
           "x-user-type": user.tipo || "usuario",
@@ -111,8 +113,8 @@ export default function Caixa() {
   const userId = user.id || "";
 
   const { data: caixas = [] } = useQuery({
-    queryKey: ["/api/caixas", userId],
-    queryFn: fetchHistoricoCaixas,
+    queryKey: ["/api/caixas", userId, incluirArquivados],
+    queryFn: () => fetchHistoricoCaixas(incluirArquivados),
     refetchInterval: 5000, // Atualiza a cada 5 segundos
     enabled: !!userId, // Só executa se tiver userId
   });
@@ -708,15 +710,28 @@ export default function Caixa() {
                 <History className="h-5 w-5" />
                 Histórico de Caixas
               </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleLimparHistorico}
-                disabled={caixas.filter((c: any) => c.status === "fechado").length === 0}
-                data-testid="button-limpar-historico"
-              >
-                Limpar Histórico
-              </Button>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Archive className="h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor="incluir-arquivados-caixas" className="text-sm font-normal cursor-pointer">
+                    Incluir Arquivados
+                  </Label>
+                  <Switch
+                    id="incluir-arquivados-caixas"
+                    checked={incluirArquivados}
+                    onCheckedChange={setIncluirArquivados}
+                  />
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleLimparHistorico}
+                  disabled={caixas.filter((c: any) => c.status === "fechado").length === 0}
+                  data-testid="button-limpar-historico"
+                >
+                  Limpar Histórico
+                </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>

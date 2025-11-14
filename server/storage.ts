@@ -58,6 +58,7 @@ export interface IStorage {
   deleteProduto(id: number): Promise<boolean>;
   getVendas(startDate?: string, endDate?: string): Promise<Venda[]>;
   createVenda(insertVenda: InsertVenda): Promise<Venda>;
+  deleteVenda?(id: number): Promise<boolean>;
   clearVendas(): Promise<void>;
   getFornecedores(): Promise<Fornecedor[]>;
   getFornecedor(id: number): Promise<Fornecedor | undefined>;

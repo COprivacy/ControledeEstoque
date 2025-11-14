@@ -300,6 +300,11 @@ export class PostgresStorage implements IStorage {
     return result[0];
   }
 
+  async deleteVenda(id: number): Promise<boolean> {
+    const result = await this.db.delete(vendas).where(eq(vendas.id, id)).returning();
+    return result.length > 0;
+  }
+
   async clearVendas(): Promise<void> {
     await this.db.delete(vendas);
   }

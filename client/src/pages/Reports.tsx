@@ -231,8 +231,11 @@ export default function Reports() {
       
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/vendas"] });
+    onSuccess: async () => {
+      // Invalidar todas as queries relacionadas a vendas
+      await queryClient.invalidateQueries({ queryKey: ["/api/vendas"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/vendas"] });
+      
       toast({
         title: "Histórico limpo!",
         description: "Todas as vendas foram removidas do histórico",

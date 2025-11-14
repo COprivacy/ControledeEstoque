@@ -1818,22 +1818,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/vendas", getUserId, async (req, res) => {
     try {
       const effectiveUserId = req.headers["effective-user-id"] as string;
+      
+      if (!effectiveUserId) {
+        return res.status(401).json({ error: "Usuário não autenticado" });
+      }
+
       const allVendas = await storage.getVendas();
       const vendasToDelete = allVendas.filter(
         (v) => v.user_id === effectiveUserId,
       );
 
+      let deletedCount = 0;
+
       // Delete only vendas belonging to this user
       for (const venda of vendasToDelete) {
-        await storage.deleteVenda?.(venda.id);
+        if (storage.deleteVenda) {
+          await storage.deleteVenda(venda.id);
+          deletedCount++;
+        }
       }
+
+      console.log(`✅ Histórico de vendas limpo - User: ${effectiveUserId}, Vendas removidas: ${deletedCount}`);
+
+      await storage.logAdminAction?.(
+        effectiveUserId,
+        "HISTORICO_VENDAS_LIMPO",
+        `${deletedCount} venda(s) removida(s) do histórico`,
+        req
+      );
 
       res.json({
         success: true,
         message: "Histórico de vendas limpo com sucesso",
+        deletedCount,
       });
-    } catch (error) {
-      res.status(500).json({ error: "Erro ao limpar histórico de vendas" });
+    } catch (error: any) {
+      console.error("Erro ao limpar histórico de vendas:", error);
+      res.status(500).json({ error: error.message || "Erro ao limpar histórico de vendas" });
     }
   });
 

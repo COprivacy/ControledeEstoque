@@ -206,10 +206,29 @@ export default function Reports() {
 
   const clearHistoryMutation = useMutation({
     mutationFn: async () => {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) throw new Error("Usuário não autenticado");
+
+      const user = JSON.parse(userStr);
+      const headers: Record<string, string> = {
+        "x-user-id": user.id,
+        "x-user-type": user.tipo || "usuario",
+      };
+
+      if (user.tipo === "funcionario" && user.conta_id) {
+        headers["x-conta-id"] = user.conta_id;
+      }
+
       const response = await fetch("/api/vendas", {
         method: "DELETE",
+        headers,
       });
-      if (!response.ok) throw new Error("Erro ao limpar histórico");
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao limpar histórico");
+      }
+      
       return response.json();
     },
     onSuccess: () => {
@@ -219,17 +238,17 @@ export default function Reports() {
         description: "Todas as vendas foram removidas do histórico",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Erro",
-        description: "Não foi possível limpar o histórico",
+        description: error.message || "Não foi possível limpar o histórico",
         variant: "destructive",
       });
     },
   });
 
   const handleClearHistory = () => {
-    if (confirm("Tem certeza que deseja limpar todo o histórico de vendas? Esta ação não pode ser desfeita.")) {
+    if (confirm("⚠️ ATENÇÃO: Tem certeza que deseja limpar todo o histórico de vendas?\n\nEsta ação não pode ser desfeita e removerá permanentemente todas as vendas registradas.\n\nDica: Use a Limpeza Automática em Configurações para arquivar vendas antigas mantendo os dados para relatórios.")) {
       clearHistoryMutation.mutate();
     }
   };
@@ -332,7 +351,9 @@ export default function Reports() {
           <AlertDescription className="text-purple-700 dark:text-purple-400 text-sm">
             Você possui {vendas.length} vendas no histórico. Para otimizar o desempenho, 
             configure a limpeza automática de dados antigos em <strong>Configurações → Limpeza Automática</strong>.
-            Vendas recentes e dados importantes nunca serão excluídos.
+            <br /><br />
+            <strong>⚠️ Importante:</strong> O botão "Limpar Histórico" abaixo <strong>exclui permanentemente</strong> todas as vendas. 
+            A Limpeza Automática <strong>arquiva</strong> dados antigos mantendo-os disponíveis para relatórios.
           </AlertDescription>
         </Alert>
       )}

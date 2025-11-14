@@ -453,6 +453,7 @@ function calculateDaysRemaining(expirationDate: string | null | undefined): numb
 export default function Admin() {
   const { user } = useUser();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   const [createUserOpen, setCreateUserOpen] = useState(false);
@@ -597,12 +598,15 @@ export default function Admin() {
       setCreateUserOpen(false);
     },
     onError: (error: any) => {
+      // Sempre resetar o formulário e fechar o diálogo em caso de erro
+      setNewEmployee({ nome: "", email: "", senha: "", cargo: "" });
+      setCreateUserOpen(false);
+      
       if (error.limite_atingido) {
-        // Resetar o formulário também em caso de limite atingido
-        setNewEmployee({ nome: "", email: "", senha: "", cargo: "" });
-        setCreateUserOpen(false);
+        // Se for limite atingido, mostrar o diálogo de upgrade
         setShowPricingDialog(true);
       } else {
+        // Para outros erros, mostrar mensagem de erro
         toast({
           title: "Erro ao criar funcionário",
           description: error.error || (error instanceof Error ? error.message : "Erro desconhecido"),

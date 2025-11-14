@@ -60,7 +60,34 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const authHeaders = getAuthHeaders();
-    const res = await fetch(queryKey.join("/") as string, {
+    
+    const pathSegments: (string | number)[] = [];
+    let queryParams: Record<string, any> = {};
+    
+    for (const segment of queryKey) {
+      if (typeof segment === "string" || typeof segment === "number") {
+        pathSegments.push(segment);
+      } else if (typeof segment === "object" && segment !== null) {
+        queryParams = { ...queryParams, ...segment };
+      }
+    }
+    
+    let url = pathSegments.join("/");
+    
+    if (Object.keys(queryParams).length > 0) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(queryParams)) {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      }
+      const queryString = searchParams.toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
+    }
+    
+    const res = await fetch(url, {
       credentials: "include",
       headers: authHeaders,
     });

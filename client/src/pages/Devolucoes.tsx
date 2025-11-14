@@ -40,14 +40,6 @@ export default function Devolucoes() {
 
   const { data: devolucoes = [], isLoading: loadingDevolucoes } = useQuery<Devolucao[]>({
     queryKey: ["/api/devolucoes", { incluirArquivados: mostrarArquivados }],
-    queryFn: async () => {
-      const url = mostrarArquivados 
-        ? "/api/devolucoes?incluirArquivados=true"
-        : "/api/devolucoes";
-      const response = await fetch(url, { credentials: "include" });
-      if (!response.ok) throw new Error("Erro ao buscar devoluções");
-      return response.json();
-    },
   });
 
   const { data: produtos = [], isLoading: loadingProdutos } = useQuery<Produto[]>({

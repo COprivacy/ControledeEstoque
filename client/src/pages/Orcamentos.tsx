@@ -49,14 +49,6 @@ export default function Orcamentos() {
 
   const { data: orcamentos = [], isLoading } = useQuery<Orcamento[]>({
     queryKey: ["/api/orcamentos", { incluirArquivados: mostrarArquivados }],
-    queryFn: async () => {
-      const url = mostrarArquivados 
-        ? "/api/orcamentos?incluirArquivados=true"
-        : "/api/orcamentos";
-      const response = await fetch(url, { credentials: "include" });
-      if (!response.ok) throw new Error("Erro ao buscar orçamentos");
-      return response.json();
-    },
   });
 
   const { data: produtos = [] } = useQuery<Produto[]>({

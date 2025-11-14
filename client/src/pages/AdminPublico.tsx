@@ -1205,6 +1205,22 @@ export default function AdminPublico() {
     return <Badge className={`${config.color} border`}>{config.label}</Badge>;
   };
 
+  // Listener para abrir dialog de limpeza via evento - MUST be before conditional returns
+  useEffect(() => {
+    const handleOpenLimparLogs = () => {
+      setLimparLogsDialogOpen(true);
+    };
+
+    window.addEventListener('open-limpar-logs', handleOpenLimparLogs);
+    return () => window.removeEventListener('open-limpar-logs', handleOpenLimparLogs);
+  }, []);
+
+  const planosFreeCount = users.filter(u => u.plano === 'free' || u.plano === 'trial').length;
+
+  const handleLimparLogs = () => {
+    limparLogsMutation.mutate();
+  };
+
   if (isLoadingSubscriptions || isLoadingUsers) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
@@ -1239,22 +1255,6 @@ export default function AdminPublico() {
       </div>
     );
   }
-
-  const planosFreeCount = users.filter(u => u.plano === 'free' || u.plano === 'trial').length;
-
-  const handleLimparLogs = () => {
-    limparLogsMutation.mutate();
-  };
-
-  // Listener para abrir dialog de limpeza via evento
-  useEffect(() => {
-    const handleOpenLimparLogs = () => {
-      setLimparLogsDialogOpen(true);
-    };
-
-    window.addEventListener('open-limpar-logs', handleOpenLimparLogs);
-    return () => window.removeEventListener('open-limpar-logs', handleOpenLimparLogs);
-  }, []);
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
@@ -1656,6 +1656,9 @@ export default function AdminPublico() {
                     <div className="space-y-2">
                       <p className="text-sm text-muted-foreground">Total de Usuários</p>
                       <p className="text-3xl font-bold">{users.length}</p>
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                        +12% desde a semana passada
+                      </p>
                     </div>
                   </CardContent>
                 </Card>

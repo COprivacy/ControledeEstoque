@@ -370,11 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       try {
         // Salvar código no banco de dados
-        await storage.db.query(
-          `INSERT INTO password_reset_codes (email, code, expires_at, used) 
-           VALUES ($1, $2, $3, false)`,
-          [email, code, expiresAt.toISOString()]
-        );
+        await storage.createPasswordResetCode(email, code, expiresAt.toISOString());
 
         const { EmailService } = await import("./email-service");
         const emailService = new EmailService();
@@ -424,21 +420,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar o código armazenado para este email
-      const result = await storage.db.query(
-        `SELECT code, expires_at FROM password_reset_codes 
-         WHERE email = $1 AND used = false 
-         ORDER BY created_at DESC LIMIT 1`,
-        [email]
-      );
+      const storedCode = await storage.getPasswordResetCode(email);
 
-      if (result.rows.length === 0) {
+      if (!storedCode) {
         return res.status(400).json({
           success: false,
           message: "Código inválido ou expirado",
         });
       }
-
-      const storedCode = result.rows[0];
 
       // Verificar se o código expirou
       if (new Date() > new Date(storedCode.expires_at)) {
@@ -465,20 +454,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Hash da nova senha
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-      // Atualizar senha
-      await storage.db.query(
-        `UPDATE usuarios SET senha = $1 WHERE email = $2`,
-        [hashedPassword, email]
-      );
+      // Atualizar senha diretamente (sem hash, como o sistema está configurado)
+      await storage.updateUser(user.id, {
+        senha: newPassword
+      });
 
       // Marcar código como usado
-      await storage.db.query(
-        `UPDATE password_reset_codes SET used = true WHERE email = $1 AND code = $2`,
-        [email, code]
-      );
+      await storage.markPasswordResetCodeAsUsed(email, code);
 
       console.log(`✅ Senha resetada com sucesso para: ${email}`);
 

@@ -1250,4 +1250,32 @@ export class PostgresStorage implements IStorage {
 
     return timeline.rows;
   }
+
+  // Métodos para códigos de reset de senha
+  async createPasswordResetCode(email: string, code: string, expiresAt: string): Promise<void> {
+    await this.db.execute(sql`
+      INSERT INTO password_reset_codes (email, code, expires_at, used) 
+      VALUES (${email}, ${code}, ${expiresAt}, false)
+    `);
+  }
+
+  async getPasswordResetCode(email: string): Promise<{ code: string; expires_at: string } | null> {
+    const result = await this.db.execute(sql`
+      SELECT code, expires_at 
+      FROM password_reset_codes 
+      WHERE email = ${email} AND used = false 
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `);
+
+    return result.rows[0] as any || null;
+  }
+
+  async markPasswordResetCodeAsUsed(email: string, code: string): Promise<void> {
+    await this.db.execute(sql`
+      UPDATE password_reset_codes 
+      SET used = true 
+      WHERE email = ${email} AND code = ${code}
+    `);
+  }
 }

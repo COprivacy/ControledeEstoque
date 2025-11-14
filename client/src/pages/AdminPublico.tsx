@@ -1081,6 +1081,40 @@ export default function AdminPublico() {
   // Recupera o usuário logado do localStorage
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("user") || "{}") : {};
 
+  // Mutation para limpar logs (deve estar no topo com os outros hooks)
+  const limparLogsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/admin/all-logs', {
+        method: 'DELETE',
+        headers: {
+          'x-user-id': user?.id || '',
+          'x-is-admin': 'true',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao limpar logs');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/all-logs'] });
+      toast({
+        title: "✅ Logs limpos com sucesso",
+        description: `${data.deletedCount} registro(s) removido(s)`,
+      });
+      setLimparLogsDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao limpar logs",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const { data: subscriptions = [], isLoading: isLoadingSubscriptions, error: subscriptionsError } = useQuery<Subscription[]>({
     queryKey: ["/api/subscriptions"],
@@ -1207,41 +1241,6 @@ export default function AdminPublico() {
   }
 
   const planosFreeCount = users.filter(u => u.plano === 'free' || u.plano === 'trial').length;
-
-  // Mutation para limpar logs
-  const limparLogsMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch('/api/admin/all-logs', {
-        method: 'DELETE',
-        headers: {
-          'x-user-id': user?.id || '',
-          'x-is-admin': 'true',
-        },
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro ao limpar logs');
-      }
-
-      return response.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/all-logs'] });
-      toast({
-        title: "✅ Logs limpos com sucesso",
-        description: `${data.deletedCount} registro(s) removido(s)`,
-      });
-      setLimparLogsDialogOpen(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro ao limpar logs",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   const handleLimparLogs = () => {
     limparLogsMutation.mutate();

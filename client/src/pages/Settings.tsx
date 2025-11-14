@@ -1024,6 +1024,61 @@ export default function Settings() {
                         <input type="hidden" data-cleanup="caixas" defaultValue="365" />
                       </div>
 
+                      {/* Orçamentos */}
+                      <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-blue-50/50 to-cyan-50/50 dark:from-blue-950/10 dark:to-cyan-950/10">
+                        <div className="space-y-1">
+                          <Label className="font-semibold text-blue-900 dark:text-blue-100">
+                            Orçamentos
+                          </Label>
+                          <p className="text-sm text-muted-foreground">
+                            Arquivar orçamentos antigos
+                          </p>
+                        </div>
+                        <Select defaultValue="180" onValueChange={(value) => {
+                          const input = document.querySelector<HTMLInputElement>('[data-cleanup="orcamentos"]');
+                          if (input) input.value = value;
+                        }}>
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="90">90 dias</SelectItem>
+                            <SelectItem value="180">6 meses</SelectItem>
+                            <SelectItem value="365">1 ano</SelectItem>
+                            <SelectItem value="never">Nunca</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <input type="hidden" data-cleanup="orcamentos" defaultValue="180" />
+                      </div>
+
+                      {/* Devoluções */}
+                      <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-pink-50/50 to-rose-50/50 dark:from-pink-950/10 dark:to-rose-950/10">
+                        <div className="space-y-1">
+                          <Label className="font-semibold text-pink-900 dark:text-pink-100">
+                            Devoluções
+                          </Label>
+                          <p className="text-sm text-muted-foreground">
+                            Arquivar devoluções processadas há muito tempo
+                          </p>
+                        </div>
+                        <Select defaultValue="90" onValueChange={(value) => {
+                          const input = document.querySelector<HTMLInputElement>('[data-cleanup="devolucoes"]');
+                          if (input) input.value = value;
+                        }}>
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="30">30 dias</SelectItem>
+                            <SelectItem value="90">90 dias</SelectItem>
+                            <SelectItem value="180">6 meses</SelectItem>
+                            <SelectItem value="365">1 ano</SelectItem>
+                            <SelectItem value="never">Nunca</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <input type="hidden" data-cleanup="devolucoes" defaultValue="90" />
+                      </div>
+
                       {/* Relatórios */}
                       <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-purple-50/50 to-violet-50/50 dark:from-purple-950/10 dark:to-violet-950/10">
                         <div className="space-y-1">

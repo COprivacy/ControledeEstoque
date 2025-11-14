@@ -197,10 +197,18 @@ export function AdminLogsView({ isPublicAdmin = false }: AdminLogsViewProps) {
             Monitore todas as ações realizadas pelos administradores do sistema
           </p>
         </div>
-        <Button onClick={exportToCSV} className="gap-2">
-          <Download className="h-4 w-4" />
-          Exportar CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={exportToCSV} className="gap-2" variant="outline">
+            <Download className="h-4 w-4" />
+            Exportar CSV
+          </Button>
+          {isPublicAdmin && (
+            <Button onClick={() => window.dispatchEvent(new CustomEvent('open-limpar-logs'))} variant="destructive" className="gap-2">
+              <Trash2 className="h-4 w-4" />
+              Limpar Logs
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

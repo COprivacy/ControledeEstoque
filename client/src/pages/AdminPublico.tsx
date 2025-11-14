@@ -1076,6 +1076,8 @@ export default function AdminPublico() {
   const [configTab, setConfigTab] = useState<'config' | 'mercadopago'>('config');
   const [userEditDialogOpen, setUserEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [limparLogsDialogOpen, setLimparLogsDialogOpen] = useState(false);
+
 
   const { data: subscriptions = [], isLoading: isLoadingSubscriptions, error: subscriptionsError } = useQuery<Subscription[]>({
     queryKey: ["/api/subscriptions"],
@@ -1200,6 +1202,60 @@ export default function AdminPublico() {
       </div>
     );
   }
+
+  // Recupera o usuário logado do localStorage
+  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem("user") || "{}") : {};
+
+  const planosFreeCount = users.filter(u => u.plano === 'free' || u.plano === 'trial').length;
+
+  // Mutation para limpar logs
+  const limparLogsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/admin/all-logs', {
+        method: 'DELETE',
+        headers: {
+          'x-user-id': user?.id || '',
+          'x-is-admin': 'true',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao limpar logs');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/all-logs'] });
+      toast({
+        title: "✅ Logs limpos com sucesso",
+        description: `${data.deletedCount} registro(s) removido(s)`,
+      });
+      setLimparLogsDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao limpar logs",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleLimparLogs = () => {
+    limparLogsMutation.mutate();
+  };
+
+  // Listener para abrir dialog de limpeza via evento
+  useEffect(() => {
+    const handleOpenLimparLogs = () => {
+      setLimparLogsDialogOpen(true);
+    };
+
+    window.addEventListener('open-limpar-logs', handleOpenLimparLogs);
+    return () => window.removeEventListener('open-limpar-logs', handleOpenLimparLogs);
+  }, []);
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
@@ -1595,7 +1651,7 @@ export default function AdminPublico() {
             // Aba de Métricas
             <div className="space-y-6">
               {/* Estatísticas Gerais */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                 <Card>
                   <CardContent className="pt-6">
                     <div className="space-y-2">
@@ -1644,32 +1700,67 @@ export default function AdminPublico() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/20 dark:to-orange-900/20">
                       <div>
-                        <p className="font-semibold">Assinaturas Pendentes</p>
-                        <p className="text-sm text-muted-foreground">Aguardando pagamento</p>
+                        <p className="font-semibold text-orange-900 dark:text-orange-100">Assinaturas Pendentes</p>
+                        <p className="text-xs text-orange-700 dark:text-orange-300">Aguardando pagamento</p>
                       </div>
-                      <Badge variant="secondary">{assinaturasPendentes}</Badge>
+                      <Badge variant="secondary" className="text-lg">{assinaturasPendentes}</Badge>
                     </div>
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20">
                       <div>
-                        <p className="font-semibold">Taxa de Conversão</p>
-                        <p className="text-sm text-muted-foreground">Assinaturas ativas / total</p>
+                        <p className="font-semibold text-blue-900 dark:text-blue-100">Taxa de Conversão</p>
+                        <p className="text-xs text-blue-700 dark:text-blue-300">Assinaturas ativas / total</p>
                       </div>
-                      <Badge>
+                      <Badge className="text-lg">
                         {subscriptions.length > 0
                           ? ((assinaturasAtivas / subscriptions.length) * 100).toFixed(1)
-                          : 0}%
+                          : '0.0'}%
                       </Badge>
                     </div>
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/20 dark:to-purple-900/20">
                       <div>
-                        <p className="font-semibold">Planos Gratuitos</p>
-                        <p className="text-sm text-muted-foreground">Usuários no plano free/trial</p>
+                        <p className="font-semibold text-purple-900 dark:text-purple-100">Planos Free/Trial</p>
+                        <p className="text-xs text-purple-700 dark:text-purple-300">Usuários no plano gratuito</p>
                       </div>
-                      <Badge variant="outline">
-                        {users.filter(u => u.plano === 'free' || u.plano === 'trial').length}
+                      <Badge variant="secondary" className="text-lg">{planosFreeCount}</Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20">
+                      <div>
+                        <p className="font-semibold text-green-900 dark:text-green-100">Ticket Médio</p>
+                        <p className="text-xs text-green-700 dark:text-green-300">Receita por assinatura</p>
+                      </div>
+                      <Badge className="text-lg bg-green-600">
+                        {assinaturasAtivas > 0
+                          ? formatCurrency(receitaMensal / assinaturasAtivas)
+                          : 'R$ 0,00'}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/20">
+                      <div>
+                        <p className="font-semibold text-red-900 dark:text-red-100">Contas Bloqueadas</p>
+                        <p className="text-xs text-red-700 dark:text-red-300">Por falta de pagamento</p>
+                      </div>
+                      <Badge variant="destructive" className="text-lg">
+                        {users.filter(u => u.status === 'bloqueado').length}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/20 dark:to-indigo-900/20">
+                      <div>
+                        <p className="font-semibold text-indigo-900 dark:text-indigo-100">Cadastros Hoje</p>
+                        <p className="text-xs text-indigo-700 dark:text-indigo-300">Novos usuários</p>
+                      </div>
+                      <Badge variant="secondary" className="text-lg">
+                        {users.filter(u => {
+                          const today = new Date().toDateString();
+                          return new Date(u.data_criacao || '').toDateString() === today;
+                        }).length}
                       </Badge>
                     </div>
                   </div>
@@ -1678,7 +1769,51 @@ export default function AdminPublico() {
             </div>
           ) : activeTab === 'logs' ? (
             // Aba de Logs de Administrador
-            <AdminLogsView isPublicAdmin={true} />
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                      Logs de Administradores
+                    </CardTitle>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setLimparLogsDialogOpen(true)}
+                      data-testid="button-clear-logs"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Limpar Todos os Logs
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <AdminLogsView isPublicAdmin={true} />
+                </CardContent>
+              </Card>
+
+              {/* Dialog de Confirmação para Limpar Logs */}
+              <Dialog open={limparLogsDialogOpen} onOpenChange={setLimparLogsDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Confirmar Limpeza de Logs</DialogTitle>
+                    <DialogDescription>
+                      Tem certeza que deseja remover todos os registros de logs? Esta ação não pode ser desfeita.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setLimparLogsDialogOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button variant="destructive" onClick={handleLimparLogs} disabled={limparLogsMutation.isPending}>
+                      {limparLogsMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Limpar Logs
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           ) : (
             // Dashboard Principal
             <>

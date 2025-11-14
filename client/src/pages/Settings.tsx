@@ -17,6 +17,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
@@ -942,175 +943,11 @@ export default function Settings() {
                     </DialogHeader>
 
                     <div className="space-y-4 py-4">
-                      {/* Devoluções */}
-                      <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-purple-50/50 to-violet-50/50 dark:from-purple-950/10 dark:to-violet-950/10">
-                        <div className="space-y-1">
-                          <Label className="font-semibold text-purple-900 dark:text-purple-100">
-                            Histórico de Devoluções
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            Arquivar devoluções antigas (mantém para relatórios)
-                          </p>
-                        </div>
-                        <Select defaultValue="90" onValueChange={(value) => {
-                          const input = document.querySelector<HTMLInputElement>('[data-cleanup="devolucoes"]');
-                          if (input) input.value = value;
-                        }}>
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="30">30 dias</SelectItem>
-                            <SelectItem value="60">60 dias</SelectItem>
-                            <SelectItem value="90">90 dias</SelectItem>
-                            <SelectItem value="180">6 meses</SelectItem>
-                            <SelectItem value="never">Nunca</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <input type="hidden" data-cleanup="devolucoes" defaultValue="90" />
-                      </div>
-
-                      {/* Orçamentos */}
-                      <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-green-50/50 to-emerald-50/50 dark:from-green-950/10 dark:to-emerald-950/10">
-                        <div className="space-y-1">
-                          <Label className="font-semibold text-green-900 dark:text-green-100">
-                            Orçamentos Antigos
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            Arquivar orçamentos antigos (mantém para análises)
-                          </p>
-                        </div>
-                        <Select defaultValue="180" onValueChange={(value) => {
-                          const input = document.querySelector<HTMLInputElement>('[data-cleanup="orcamentos"]');
-                          if (input) input.value = value;
-                        }}>
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="60">60 dias</SelectItem>
-                            <SelectItem value="90">90 dias</SelectItem>
-                            <SelectItem value="180">6 meses</SelectItem>
-                            <SelectItem value="365">1 ano</SelectItem>
-                            <SelectItem value="never">Nunca</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <input type="hidden" data-cleanup="orcamentos" defaultValue="180" />
-                      </div>
-
-                      {/* Vendas */}
-                      <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-cyan-50/50 to-blue-50/50 dark:from-cyan-950/10 dark:to-blue-950/10">
-                        <div className="space-y-1">
-                          <Label className="font-semibold text-cyan-900 dark:text-cyan-100">
-                            Histórico de Vendas
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            Arquivar vendas antigas (mantém para relatórios)
-                          </p>
-                        </div>
-                        <Select defaultValue="365" onValueChange={(value) => {
-                          const input = document.querySelector<HTMLInputElement>('[data-cleanup="vendas"]');
-                          if (input) input.value = value;
-                        }}>
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="180">6 meses</SelectItem>
-                            <SelectItem value="365">1 ano</SelectItem>
-                            <SelectItem value="730">2 anos</SelectItem>
-                            <SelectItem value="never">Nunca</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <input type="hidden" data-cleanup="vendas" defaultValue="365" />
-                      </div>
-
-                      {/* Clientes */}
-                      <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-pink-50/50 to-rose-50/50 dark:from-pink-950/10 dark:to-rose-950/10">
-                        <div className="space-y-1">
-                          <Label className="font-semibold text-pink-900 dark:text-pink-100">
-                            Clientes Inativos
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            Arquivar clientes sem compras há muito tempo
-                          </p>
-                        </div>
-                        <Select defaultValue="730" onValueChange={(value) => {
-                          const input = document.querySelector<HTMLInputElement>('[data-cleanup="clientes"]');
-                          if (input) input.value = value;
-                        }}>
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="365">1 ano</SelectItem>
-                            <SelectItem value="730">2 anos</SelectItem>
-                            <SelectItem value="1095">3 anos</SelectItem>
-                            <SelectItem value="never">Nunca</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <input type="hidden" data-cleanup="clientes" defaultValue="730" />
-                      </div>
-
-                      {/* Fornecedores */}
-                      <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-yellow-50/50 to-amber-50/50 dark:from-yellow-950/10 dark:to-amber-950/10">
-                        <div className="space-y-1">
-                          <Label className="font-semibold text-yellow-900 dark:text-yellow-100">
-                            Fornecedores Inativos
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            Arquivar fornecedores sem movimentação
-                          </p>
-                        </div>
-                        <Select defaultValue="730" onValueChange={(value) => {
-                          const input = document.querySelector<HTMLInputElement>('[data-cleanup="fornecedores"]');
-                          if (input) input.value = value;
-                        }}>
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="365">1 ano</SelectItem>
-                            <SelectItem value="730">2 anos</SelectItem>
-                            <SelectItem value="1095">3 anos</SelectItem>
-                            <SelectItem value="never">Nunca</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <input type="hidden" data-cleanup="fornecedores" defaultValue="730" />
-                      </div>
-
-                      {/* Produtos */}
-                      <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-indigo-50/50 to-violet-50/50 dark:from-indigo-950/10 dark:to-violet-950/10">
-                        <div className="space-y-1">
-                          <Label className="font-semibold text-indigo-900 dark:text-indigo-100">
-                            Produtos Descontinuados
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            Arquivar produtos sem movimentação há muito tempo
-                          </p>
-                        </div>
-                        <Select defaultValue="730" onValueChange={(value) => {
-                          const input = document.querySelector<HTMLInputElement>('[data-cleanup="produtos"]');
-                          if (input) input.value = value;
-                        }}>
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="365">1 ano</SelectItem>
-                            <SelectItem value="730">2 anos</SelectItem>
-                            <SelectItem value="1095">3 anos</SelectItem>
-                            <SelectItem value="never">Nunca</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <input type="hidden" data-cleanup="produtos" defaultValue="730" />
-                      </div>
-
                       {/* Contas a Pagar */}
                       <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-red-50/50 to-orange-50/50 dark:from-red-950/10 dark:to-orange-950/10">
                         <div className="space-y-1">
                           <Label className="font-semibold text-red-900 dark:text-red-100">
-                            Contas a Pagar Antigas
+                            Contas a Pagar
                           </Label>
                           <p className="text-sm text-muted-foreground">
                             Arquivar contas pagas há muito tempo
@@ -1137,7 +974,7 @@ export default function Settings() {
                       <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-950/10 dark:to-teal-950/10">
                         <div className="space-y-1">
                           <Label className="font-semibold text-emerald-900 dark:text-emerald-100">
-                            Contas a Receber Antigas
+                            Contas a Receber
                           </Label>
                           <p className="text-sm text-muted-foreground">
                             Arquivar contas recebidas há muito tempo
@@ -1160,42 +997,14 @@ export default function Settings() {
                         <input type="hidden" data-cleanup="contas_receber" defaultValue="365" />
                       </div>
 
-                      {/* Logs de Auditoria */}
-                      <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-blue-50/50 to-cyan-50/50 dark:from-blue-950/10 dark:to-cyan-950/10">
-                        <div className="space-y-1">
-                          <Label className="font-semibold text-blue-900 dark:text-blue-100">
-                            Logs de Auditoria
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            Manter logs de ações do sistema por período limitado
-                          </p>
-                        </div>
-                        <Select defaultValue="90" onValueChange={(value) => {
-                          const input = document.querySelector<HTMLInputElement>('[data-cleanup="logs"]');
-                          if (input) input.value = value;
-                        }}>
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="30">30 dias</SelectItem>
-                            <SelectItem value="60">60 dias</SelectItem>
-                            <SelectItem value="90">90 dias</SelectItem>
-                            <SelectItem value="180">6 meses</SelectItem>
-                            <SelectItem value="365">1 ano</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <input type="hidden" data-cleanup="logs" defaultValue="90" />
-                      </div>
-
                       {/* Histórico de Caixas */}
                       <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-orange-50/50 to-amber-50/50 dark:from-orange-950/10 dark:to-amber-950/10">
                         <div className="space-y-1">
                           <Label className="font-semibold text-orange-900 dark:text-orange-100">
-                            Histórico de Caixas Fechados
+                            Histórico de Caixas
                           </Label>
                           <p className="text-sm text-muted-foreground">
-                            Limpar automaticamente caixas fechados antigos
+                            Arquivar caixas fechados antigos
                           </p>
                         </div>
                         <Select defaultValue="365" onValueChange={(value) => {
@@ -1213,6 +1022,33 @@ export default function Settings() {
                           </SelectContent>
                         </Select>
                         <input type="hidden" data-cleanup="caixas" defaultValue="365" />
+                      </div>
+
+                      {/* Relatórios */}
+                      <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-purple-50/50 to-violet-50/50 dark:from-purple-950/10 dark:to-violet-950/10">
+                        <div className="space-y-1">
+                          <Label className="font-semibold text-purple-900 dark:text-purple-100">
+                            Relatórios Antigos
+                          </Label>
+                          <p className="text-sm text-muted-foreground">
+                            Arquivar relatórios gerados há muito tempo
+                          </p>
+                        </div>
+                        <Select defaultValue="365" onValueChange={(value) => {
+                          const input = document.querySelector<HTMLInputElement>('[data-cleanup="relatorios"]');
+                          if (input) input.value = value;
+                        }}>
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="180">6 meses</SelectItem>
+                            <SelectItem value="365">1 ano</SelectItem>
+                            <SelectItem value="730">2 anos</SelectItem>
+                            <SelectItem value="never">Nunca</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <input type="hidden" data-cleanup="relatorios" defaultValue="365" />
                       </div>
                     </div>
                   </DialogContent>

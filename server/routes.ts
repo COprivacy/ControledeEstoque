@@ -843,11 +843,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!config) {
         return res.json(null);
       }
-      res.json({
-        ...config,
-        access_token: config.access_token ? "***" : "",
-        public_key: config.public_key || "",
-      });
+      // Retorna o token completo para permitir edição e teste
+      res.json(config);
     } catch (error) {
       res
         .status(500)

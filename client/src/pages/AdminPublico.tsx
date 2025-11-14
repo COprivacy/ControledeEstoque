@@ -467,36 +467,7 @@ function GestaoAvancadaTab({ users }: { users: User[] }) {
         </CardContent>
       </Card>
 
-      {/* Informações do Sistema de Email */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-blue-600" />
-            Configuração de Email (SMTP)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Configuração Manual Necessária</AlertTitle>
-            <AlertDescription>
-              <p className="mb-3">
-                As configurações de SMTP devem ser editadas diretamente no arquivo <code className="bg-muted px-1 rounded">.env</code> do servidor.
-              </p>
-              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
-                <p>SMTP_HOST=smtp.gmail.com</p>
-                <p>SMTP_PORT=587</p>
-                <p>SMTP_USER=seu.email@gmail.com</p>
-                <p>SMTP_PASS=sua-senha-app</p>
-                <p>SMTP_FROM=Pavisoft Sistemas &lt;noreply@pavisoft.com&gt;</p>
-              </div>
-              <p className="mt-3 text-xs">
-                📝 Edite o arquivo .env na raiz do projeto e reinicie o servidor para aplicar as alterações.
-              </p>
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+      >
     </div>
   );
 }
@@ -522,7 +493,7 @@ function MercadoPagoConfigTab() {
       setMpConfig({
         access_token: mpConfigData.access_token || "",
         public_key: mpConfigData.public_key || "",
-        webhook_url: mpConfigData.webhook_url || "" // Atualizado para carregar webhook_url
+        webhook_url: mpConfigData.webhook_url || ""
       });
     }
   }, [mpConfigData]);
@@ -623,12 +594,15 @@ function MercadoPagoConfigTab() {
           <div className="space-y-2">
             <Label>Access Token</Label>
             <Input
-              type="password"
+              type="text"
               value={mpConfig.access_token}
               onChange={(e) => setMpConfig({ ...mpConfig, access_token: e.target.value })}
               placeholder="APP_USR-..."
               data-testid="input-mp-access-token"
             />
+            <p className="text-xs text-muted-foreground">
+              ℹ️ Cole aqui o Access Token gerado no painel do Mercado Pago
+            </p>
           </div>
           <div className="space-y-2">
             <Label>Public Key</Label>

@@ -5,9 +5,11 @@ import ReportsCard from "@/components/ReportsCard";
 import SalesTable from "@/components/SalesTable";
 import ExpiringProductsReport from "@/components/ExpiringProductsReport";
 import { Button } from "@/components/ui/button";
-import { Trash2, Download, Crown, Shield } from "lucide-react";
+import { Trash2, Download, Crown, Shield, Archive } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatDateTime } from "@/lib/dateUtils";
@@ -17,6 +19,7 @@ export default function Reports() {
   const queryClient = useQueryClient();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [mostrarArquivados, setMostrarArquivados] = useState(false);
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
@@ -155,7 +158,7 @@ export default function Reports() {
   };
 
   const { data: vendas = [] } = useQuery({
-    queryKey: ["/api/vendas", startDate, endDate],
+    queryKey: ["/api/vendas", startDate, endDate, mostrarArquivados],
     queryFn: async () => {
       const userStr = localStorage.getItem("user");
       if (!userStr) throw new Error("Usuário não autenticado");
@@ -171,8 +174,19 @@ export default function Reports() {
       }
 
       let url = "/api/vendas";
+      const params = new URLSearchParams();
+      
       if (startDate && endDate) {
-        url += `?start_date=${startDate}&end_date=${endDate}`;
+        params.append("start_date", startDate);
+        params.append("end_date", endDate);
+      }
+      
+      if (mostrarArquivados) {
+        params.append("incluirArquivados", "true");
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
       }
 
       const response = await fetch(url, { headers });
@@ -363,16 +377,30 @@ export default function Reports() {
 
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Histórico de Vendas</h2>
-        {vendas.length > 0 && (
-          <Button 
-            variant="destructive" 
-            size="sm"
-            onClick={handleClearHistory}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Limpar Histórico
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 border rounded-md px-3 py-2">
+            <Archive className="h-4 w-4 text-muted-foreground" />
+            <Label htmlFor="mostrar-arquivados-vendas" className="cursor-pointer text-sm whitespace-nowrap">
+              Mostrar Arquivados
+            </Label>
+            <Switch
+              id="mostrar-arquivados-vendas"
+              checked={mostrarArquivados}
+              onCheckedChange={setMostrarArquivados}
+              data-testid="switch-arquivados-vendas"
+            />
+          </div>
+          {vendas.length > 0 && (
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={handleClearHistory}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Limpar Histórico
+            </Button>
+          )}
+        </div>
       </div>
 
       <SalesTable sales={vendas} />

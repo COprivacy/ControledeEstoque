@@ -1737,9 +1737,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const startDate = req.query.start_date as string;
       const endDate = req.query.end_date as string;
+      const incluirArquivados = req.query.incluirArquivados === 'true';
 
       const allVendas = await storage.getVendas(startDate, endDate);
-      const vendas = allVendas.filter((v) => v.user_id === effectiveUserId);
+      let vendas = allVendas.filter((v) => v.user_id === effectiveUserId);
+      
+      // Filtrar vendas arquivadas se necessário
+      // NOTA: Atualmente vendas não têm campo 'status' para arquivamento
+      // mas mantém compatibilidade com futuras implementações
+      if (!incluirArquivados && vendas.some((v: any) => v.status === 'arquivada')) {
+        vendas = vendas.filter((v: any) => v.status !== 'arquivada');
+      }
+      
       res.json(vendas);
     } catch (error) {
       console.error("Erro ao buscar vendas:", error);

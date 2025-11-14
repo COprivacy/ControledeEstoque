@@ -1,5 +1,11 @@
 
 import { Pool } from '@neondatabase/serverless';
+import ws from 'ws';
+
+// Configurar WebSocket para Neon
+if (typeof WebSocket === 'undefined') {
+  (global as any).WebSocket = ws;
+}
 
 async function runMigration() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
@@ -7,7 +13,7 @@ async function runMigration() {
   try {
     console.log('🔄 Criando tabela de códigos de recuperação de senha...');
 
-    // SQL direto sem usar __dirname
+    // SQL embutido diretamente no código
     const migrationSQL = `
 -- Tabela para armazenar códigos de recuperação de senha
 CREATE TABLE IF NOT EXISTS password_reset_codes (

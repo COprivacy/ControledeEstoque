@@ -40,16 +40,21 @@ export default function Caixa() {
   const fetchCaixaAberto = async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
-      const response = await fetch("/api/caixas/aberto", {
-        headers: {
-          "x-user-id": user.id || "",
-          "x-user-type": user.tipo || "usuario",
-          "x-conta-id": user.conta_id || user.id || "",
-        },
-      });
+      const userType = user.tipo || "usuario";
+      const headers: Record<string, string> = {
+        "x-user-id": user.id || "",
+        "x-user-type": userType,
+        "x-conta-id": user.conta_id || user.id || "",
+      };
+
+      // Adicionar funcionario-id apenas se for funcionário
+      if (userType === "funcionario" && user.id) {
+        headers["funcionario-id"] = user.id;
+      }
+
+      const response = await fetch("/api/caixas/aberto", { headers });
       if (response.ok) {
         const data = await response.json();
-        // Directly use the fetched data, no need for setCaixaAberto if using useQuery
         return data;
       }
       return null;

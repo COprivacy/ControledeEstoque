@@ -117,7 +117,7 @@ export interface IStorage {
 
   // Métodos para Caixa
   getCaixas?(userId: string): Promise<any[]>;
-  getCaixaAberto?(userId: string): Promise<any | undefined>;
+  getCaixaAberto?(userId: string, funcionarioId?: string): Promise<any | undefined>;
   getCaixa?(id: number): Promise<any | undefined>;
   abrirCaixa?(caixa: any): Promise<any>;
   fecharCaixa?(id: number, dados: any): Promise<any | undefined>;

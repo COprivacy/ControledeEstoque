@@ -3794,7 +3794,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/caixas/aberto", getUserId, async (req, res) => {
     try {
       const userId = req.headers["effective-user-id"] as string;
-      const funcionarioId = req.headers["funcionario-id"] as string; // Validado pelo middleware
+      const funcionarioId = req.headers["funcionario-id"] as string | undefined;
       const userType = req.headers["x-user-type"] as string;
 
       if (!userId) {
@@ -3807,7 +3807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ error: "Método getCaixaAberto não implementado" });
       }
 
-      const caixaAberto = await storage.getCaixaAberto(userId, funcionarioId || undefined);
+      const caixaAberto = await storage.getCaixaAberto(userId, funcionarioId);
 
       if (caixaAberto) {
         let operadorNome = "Sistema";
@@ -3894,7 +3894,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verificar se JÁ existe um caixa aberto para este funcionário ou dono
-      const caixaAberto = await storage.getCaixaAberto(userId, funcionarioId || undefined);
+      const caixaAberto = await storage.getCaixaAberto(userId, funcionarioId);
       if (caixaAberto) {
         const operadorNome = userType === "funcionario" ? "Este funcionário" : "Você";
         return res.status(400).json({ error: `${operadorNome} já possui um caixa aberto (ID: ${caixaAberto.id})` });

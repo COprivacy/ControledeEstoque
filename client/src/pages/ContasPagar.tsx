@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, DollarSign, Calendar, TrendingDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatDateTime } from "@/lib/dateUtils";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function ContasPagar() {
@@ -112,7 +111,7 @@ export default function ContasPagar() {
       conta.categoria?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === "all" || conta.status === filterStatus;
     const matchesCategoria = filterCategoria === "all" || conta.categoria === filterCategoria;
-    
+
     return matchesSearch && matchesStatus && matchesCategoria;
   });
 

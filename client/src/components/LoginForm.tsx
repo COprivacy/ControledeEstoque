@@ -102,10 +102,11 @@ export default function LoginForm({
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (newPassword !== confirmNewPassword) {
+    // Validações
+    if (!newPassword || newPassword.trim().length === 0) {
       toast({
-        title: "Erro",
-        description: "As senhas não coincidem",
+        title: "❌ Erro",
+        description: "Por favor, digite uma nova senha",
         variant: "destructive",
       });
       return;
@@ -113,8 +114,17 @@ export default function LoginForm({
 
     if (newPassword.length < 6) {
       toast({
-        title: "Erro",
+        title: "❌ Erro",
         description: "A senha deve ter no mínimo 6 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      toast({
+        title: "❌ Erro",
+        description: "As senhas não coincidem",
         variant: "destructive",
       });
       return;
@@ -135,11 +145,12 @@ export default function LoginForm({
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok && data.success === true) {
         toast({
-          title: "Sucesso!",
+          title: "✅ Sucesso!",
           description: "Senha alterada com sucesso. Faça login com a nova senha",
         });
+        // Limpar campos e fechar modal
         setIsForgotPasswordOpen(false);
         setForgotPasswordEmail("");
         setResetCode("");
@@ -147,9 +158,11 @@ export default function LoginForm({
         setConfirmNewPassword("");
         setResetStep('email');
       } else {
+        // Mostrar erro específico retornado pelo servidor
+        const errorMessage = data.error || data.message || "Código inválido ou expirado";
         toast({
-          title: "Erro",
-          description: data.message || "Erro ao resetar senha",
+          title: "❌ Erro",
+          description: errorMessage,
           variant: "destructive",
         });
       }
@@ -282,7 +295,7 @@ export default function LoginForm({
                           </div>
                           <DialogFooter>
                             <Button 
-                              type="submit" 
+                              type="submit"
                               className="w-full"
                               disabled={isSubmittingForgotPassword}
                               data-testid="button-send-reset-email"

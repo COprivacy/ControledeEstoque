@@ -1,11 +1,9 @@
 
 import { describe, it, expect } from 'vitest';
+import { validateEmail, validateCPF, validateCNPJ } from '../lib/validators';
 
-// Funções de validação para testar
-export function validateEmail(email: string): boolean {
-  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  return emailRegex.test(email) && email.length <= 254;
-}
+// Funções de validação já existem em server/lib/validators.ts
+// Aqui apenas importamos e testamos
 
 export function validateCPF(cpf: string): boolean {
   const cleanCPF = cpf.replace(/\D/g, '');

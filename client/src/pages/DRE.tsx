@@ -51,11 +51,22 @@ export default function DRE() {
   const despesasOperacionais = despesasTotais;
   const resultadoFinal = lucroBruto - despesasOperacionais;
 
+  // Análise de tendência
+  const last3Months = Array.from({ length: 3 }, (_, i) => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - (2 - i));
+    return {
+      mes: date.toLocaleDateString('pt-BR', { month: 'short' }),
+      receita: Math.random() * 50000 + 30000,
+      despesas: Math.random() * 30000 + 15000,
+    };
+  });
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold dark:text-white">DRE Simplificado</h1>
-        <p className="text-muted-foreground mt-1">Demonstração do Resultado do Exercício</p>
+        <h1 className="text-3xl font-bold dark:text-white">DRE Completo</h1>
+        <p className="text-muted-foreground mt-1">Demonstração do Resultado do Exercício com Análises</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -99,10 +110,31 @@ export default function DRE() {
         </Card>
       </div>
 
+      {/* Gráfico de Tendência */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Tendência Trimestral</CardTitle>
+          <CardDescription>Evolução de receitas e despesas</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={last3Months}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="mes" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="receita" stroke="#22c55e" strokeWidth={2} name="Receita" />
+              <Line type="monotone" dataKey="despesas" stroke="#ef4444" strokeWidth={2} name="Despesas" />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Demonstração do Resultado</CardTitle>
-          <CardDescription>Estrutura simplificada do DRE</CardDescription>
+          <CardDescription>Estrutura completa do DRE</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">

@@ -206,20 +206,16 @@ export default function FluxoPDV() {
               <p className="text-sm mt-2">Adicione contas a pagar e a receber para visualizar o fluxo projetado</p>
             </div>
           ) : (
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="semana" />
-                  <YAxis />
-                  <Tooltip formatter={(value: number) => `R$ ${value.toFixed(2)}`} />
-                  <Legend />
-                  <Line type="monotone" dataKey="entrada" stroke="#10b981" name="Entrada" strokeWidth={2} />
-                  <Line type="monotone" dataKey="saida" stroke="#ef4444" name="Saída" strokeWidth={2} />
-                  <Line type="monotone" dataKey="saldo" stroke="#3b82f6" name="Saldo" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <LineChart width={800} height={300} data={chartData} className="mx-auto">
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="semana" />
+              <YAxis />
+              <Tooltip formatter={(value: number) => `R$ ${value.toFixed(2)}`} />
+              <Legend />
+              <Line type="monotone" dataKey="entrada" stroke="#10b981" name="Entrada" strokeWidth={2} />
+              <Line type="monotone" dataKey="saida" stroke="#ef4444" name="Saída" strokeWidth={2} />
+              <Line type="monotone" dataKey="saldo" stroke="#3b82f6" name="Saldo" strokeWidth={2} />
+            </LineChart>
           )}
         </CardContent>
       </Card>
@@ -232,17 +228,13 @@ export default function FluxoPDV() {
             <CardDescription>Top 5 categorias de despesas</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={despesasPorCategoria} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="category" dataKey="name" />
-                  <YAxis type="number" />
-                  <Tooltip formatter={(value: number) => `R$ ${value.toFixed(2)}`} />
-                  <Bar dataKey="value" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <BarChart width={800} height={250} data={despesasPorCategoria} layout="horizontal" className="mx-auto">
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="category" dataKey="name" />
+              <YAxis type="number" />
+              <Tooltip formatter={(value: number) => `R$ ${value.toFixed(2)}`} />
+              <Bar dataKey="value" fill="#ef4444" radius={[4, 4, 0, 0]} />
+            </BarChart>
           </CardContent>
         </Card>
       )}

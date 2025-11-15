@@ -65,6 +65,33 @@ import { Cliente360Timeline } from "@/components/Cliente360Timeline";
 import { Cliente360Notes } from "@/components/Cliente360Notes";
 import { AdminLogsView } from "@/components/AdminLogsView";
 
+// Tipos e Interfaces
+type MercadoPagoConfig = {
+  access_token: string;
+  public_key: string;
+  webhook_url: string;
+  status_conexao?: string;
+};
+
+type HealthCheck = {
+  name: string;
+  status: 'healthy' | 'degraded' | 'critical';
+  message: string;
+  details?: any;
+  autoFixed?: boolean;
+};
+
+type HealthStatus = {
+  checks: HealthCheck[];
+  summary: {
+    healthy: number;
+    degraded: number;
+    critical: number;
+    autoFixed: number;
+  };
+  lastCheck: string;
+};
+
 // Componente de Edição/Criação de Usuário
 function UserEditDialog({
   user,
@@ -111,7 +138,7 @@ function UserEditDialog({
     mutationFn: async () => {
       if (user) {
         // Atualizar usuário existente
-        const updateData = { ...formData };
+        const updateData: Partial<typeof formData> = { ...formData };
         if (!updateData.senha) delete updateData.senha; // Não enviar senha vazia
         const response = await apiRequest("PATCH", `/api/users/${user.id}`, updateData);
         return response.json();
@@ -481,7 +508,7 @@ function MercadoPagoConfigTab() {
   });
 
   // Carregar configuração do Mercado Pago
-  const { data: mpConfigData, isLoading: isLoadingMpConfig } = useQuery({
+  const { data: mpConfigData, isLoading: isLoadingMpConfig } = useQuery<MercadoPagoConfig>({
     queryKey: ["/api/config-mercadopago"],
     retry: 1,
   });
@@ -681,13 +708,13 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
     .reduce((sum, s) => sum + s.valor, 0);
 
   // Buscar status de saúde do sistema
-  const { data: healthStatus, isLoading: isLoadingHealth, refetch: fetchHealthStatus } = useQuery({
+  const { data: healthStatus, isLoading: isLoadingHealth, refetch: fetchHealthStatus } = useQuery<HealthStatus>({
     queryKey: ["/api/system/health"],
     refetchInterval: 60000, // Atualizar a cada 1 minuto
   });
 
   // Buscar histórico de correções automáticas
-  const { data: autoFixHistory } = useQuery({
+  const { data: autoFixHistory } = useQuery<any[]>({
     queryKey: ["/api/system/autofix-history"],
     refetchInterval: 60000,
   });
@@ -830,7 +857,7 @@ function SistemaTab({ users, subscriptions }: { users: User[], subscriptions: Su
             </div>
 
             {/* Auto-Healing Summary */}
-            {healthStatus?.summary?.autoFixed > 0 && (
+            {healthStatus?.summary?.autoFixed && healthStatus.summary.autoFixed > 0 && (
               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-900">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-500 rounded-full">

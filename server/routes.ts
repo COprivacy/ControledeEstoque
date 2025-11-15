@@ -702,7 +702,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           is_admin: "true",
           status: "ativo",
           max_funcionarios: 999,
-          data_criacao: new Date().toISOString(),
           data_expiracao_plano: dataExpiracao.toISOString(),
         });
         if (process.env.NODE_ENV === "development") {
@@ -863,6 +862,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       res.json({ success: true });
     } catch (error) {
+      const { id } = req.params;
       console.log(`❌ [DELETE USER] Erro ao deletar usuário ${id}:`, error);
       res.status(500).json({ error: "Erro ao deletar usuário" });
     }
@@ -1139,9 +1139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         geradoEm: new Date().toISOString(),
       });
     } catch (error: any) {
-      logger.error("[RELATORIO_FINANCEIRO] Erro ao gerar relatório", {
-        error: error.message,
-      });
+      logger.error(`[RELATORIO_FINANCEIRO] Erro ao gerar relatório: ${error.message}`);
       res.status(500).json({ error: error.message });
     }
   });
@@ -1172,9 +1170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Lógica de retry (recriar preferência)
-      logger.info("[PAYMENT_RETRY] Tentando reprocessar pagamento", {
-        paymentId,
-      });
+      logger.info(`[PAYMENT_RETRY] Tentando reprocessar pagamento ${paymentId}`);
 
       res.json({
         success: true,
@@ -1182,9 +1178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentId,
       });
     } catch (error: any) {
-      logger.error("[PAYMENT_RETRY] Erro ao reprocessar pagamento", {
-        error: error.message,
-      });
+      logger.error(`[PAYMENT_RETRY] Erro ao reprocessar pagamento: ${error.message}`);
       res.status(500).json({ error: error.message });
     }
   });
@@ -1211,9 +1205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       res.send(csv);
     } catch (error: any) {
-      logger.error("[EXPORT_CSV] Erro ao exportar CSV", {
-        error: error.message,
-      });
+      logger.error(`[EXPORT_CSV] Erro ao exportar CSV: ${error.message}`);
       res.status(500).json({ error: error.message });
     }
   });
@@ -1232,15 +1224,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const level = req.query.level as string || 'INFO';
       const limit = parseInt(req.query.limit as string) || 100;
 
-      const query = `
-        SELECT * FROM system_logs 
-        WHERE level = $1 
-        ORDER BY timestamp DESC 
-        LIMIT $2
-      `;
-
-      const result = await storage.query(query, [level, limit]);
-      res.json(result.rows);
+      // TODO: Implementar query de logs quando disponível
+      // const query = `
+      //   SELECT * FROM system_logs 
+      //   WHERE level = $1 
+      //   ORDER BY timestamp DESC 
+      //   LIMIT $2
+      // `;
+      // const result = await storage.query(query, [level, limit]);
+      // res.json(result.rows);
+      res.json([]);
     } catch (error: any) {
       logger.error('Erro ao buscar logs do sistema:', error);
       res.status(500).json({ error: error.message });
@@ -1458,6 +1451,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const funcionario = await storage.createFuncionario({
+        id: crypto.randomUUID(),
         conta_id,
         nome,
         email,
@@ -3141,7 +3135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           code: "123456",
         });
         results.push({ tipo: "Código de Verificação", status: "enviado" });
-      } catch (error) {
+      } catch (error: any) {
         results.push({
           tipo: "Código de Verificação",
           status: "erro",
@@ -3163,7 +3157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tipo: "Pacote de Funcionários - Aguardando Pagamento",
           status: "enviado",
         });
-      } catch (error) {
+      } catch (error: any) {
         results.push({
           tipo: "Pacote de Funcionários - Aguardando Pagamento",
           status: "erro",
@@ -3185,7 +3179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tipo: "Pacote de Funcionários - Ativado",
           status: "enviado",
         });
-      } catch (error) {
+      } catch (error: any) {
         results.push({
           tipo: "Pacote de Funcionários - Ativado",
           status: "erro",
@@ -3202,7 +3196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           resetDate: new Date().toLocaleString("pt-BR"),
         });
         results.push({ tipo: "Senha Redefinida", status: "enviado" });
-      } catch (error) {
+      } catch (error: any) {
         results.push({
           tipo: "Senha Redefinida",
           status: "erro",
@@ -3220,7 +3214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           amount: 99.9,
         });
         results.push({ tipo: "Pagamento Pendente", status: "enviado" });
-      } catch (error) {
+      } catch (error: any) {
         results.push({
           tipo: "Pagamento Pendente",
           status: "erro",
@@ -3241,7 +3235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           amount: 99.9,
         });
         results.push({ tipo: "Aviso de Vencimento", status: "enviado" });
-      } catch (error) {
+      } catch (error: any) {
         results.push({
           tipo: "Aviso de Vencimento",
           status: "erro",
@@ -3259,7 +3253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           amount: 99.9,
         });
         results.push({ tipo: "Pagamento Atrasado", status: "enviado" });
-      } catch (error) {
+      } catch (error: any) {
         results.push({
           tipo: "Pagamento Atrasado",
           status: "erro",
@@ -3275,7 +3269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           planName: "Plano Premium Mensal",
         });
         results.push({ tipo: "Conta Bloqueada", status: "enviado" });
-      } catch (error) {
+      } catch (error: any) {
         results.push({
           tipo: "Conta Bloqueada",
           status: "erro",

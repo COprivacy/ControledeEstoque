@@ -943,25 +943,23 @@ export default function Orcamentos() {
                   }}
                   className="h-[300px]"
                 >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={statsData.statusChart}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {statsData.statusChart.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <PieChart>
+                    <Pie
+                      data={statsData.statusChart}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {statsData.statusChart.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                  </PieChart>
                 </ChartContainer>
               ) : (
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground">
@@ -984,18 +982,16 @@ export default function Orcamentos() {
                   }}
                   className="h-[300px]"
                 >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={statsData.valorChart}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="status" />
-                      <YAxis />
-                      <ChartTooltip 
-                        content={<ChartTooltipContent />}
-                        formatter={(value: any) => `R$ ${Number(value).toFixed(2)}`}
-                      />
-                      <Bar dataKey="valor" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <BarChart data={statsData.valorChart}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="status" />
+                    <YAxis />
+                    <ChartTooltip 
+                      content={<ChartTooltipContent />}
+                      formatter={(value: any) => `R$ ${Number(value).toFixed(2)}`}
+                    />
+                    <Bar dataKey="valor" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                  </BarChart>
                 </ChartContainer>
               ) : (
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground">

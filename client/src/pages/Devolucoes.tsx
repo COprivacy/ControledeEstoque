@@ -218,6 +218,8 @@ export default function Devolucoes() {
       status: formData.get("status") as string,
       observacoes: formData.get("observacoes") as string || null,
       cliente_nome: formData.get("cliente_nome") as string || null,
+      // Adicionar operador_nome se disponível (em um cenário real, viria do contexto de autenticação)
+      // operador_nome: (window as any).currentUser?.name || "Sistema" 
     };
 
     // Adicionar produto_id se disponível
@@ -474,6 +476,7 @@ export default function Devolucoes() {
       "Data": formatDate(d.data_devolucao),
       "Produto": d.produto_nome,
       "Cliente": d.cliente_nome || "-",
+      "Operador": (d as any).operador_nome || "-", // Exibe o nome do operador
       "Quantidade": d.quantidade,
       "Valor Total": `R$ ${d.valor_total.toFixed(2)}`,
       "Motivo": getMotivoLabel(d.motivo),
@@ -490,6 +493,7 @@ export default function Devolucoes() {
       { wch: 12 }, // Data
       { wch: 30 }, // Produto
       { wch: 25 }, // Cliente
+      { wch: 20 }, // Operador
       { wch: 10 }, // Quantidade
       { wch: 12 }, // Valor Total
       { wch: 25 }, // Motivo
@@ -1290,6 +1294,7 @@ export default function Devolucoes() {
                     <TableHead>Data</TableHead>
                     <TableHead>Produto</TableHead>
                     <TableHead>Cliente</TableHead>
+                    <TableHead>Operador</TableHead> {/* Coluna para Operador */}
                     <TableHead>Quantidade</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Motivo</TableHead>
@@ -1312,6 +1317,9 @@ export default function Devolucoes() {
                       </TableCell>
                       <TableCell data-testid={`text-cliente-${devolucao.id}`}>
                         {devolucao.cliente_nome || "-"}
+                      </TableCell>
+                      <TableCell data-testid={`text-operador-${devolucao.id}`}>
+                        {(devolucao as any).operador_nome || "Sistema"} {/* Exibe o nome do operador */}
                       </TableCell>
                       <TableCell data-testid={`text-quantidade-${devolucao.id}`}>
                         {devolucao.quantidade}
@@ -1406,9 +1414,15 @@ export default function Devolucoes() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Cliente</Label>
-                <p className="font-medium">{selectedDevolucao.cliente_nome || "Não informado"}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Cliente</Label>
+                  <p className="font-medium">{selectedDevolucao.cliente_nome || "Não informado"}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Operador</Label>
+                  <p className="font-medium">{(selectedDevolucao as any).operador_nome || "Sistema"}</p>
+                </div>
               </div>
 
               <div className="space-y-2">

@@ -4349,10 +4349,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         devolucoes = devolucoes.filter((d) => d.status !== 'arquivada');
       }
 
-      console.log(
-        `✅ Devoluções buscadas - User: ${userId}, Total: ${devolucoes.length}, Arquivados: ${incluirArquivados}`,
+      // Adicionar nome do operador caso não exista
+      const devolucoesComOperador = await Promise.all(
+        devolucoes.map(async (devolucao) => {
+          if (!devolucao.operador_nome && devolucao.operador_id) {
+            // Tentar buscar operador
+            const funcionario = await storage.getFuncionario(devolucao.operador_id);
+            if (funcionario) {
+              return { ...devolucao, operador_nome: funcionario.nome };
+            }
+            const usuario = await storage.getUserById(devolucao.operador_id);
+            if (usuario) {
+              return { ...devolucao, operador_nome: usuario.nome };
+            }
+          }
+          return devolucao;
+        })
       );
-      res.json(devolucoes);
+
+      console.log(
+        `✅ Devoluções buscadas - User: ${userId}, Total: ${devolucoesComOperador.length}, Arquivados: ${incluirArquivados}`,
+      );
+      res.json(devolucoesComOperador);
     } catch (error) {
       console.error("Erro ao buscar devoluções:", error);
       res.status(500).json({ error: "Erro ao buscar devoluções" });
@@ -4386,6 +4404,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/devolucoes", getUserId, async (req, res) => {
     try {
       const userId = req.headers["effective-user-id"] as string;
+      const funcionarioId = req.headers["funcionario-id"] as string;
+      const userType = req.headers["x-user-type"] as string;
 
       if (!storage.createDevolucao) {
         return res
@@ -4393,11 +4413,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ error: "Método createDevolucao não implementado" });
       }
 
+      // Obter nome do operador
+      let operadorNome = "Sistema";
+      if (userType === "funcionario" && funcionarioId) {
+        const funcionario = await storage.getFuncionario(funcionarioId);
+        if (funcionario) {
+          operadorNome = funcionario.nome;
+        }
+      } else {
+        const usuario = await storage.getUserById(userId);
+        if (usuario) {
+          operadorNome = usuario.nome;
+        }
+      }
+
       const { insertDevolucaoSchema } = await import("@shared/schema");
       const validatedData = insertDevolucaoSchema.parse({
         ...req.body,
         user_id: userId,
         data_devolucao: new Date().toISOString(),
+        operador_nome: operadorNome,
+        operador_id: funcionarioId || userId,
       });
 
       const devolucao = await storage.createDevolucao(validatedData);

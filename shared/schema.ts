@@ -357,6 +357,8 @@ export const devolucoes = pgTable("devolucoes", {
   data_devolucao: text("data_devolucao").notNull(),
   observacoes: text("observacoes"),
   cliente_nome: text("cliente_nome"),
+  operador_nome: text("operador_nome"),
+  operador_id: text("operador_id"),
 });
 
 export const insertCaixaSchema = createInsertSchema(caixas).omit({

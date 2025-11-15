@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
 
 export default function DRE() {
   const { data: vendas = [] } = useQuery({
@@ -137,22 +137,18 @@ export default function DRE() {
           <CardDescription>Evolução de receitas e despesas</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={last3Months}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="mes" />
-                <YAxis />
-                <Tooltip 
-                  formatter={(value: number) => `R$ ${value.toFixed(2)}`}
-                  labelStyle={{ color: '#000' }}
-                />
-                <Legend />
-                <Line type="monotone" dataKey="receita" stroke="#22c55e" strokeWidth={2} name="Receita" />
-                <Line type="monotone" dataKey="despesas" stroke="#ef4444" strokeWidth={2} name="Despesas" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <LineChart width={800} height={250} data={last3Months} className="mx-auto">
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="mes" />
+            <YAxis />
+            <Tooltip 
+              formatter={(value: number) => `R$ ${value.toFixed(2)}`}
+              labelStyle={{ color: '#000' }}
+            />
+            <Legend />
+            <Line type="monotone" dataKey="receita" stroke="#22c55e" strokeWidth={2} name="Receita" />
+            <Line type="monotone" dataKey="despesas" stroke="#ef4444" strokeWidth={2} name="Despesas" />
+          </LineChart>
         </CardContent>
       </Card>
 

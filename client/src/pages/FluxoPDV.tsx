@@ -1,93 +1,133 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, TrendingUp, TrendingDown } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { apiRequest } from "@/lib/queryClient";
+import { TrendingUp, TrendingDown, DollarSign, Calendar } from "lucide-react";
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Bar, BarChart } from "recharts";
+import { useMemo } from "react";
 
 export default function FluxoPDV() {
   const { data: contasPagar = [] } = useQuery({
     queryKey: ["/api/contas-pagar"],
-    queryFn: async () => {
-      try {
-        const response = await apiRequest("GET", "/api/contas-pagar");
-        return response.json();
-      } catch (error) {
-        console.error("Erro ao buscar contas a pagar:", error);
-        return [];
-      }
-    },
   });
 
   const { data: contasReceber = [] } = useQuery({
     queryKey: ["/api/contas-receber"],
-    queryFn: async () => {
-      try {
-        const response = await apiRequest("GET", "/api/contas-receber");
-        return response.json();
-      } catch (error) {
-        console.error("Erro ao buscar contas a receber:", error);
-        return [];
-      }
-    },
   });
 
+  const { data: vendas = [] } = useQuery({
+    queryKey: ["/api/vendas"],
+  });
+
+  // Calcular entradas e saídas projetadas (próximos 30 dias)
   const hoje = new Date();
-  const proximos30Dias = new Date(hoje.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const proximos30Dias = new Date();
+  proximos30Dias.setDate(hoje.getDate() + 30);
 
-  const entradaProjetada = contasReceber
-    .filter((c: any) => {
-      const dataVenc = new Date(c.data_vencimento);
-      return c.status === "pendente" && dataVenc >= hoje && dataVenc <= proximos30Dias;
-    })
-    .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
+  const entradaProjetada = useMemo(() => {
+    return contasReceber
+      .filter((c: any) => {
+        if (c.status === 'recebido') return false;
+        if (!c.data_vencimento) return false;
+        const vencimento = new Date(c.data_vencimento);
+        return vencimento >= hoje && vencimento <= proximos30Dias;
+      })
+      .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
+  }, [contasReceber]);
 
-  const saidaProjetada = contasPagar
-    .filter((c: any) => {
-      const dataVenc = new Date(c.data_vencimento);
-      return c.status === "pendente" && dataVenc >= hoje && dataVenc <= proximos30Dias;
-    })
-    .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
+  const saidaProjetada = useMemo(() => {
+    return contasPagar
+      .filter((c: any) => {
+        if (c.status === 'pago') return false;
+        if (!c.data_vencimento) return false;
+        const vencimento = new Date(c.data_vencimento);
+        return vencimento >= hoje && vencimento <= proximos30Dias;
+      })
+      .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
+  }, [contasPagar]);
 
   const saldoProjetado = entradaProjetada - saidaProjetada;
 
-  // Gerar dados do gráfico por semana
-  const chartData = [];
-  for (let i = 0; i < 4; i++) {
-    const semanaInicio = new Date(hoje.getTime() + i * 7 * 24 * 60 * 60 * 1000);
-    const semanaFim = new Date(semanaInicio.getTime() + 7 * 24 * 60 * 60 * 1000);
+  // Gráfico de fluxo semanal (próximas 4 semanas)
+  const chartData = useMemo(() => {
+    const semanas = Array.from({ length: 4 }, (_, i) => {
+      const inicioSemana = new Date(hoje);
+      inicioSemana.setDate(hoje.getDate() + (i * 7));
+      const fimSemana = new Date(inicioSemana);
+      fimSemana.setDate(inicioSemana.getDate() + 6);
 
-    const entradaSemana = contasReceber
-      .filter((c: any) => {
-        const dataVenc = new Date(c.data_vencimento);
-        return c.status === "pendente" && dataVenc >= semanaInicio && dataVenc < semanaFim;
-      })
-      .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
+      const entradaSemana = contasReceber
+        .filter((c: any) => {
+          if (c.status === 'recebido') return false;
+          if (!c.data_vencimento) return false;
+          const vencimento = new Date(c.data_vencimento);
+          return vencimento >= inicioSemana && vencimento <= fimSemana;
+        })
+        .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
 
-    const saidaSemana = contasPagar
-      .filter((c: any) => {
-        const dataVenc = new Date(c.data_vencimento);
-        return c.status === "pendente" && dataVenc >= semanaInicio && dataVenc < semanaFim;
-      })
-      .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
+      const saidaSemana = contasPagar
+        .filter((c: any) => {
+          if (c.status === 'pago') return false;
+          if (!c.data_vencimento) return false;
+          const vencimento = new Date(c.data_vencimento);
+          return vencimento >= inicioSemana && vencimento <= fimSemana;
+        })
+        .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
 
-    chartData.push({
-      semana: `Semana ${i + 1}`,
-      entrada: entradaSemana,
-      saida: saidaSemana,
-      saldo: entradaSemana - saidaSemana,
+      return {
+        semana: `Semana ${i + 1}`,
+        entrada: Number(entradaSemana.toFixed(2)),
+        saida: Number(saidaSemana.toFixed(2)),
+        saldo: Number((entradaSemana - saidaSemana).toFixed(2)),
+      };
     });
-  }
 
-  const temDados = contasPagar.length > 0 || contasReceber.length > 0;
+    return semanas;
+  }, [contasPagar, contasReceber]);
+
+  // Contas vencidas
+  const contasVencidas = useMemo(() => {
+    const pagarVencidas = contasPagar.filter((c: any) => {
+      if (c.status === 'pago') return false;
+      if (!c.data_vencimento) return false;
+      return new Date(c.data_vencimento) < hoje;
+    }).length;
+
+    const receberVencidas = contasReceber.filter((c: any) => {
+      if (c.status === 'recebido') return false;
+      if (!c.data_vencimento) return false;
+      return new Date(c.data_vencimento) < hoje;
+    }).length;
+
+    return { pagar: pagarVencidas, receber: receberVencidas };
+  }, [contasPagar, contasReceber]);
+
+  const temDados = chartData.some(d => d.entrada > 0 || d.saida > 0);
+
+  // Análise por categoria de despesa
+  const despesasPorCategoria = useMemo(() => {
+    const categorias: Record<string, number> = {};
+    
+    contasPagar
+      .filter((c: any) => c.status === 'pendente')
+      .forEach((c: any) => {
+        const cat = c.categoria || 'Outras';
+        categorias[cat] = (categorias[cat] || 0) + (c.valor || 0);
+      });
+
+    return Object.entries(categorias)
+      .map(([name, value]) => ({ name, value: Number(value.toFixed(2)) }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+  }, [contasPagar]);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold dark:text-white">Fluxo de Caixa Projetado</h1>
-        <p className="text-muted-foreground mt-1">Análise de fluxo de caixa projetado baseado em contas a pagar e receber</p>
+        <p className="text-muted-foreground mt-1">Análise de fluxo de caixa baseado em contas a pagar e receber</p>
       </div>
 
+      {/* Cards de Resumo */}
       <div className="grid gap-6 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -118,7 +158,7 @@ export default function FluxoPDV() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Saldo Projetado</CardTitle>
-            <CalendarDays className="h-4 w-4 text-blue-600" />
+            <DollarSign className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${saldoProjetado >= 0 ? 'text-blue-600' : 'text-red-600'}`} data-testid="text-saldo-projetado">
@@ -129,10 +169,35 @@ export default function FluxoPDV() {
         </Card>
       </div>
 
+      {/* Alertas de Contas Vencidas */}
+      {(contasVencidas.pagar > 0 || contasVencidas.receber > 0) && (
+        <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
+          <CardHeader>
+            <CardTitle className="text-orange-800 dark:text-orange-300 flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Atenção: Contas Vencidas
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {contasVencidas.pagar > 0 && (
+              <p className="text-sm text-orange-700 dark:text-orange-400">
+                • {contasVencidas.pagar} conta(s) a pagar vencida(s)
+              </p>
+            )}
+            {contasVencidas.receber > 0 && (
+              <p className="text-sm text-orange-700 dark:text-orange-400">
+                • {contasVencidas.receber} conta(s) a receber vencida(s)
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Gráfico de Fluxo de Caixa Semanal */}
       <Card>
         <CardHeader>
-          <CardTitle>Gráfico de Fluxo de Caixa</CardTitle>
-          <CardDescription>Visualização do fluxo de caixa projetado</CardDescription>
+          <CardTitle>Fluxo de Caixa Semanal</CardTitle>
+          <CardDescription>Projeção para as próximas 4 semanas</CardDescription>
         </CardHeader>
         <CardContent>
           {!temDados ? (
@@ -141,19 +206,77 @@ export default function FluxoPDV() {
               <p className="text-sm mt-2">Adicione contas a pagar e a receber para visualizar o fluxo projetado</p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="semana" />
-                <YAxis />
-                <Tooltip formatter={(value: number) => `R$ ${value.toFixed(2)}`} />
-                <Legend />
-                <Line type="monotone" dataKey="entrada" stroke="#10b981" name="Entrada" strokeWidth={2} />
-                <Line type="monotone" dataKey="saida" stroke="#ef4444" name="Saída" strokeWidth={2} />
-                <Line type="monotone" dataKey="saldo" stroke="#3b82f6" name="Saldo" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="semana" />
+                  <YAxis />
+                  <Tooltip formatter={(value: number) => `R$ ${value.toFixed(2)}`} />
+                  <Legend />
+                  <Line type="monotone" dataKey="entrada" stroke="#10b981" name="Entrada" strokeWidth={2} />
+                  <Line type="monotone" dataKey="saida" stroke="#ef4444" name="Saída" strokeWidth={2} />
+                  <Line type="monotone" dataKey="saldo" stroke="#3b82f6" name="Saldo" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Despesas por Categoria */}
+      {despesasPorCategoria.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Despesas Pendentes por Categoria</CardTitle>
+            <CardDescription>Top 5 categorias de despesas</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={despesasPorCategoria} layout="horizontal">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="category" dataKey="name" />
+                  <YAxis type="number" />
+                  <Tooltip formatter={(value: number) => `R$ ${value.toFixed(2)}`} />
+                  <Bar dataKey="value" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Resumo Detalhado */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Resumo Detalhado</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center pb-3 border-b">
+              <span className="font-semibold">Contas a Receber (Pendentes)</span>
+              <span className="font-mono text-green-600">
+                R$ {contasReceber.filter((c: any) => c.status === 'pendente').reduce((sum: number, c: any) => sum + (c.valor || 0), 0).toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center pb-3 border-b">
+              <span className="font-semibold">Contas a Pagar (Pendentes)</span>
+              <span className="font-mono text-red-600">
+                R$ {contasPagar.filter((c: any) => c.status === 'pendente').reduce((sum: number, c: any) => sum + (c.valor || 0), 0).toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center pb-3 border-b">
+              <span className="font-semibold">Total de Vendas (Mês Atual)</span>
+              <span className="font-mono text-blue-600">
+                R$ {vendas.filter((v: any) => {
+                  if (!v.data) return false;
+                  const vendaDate = new Date(v.data);
+                  return vendaDate.getMonth() === hoje.getMonth() && vendaDate.getFullYear() === hoje.getFullYear();
+                }).reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0).toFixed(2)}
+              </span>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

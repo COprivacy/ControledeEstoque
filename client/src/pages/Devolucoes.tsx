@@ -210,6 +210,21 @@ export default function Devolucoes() {
 
     const valorTotal = valorUnitario * quantidade;
 
+    // Buscar usuário logado do localStorage
+    const userStr = localStorage.getItem("user");
+    let operadorNome = "Sistema";
+    let operadorId: string | undefined;
+    
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        operadorNome = user.nome || "Sistema";
+        operadorId = user.id;
+      } catch (e) {
+        console.error("Erro ao buscar usuário:", e);
+      }
+    }
+
     const data: any = {
       produto_nome: produtoNome,
       quantidade,
@@ -218,8 +233,8 @@ export default function Devolucoes() {
       status: formData.get("status") as string,
       observacoes: formData.get("observacoes") as string || null,
       cliente_nome: formData.get("cliente_nome") as string || null,
-      // Adicionar operador_nome se disponível (em um cenário real, viria do contexto de autenticação)
-      // operador_nome: (window as any).currentUser?.name || "Sistema" 
+      operador_nome: operadorNome,
+      operador_id: operadorId,
     };
 
     // Adicionar produto_id se disponível
@@ -252,19 +267,23 @@ export default function Devolucoes() {
 
       const devolucoesAntigas = devolucoes.filter(d => {
         const dataDevolucao = new Date(d.data_devolucao);
-        return dataDevolucao < dataLimite;
+        return dataDevolucao < dataLimite && d.status !== "arquivada";
       });
 
-      // Simula o arquivamento em vez de exclusão real
-      // Na prática, você pode adicionar um status 'arquivado' ou similar ao registro
-      // e filtrar os resultados nas listagens principais.
-      // Para este exemplo, vamos apenas simular a "limpeza" com uma notificação.
-      // A exclusão real pode ser implementada aqui se for o requisito:
-      // for (const dev of devolucoesAntigas) {
-      //   await apiRequest("DELETE", `/api/devolucoes/${dev.id}`, undefined);
-      // }
+      // Arquivar devoluções antigas (mudar status para 'arquivada')
+      let archivedCount = 0;
+      for (const dev of devolucoesAntigas) {
+        try {
+          await apiRequest("PUT", `/api/devolucoes/${dev.id}`, {
+            status: "arquivada"
+          });
+          archivedCount++;
+        } catch (error) {
+          console.error(`Erro ao arquivar devolução ${dev.id}:`, error);
+        }
+      }
 
-      return { archivedCount: devolucoesAntigas.length };
+      return { archivedCount };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/devolucoes"] });
@@ -1294,7 +1313,7 @@ export default function Devolucoes() {
                     <TableHead>Data</TableHead>
                     <TableHead>Produto</TableHead>
                     <TableHead>Cliente</TableHead>
-                    <TableHead>Operador</TableHead> {/* Coluna para Operador */}
+                    <TableHead>Operador</TableHead>
                     <TableHead>Quantidade</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Motivo</TableHead>

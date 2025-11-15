@@ -476,7 +476,7 @@ export default function Devolucoes() {
       "Data": formatDate(d.data_devolucao),
       "Produto": d.produto_nome,
       "Cliente": d.cliente_nome || "-",
-      "Operador": (d as any).operador_nome || "-", // Exibe o nome do operador
+      "Operador": d.operador_nome || "-",
       "Quantidade": d.quantidade,
       "Valor Total": `R$ ${d.valor_total.toFixed(2)}`,
       "Motivo": getMotivoLabel(d.motivo),
@@ -1319,7 +1319,7 @@ export default function Devolucoes() {
                         {devolucao.cliente_nome || "-"}
                       </TableCell>
                       <TableCell data-testid={`text-operador-${devolucao.id}`}>
-                        {(devolucao as any).operador_nome || "Sistema"} {/* Exibe o nome do operador */}
+                        {devolucao.operador_nome || "Sistema"}
                       </TableCell>
                       <TableCell data-testid={`text-quantidade-${devolucao.id}`}>
                         {devolucao.quantidade}
@@ -1421,7 +1421,7 @@ export default function Devolucoes() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Operador</Label>
-                  <p className="font-medium">{(selectedDevolucao as any).operador_nome || "Sistema"}</p>
+                  <p className="font-medium">{selectedDevolucao.operador_nome || "Sistema"}</p>
                 </div>
               </div>
 

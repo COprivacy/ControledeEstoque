@@ -1121,6 +1121,54 @@ export class PostgresStorage implements IStorage {
     return result.length > 0;
   }
 
+  async createEmployeePackage(data: any): Promise<any> {
+    try {
+      const packageData = {
+        user_id: data.user_id,
+        package_type: data.package_type,
+        quantity: data.quantity,
+        price: data.price,
+        status: data.status || 'ativo',
+        payment_id: data.payment_id || null,
+        data_compra: new Date().toISOString(),
+        data_vencimento: data.data_vencimento,
+        data_cancelamento: data.data_cancelamento || null,
+      };
+
+      const result = await this.db.execute(sql`
+        INSERT INTO employee_packages (
+          user_id, package_type, quantity, price, status, 
+          payment_id, data_compra, data_vencimento, data_cancelamento
+        ) VALUES (
+          ${packageData.user_id}, ${packageData.package_type}, 
+          ${packageData.quantity}, ${packageData.price}, ${packageData.status},
+          ${packageData.payment_id}, ${packageData.data_compra}, 
+          ${packageData.data_vencimento}, ${packageData.data_cancelamento}
+        )
+        RETURNING *
+      `);
+
+      return result.rows[0];
+    } catch (error) {
+      logger.error('[DB] Erro ao criar pacote de funcionários:', { error });
+      throw error;
+    }
+  }
+
+  async getEmployeePackages(userId: string): Promise<any[]> {
+    try {
+      const result = await this.db.execute(sql`
+        SELECT * FROM employee_packages 
+        WHERE user_id = ${userId} 
+        ORDER BY data_compra DESC
+      `);
+      return result.rows;
+    } catch (error) {
+      logger.error('[DB] Erro ao buscar pacotes de funcionários:', { error });
+      return [];
+    }
+  }
+
   async getClientInteractions(userId: string, limit = 50, offset = 0): Promise<ClientInteraction[]> {
     const results = await this.db
       .select()

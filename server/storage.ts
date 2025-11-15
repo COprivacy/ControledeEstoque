@@ -174,6 +174,10 @@ export interface IStorage {
   
   // Timeline Unificada - Agrega todos os eventos do cliente
   getClientTimeline(userId: string, limit?: number, offset?: number): Promise<any[]>;
+  
+  // Employee Packages - Pacotes de funcionários
+  createEmployeePackage?(data: any): Promise<any>;
+  getEmployeePackages?(userId: string): Promise<any[]>;
 }
 
 export abstract class Storage {

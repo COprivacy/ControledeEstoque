@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Mail, Lock, UserPlus, Eye, EyeOff, Users, User, Sparkles, Shield } from "lucide-react";
+import { Mail, Lock, UserPlus, Eye, EyeOff, Users, User, Sparkles, Shield, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import backgroundImage from "@assets/generated_images/Pavisoft_Sistemas_tech_background_61320ac2.png";
 
@@ -451,9 +451,19 @@ export default function LoginForm({
           </form>
         </Card>
 
-        <p className="text-center text-xs text-white/60 mt-6">
-          © 2024 PAVISOFT SISTEMAS. Todos os direitos reservados.
-        </p>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+          <p className="text-center text-xs text-white/60">
+            © 2025 PAVISOFT SISTEMAS. Todos os direitos reservados.
+          </p>
+          <a 
+            href="/ajuda" 
+            className="text-xs text-white/50 hover:text-white/80 transition-colors flex items-center gap-1"
+            data-testid="link-help"
+          >
+            <HelpCircle className="h-3 w-3" />
+            Ajuda e Termos
+          </a>
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Sparkles, Shield, CheckCircle2 } from "lucide-react";
+import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Sparkles, Shield, CheckCircle2, HelpCircle } from "lucide-react";
 import { Link } from "wouter";
 import backgroundImage from "@assets/generated_images/Pavisoft_Sistemas_tech_background_61320ac2.png";
 
@@ -193,9 +193,19 @@ export default function RegisterForm({ onRegister, onLoginClick, isLoading }: Re
           </form>
         </Card>
 
-        <p className="text-center text-xs text-white/60">
-          © 2024 PAVISOFT SISTEMAS. Todos os direitos reservados.
-        </p>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <p className="text-center text-xs text-white/60">
+            © 2025 PAVISOFT SISTEMAS. Todos os direitos reservados.
+          </p>
+          <a 
+            href="/ajuda" 
+            className="text-xs text-white/50 hover:text-white/80 transition-colors flex items-center gap-1"
+            data-testid="link-help"
+          >
+            <HelpCircle className="h-3 w-3" />
+            Ajuda e Termos
+          </a>
+        </div>
       </div>
     </div>
   );

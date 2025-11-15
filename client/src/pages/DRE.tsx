@@ -52,14 +52,33 @@ export default function DRE() {
   const despesasOperacionais = despesasTotais;
   const resultadoFinal = lucroBruto - despesasOperacionais;
 
-  // Análise de tendência
+  // Análise de tendência com dados reais
   const last3Months = Array.from({ length: 3 }, (_, i) => {
     const date = new Date();
     date.setMonth(date.getMonth() - (2 - i));
+    const monthNum = date.getMonth();
+    const yearNum = date.getFullYear();
+    
+    const receitaMes = vendas
+      .filter((v: any) => {
+        if (!v.data) return false;
+        const vendaDate = new Date(v.data);
+        return vendaDate.getMonth() === monthNum && vendaDate.getFullYear() === yearNum;
+      })
+      .reduce((sum: number, v: any) => sum + (v.valor_total || 0), 0);
+    
+    const despesasMes = contasPagar
+      .filter((c: any) => {
+        if (!c.data_pagamento || c.status !== 'pago') return false;
+        const pagamentoDate = new Date(c.data_pagamento);
+        return pagamentoDate.getMonth() === monthNum && pagamentoDate.getFullYear() === yearNum;
+      })
+      .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
+    
     return {
       mes: date.toLocaleDateString('pt-BR', { month: 'short' }),
-      receita: Math.random() * 50000 + 30000,
-      despesas: Math.random() * 30000 + 15000,
+      receita: Number(receitaMes.toFixed(2)),
+      despesas: Number(despesasMes.toFixed(2)),
     };
   });
 

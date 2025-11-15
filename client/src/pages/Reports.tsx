@@ -179,16 +179,16 @@ export default function Reports() {
 
       let url = "/api/vendas";
       const params = new URLSearchParams();
-      
+
       if (startDate && endDate) {
         params.append("start_date", startDate);
         params.append("end_date", endDate);
       }
-      
+
       if (mostrarArquivados) {
         params.append("incluirArquivados", "true");
       }
-      
+
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
@@ -206,7 +206,7 @@ export default function Reports() {
     const matchesSearch = !searchTerm || 
       venda.produto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       venda.vendedor?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     return matchesFormaPagamento && matchesSearch;
   });
 
@@ -251,19 +251,19 @@ export default function Reports() {
         method: "DELETE",
         headers,
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || "Erro ao limpar histórico");
       }
-      
+
       return response.json();
     },
     onSuccess: async () => {
       // Invalidar todas as queries relacionadas a vendas
       await queryClient.invalidateQueries({ queryKey: ["/api/vendas"] });
       await queryClient.refetchQueries({ queryKey: ["/api/vendas"] });
-      
+
       toast({
         title: "Histórico limpo!",
         description: "Todas as vendas foram removidas do histórico",
